@@ -1,6 +1,5 @@
 import React from "react";
 import Svg, { Defs, Marker, Path, Polygon } from "react-native-svg";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { PaletteColor } from "@/components/common/ColorPalette";
 import PatternNode from "./PatternNode";
 import {
@@ -57,11 +56,21 @@ export function drawEdges(
   );
 }
 
-export function drawNodes(
-  patterns: WCSPattern[],
+export function drawNodes<
+  T extends {
+    id: number;
+    name: string;
+    counts: number;
+    prerequisites: number[];
+    typeId?: string;
+    type?: any;
+  },
+>(
+  patterns: T[],
   positions: Map<number, LayoutPosition>,
   palette: Record<PaletteColor, string>,
-  onNodeTap: (pattern: WCSPattern) => void,
+  onNodeTap: (pattern: T) => void,
+  typeColorMap?: Map<string, string>,
 ) {
   return patterns.map((pattern) => {
     const pos = positions.get(pattern.id);
@@ -75,6 +84,7 @@ export function drawNodes(
         y={pos.y}
         palette={palette}
         onPress={onNodeTap}
+        typeColorMap={typeColorMap}
       />
     );
   });
@@ -87,6 +97,7 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
   positions,
   palette,
   onNodeTap,
+  typeColorMap,
 }) => {
   const edges = generateEdges(patterns);
   return (
@@ -97,7 +108,7 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
     >
       <ArrowheadMarker palette={palette} />
       {drawEdges(edges, positions, palette)}
-      {drawNodes(patterns, positions, palette, onNodeTap)}
+      {drawNodes(patterns, positions, palette, onNodeTap, typeColorMap)}
     </Svg>
   );
 };

@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 import { useWindowDimensions } from "react-native";
 import { WCSPattern } from "@/components/pattern/types/WCSPattern";
-import {
-  detectCircularDependencies,
-  LayoutPosition,
-} from "../utils/GraphUtils";
+import { Pattern } from "@/components/pattern/types/PatternList";
+import { LayoutPosition } from "../utils/GraphUtils";
+import { detectCircularDependencies as detectCircularDepsGeneric } from "../utils/GenericGraphUtils";
 import { calculateGraphLayout } from "@/components/pattern/graph/utils/NetworkGraphUtils";
 
 const INITIAL_WIDTH_MULTIPLIER = 3;
@@ -24,20 +23,27 @@ interface ContentBounds {
   maxY: number;
 }
 
+type PatternLike = WCSPattern | Pattern;
+
 /**
  * Custom hook for calculating graph layout positions and dimensions.
  * Handles circular dependency detection, position calculations,
  * and SVG canvas sizing based on window dimensions.
  */
-export function useGraphLayout(patterns: WCSPattern[]): GraphLayoutResult {
+export function useGraphLayout<T extends PatternLike>(
+  patterns: T[],
+): GraphLayoutResult {
   const { width, height } = useWindowDimensions();
-  detectCircularDependencies(patterns);
+
+  // Use generic circular dependency detection
+  detectCircularDepsGeneric(patterns);
+
   return useMemo(() => {
     const initialWidth = width * INITIAL_WIDTH_MULTIPLIER;
     const initialHeight = height * INITIAL_HEIGHT_MULTIPLIER;
     // Calculate pattern positions
     const positions = calculateGraphLayout(
-      patterns,
+      patterns as any,
       initialWidth,
       initialHeight,
     );

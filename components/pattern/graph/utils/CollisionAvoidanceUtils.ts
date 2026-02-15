@@ -7,7 +7,7 @@ import {
   LEFT_MARGIN,
   NODE_HEIGHT,
 } from "@/components/pattern/graph/types/Constants";
-import { WCSPatternType } from "@/components/pattern/types/WCSPatternEnums";
+import { Pattern } from "@/components/pattern/types/PatternList";
 
 interface IEdgeRoutingInfo {
   nodeIds: number[];
@@ -31,14 +31,14 @@ interface IEdge {
  * Returns information about skip-level edges, which nodes were shifted, and max shifts per type.
  */
 export function applyCollisionAvoidance(
-  patterns: WCSPattern[],
+  patterns: (WCSPattern | Pattern)[],
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
 ): {
   skipLevelEdgeInfos: SkipLevelEdgeInfo[];
   maxShiftPerType: Map<string, number>;
 } {
-  const patternMap = new Map<number, WCSPattern>();
+  const patternMap = new Map<number, WCSPattern | Pattern>();
   patterns.forEach((p) => patternMap.set(p.id, p));
 
   // Store original positions before any shifting
@@ -59,7 +59,8 @@ export function applyCollisionAvoidance(
   const edgeToIntermediateNodes = new Map<string, IEdgeRoutingInfo>(); // "fromId-toId" -> {intermediateNodeIds, routingY, column positions}
 
   skipLevelEdges.forEach((edge) => {
-    const edgeType = patternMap.get(edge.fromId)?.type;
+    const source = patternMap.get(edge.fromId);
+    const edgeType = getType(source);
     if (!edgeType) return;
     const intermediateNodeIds = getIntersectingIntermediateNodes(
       edge,
@@ -99,11 +100,26 @@ export function applyCollisionAvoidance(
   return { skipLevelEdgeInfos, maxShiftPerType };
 }
 
+function hasSameType(
+  prereqPattern: Pattern | WCSPattern,
+  pattern: Pattern | WCSPattern,
+): boolean {
+  return (
+    (prereqPattern as WCSPattern).type === (pattern as WCSPattern).type ||
+    (prereqPattern as Pattern).typeId === (pattern as Pattern).typeId
+  );
+}
+
+function getType(source?: WCSPattern | Pattern): string | undefined {
+  if (!source) return undefined;
+  return (source as WCSPattern).type ?? (source as Pattern).typeId;
+}
+
 function findSkipLevelEdges(
-  patterns: WCSPattern[],
+  patterns: (WCSPattern | Pattern)[],
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
-  patternMap: Map<number, WCSPattern>,
+  patternMap: Map<number, Pattern | WCSPattern>,
 ) {
   // Find all skip-level edges (edges that span more than 1 depth level)
   const skipLevelEdges: {
@@ -132,7 +148,7 @@ function findSkipLevelEdges(
 
       // Check if they're in the same swimlane (same type)
       const prereqPattern = patternMap.get(prereqId);
-      if (!prereqPattern || prereqPattern.type !== pattern.type) return;
+      if (!prereqPattern || !hasSameType(prereqPattern, pattern)) return;
 
       skipLevelEdges.push({
         fromId: prereqId,
@@ -149,8 +165,8 @@ function findSkipLevelEdges(
 
 function getIntersectingIntermediateNodes(
   edge: IEdge,
-  patterns: WCSPattern[],
-  edgeType: WCSPatternType,
+  patterns: (WCSPattern | Pattern)[],
+  edgeType: string,
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
   nodeToMaxSlot: Map<number, number>,
@@ -163,7 +179,7 @@ function getIntersectingIntermediateNodes(
 
   // Find all nodes at intermediate depths in the same swimlane
   patterns.forEach((intermediatePattern) => {
-    if (intermediatePattern.type !== edgeType) return;
+    if (getType(intermediatePattern) !== edgeType) return;
 
     const intermediateDepth = depthMap.get(intermediatePattern.id) || 0;
 
@@ -264,14 +280,14 @@ function convertToShiftNodes(nodeToMaxSlot: Map<number, number>) {
 }
 
 function createNodesByDepthType(
-  patterns: WCSPattern[],
+  patterns: (WCSPattern | Pattern)[],
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
 ) {
   const result = new Map<string, number[]>(); // "depth-type" -> [patternIds sorted by Y]
   patterns.forEach((pattern) => {
     const depth = depthMap.get(pattern.id) || 0;
-    const key = `${depth}-${pattern.type}`;
+    const key = `${depth}-${getType(pattern)}`;
     if (!result.has(key)) {
       result.set(key, []);
     }

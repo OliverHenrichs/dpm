@@ -1,24 +1,29 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { WCSPattern } from "@/components/pattern/types/WCSPattern";
+import { Pattern } from "@/components/pattern/types/PatternList";
+import { PatternType } from "@/components/pattern/types/PatternType";
 import { PaletteColor } from "@/components/common/ColorPalette";
 import TimelineView from "./TimelineView";
 import NetworkGraphView from "./NetworkGraphView";
 import Legend from "./Legend";
 
 type ViewMode = "timeline" | "graph";
+type GraphPattern = WCSPattern | Pattern;
 
 interface GraphViewContainerProps {
   viewMode: ViewMode;
-  patterns: WCSPattern[];
+  patterns: GraphPattern[];
+  patternTypes?: PatternType[]; // Optional for dynamic mode
   palette: Record<PaletteColor, string>;
   resetKey: number;
-  onNodeTap: (pattern: WCSPattern) => void;
+  onNodeTap: (pattern: GraphPattern) => void;
 }
 
 const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   viewMode,
   patterns,
+  patternTypes,
   palette,
   resetKey,
   onNodeTap,
@@ -32,6 +37,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
           <TimelineView
             key={`timeline-${resetKey}`}
             patterns={patterns}
+            patternTypes={patternTypes}
             palette={palette}
             onNodeTap={onNodeTap}
           />
@@ -39,6 +45,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
           <NetworkGraphView
             key={`graph-${resetKey}`}
             patterns={patterns}
+            patternTypes={patternTypes}
             palette={palette}
             onNodeTap={onNodeTap}
           />

@@ -1,9 +1,14 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { WCSPattern } from "@/components/pattern/types/WCSPattern";
+import { Pattern } from "@/components/pattern/types/PatternList";
 import { loadPatterns } from "@/components/pattern/data/PatternStorage";
 import { foundationalWCSPatterns } from "@/components/pattern/data/DefaultWCSPatterns";
+import {
+  convertWCSPatternsToPatterns,
+  getWCSPatternListForLegacyConversion,
+} from "@/components/pattern/data/PatternConversion";
 import AppHeader from "@/components/common/AppHeader";
 import PageContainer from "@/components/common/PageContainer";
 import { useThemeContext } from "@/components/common/ThemeContext";
@@ -12,6 +17,7 @@ import { getCommonListContainer } from "@/components/common/CommonStyles";
 import PatternGraphHeader from "./PatternGraphHeader";
 import GraphViewContainer from "./GraphViewContainer";
 import PatternDetailsModal from "./PatternDetailsModal";
+import { useActivePatternList } from "@/components/pattern/context/ActivePatternListContext";
 
 type ViewMode = "timeline" | "graph";
 
@@ -19,38 +25,66 @@ const PatternGraphScreen: React.FC = () => {
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const styles = getStyles(palette);
+  const { activeList, patterns: contextPatterns } = useActivePatternList();
 
-  const [patterns, setPatterns] = useState<WCSPattern[]>(
+  const [legacyWCSPatterns, setLegacyWCSPatterns] = useState<WCSPattern[]>(
     foundationalWCSPatterns,
   );
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [selectedPattern, setSelectedPattern] = useState<
-    WCSPattern | undefined
+    (WCSPattern | Pattern) | undefined
   >(undefined);
   const [resetKey, setResetKey] = useState(0);
 
-  // Load patterns from storage on mount and when screen comes into focus
+  // Load legacy WCS patterns if no active list (backward compatibility)
   useFocusEffect(
     useCallback(() => {
-      const fetchPatterns = async () => {
-        try {
-          const stored = await loadPatterns();
-          if (stored) setPatterns(stored);
-        } catch {
-          // fallback to defaults
-        }
-      };
-      fetchPatterns();
-    }, []),
+      if (!activeList) {
+        const fetchPatterns = async () => {
+          try {
+            const stored = await loadPatterns();
+            if (stored) {
+              console.log("Loaded legacy WCS patterns:", stored.length);
+              setLegacyWCSPatterns(stored);
+            }
+          } catch (error) {
+            console.error("Error loading legacy patterns:", error);
+          }
+        };
+        fetchPatterns();
+      }
+    }, [activeList]),
   );
+
+  // Convert legacy patterns to new format and create temporary WCS list
+  const { patterns, patternTypes } = useMemo(() => {
+    if (activeList) {
+      // Use active list patterns and types
+      return {
+        patterns: contextPatterns,
+        patternTypes: activeList.patternTypes,
+      };
+    } else {
+      // Convert legacy WCS patterns to new format
+      const tempWCSList = getWCSPatternListForLegacyConversion();
+      const convertedPatterns = convertWCSPatternsToPatterns(
+        legacyWCSPatterns,
+        tempWCSList,
+      );
+      console.log("Converted patterns:", convertedPatterns.length);
+      return {
+        patterns: convertedPatterns,
+        patternTypes: tempWCSList.patternTypes,
+      };
+    }
+  }, [activeList, contextPatterns, legacyWCSPatterns]);
 
   const handleToggleView = () => {
     setViewMode((prev) => (prev === "timeline" ? "graph" : "timeline"));
-    // Reset zoom/pan by incrementing key to force remount
     setResetKey((prev) => prev + 1);
   };
 
-  const handleNodeTap = (pattern: WCSPattern) => {
+  const handleNodeTap = (pattern: WCSPattern | Pattern) => {
     setSelectedPattern(pattern);
   };
 
@@ -74,6 +108,7 @@ const PatternGraphScreen: React.FC = () => {
           <GraphViewContainer
             viewMode={viewMode}
             patterns={patterns}
+            patternTypes={patternTypes}
             palette={palette}
             resetKey={resetKey}
             onNodeTap={handleNodeTap}
@@ -82,8 +117,8 @@ const PatternGraphScreen: React.FC = () => {
 
         <PatternDetailsModal
           visible={selectedPattern !== undefined}
-          pattern={selectedPattern}
-          allPatterns={patterns}
+          pattern={selectedPattern as any}
+          allPatterns={patterns as any}
           onClose={handleCloseModal}
         />
       </PageContainer>

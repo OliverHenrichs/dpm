@@ -73,6 +73,7 @@
   "patternLists": "Figurenlisten",
   "noPatternLists": "Noch keine Figurenlisten",
   "noPatternListsHint": "Tippe auf +, um deine erste Figurenliste zu erstellen",
+  "createPatternList": "Figurenliste erstellen",
   "deletePatternList": "Figurenliste löschen",
   "deletePatternListConfirm": "Bist du sicher, dass du '{{name}}' löschen möchtest? Alle Figuren in dieser Liste gehen verloren.",
   "error": "Fehler",

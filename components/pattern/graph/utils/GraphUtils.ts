@@ -3,13 +3,14 @@ import {
   NODE_HEIGHT,
   NODE_WIDTH,
 } from "@/components/pattern/graph/types/Constants";
+import { Pattern } from "@/components/pattern/types/PatternList";
 
 export interface LayoutPosition {
   x: number;
   y: number;
 }
 
-export function generateEdges(patterns: WCSPattern[]) {
+export function generateEdges(patterns: (WCSPattern | Pattern)[]) {
   return patterns.flatMap((pattern) =>
     pattern.prerequisites.map((prereqId) => ({
       from: prereqId,

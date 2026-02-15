@@ -1,6 +1,5 @@
 import React from "react";
 import { G, Rect, Text as SvgText } from "react-native-svg";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import {
   WCSPatternLevel,
   WCSPatternType,
@@ -11,45 +10,73 @@ import {
   NODE_WIDTH,
 } from "@/components/pattern/graph/types/Constants";
 
-interface PatternNodeProps {
-  pattern: WCSPattern;
+interface BasePattern {
+  id: number;
+  name: string;
+  counts: number;
+  prerequisites: number[];
+  level?: string;
+  typeId?: string;
+  type?: any;
+}
+
+interface PatternNodeProps<T extends BasePattern> {
+  pattern: T;
   x: number;
   y: number;
   palette: Record<PaletteColor, string>;
-  onPress: (pattern: WCSPattern) => void;
+  onPress: (pattern: T) => void;
+  typeColorMap?: Map<string, string>;
 }
 
-const PatternNode: React.FC<PatternNodeProps> = ({
+const PatternNode = <T extends BasePattern>({
   pattern,
   x,
   y,
   palette,
   onPress,
-}) => {
+  typeColorMap,
+}: PatternNodeProps<T>) => {
   // Determine border color based on pattern type
   const getBorderColor = (): string => {
-    switch (pattern.type) {
-      case WCSPatternType.PUSH:
-        return palette[PaletteColor.Primary];
-      case WCSPatternType.PASS:
-        return palette[PaletteColor.SecondaryText];
-      case WCSPatternType.WHIP:
-        return palette[PaletteColor.Accent];
-      case WCSPatternType.TUCK:
-        return palette[PaletteColor.Error];
-      default:
-        return palette[PaletteColor.Primary];
+    // If we have a typeColorMap and typeId, use it
+    if (typeColorMap && pattern.typeId) {
+      return typeColorMap.get(pattern.typeId) || palette[PaletteColor.Primary];
     }
+
+    // Fallback to WCS pattern type for backward compatibility
+    const wcsPattern = pattern as any;
+    if (wcsPattern.type) {
+      switch (wcsPattern.type) {
+        case WCSPatternType.PUSH:
+          return palette[PaletteColor.Primary];
+        case WCSPatternType.PASS:
+          return palette[PaletteColor.SecondaryText];
+        case WCSPatternType.WHIP:
+          return palette[PaletteColor.Accent];
+        case WCSPatternType.TUCK:
+          return palette[PaletteColor.Error];
+        default:
+          return palette[PaletteColor.Primary];
+      }
+    }
+
+    return palette[PaletteColor.Primary];
   };
 
   // Determine background opacity based on level
   const getBackgroundOpacity = (): number => {
+    if (!pattern.level) return 0.3;
+
     switch (pattern.level) {
       case WCSPatternLevel.BEGINNER:
+      case "beginner":
         return 0.3;
       case WCSPatternLevel.INTERMEDIATE:
+      case "intermediate":
         return 0.5;
       case WCSPatternLevel.ADVANCED:
+      case "advanced":
         return 0.7;
       default:
         return 0.3;
@@ -121,4 +148,4 @@ const PatternNode: React.FC<PatternNodeProps> = ({
   );
 };
 
-export default React.memo(PatternNode);
+export default React.memo(PatternNode) as typeof PatternNode;

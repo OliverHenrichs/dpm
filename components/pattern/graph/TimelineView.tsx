@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
 import { WCSPattern } from "@/components/pattern/types/WCSPattern";
+import { Pattern } from "@/components/pattern/types/PatternList";
+import { PatternType } from "@/components/pattern/types/PatternType";
 import { WCSPatternType } from "@/components/pattern/types/WCSPatternEnums";
 import { PaletteColor } from "@/components/common/ColorPalette";
 import {
@@ -24,19 +26,25 @@ import {
   MIN_PATTERNS_VISIBLE,
 } from "@/components/pattern/graph/types/Constants";
 import {
+  calculateDynamicTimelineLayout,
   calculateTimelineLayout,
   SkipLevelEdgeInfo,
   SwimlaneInfo,
-} from "@/components/pattern/graph/utils/TimelineGraphUtils";
+} from "./utils/TimelineGraphUtils";
+
+// Support both old WCS patterns and new generic patterns
+type TimelinePattern = WCSPattern | Pattern;
 
 interface TimelineViewProps {
-  patterns: WCSPattern[];
+  patterns: TimelinePattern[];
+  patternTypes?: PatternType[]; // Optional: if provided, uses dynamic layout
   palette: Record<PaletteColor, string>;
-  onNodeTap: (pattern: WCSPattern) => void;
+  onNodeTap: (pattern: TimelinePattern) => void;
 }
 
 const TimelineView: React.FC<TimelineViewProps> = ({
   patterns,
+  patternTypes,
   palette,
   onNodeTap,
 }) => {
@@ -44,29 +52,77 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const styles = getStyles(palette);
 
-  const { positions, svgWidth, svgHeight, swimlanes, skipLevelEdges } =
-    useMemo(() => {
-      detectCircularDependencies(patterns);
+  const {
+    positions,
+    svgWidth,
+    svgHeight,
+    swimlanes,
+    skipLevelEdges,
+    typeColorMap,
+  } = useMemo(() => {
+    detectCircularDependencies(patterns as any);
 
-      const minBaseHeight = MIN_PATTERN_HEIGHT * MIN_PATTERNS_VISIBLE;
-      const baseHeight = Math.max(screenHeight, minBaseHeight);
+    const minBaseHeight = MIN_PATTERN_HEIGHT * MIN_PATTERNS_VISIBLE;
+    const baseHeight = Math.max(screenHeight, minBaseHeight);
 
+    // Use dynamic layout if patternTypes provided, otherwise use WCS layout
+    if (patternTypes) {
+      const {
+        positions,
+        minHeight,
+        actualWidth,
+        swimlanes: dynamicSwimlanes,
+        skipLevelEdgeInfos,
+        typeColorMap,
+      } = calculateDynamicTimelineLayout(
+        patterns as Pattern[],
+        patternTypes,
+        screenWidth,
+        baseHeight,
+      );
+
+      return {
+        positions,
+        svgWidth: actualWidth,
+        svgHeight: minHeight,
+        swimlanes: dynamicSwimlanes,
+        skipLevelEdges: skipLevelEdgeInfos,
+        typeColorMap,
+      };
+    } else {
       const {
         positions,
         minHeight,
         actualWidth,
         swimlanes,
         skipLevelEdgeInfos,
-      } = calculateTimelineLayout(patterns, screenWidth, baseHeight);
+      } = calculateTimelineLayout(
+        patterns as WCSPattern[],
+        screenWidth,
+        baseHeight,
+      );
+
+      // Convert WCS swimlanes to array format
+      const swimlanesArray: SwimlaneInfo[] = Object.entries(swimlanes).map(
+        ([typeKey, info]) => ({
+          y: info.y,
+          height: info.height,
+          typeId: typeKey,
+          color: getWCSTypeColor(typeKey as WCSPatternType, palette),
+          label: typeKey,
+        }),
+      );
 
       return {
         positions,
         svgWidth: actualWidth,
         svgHeight: minHeight,
-        swimlanes,
+        swimlanes: swimlanesArray,
         skipLevelEdges: skipLevelEdgeInfos,
+        typeColorMap: undefined,
       };
-    }, [patterns, screenHeight, screenWidth]);
+    }
+  }, [patterns, patternTypes, screenHeight, screenWidth, palette]);
 
   if (patterns.length === 0) {
     return (
@@ -90,9 +146,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         shouldRasterizeIOS={patterns.length > 100}
       >
         <ArrowheadMarker palette={palette} />
-        {drawSwimlanes(swimlanes, svgWidth, palette)}
+        {drawSwimlanes(swimlanes, svgWidth)}
         {drawTimelineEdges(edges, positions, skipLevelEdges, palette)}
-        {drawNodes(patterns, positions, palette, onNodeTap)}
+        {drawNodes(patterns, positions, palette, onNodeTap, typeColorMap)}
       </Svg>
     </ScrollView>
   );
@@ -131,7 +187,6 @@ function drawTimelineEdges(
         if (skipLevelInfo && skipLevelInfo.intermediateNodeIds.length > 0) {
           // This is a skip-level edge with shifted nodes - use optimized routing
           // Use the pre-calculated original Y position from the edge info
-          console.log("hihi", skipLevelInfo);
           pathData = generateSkipLevelPath(
             fromPos,
             toPos,
@@ -142,7 +197,6 @@ function drawTimelineEdges(
         } else {
           // Regular edge - use standard orthogonal routing
           pathData = generateOrthogonalPath(fromPos, toPos);
-          console.log("hihi2");
         }
 
         return (
@@ -161,92 +215,52 @@ function drawTimelineEdges(
   );
 }
 
-function drawSwimlanes(
-  swimlanes: Record<WCSPatternType, SwimlaneInfo>,
-  svgWidth: number,
-  palette: Record<PaletteColor, string>,
-) {
+function drawSwimlanes(swimlanes: SwimlaneInfo[], svgWidth: number) {
   return (
     <>
-      {createSwimlaneBackground(
-        swimlanes[WCSPatternType.PUSH],
-        svgWidth,
-        palette[PaletteColor.Primary],
-      )}
-      {createSwimlaneBackground(
-        swimlanes[WCSPatternType.PASS],
-        svgWidth,
-        palette[PaletteColor.SecondaryText],
-      )}
-      {createSwimlaneBackground(
-        swimlanes[WCSPatternType.WHIP],
-        svgWidth,
-        palette[PaletteColor.Accent],
-      )}
-      {createSwimlaneBackground(
-        swimlanes[WCSPatternType.TUCK],
-        svgWidth,
-        palette[PaletteColor.Error],
-      )}
-
-      {createSwimlaneLabel(
-        WCSPatternType.PUSH,
-        swimlanes[WCSPatternType.PUSH],
-        palette[PaletteColor.Primary],
-      )}
-      {createSwimlaneLabel(
-        WCSPatternType.PASS,
-        swimlanes[WCSPatternType.PASS],
-        palette[PaletteColor.SecondaryText],
-      )}
-      {createSwimlaneLabel(
-        WCSPatternType.WHIP,
-        swimlanes[WCSPatternType.WHIP],
-        palette[PaletteColor.Accent],
-      )}
-      {createSwimlaneLabel(
-        WCSPatternType.TUCK,
-        swimlanes[WCSPatternType.TUCK],
-        palette[PaletteColor.Error],
-      )}
+      {swimlanes.map((swimlane) => (
+        <React.Fragment key={swimlane.typeId || swimlane.label}>
+          <Rect
+            x={0}
+            y={swimlane.y}
+            width={svgWidth}
+            height={swimlane.height}
+            fill={swimlane.color}
+            fillOpacity={0.1}
+          />
+          <SvgText
+            x={20}
+            y={swimlane.y + 25}
+            fontSize={16}
+            fontWeight="bold"
+            fill={swimlane.color}
+            fillOpacity={0.5}
+          >
+            {(swimlane.label || swimlane.typeId || "").toUpperCase()}
+          </SvgText>
+        </React.Fragment>
+      ))}
     </>
   );
 }
 
-function createSwimlaneBackground(
-  swimlanes: SwimlaneInfo,
-  svgWidth: number,
-  color: string,
-) {
-  return (
-    <Rect
-      x={0}
-      y={swimlanes.y}
-      width={svgWidth}
-      height={swimlanes.height}
-      fill={color}
-      fillOpacity={0.1}
-    />
-  );
-}
-
-function createSwimlaneLabel(
-  patternType: WCSPatternType,
-  swimlane: SwimlaneInfo,
-  color: string,
-) {
-  return (
-    <SvgText
-      x={20}
-      y={swimlane.y + 25}
-      fontSize={16}
-      fontWeight="bold"
-      fill={color}
-      fillOpacity={0.5}
-    >
-      {patternType.toUpperCase()}
-    </SvgText>
-  );
+// Helper to get WCS type colors for backward compatibility
+function getWCSTypeColor(
+  type: WCSPatternType,
+  palette: Record<PaletteColor, string>,
+): string {
+  switch (type) {
+    case WCSPatternType.PUSH:
+      return palette[PaletteColor.Primary];
+    case WCSPatternType.PASS:
+      return palette[PaletteColor.SecondaryText];
+    case WCSPatternType.WHIP:
+      return palette[PaletteColor.Accent];
+    case WCSPatternType.TUCK:
+      return palette[PaletteColor.Error];
+    default:
+      return palette[PaletteColor.Primary];
+  }
 }
 
 const getStyles = (palette: Record<PaletteColor, string>) =>

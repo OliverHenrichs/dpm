@@ -73,6 +73,7 @@
   "patternLists": "Pattern Lists",
   "noPatternLists": "No pattern lists yet",
   "noPatternListsHint": "Tap + to create your first pattern list",
+  "createPatternList": "Create Pattern List",
   "deletePatternList": "Delete Pattern List",
   "deletePatternListConfirm": "Are you sure you want to delete '{{name}}'? All patterns in this list will be lost.",
   "error": "Error",

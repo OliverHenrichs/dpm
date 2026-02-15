@@ -39,6 +39,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
     setIsLoading(true);
     try {
       const lists = await loadAllPatternLists();
+      console.log("Loaded pattern lists:", lists.length);
       setPatternLists(lists);
     } catch (error) {
       console.error("Error loading pattern lists:", error);
@@ -72,7 +73,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
               await deletePatternList(list.id);
               await loadLists();
               await refreshActiveList();
-            } catch (error) {
+            } catch {
               Alert.alert(t("error"), t("errorDeletingList"));
             }
           },
@@ -86,11 +87,13 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
     // TODO: Show modal to choose from templates or create custom
     try {
       const newList = createWestCoastSwingList();
+      console.log("Creating new pattern list:", newList.id, newList.name);
       await savePatternList(newList);
       await loadLists();
       await setActiveList(newList);
       navigation.navigate("Patterns");
     } catch (error) {
+      console.error("Error creating list:", error);
       Alert.alert(t("error"), t("errorCreatingList"));
     }
   };

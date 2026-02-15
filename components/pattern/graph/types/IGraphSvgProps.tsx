@@ -9,6 +9,7 @@ export interface IGraphSvgProps {
   positions: IGraphPosition;
   palette: Record<PaletteColor, string>;
   onNodeTap: (pattern: WCSPattern) => void;
+  typeColorMap?: Map<string, string>;
 }
 
 export type IGraphPosition = Map<number, LayoutPosition>;
