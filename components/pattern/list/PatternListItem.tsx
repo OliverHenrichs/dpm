@@ -1,7 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternType } from "@/components/pattern/types/PatternType";
 import PatternDetails from "@/components/pattern/common/PatternDetails";
@@ -10,15 +9,13 @@ import { getPalette, PaletteColor } from "@/components/common/ColorPalette";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/components/common/ThemeContext";
 
-type PatternLike = WCSPattern | Pattern;
-
 interface PatternListItemProps {
-  pattern: PatternLike;
-  allPatterns: PatternLike[];
+  pattern: Pattern;
+  allPatterns: Pattern[];
   patternTypes?: PatternType[];
   isSelected: boolean;
-  onSelect: (pattern: PatternLike | undefined) => void;
-  onEdit: (pattern: PatternLike) => void;
+  onSelect: (pattern: Pattern | undefined) => void;
+  onEdit: (pattern: Pattern) => void;
   onDelete: (id?: number) => void;
 }
 

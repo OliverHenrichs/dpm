@@ -1,4 +1,3 @@
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import {
   NODE_HEIGHT,
   NODE_WIDTH,
@@ -10,7 +9,7 @@ export interface LayoutPosition {
   y: number;
 }
 
-export function generateEdges(patterns: (WCSPattern | Pattern)[]) {
+export function generateEdges(patterns: Pattern[]) {
   return patterns.flatMap((pattern) =>
     pattern.prerequisites.map((prereqId) => ({
       from: prereqId,
@@ -24,9 +23,9 @@ export function generateEdges(patterns: (WCSPattern | Pattern)[]) {
  * Returns an array of cycles (each cycle is an array of pattern ids).
  * Logs warnings for each detected cycle.
  */
-export function detectCircularDependencies(patterns: WCSPattern[]): number[][] {
+export function detectCircularDependencies(patterns: Pattern[]): number[][] {
   const cycles: number[][] = [];
-  const patternMap = new Map<number, WCSPattern>();
+  const patternMap = new Map<number, Pattern>();
   patterns.forEach((p) => patternMap.set(p.id, p));
 
   function findCycles(
@@ -79,10 +78,10 @@ enum NodeSide {
  * Returns a map of pattern id -> depth.
  */
 export function calculatePrerequisiteDepthMap(
-  patterns: WCSPattern[],
+  patterns: Pattern[],
 ): Map<number, number> {
   const depthMap = new Map<number, number>();
-  const patternMap = new Map<number, WCSPattern>();
+  const patternMap = new Map<number, Pattern>();
 
   // Create pattern lookup map
   patterns.forEach((pattern) => patternMap.set(pattern.id, pattern));

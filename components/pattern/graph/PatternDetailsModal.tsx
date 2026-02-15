@@ -8,19 +8,16 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternType } from "@/components/pattern/types/PatternType";
 import { getPalette, PaletteColor } from "@/components/common/ColorPalette";
 import { useThemeContext } from "@/components/common/ThemeContext";
 import PatternDetails from "../common/PatternDetails";
 
-type PatternLike = WCSPattern | Pattern;
-
 interface PatternDetailsModalProps {
   visible: boolean;
-  pattern?: PatternLike;
-  allPatterns: PatternLike[];
+  pattern?: Pattern;
+  allPatterns: Pattern[];
   patternTypes?: PatternType[];
   onClose: () => void;
 }

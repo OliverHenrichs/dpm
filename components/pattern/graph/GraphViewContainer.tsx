@@ -1,6 +1,5 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternType } from "@/components/pattern/types/PatternType";
 import { PaletteColor } from "@/components/common/ColorPalette";
@@ -9,15 +8,14 @@ import NetworkGraphView from "./NetworkGraphView";
 import Legend from "./Legend";
 
 type ViewMode = "timeline" | "graph";
-type GraphPattern = WCSPattern | Pattern;
 
 interface GraphViewContainerProps {
   viewMode: ViewMode;
-  patterns: GraphPattern[];
-  patternTypes?: PatternType[]; // Optional for dynamic mode
+  patterns: Pattern[];
+  patternTypes: PatternType[];
   palette: Record<PaletteColor, string>;
   resetKey: number;
-  onNodeTap: (pattern: GraphPattern) => void;
+  onNodeTap: (pattern: Pattern) => void;
 }
 
 const GraphViewContainer: React.FC<GraphViewContainerProps> = ({

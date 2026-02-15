@@ -1,4 +1,3 @@
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { LayoutPosition } from "@/components/pattern/graph/utils/GraphUtils";
 import { SkipLevelEdgeInfo } from "@/components/pattern/graph/utils/TimelineGraphUtils";
 import {
@@ -31,14 +30,14 @@ interface IEdge {
  * Returns information about skip-level edges, which nodes were shifted, and max shifts per type.
  */
 export function applyCollisionAvoidance(
-  patterns: (WCSPattern | Pattern)[],
+  patterns: Pattern[],
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
 ): {
   skipLevelEdgeInfos: SkipLevelEdgeInfo[];
   maxShiftPerType: Map<string, number>;
 } {
-  const patternMap = new Map<number, WCSPattern | Pattern>();
+  const patternMap = new Map<number, Pattern>();
   patterns.forEach((p) => patternMap.set(p.id, p));
 
   // Store original positions before any shifting
@@ -100,26 +99,16 @@ export function applyCollisionAvoidance(
   return { skipLevelEdgeInfos, maxShiftPerType };
 }
 
-function hasSameType(
-  prereqPattern: Pattern | WCSPattern,
-  pattern: Pattern | WCSPattern,
-): boolean {
-  return (
-    (prereqPattern as WCSPattern).type === (pattern as WCSPattern).type ||
-    (prereqPattern as Pattern).typeId === (pattern as Pattern).typeId
-  );
-}
-
-function getType(source?: WCSPattern | Pattern): string | undefined {
+function getType(source?: Pattern): string | undefined {
   if (!source) return undefined;
-  return (source as WCSPattern).type ?? (source as Pattern).typeId;
+  return source.typeId;
 }
 
 function findSkipLevelEdges(
-  patterns: (WCSPattern | Pattern)[],
+  patterns: Pattern[],
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
-  patternMap: Map<number, Pattern | WCSPattern>,
+  patternMap: Map<number, Pattern>,
 ) {
   // Find all skip-level edges (edges that span more than 1 depth level)
   const skipLevelEdges: {
@@ -148,7 +137,7 @@ function findSkipLevelEdges(
 
       // Check if they're in the same swimlane (same type)
       const prereqPattern = patternMap.get(prereqId);
-      if (!prereqPattern || !hasSameType(prereqPattern, pattern)) return;
+      if (!prereqPattern || prereqPattern.typeId !== pattern.typeId) return;
 
       skipLevelEdges.push({
         fromId: prereqId,
@@ -165,7 +154,7 @@ function findSkipLevelEdges(
 
 function getIntersectingIntermediateNodes(
   edge: IEdge,
-  patterns: (WCSPattern | Pattern)[],
+  patterns: Pattern[],
   edgeType: string,
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
@@ -280,7 +269,7 @@ function convertToShiftNodes(nodeToMaxSlot: Map<number, number>) {
 }
 
 function createNodesByDepthType(
-  patterns: (WCSPattern | Pattern)[],
+  patterns: Pattern[],
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
 ) {

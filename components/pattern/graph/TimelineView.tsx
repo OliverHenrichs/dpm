@@ -7,7 +7,6 @@ import {
   View,
 } from "react-native";
 import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternType } from "@/components/pattern/types/PatternType";
 import { WCSPatternType } from "@/components/pattern/types/WCSPatternEnums";
@@ -27,19 +26,15 @@ import {
 } from "@/components/pattern/graph/types/Constants";
 import {
   calculateDynamicTimelineLayout,
-  calculateTimelineLayout,
   SkipLevelEdgeInfo,
   SwimlaneInfo,
 } from "./utils/TimelineGraphUtils";
 
-// Support both old WCS patterns and new generic patterns
-type TimelinePattern = WCSPattern | Pattern;
-
 interface TimelineViewProps {
-  patterns: TimelinePattern[];
-  patternTypes?: PatternType[]; // Optional: if provided, uses dynamic layout
+  patterns: Pattern[];
+  patternTypes: PatternType[];
   palette: Record<PaletteColor, string>;
-  onNodeTap: (pattern: TimelinePattern) => void;
+  onNodeTap: (pattern: Pattern) => void;
 }
 
 const TimelineView: React.FC<TimelineViewProps> = ({
@@ -65,64 +60,29 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     const minBaseHeight = MIN_PATTERN_HEIGHT * MIN_PATTERNS_VISIBLE;
     const baseHeight = Math.max(screenHeight, minBaseHeight);
 
-    // Use dynamic layout if patternTypes provided, otherwise use WCS layout
-    if (patternTypes) {
-      const {
-        positions,
-        minHeight,
-        actualWidth,
-        swimlanes: dynamicSwimlanes,
-        skipLevelEdgeInfos,
-        typeColorMap,
-      } = calculateDynamicTimelineLayout(
-        patterns as Pattern[],
-        patternTypes,
-        screenWidth,
-        baseHeight,
-      );
+    const {
+      positions,
+      minHeight,
+      actualWidth,
+      swimlanes: dynamicSwimlanes,
+      skipLevelEdgeInfos,
+      typeColorMap,
+    } = calculateDynamicTimelineLayout(
+      patterns as Pattern[],
+      patternTypes,
+      screenWidth,
+      baseHeight,
+    );
 
-      return {
-        positions,
-        svgWidth: actualWidth,
-        svgHeight: minHeight,
-        swimlanes: dynamicSwimlanes,
-        skipLevelEdges: skipLevelEdgeInfos,
-        typeColorMap,
-      };
-    } else {
-      const {
-        positions,
-        minHeight,
-        actualWidth,
-        swimlanes,
-        skipLevelEdgeInfos,
-      } = calculateTimelineLayout(
-        patterns as WCSPattern[],
-        screenWidth,
-        baseHeight,
-      );
-
-      // Convert WCS swimlanes to array format
-      const swimlanesArray: SwimlaneInfo[] = Object.entries(swimlanes).map(
-        ([typeKey, info]) => ({
-          y: info.y,
-          height: info.height,
-          typeId: typeKey,
-          color: getWCSTypeColor(typeKey as WCSPatternType, palette),
-          label: typeKey,
-        }),
-      );
-
-      return {
-        positions,
-        svgWidth: actualWidth,
-        svgHeight: minHeight,
-        swimlanes: swimlanesArray,
-        skipLevelEdges: skipLevelEdgeInfos,
-        typeColorMap: undefined,
-      };
-    }
-  }, [patterns, patternTypes, screenHeight, screenWidth, palette]);
+    return {
+      positions,
+      svgWidth: actualWidth,
+      svgHeight: minHeight,
+      swimlanes: dynamicSwimlanes,
+      skipLevelEdges: skipLevelEdgeInfos,
+      typeColorMap,
+    };
+  }, [patterns, patternTypes, screenHeight, screenWidth]);
 
   if (patterns.length === 0) {
     return (

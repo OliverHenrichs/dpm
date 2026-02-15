@@ -1,18 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { NewPattern, Pattern } from "@/components/pattern/types/PatternList";
-import { foundationalWCSPatterns } from "@/components/pattern/data/DefaultWCSPatterns";
 import PatternList from "@/components/pattern/list/PatternList";
 import EditPatternForm from "@/components/pattern/list/EditPatternForm";
-import {
-  loadPatterns,
-  savePatterns,
-} from "@/components/pattern/data/PatternStorage";
-import {
-  convertWCSPatternsToPatterns,
-  getWCSPatternListForLegacyConversion,
-} from "@/components/pattern/data/PatternConversion";
 import AppHeader from "@/components/common/AppHeader";
 import PageContainer from "@/components/common/PageContainer";
 import { useThemeContext } from "@/components/common/ThemeContext";
@@ -30,16 +20,8 @@ const PatternListManager = () => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
-  const {
-    activeList,
-    patterns: contextPatterns,
-    updatePatterns,
-  } = useActivePatternList();
+  const { activeList, patterns, updatePatterns } = useActivePatternList();
 
-  // Legacy WCS patterns for backward compatibility
-  const [legacyWCSPatterns, setLegacyWCSPatterns] = useState<WCSPattern[]>(
-    foundationalWCSPatterns,
-  );
   const [selectedPattern, setSelectedPattern] = useState<Pattern | undefined>(
     undefined,
   );
@@ -47,39 +29,7 @@ const PatternListManager = () => {
   const [isEditing, setIsEditing] = useState(false);
   const styles = getStyles(palette);
 
-  // Load legacy patterns if no active list
-  useEffect(() => {
-    if (!activeList) {
-      const fetchPatterns = async () => {
-        try {
-          const stored = await loadPatterns();
-          if (stored) setLegacyWCSPatterns(stored);
-        } catch {
-          // fallback to defaults
-        }
-      };
-      fetchPatterns();
-    }
-  }, [activeList]);
-
-  // Save legacy patterns when they change (backward compatibility)
-  useEffect(() => {
-    if (!activeList) {
-      savePatterns(legacyWCSPatterns);
-    }
-  }, [legacyWCSPatterns, activeList]);
-
-  // Get patterns based on mode
-  const patterns = activeList
-    ? contextPatterns
-    : convertWCSPatternsToPatterns(
-        legacyWCSPatterns,
-        getWCSPatternListForLegacyConversion(),
-      );
-
-  const patternTypes = activeList
-    ? activeList.patternTypes
-    : getWCSPatternListForLegacyConversion().patternTypes;
+  const patternTypes = activeList?.patternTypes || [];
 
   const addPattern = async (pattern: NewPattern) => {
     if (!pattern.name.trim()) return;
@@ -89,14 +39,7 @@ const PatternListManager = () => {
       id: createNewId(patterns),
     };
 
-    if (activeList) {
-      // Use context for active list
-      await updatePatterns([...patterns, newPattern]);
-    } else {
-      // Legacy mode - convert back to WCS and save
-      // Note: This is a simplified version, might need full conversion logic
-      setLegacyWCSPatterns([...legacyWCSPatterns, newPattern as any]);
-    }
+    await updatePatterns([...patterns, newPattern]);
     setIsAddingNew(false);
   };
 
@@ -109,38 +52,27 @@ const PatternListManager = () => {
       return;
     }
 
-    // Update pattern in the list by replacing the old one with the same id
     const updatedPatterns = patterns.map((p) =>
       p.id === pattern.id ? (pattern as Pattern) : p,
     );
 
-    if (activeList) {
-      await updatePatterns(updatedPatterns);
-    } else {
-      setLegacyWCSPatterns(updatedPatterns as any);
-    }
+    await updatePatterns(updatedPatterns);
     setIsEditing(false);
   };
 
   const deletePattern = async (id?: number) => {
     const updatedPatterns = patterns.filter((p) => p.id !== id);
-
-    if (activeList) {
-      await updatePatterns(updatedPatterns);
-    } else {
-      setLegacyWCSPatterns(updatedPatterns as any);
-    }
-
+    await updatePatterns(updatedPatterns);
     if (selectedPattern?.id === id) setSelectedPattern(undefined);
   };
 
-  const handleEditPattern = (pattern: Pattern | WCSPattern) => {
-    setSelectedPattern(pattern as Pattern);
+  const handleEditPattern = (pattern: Pattern) => {
+    setSelectedPattern(pattern);
     setIsEditing(true);
   };
 
   // Show empty state if no active list
-  if (!activeList && legacyWCSPatterns.length === 0) {
+  if (!activeList) {
     return (
       <View style={{ flex: 1 }}>
         <PageContainer

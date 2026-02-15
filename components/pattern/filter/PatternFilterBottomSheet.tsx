@@ -9,7 +9,6 @@ import {
 import { getPalette, PaletteColor } from "@/components/common/ColorPalette";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/components/common/ThemeContext";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import {
   WCSPatternLevel,
@@ -35,7 +34,7 @@ interface PatternFilterBottomSheetProps {
   onClose: () => void;
   onApplyFilter: (filter: PatternFilter) => void;
   currentFilter: PatternFilter;
-  allPatterns: (WCSPattern | Pattern)[];
+  allPatterns: Pattern[];
 }
 
 const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({

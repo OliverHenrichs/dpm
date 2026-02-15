@@ -4,11 +4,11 @@ import { useThemeContext } from "@/components/common/ThemeContext";
 import { getPalette, PaletteColor } from "@/components/common/ColorPalette";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/components/common/BottomSheet";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
+import { Pattern } from "@/components/pattern/types/PatternList";
 
 export type SortField = keyof Pick<
-  WCSPattern,
-  "name" | "type" | "level" | "counts" | "id"
+  Pattern,
+  "name" | "typeId" | "level" | "counts" | "id"
 >;
 export type SortOrder = "asc" | "desc";
 
@@ -37,7 +37,7 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
 
   const sortOptions: { field: SortField; label: string }[] = [
     { field: "name", label: t("name") },
-    { field: "type", label: t("type") },
+    { field: "typeId", label: t("type") },
     { field: "level", label: t("level") },
     { field: "counts", label: t("counts") },
     { field: "id", label: t("dateCreated") },

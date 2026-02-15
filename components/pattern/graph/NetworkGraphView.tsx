@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternType } from "@/components/pattern/types/PatternType";
 import { PaletteColor } from "@/components/common/ColorPalette";
@@ -10,14 +9,11 @@ import NetworkGraphSvg from "./GraphSvg";
 import { ReactNativeZoomableView } from "@openspacelabs/react-native-zoomable-view";
 import { LayoutPosition } from "@/components/pattern/graph/utils/GraphUtils";
 
-// Support both old WCS patterns and new generic patterns
-type NetworkPattern = WCSPattern | Pattern;
-
 interface NetworkGraphViewProps {
-  patterns: NetworkPattern[];
+  patterns: Pattern[];
   patternTypes?: PatternType[]; // Optional: if provided, creates color map
   palette: Record<PaletteColor, string>;
-  onNodeTap: (pattern: NetworkPattern) => void;
+  onNodeTap: (pattern: Pattern) => void;
 }
 
 const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
@@ -67,10 +63,10 @@ function createEmptyNetworkGraph(palette: Record<PaletteColor, string>) {
 function createNetworkGraph(
   svgWidth: number,
   svgHeight: number,
-  patterns: NetworkPattern[],
+  patterns: Pattern[],
   positions: Map<number, LayoutPosition>,
   palette: Record<PaletteColor, string>,
-  onNodeTap: (pattern: NetworkPattern) => void,
+  onNodeTap: (pattern: Pattern) => void,
   typeColorMap?: Map<string, string>,
 ) {
   const styles = getStyles(palette);

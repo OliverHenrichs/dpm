@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import {
   NewPattern,
   Pattern,
@@ -34,7 +33,7 @@ import {
 } from "@/components/common/CommonStyles";
 
 type EditPatternFormProps = {
-  patterns: (WCSPattern | Pattern)[];
+  patterns: Pattern[];
   patternTypes: PatternType[]; // Dynamic pattern types from active list
   onAccepted: (pattern: NewPattern | Pattern) => void;
   onCancel: () => void;

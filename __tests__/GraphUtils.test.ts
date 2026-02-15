@@ -3,18 +3,15 @@ import {
   detectCircularDependencies,
   generateEdges,
 } from "@/components/pattern/graph/utils/GraphUtils";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
-import {
-  WCSPatternLevel,
-  WCSPatternType,
-} from "@/components/pattern/types/WCSPatternEnums";
+import { WCSPatternLevel } from "@/components/pattern/types/WCSPatternEnums";
+import { Pattern } from "@/components/pattern/types/PatternList";
 
-function createTestWCSPattern(overrides?: Partial<WCSPattern>): WCSPattern {
+function createTestWCSPattern(overrides?: Partial<Pattern>): Pattern {
   return {
     id: Math.floor(Math.random() * 10000),
     name: "Test Pattern",
-    type: WCSPatternType.PUSH,
     counts: 6,
+    typeId: "TestType",
     level: WCSPatternLevel.BEGINNER,
     prerequisites: [],
     description: "Test description",

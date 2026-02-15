@@ -1,8 +1,8 @@
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import {
   calculatePrerequisiteDepthMap,
   LayoutPosition,
 } from "@/components/pattern/graph/utils/GraphUtils";
+import { Pattern } from "@/components/pattern/types/PatternList";
 
 /**
  * Calculate layout positions for network graph view.
@@ -10,7 +10,7 @@ import {
  * spreading radially outward perpendicular to the ellipse's surface.
  */
 export function calculateGraphLayout(
-  patterns: WCSPattern[],
+  patterns: Pattern[],
   width: number,
   height: number,
 ): Map<number, LayoutPosition> {
@@ -23,7 +23,7 @@ export function calculateGraphLayout(
   );
 
   // Build dependency tree for each foundational pattern
-  const patternMap = new Map<number, WCSPattern>();
+  const patternMap = new Map<number, Pattern>();
   patterns.forEach((p) => patternMap.set(p.id, p));
 
   // For each foundational pattern, position its descendants radially
@@ -46,7 +46,7 @@ export function calculateGraphLayout(
 function calculateFoundationalPatternPositions(
   width: number,
   height: number,
-  foundationalPatterns: WCSPattern[],
+  foundationalPatterns: Pattern[],
 ) {
   // Ellipse parameters (leave room for dependencies)
   const ellipseRadiusX = Math.min(width * 0.25, 400);
@@ -70,7 +70,7 @@ function calculateFoundationalPatternPositions(
 }
 
 function getFoundationalPatterns(
-  patterns: WCSPattern[],
+  patterns: Pattern[],
   depthMap: Map<number, number>,
 ) {
   return patterns.filter((p) => (depthMap.get(p.id) || 0) === 0);
@@ -78,12 +78,12 @@ function getFoundationalPatterns(
 
 function collectDescendants(
   patternId: number,
-  patterns: WCSPattern[],
+  patterns: Pattern[],
   depthMap: Map<number, number>,
-  descendants?: Map<number, WCSPattern[]>,
+  descendants?: Map<number, Pattern[]>,
 ) {
   if (!descendants) {
-    descendants = new Map<number, WCSPattern[]>();
+    descendants = new Map<number, Pattern[]>();
   }
   patterns.forEach((p) => {
     if (p.prerequisites.includes(patternId)) {
@@ -99,7 +99,7 @@ function collectDescendants(
 }
 
 function calculateDescendantPatternPositions(
-  descendants: Map<number, WCSPattern[]>,
+  descendants: Map<number, Pattern[]>,
   angle: number,
   foundationalPos: LayoutPosition,
   positions: Map<number, LayoutPosition>,

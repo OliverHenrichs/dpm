@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternType } from "@/components/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
@@ -15,16 +14,14 @@ import PatternListItem from "./PatternListItem";
 import { usePatternFilter } from "./hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
 
-type PatternLike = WCSPattern | Pattern;
-
 type PatternListProps = {
-  patterns: PatternLike[];
+  patterns: Pattern[];
   patternTypes?: PatternType[];
-  selectedPattern?: PatternLike;
-  onSelect: (pattern: PatternLike | undefined) => void;
+  selectedPattern?: Pattern;
+  onSelect: (pattern: Pattern | undefined) => void;
   onDelete: (id?: number) => void;
   onAdd: () => void;
-  onEdit: (pattern: PatternLike) => void;
+  onEdit: (pattern: Pattern) => void;
 };
 
 const PatternList: React.FC<PatternListProps> = (props) => {

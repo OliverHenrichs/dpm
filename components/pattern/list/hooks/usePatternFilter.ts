@@ -1,14 +1,8 @@
 import { useMemo } from "react";
-import { WCSPattern } from "@/components/pattern/types/WCSPattern";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternFilter } from "@/components/pattern/filter/PatternFilterBottomSheet";
 
-type PatternLike = WCSPattern | Pattern;
-
-export function usePatternFilter(
-  patterns: PatternLike[],
-  filter: PatternFilter,
-) {
+export function usePatternFilter(patterns: Pattern[], filter: PatternFilter) {
   const filteredPatterns = useMemo(() => {
     return patterns.filter((pattern) => {
       // Name filter
@@ -19,10 +13,9 @@ export function usePatternFilter(
         return false;
       }
 
-      // Type filter - handle both WCS type and typeId
+      // Type filter - use typeId
       if (filter.types.length > 0) {
-        const patternType = "type" in pattern ? pattern.type : pattern.typeId;
-        if (!filter.types.includes(patternType as any)) {
+        if (!filter.types.includes(pattern.typeId as any)) {
           return false;
         }
       }
