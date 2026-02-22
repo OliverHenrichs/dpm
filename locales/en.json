@@ -85,6 +85,21 @@
   "listName": "List Name",
   "back": "Back",
   "create": "Create",
+  "selectListsToExport": "Select Lists to Export",
+  "selectAll": "Select All",
+  "deselectAll": "Deselect All",
+  "export": "Export",
+  "import": "Import",
+  "importPatternLists": "Import Pattern Lists",
+  "foundListsToImport": "Found {{count}} list(s) to import",
+  "conflicts": "conflicts",
+  "existsLabel": "EXISTS",
+  "skip": "Skip",
+  "replace": "Replace",
+  "newList": "New List",
   "error": "Error",
-  "delete": "Delete"
+  "success": "Success",
+  "delete": "Delete",
+  "noPatternListsToExport": "No pattern lists to export",
+  "patterns": "patterns"
 }

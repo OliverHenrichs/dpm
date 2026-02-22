@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Button,
   ScrollView,
   StyleSheet,
@@ -16,9 +17,21 @@ import {
 } from "@/components/common/CommonStyles";
 import { ThemeType, useThemeContext } from "@/components/common/ThemeContext";
 import { getPalette, PaletteColor } from "@/components/common/ColorPalette";
-import { handleExportPatterns } from "@/components/pattern/data/exportPatterns";
-import { handleImportPatterns } from "@/components/pattern/data/ImportPatterns";
 import { LANGUAGES } from "@/components/settings/types/Languages";
+import { exportPatternLists } from "@/components/pattern/data/exportPatterns";
+import { importPatternLists } from "@/components/pattern/data/ImportPatterns";
+import PatternListExportModal from "@/components/pattern/data/PatternListExportModal";
+import PatternListImportModal, {
+  ImportDecision,
+} from "@/components/pattern/data/PatternListImportModal";
+import {
+  loadAllPatternLists,
+  loadPatterns,
+  savePatternList,
+  savePatterns,
+} from "@/components/pattern/data/PatternListStorage";
+import { PatternList } from "@/components/pattern/types/PatternList";
+import { PatternListWithPatterns } from "@/components/pattern/data/types/IExportData";
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -27,6 +40,14 @@ const SettingsScreen: React.FC = () => {
   const commonStyles = getCommonStyles(colorScheme);
   const palette = getPalette(colorScheme);
   const [isLoading, setIsLoading] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [patternLists, setPatternLists] = useState<PatternListWithPatterns[]>(
+    [],
+  );
+  const [importedLists, setImportedLists] = useState<PatternListWithPatterns[]>(
+    [],
+  );
 
   const themeOptions = [
     { value: "system", label: t("themeSystem") },
@@ -35,6 +56,113 @@ const SettingsScreen: React.FC = () => {
   ];
 
   const styles = getStyles(palette);
+
+  // Load pattern lists on mount
+  const loadPatternLists = useCallback(async () => {
+    try {
+      const lists = await loadAllPatternLists();
+      const listsWithPatterns: PatternListWithPatterns[] = await Promise.all(
+        lists.map(async (list: PatternList) => {
+          const patterns = await loadPatterns(list.id);
+          return { ...list, patterns };
+        }),
+      );
+      setPatternLists(listsWithPatterns);
+    } catch (error) {
+      Alert.alert(
+        t("error"),
+        `Failed to load pattern lists: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadPatternLists();
+  }, [loadPatternLists]);
+
+  const handleExportButtonPress = () => {
+    if (patternLists.length === 0) {
+      Alert.alert(t("error"), t("noPatternListsToExport"));
+      return;
+    }
+    setShowExportModal(true);
+  };
+
+  const handleExport = async (selectedLists: PatternList[]) => {
+    setShowExportModal(false);
+    setIsLoading(true);
+    try {
+      const result = await exportPatternLists(
+        selectedLists as PatternListWithPatterns[],
+      );
+      Alert.alert(result.success ? t("success") : t("error"), result.message);
+    } catch (error) {
+      Alert.alert(
+        t("error"),
+        `Export failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImportButtonPress = async () => {
+    setIsLoading(true);
+    try {
+      const result = await importPatternLists();
+      if (result.success && result.patternLists) {
+        setImportedLists(result.patternLists);
+        setShowImportModal(true);
+      } else {
+        Alert.alert(t("error"), result.message);
+      }
+    } catch (error) {
+      Alert.alert(
+        t("error"),
+        `Import failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImport = async (decisions: ImportDecision[]) => {
+    setShowImportModal(false);
+    setIsLoading(true);
+    try {
+      let importedCount = 0;
+      let skippedCount = 0;
+
+      for (const decision of decisions) {
+        if (decision.action === "skip") {
+          skippedCount++;
+          continue;
+        }
+
+        // Save the pattern list
+        const listToSave = decision.list as PatternListWithPatterns;
+        await savePatternList(listToSave);
+
+        // Save all patterns in the list
+        await savePatterns(listToSave.id, listToSave.patterns);
+        importedCount++;
+      }
+
+      await loadPatternLists();
+
+      Alert.alert(
+        t("success"),
+        `Imported ${importedCount} list(s), skipped ${skippedCount}`,
+      );
+    } catch (error) {
+      Alert.alert(
+        t("error"),
+        `Import failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <PageContainer
@@ -109,17 +237,32 @@ const SettingsScreen: React.FC = () => {
           <View style={[styles.themeRow, { marginLeft: 8 }]}>
             <Button
               title={t("exportPatterns")}
-              onPress={handleExportPatterns.bind(this, setIsLoading)}
+              onPress={handleExportButtonPress}
               color={palette[PaletteColor.Primary]}
             />
             <Button
               title={t("importPatterns")}
-              onPress={handleImportPatterns.bind(this, setIsLoading)}
+              onPress={handleImportButtonPress}
               color={palette[PaletteColor.Primary]}
             />
           </View>
         )}
       </ScrollView>
+
+      <PatternListExportModal
+        visible={showExportModal}
+        patternLists={patternLists}
+        onExport={handleExport}
+        onCancel={() => setShowExportModal(false)}
+      />
+
+      <PatternListImportModal
+        visible={showImportModal}
+        importedLists={importedLists}
+        existingLists={patternLists}
+        onImport={handleImport}
+        onCancel={() => setShowImportModal(false)}
+      />
     </PageContainer>
   );
 };

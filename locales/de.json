@@ -84,6 +84,22 @@
   "customizeListName": "Passe den Namen für deine {{template}}-Liste an",
   "listName": "Listenname",
   "back": "Zurück",
+  "create": "Erstellen",
+  "selectListsToExport": "Listen zum Exportieren auswählen",
+  "selectAll": "Alle auswählen",
+  "deselectAll": "Alle abwählen",
+  "export": "Exportieren",
+  "import": "Importieren",
+  "importPatternLists": "Figurenlisten importieren",
+  "foundListsToImport": "{{count}} Liste(n) zum Importieren gefunden",
+  "conflicts": "Konflikte",
+  "existsLabel": "VORHANDEN",
+  "skip": "Überspringen",
+  "replace": "Ersetzen",
+  "newList": "Neue Liste",
+  "patterns": "Figuren",
   "error": "Fehler",
-  "delete": "Löschen"
+  "success": "Erfolg",
+  "delete": "Löschen",
+  "noPatternListsToExport": "Keine Figurenlisten zum Exportieren"
 }

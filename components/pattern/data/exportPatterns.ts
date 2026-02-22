@@ -1,59 +1,25 @@
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import {
-  VideoReference,
-  WCSPattern,
-} from "@/components/pattern/types/WCSPattern";
+import { VideoReference } from "@/components/pattern/types/PatternList";
 import {
   exportDataVersion,
-  IExportData,
+  IPatternListExportData,
+  PatternListWithPatterns,
 } from "@/components/pattern/data/types/IExportData";
-import { Alert } from "react-native";
-import { loadPatterns } from "@/components/pattern/data/PatternStorage";
-import { Dispatch, SetStateAction } from "react";
 
 interface IVideoList {
   [key: string]: string;
 }
 
-export async function handleExportPatterns(
-  setIsLoading: Dispatch<SetStateAction<boolean>>,
-) {
-  setIsLoading(true);
-  try {
-    const patterns = await loadPatterns();
-    if (!patterns || patterns.length === 0) {
-      Alert.alert("Export Patterns", "No patterns to export");
-      return;
-    }
-
-    const result = await exportPatterns(patterns);
-    Alert.alert(
-      result.success ? "Export Successful" : "Export Failed",
-      result.message,
-    );
-  } catch (error) {
-    Alert.alert(
-      "Export Failed",
-      `An error occurred: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  } finally {
-    setIsLoading(false);
-  }
-}
-
 /**
- * Export patterns to a JSON file with embedded videos
- * - Videos are encoded as base64 strings
- * - URLs are preserved as-is in the pattern data
- * - Only local videos are embedded
+ * Export selected pattern lists to a JSON file with embedded videos
  */
-async function exportPatterns(
-  patterns: WCSPattern[],
+export async function exportPatternLists(
+  patternLists: PatternListWithPatterns[],
 ): Promise<{ success: boolean; message: string }> {
   try {
     const warnings: string[] = [];
-    const exportData = await createExportData(patterns, warnings);
+    const exportData = await createExportData(patternLists, warnings);
     const fileUri = await writeExportData(exportData);
 
     if (!(await Sharing.isAvailableAsync())) {
@@ -62,7 +28,7 @@ async function exportPatterns(
         message: "Sharing is not available on this device",
       };
     }
-    return shareExportData(fileUri, patterns, warnings);
+    return shareExportData(fileUri, patternLists, warnings);
   } catch (error) {
     return {
       success: false,
@@ -71,19 +37,41 @@ async function exportPatterns(
   }
 }
 
+async function createExportData(
+  patternLists: PatternListWithPatterns[],
+  warnings: string[],
+): Promise<IPatternListExportData> {
+  const videos: IVideoList = {};
+
+  // Process videos from all patterns in all lists
+  for (const list of patternLists) {
+    for (const pattern of list.patterns) {
+      await addPatternVideos(pattern.id, pattern.videoRefs, videos, warnings);
+    }
+  }
+
+  return {
+    version: exportDataVersion,
+    exportDate: new Date().toISOString(),
+    patternLists,
+    videos,
+  };
+}
+
 async function addPatternVideos(
-  pattern: WCSPattern,
+  patternId: number,
+  videoRefs: VideoReference[] | undefined,
   videos: IVideoList,
   warnings: string[],
 ) {
-  if (!pattern.videoRefs) {
+  if (!videoRefs) {
     return;
   }
-  for (const videoRef of pattern.videoRefs) {
+  for (const videoRef of videoRefs) {
     if (videoRef.type !== "local" || videos[videoRef.value]) {
-      continue; // Skip non-local or already processed videos;
+      continue; // Skip non-local or already processed videos
     }
-    const base64Data = await getVideo(videoRef, warnings, pattern);
+    const base64Data = await getVideo(videoRef, warnings, patternId);
     if (base64Data) {
       videos[videoRef.value] = base64Data;
     }
@@ -93,7 +81,7 @@ async function addPatternVideos(
 async function getVideo(
   videoRef: VideoReference,
   warnings: string[],
-  pattern: WCSPattern,
+  patternId: number,
 ) {
   try {
     const file = new File(videoRef.value);
@@ -103,27 +91,14 @@ async function getVideo(
     return await file.base64();
   } catch {
     warnings.push(
-      `Failed to read video: ${videoRef.value} (pattern: ${pattern.name})`,
+      `Failed to read video: ${videoRef.value} (pattern ID: ${patternId})`,
     );
   }
 }
 
-async function createExportData(patterns: WCSPattern[], warnings: string[]) {
-  const videos: IVideoList = {};
-  for (const pattern of patterns) {
-    await addPatternVideos(pattern, videos, warnings);
-  }
-  return {
-    version: exportDataVersion,
-    exportDate: new Date().toISOString(),
-    patterns,
-    videos,
-  };
-}
-
-async function writeExportData(exportData: IExportData) {
+async function writeExportData(exportData: IPatternListExportData) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const fileName = `dance-patterns-${timestamp}.json`;
+  const fileName = `pattern-lists-${timestamp}.json`;
   const file = new File(Paths.document, fileName);
   file.write(JSON.stringify(exportData, null, 2));
   return file.uri;
@@ -131,19 +106,29 @@ async function writeExportData(exportData: IExportData) {
 
 async function shareExportData(
   fileUri: string,
-  patterns: WCSPattern[],
+  patternLists: PatternListWithPatterns[],
   warnings: string[],
 ) {
   await Sharing.shareAsync(fileUri, {
     mimeType: "application/json",
-    dialogTitle: "Export Dance Patterns",
+    dialogTitle: "Export Pattern Lists",
     UTI: "public.json",
   });
-  return { success: true, message: createWarningMessage(patterns, warnings) };
+  return {
+    success: true,
+    message: createSuccessMessage(patternLists, warnings),
+  };
 }
 
-function createWarningMessage(patterns: WCSPattern[], warnings: string[]) {
-  let message = `Successfully exported ${patterns.length} pattern(s)`;
+function createSuccessMessage(
+  patternLists: PatternListWithPatterns[],
+  warnings: string[],
+) {
+  const totalPatterns = patternLists.reduce(
+    (sum, list) => sum + list.patterns.length,
+    0,
+  );
+  let message = `Successfully exported ${patternLists.length} list(s) with ${totalPatterns} pattern(s)`;
   if (warnings.length > 0) {
     message += `\n\nWarnings:\n${warnings.join("\n")}`;
   }
