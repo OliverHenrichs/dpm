@@ -97,6 +97,17 @@ export function applyCollisionAvoidance(
         nodeToMaxSlot,
         intermediateNodeIds,
       );
+      swimlaneSlotAllocations.forEach((slots) => {
+        slots.forEach((slot) => {
+          console.log(
+            `[CollisionAvoidance] Slot ${slot.slotIndex} allocated for edge ${slot.edgeKey} (x: ${slot.xStart.toFixed(0)}-${slot.xEnd.toFixed(0)})`,
+          );
+          const splitKey = slot.edgeKey.split("-");
+          console.log(
+            `[CollisionAvoidance]   -> from: ${patterns.find((p) => p.id === Number(splitKey[0]))?.name}, to: ${patterns.find((p) => p.id === Number(splitKey[1]))?.name}`,
+          );
+        });
+      });
 
       calculateEdgeYRouting(
         edge,
@@ -105,6 +116,7 @@ export function applyCollisionAvoidance(
         nodeToPlannedShift,
         slotIndex,
         edgeToIntermediateNodes,
+        patterns,
       );
 
       // Update planned shifts for nodes that will be affected by this edge
@@ -331,9 +343,14 @@ function calculateEdgeYRouting(
   nodeToPlannedShift: Map<number, number>,
   slotIndex: number,
   edgeToIntermediateNodes: Map<string, IEdgeRoutingInfo>,
+  patterns: Pattern[],
 ) {
   const edgeKey = `${edge.fromId}-${edge.toId}`;
 
+  console.log(
+    `[CollisionAvoidance] intermediate node names for edge ${edgeKey}:`,
+    intermediateNodeIds.map((id) => patterns.find((p) => p.id === id)?.name),
+  );
   // Find the topmost intermediate node (considering planned shifts)
   // We need to consider both original position AND planned shifts
   // because previous edges may have already claimed space
@@ -375,8 +392,8 @@ function calculateEdgeYRouting(
 
   // Log for debugging
   console.log(
-    `[CollisionAvoidance] Edge ${edge.fromId}->${edge.toId}:`,
-    `topNode=${topmostNodeId}, origY=${topmostOriginalY?.toFixed(1)},`,
+    `[CollisionAvoidance] Edge ${patterns.find((p) => p.id === Number(edge.fromId))?.name}->${patterns.find((p) => p.id === Number(edge.toId))?.name}:`,
+    `topNode=${patterns.find((p) => p.id === Number(topmostNodeId))?.name}, origY=${topmostOriginalY?.toFixed(1)},`,
     `plannedShift=${topmostPlannedShift}, slotIndex=${slotIndex}, routingY=${routingY.toFixed(1)},`,
     `clearedSpace=[${clearedSpaceTop.toFixed(1)}, ${clearedSpaceBottom.toFixed(1)}]`,
   );
