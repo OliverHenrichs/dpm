@@ -67,6 +67,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     existing ?? createDefaultPattern(),
   );
   const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [prereqFilter, setPrereqFilter] = useState<string>("");
 
   useEffect(() => {
     const generateThumbnails = async () => {
@@ -217,34 +218,47 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       />
       <View style={styles.prereqContainer}>
         <Text style={styles.label}>{t("prerequisites")}</Text>
+        <TextInput
+          placeholder={t("searchByName")}
+          value={prereqFilter}
+          onChangeText={setPrereqFilter}
+          style={styles.filterInput}
+          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+        />
         <ScrollView horizontal>
-          {patterns.map((p) => (
-            <TouchableOpacity
-              key={p.id}
-              style={[
-                styles.prereqItem,
-                newPattern.prerequisites.includes(p.id) &&
-                  styles.prereqItemSelected,
-              ]}
-              onPress={() => {
-                if (newPattern.prerequisites.includes(p.id)) {
-                  setNewPattern({
-                    ...newPattern,
-                    prerequisites: newPattern.prerequisites.filter(
-                      (id: number) => id !== p.id,
-                    ),
-                  });
-                } else {
-                  setNewPattern({
-                    ...newPattern,
-                    prerequisites: [...newPattern.prerequisites, p.id],
-                  });
-                }
-              }}
-            >
-              <Text style={styles.otherLabel}>{p.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {patterns
+            .filter((p) =>
+              prereqFilter
+                ? p.name.toLowerCase().includes(prereqFilter.toLowerCase())
+                : true,
+            )
+            .map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                style={[
+                  styles.prereqItem,
+                  newPattern.prerequisites.includes(p.id) &&
+                    styles.prereqItemSelected,
+                ]}
+                onPress={() => {
+                  if (newPattern.prerequisites.includes(p.id)) {
+                    setNewPattern({
+                      ...newPattern,
+                      prerequisites: newPattern.prerequisites.filter(
+                        (id: number) => id !== p.id,
+                      ),
+                    });
+                  } else {
+                    setNewPattern({
+                      ...newPattern,
+                      prerequisites: [...newPattern.prerequisites, p.id],
+                    });
+                  }
+                }}
+              >
+                <Text style={styles.otherLabel}>{p.name}</Text>
+              </TouchableOpacity>
+            ))}
         </ScrollView>
       </View>
       <PatternTags
@@ -317,6 +331,11 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     otherLabel: { ...getCommon2ndOrderLabel(palette) },
     // Prerequisites
     prereqContainer: getCommonPrereqContainer(palette),
+    filterInput: {
+      ...baseInput,
+      height: 40,
+      marginBottom: 8,
+    },
     prereqItem: getCommonPrereqItem(palette),
     prereqItemSelected: { backgroundColor: palette[PaletteColor.Primary] },
     prereqItemText: {
