@@ -18,7 +18,8 @@
         "backgroundImage": "./assets/images/favicon.png",
         "monochromeImage": "./assets/images/favicon.png"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.teholi.DancePatternMapper"
     },
     "web": {
       "output": "static",
@@ -42,6 +43,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "af32961a-d382-4766-86aa-3b3ccafbaa2d"
+      }
     }
   }
 }
