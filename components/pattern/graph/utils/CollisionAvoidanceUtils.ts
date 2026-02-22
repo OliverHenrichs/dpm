@@ -24,9 +24,16 @@ interface IEdge {
   toY: number;
 }
 
+interface IAllocatedSlot {
+  slotIndex: number;
+  xStart: number;
+  xEnd: number;
+  edgeKey: string;
+}
+
 /**
  * Apply collision avoidance by detecting skip-level edges and shifting intermediate nodes.
- * This is a second pass after initial positioning.
+ * Uses dynamic slot allocation to allow multiple edges to share cleared space efficiently.
  * Returns information about skip-level edges, which nodes were shifted, and max shifts per type.
  */
 export function applyCollisionAvoidance(
@@ -53,45 +60,80 @@ export function applyCollisionAvoidance(
     patternMap,
   );
 
+  // Sort edges by depth span (longer first) to prioritize routing for more complex edges
+  skipLevelEdges.sort((a, b) => {
+    const spanA = a.toDepth - a.fromDepth;
+    const spanB = b.toDepth - b.fromDepth;
+    return spanB - spanA; // Descending: longer edges first
+  });
+
+  // Track slot allocations per swimlane to enable slot reuse
+  const swimlaneSlotAllocations = new Map<string, IAllocatedSlot[]>(); // typeId -> allocated slots
+
   // For each skip-level edge, find intermediate nodes that would be crossed
   const nodeToMaxSlot = new Map<number, number>(); // patternId -> max slot index of edges crossing it
   const edgeToIntermediateNodes = new Map<string, IEdgeRoutingInfo>(); // "fromId-toId" -> {intermediateNodeIds, routingY, column positions}
+  const nodeToPlannedShift = new Map<number, number>(); // patternId -> cumulative shift planned by previous edges
 
   skipLevelEdges.forEach((edge) => {
     const source = patternMap.get(edge.fromId);
     const edgeType = getType(source);
     if (!edgeType) return;
+
     const intermediateNodeIds = getIntersectingIntermediateNodes(
       edge,
       patterns,
       edgeType,
       depthMap,
       positions,
-      nodeToMaxSlot,
     );
 
     // Calculate routing Y based on the cleared space created by shifting nodes
     if (intermediateNodeIds.length > 0) {
+      const slotIndex = allocateDynamicSlot(
+        edge,
+        edgeType,
+        swimlaneSlotAllocations,
+        nodeToMaxSlot,
+        intermediateNodeIds,
+      );
+
       calculateEdgeYRouting(
         edge,
         intermediateNodeIds,
         originalPositions,
+        nodeToPlannedShift,
+        slotIndex,
         edgeToIntermediateNodes,
       );
+
+      // Update planned shifts for nodes that will be affected by this edge
+      const shiftAmount = (slotIndex + 1) * EDGE_VERTICAL_SPACING;
+
+      intermediateNodeIds.forEach((nodeId) => {
+        const currentPlannedShift = nodeToPlannedShift.get(nodeId) || 0;
+        nodeToPlannedShift.set(
+          nodeId,
+          Math.max(currentPlannedShift, shiftAmount),
+        );
+      });
     }
   });
 
   const nodesToShift = convertToShiftNodes(nodeToMaxSlot);
+  console.log("[CollisionAvoidance] Nodes to shift:", nodesToShift);
   const nodesByDepthType = createNodesByDepthType(
     patterns,
     depthMap,
     positions,
   );
+  console.log("[CollisionAvoidance] Nodes by depth type:", nodesByDepthType);
   const maxShiftPerType = calculateCumulativeShifts(
     nodesByDepthType,
     nodesToShift,
     positions,
   );
+  console.log("[CollisionAvoidance] Max shift per type:", maxShiftPerType);
   const skipLevelEdgeInfos = buildSkipLevelEdgeInfos(
     skipLevelEdges,
     edgeToIntermediateNodes,
@@ -152,19 +194,78 @@ function findSkipLevelEdges(
   return skipLevelEdges;
 }
 
+/**
+ * Dynamically allocate the lowest available slot for an edge.
+ * Slots can be reused if edges don't overlap horizontally (X-axis).
+ */
+function allocateDynamicSlot(
+  edge: IEdge,
+  edgeType: string,
+  swimlaneSlotAllocations: Map<string, IAllocatedSlot[]>,
+  nodeToMaxSlot: Map<number, number>,
+  intermediateNodeIds: number[],
+): number {
+  const edgeKey = `${edge.fromId}-${edge.toId}`;
+  const edgeXStart = LEFT_MARGIN + edge.fromDepth * HORIZONTAL_SPACING;
+  const edgeXEnd = LEFT_MARGIN + edge.toDepth * HORIZONTAL_SPACING;
+
+  // Get existing slot allocations for this swimlane
+  if (!swimlaneSlotAllocations.has(edgeType)) {
+    swimlaneSlotAllocations.set(edgeType, []);
+  }
+  const allocatedSlots = swimlaneSlotAllocations.get(edgeType)!;
+
+  // Find the lowest available slot that doesn't conflict with existing edges
+  let slotIndex = 0;
+  let slotAvailable = false;
+
+  while (!slotAvailable) {
+    // Check if this slot is available (no horizontal overlap with existing edges in this slot)
+    const conflictingEdges = allocatedSlots.filter(
+      (allocated) =>
+        allocated.slotIndex === slotIndex &&
+        !(edgeXEnd <= allocated.xStart || edgeXStart >= allocated.xEnd),
+    );
+
+    if (conflictingEdges.length === 0) {
+      // Slot is available!
+      slotAvailable = true;
+    } else {
+      // Try next slot
+      slotIndex++;
+    }
+  }
+
+  // Allocate this slot for this edge
+  allocatedSlots.push({
+    slotIndex,
+    xStart: edgeXStart,
+    xEnd: edgeXEnd,
+    edgeKey,
+  });
+
+  // Update node-to-slot mapping
+  intermediateNodeIds.forEach((nodeId) => {
+    const currentMaxSlot = nodeToMaxSlot.get(nodeId) || -1;
+    nodeToMaxSlot.set(nodeId, Math.max(currentMaxSlot, slotIndex));
+  });
+
+  console.log(
+    `[CollisionAvoidance] Edge ${edgeKey}: allocated slot ${slotIndex}`,
+    `(x: ${edgeXStart.toFixed(0)}-${edgeXEnd.toFixed(0)})`,
+  );
+
+  return slotIndex;
+}
+
 function getIntersectingIntermediateNodes(
   edge: IEdge,
   patterns: Pattern[],
   edgeType: string,
   depthMap: Map<number, number>,
   positions: Map<number, LayoutPosition>,
-  nodeToMaxSlot: Map<number, number>,
 ) {
   const result: number[] = [];
-
-  // Calculate slot for this edge based on its depth span
-  const depthSpan = edge.toDepth - edge.fromDepth;
-  const slotIndex = Math.max(0, 3 - depthSpan);
 
   // Find all nodes at intermediate depths in the same swimlane
   patterns.forEach((intermediatePattern) => {
@@ -188,12 +289,6 @@ function getIntersectingIntermediateNodes(
 
       // If there's vertical overlap, this edge crosses our node
       if (maxEdgeY >= nodeTop && minEdgeY <= nodeBottom) {
-        // Track the maximum slot index for this node
-        const currentMaxSlot = nodeToMaxSlot.get(intermediatePattern.id) || -1;
-        nodeToMaxSlot.set(
-          intermediatePattern.id,
-          Math.max(currentMaxSlot, slotIndex),
-        );
         result.push(intermediatePattern.id);
       }
     }
@@ -205,23 +300,34 @@ function calculateEdgeYRouting(
   edge: IEdge,
   intermediateNodeIds: number[],
   originalPositions: Map<number, number>,
+  nodeToPlannedShift: Map<number, number>,
+  slotIndex: number,
   edgeToIntermediateNodes: Map<string, IEdgeRoutingInfo>,
 ) {
   const edgeKey = `${edge.fromId}-${edge.toId}`;
 
-  // Find the topmost intermediate node (before shifting)
+  // Find the topmost intermediate node (considering planned shifts)
+  // We need to consider both original position AND planned shifts
+  // because previous edges may have already claimed space
   const topmostNodeId = intermediateNodeIds.reduce((topId, nodeId) => {
     const topOrigY = originalPositions.get(topId) || Infinity;
     const nodeOrigY = originalPositions.get(nodeId) || Infinity;
-    return nodeOrigY < topOrigY ? nodeId : topId;
+    // Account for planned shifts to find the actual topmost node after shifts
+    const topPlannedShift = nodeToPlannedShift.get(topId) || 0;
+    const nodePlannedShift = nodeToPlannedShift.get(nodeId) || 0;
+    const topFinalY = topOrigY + topPlannedShift;
+    const nodeFinalY = nodeOrigY + nodePlannedShift;
+    return nodeFinalY < topFinalY ? nodeId : topId;
   }, intermediateNodeIds[0]);
 
   const topmostOriginalY = originalPositions.get(topmostNodeId);
+  const topmostPlannedShift = nodeToPlannedShift.get(topmostNodeId) || 0;
 
   // The cleared space is created ABOVE the shifted node
+  // If node is already planned to shift, we can potentially reuse that cleared space
   // Original node occupies: [originalY - NODE_HEIGHT/2, originalY + NODE_HEIGHT/2]
-  // After shift by shiftAmount, node occupies: [originalY + shiftAmount - NODE_HEIGHT/2, ...]
-  // Cleared space is: [originalY - NODE_HEIGHT/2, originalY + shiftAmount - NODE_HEIGHT/2]
+  // After shift by plannedShift, node occupies: [originalY + plannedShift - NODE_HEIGHT/2, ...]
+  // Cleared space available: [originalY - NODE_HEIGHT/2, originalY + plannedShift - NODE_HEIGHT/2]
 
   const halfNodeHeight = NODE_HEIGHT / 2;
   const clearedSpaceTop =
@@ -229,13 +335,24 @@ function calculateEdgeYRouting(
       ? topmostOriginalY - halfNodeHeight
       : edge.fromY;
 
-  // Longer edges (spanning more columns) route higher to avoid later intersections
-  // Divide cleared space into slots based on depth span
-  // Edge spanning 3 columns gets slot 0 (highest), spanning 2 gets slot 1, etc.
-  const depthSpan = edge.toDepth - edge.fromDepth;
+  // If there's already a planned shift for this node, the cleared space extends further down
+  // We can use this information to see if we need additional clearing
+  const clearedSpaceBottom =
+    topmostOriginalY !== undefined && topmostPlannedShift > 0
+      ? topmostOriginalY + topmostPlannedShift - halfNodeHeight
+      : clearedSpaceTop;
+
+  // Use the dynamically allocated slot index
   const slotHeight = EDGE_VERTICAL_SPACING;
-  const slotIndex = Math.max(0, 3 - depthSpan); // Invert: longer span = lower index = higher position
   const routingY = clearedSpaceTop + slotIndex * slotHeight;
+
+  // Log for debugging
+  console.log(
+    `[CollisionAvoidance] Edge ${edge.fromId}->${edge.toId}:`,
+    `topNode=${topmostNodeId}, origY=${topmostOriginalY?.toFixed(1)},`,
+    `plannedShift=${topmostPlannedShift}, slotIndex=${slotIndex}, routingY=${routingY.toFixed(1)},`,
+    `clearedSpace=[${clearedSpaceTop.toFixed(1)}, ${clearedSpaceBottom.toFixed(1)}]`,
+  );
 
   // Calculate X positions of first and last intermediate columns
   // These define where the curve should reach/leave the routing level
