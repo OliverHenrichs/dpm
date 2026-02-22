@@ -85,7 +85,6 @@ export function applyCollisionAvoidance(
       patterns,
       edgeType,
       depthMap,
-      positions,
     );
 
     // Calculate routing Y based on the cleared space created by shifting nodes
@@ -97,17 +96,6 @@ export function applyCollisionAvoidance(
         nodeToMaxSlot,
         intermediateNodeIds,
       );
-      swimlaneSlotAllocations.forEach((slots) => {
-        slots.forEach((slot) => {
-          console.log(
-            `[CollisionAvoidance] Slot ${slot.slotIndex} allocated for edge ${slot.edgeKey} (x: ${slot.xStart.toFixed(0)}-${slot.xEnd.toFixed(0)})`,
-          );
-          const splitKey = slot.edgeKey.split("-");
-          console.log(
-            `[CollisionAvoidance]   -> from: ${patterns.find((p) => p.id === Number(splitKey[0]))?.name}, to: ${patterns.find((p) => p.id === Number(splitKey[1]))?.name}`,
-          );
-        });
-      });
 
       calculateEdgeYRouting(
         edge,
@@ -116,7 +104,6 @@ export function applyCollisionAvoidance(
         nodeToPlannedShift,
         slotIndex,
         edgeToIntermediateNodes,
-        patterns,
       );
 
       // Update planned shifts for nodes that will be affected by this edge
@@ -135,23 +122,19 @@ export function applyCollisionAvoidance(
   // Calculate the maximum slot index used in each swimlane
   // This determines how much space needs to be cleared
   const maxSlotPerType = calculateMaxSlotPerType(swimlaneSlotAllocations);
-  console.log("[CollisionAvoidance] Max slot per type:", maxSlotPerType);
 
   const nodesToShift = convertToShiftNodes(nodeToMaxSlot);
-  console.log("[CollisionAvoidance] Nodes to shift:", nodesToShift);
   const nodesByDepthType = createNodesByDepthType(
     patterns,
     depthMap,
     positions,
   );
-  console.log("[CollisionAvoidance] Nodes by depth type:", nodesByDepthType);
   const maxShiftPerType = calculateCumulativeShifts(
     nodesByDepthType,
     nodesToShift,
     positions,
     maxSlotPerType, // Pass slot info to ensure swimlane heights account for all slots
   );
-  console.log("[CollisionAvoidance] Max shift per type:", maxShiftPerType);
   const skipLevelEdgeInfos = buildSkipLevelEdgeInfos(
     skipLevelEdges,
     edgeToIntermediateNodes,
@@ -268,11 +251,6 @@ function allocateDynamicSlot(
     nodeToMaxSlot.set(nodeId, Math.max(currentMaxSlot, slotIndex));
   });
 
-  console.log(
-    `[CollisionAvoidance] Edge ${edgeKey}: allocated slot ${slotIndex}`,
-    `(x: ${edgeXStart.toFixed(0)}-${edgeXEnd.toFixed(0)})`,
-  );
-
   return slotIndex;
 }
 
@@ -303,7 +281,6 @@ function getIntersectingIntermediateNodes(
   patterns: Pattern[],
   edgeType: string,
   depthMap: Map<number, number>,
-  positions: Map<number, LayoutPosition>,
 ) {
   const result: number[] = [];
 
@@ -327,11 +304,6 @@ function getIntersectingIntermediateNodes(
     }
   });
 
-  console.log(
-    `[CollisionAvoidance] All intermediate nodes for edge ${edge.fromId}->${edge.toId} at depths ${edge.fromDepth + 1} to ${edge.toDepth - 1}:`,
-    result.map((id) => patterns.find((p) => p.id === id)?.name),
-  );
-
   return result;
 }
 
@@ -342,14 +314,8 @@ function calculateEdgeYRouting(
   nodeToPlannedShift: Map<number, number>,
   slotIndex: number,
   edgeToIntermediateNodes: Map<string, IEdgeRoutingInfo>,
-  patterns: Pattern[],
 ) {
   const edgeKey = `${edge.fromId}-${edge.toId}`;
-
-  console.log(
-    `[CollisionAvoidance] intermediate node names for edge ${edgeKey}:`,
-    intermediateNodeIds.map((id) => patterns.find((p) => p.id === id)?.name),
-  );
   // Find the topmost intermediate node (considering planned shifts)
   // We need to consider both original position AND planned shifts
   // because previous edges may have already claimed space
@@ -365,7 +331,6 @@ function calculateEdgeYRouting(
   }, intermediateNodeIds[0]);
 
   const topmostOriginalY = originalPositions.get(topmostNodeId);
-  const topmostPlannedShift = nodeToPlannedShift.get(topmostNodeId) || 0;
 
   // The cleared space is created ABOVE the shifted node
   // If node is already planned to shift, we can potentially reuse that cleared space
@@ -379,23 +344,8 @@ function calculateEdgeYRouting(
       ? topmostOriginalY - halfNodeHeight
       : edge.fromY;
 
-  // If there's already a planned shift for this node, the cleared space extends further down
-  // We can use this information to see if we need additional clearing
-  const clearedSpaceBottom =
-    topmostOriginalY !== undefined && topmostPlannedShift > 0
-      ? topmostOriginalY + topmostPlannedShift - halfNodeHeight
-      : clearedSpaceTop;
-
   // Use the dynamically allocated slot index
   const routingY = clearedSpaceTop + slotIndex * EDGE_VERTICAL_SPACING;
-
-  // Log for debugging
-  console.log(
-    `[CollisionAvoidance] Edge ${patterns.find((p) => p.id === Number(edge.fromId))?.name}->${patterns.find((p) => p.id === Number(edge.toId))?.name}:`,
-    `topNode=${patterns.find((p) => p.id === Number(topmostNodeId))?.name}, origY=${topmostOriginalY?.toFixed(1)},`,
-    `plannedShift=${topmostPlannedShift}, slotIndex=${slotIndex}, routingY=${routingY.toFixed(1)},`,
-    `clearedSpace=[${clearedSpaceTop.toFixed(1)}, ${clearedSpaceBottom.toFixed(1)}]`,
-  );
 
   // Calculate X positions of first and last intermediate columns
   // These define where the curve should reach/leave the routing level
