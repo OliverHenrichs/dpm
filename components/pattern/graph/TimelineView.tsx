@@ -9,7 +9,6 @@ import {
 import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
 import { Pattern } from "@/components/pattern/types/PatternList";
 import { PatternType } from "@/components/pattern/types/PatternType";
-import { WCSPatternType } from "@/components/pattern/types/WCSPatternEnums";
 import { PaletteColor } from "@/components/common/ColorPalette";
 import {
   generateEdges,
@@ -202,25 +201,6 @@ function drawSwimlanes(swimlanes: SwimlaneInfo[], svgWidth: number) {
       ))}
     </>
   );
-}
-
-// Helper to get WCS type colors for backward compatibility
-function getWCSTypeColor(
-  type: WCSPatternType,
-  palette: Record<PaletteColor, string>,
-): string {
-  switch (type) {
-    case WCSPatternType.PUSH:
-      return palette[PaletteColor.Primary];
-    case WCSPatternType.PASS:
-      return palette[PaletteColor.SecondaryText];
-    case WCSPatternType.WHIP:
-      return palette[PaletteColor.Accent];
-    case WCSPatternType.TUCK:
-      return palette[PaletteColor.Error];
-    default:
-      return palette[PaletteColor.Primary];
-  }
 }
 
 const getStyles = (palette: Record<PaletteColor, string>) =>
