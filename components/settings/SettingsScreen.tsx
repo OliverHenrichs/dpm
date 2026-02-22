@@ -98,7 +98,10 @@ const SettingsScreen: React.FC = () => {
       const result = await exportPatternLists(
         selectedLists as PatternListWithPatterns[],
       );
-      Alert.alert(result.success ? t("success") : t("error"), result.message);
+      // Only show alert for errors, not success (since native share API doesn't report cancellation)
+      if (!result.success) {
+        Alert.alert(t("error"), result.message);
+      }
     } catch (error) {
       Alert.alert(
         t("error"),
@@ -113,6 +116,10 @@ const SettingsScreen: React.FC = () => {
     setIsLoading(true);
     try {
       const result = await importPatternLists();
+      if (result.cancelled) {
+        // User cancelled file selection, silently return
+        return;
+      }
       if (result.success && result.patternLists) {
         setImportedLists(result.patternLists);
         setShowImportModal(true);

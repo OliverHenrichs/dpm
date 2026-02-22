@@ -8,6 +8,7 @@ import {
 
 interface IImportPatternListResult {
   success: boolean;
+  cancelled?: boolean;
   patternLists?: PatternListWithPatterns[];
   message: string;
 }
@@ -69,7 +70,7 @@ async function getImportDocument() {
     copyToCacheDirectory: true,
   });
   if (result.canceled) {
-    return createResult(false, "Import cancelled");
+    return createResult(false, "", undefined, true);
   }
   return result.assets[0].uri;
 }
@@ -155,10 +156,12 @@ function createResult(
   success: boolean,
   message: string,
   patternLists?: PatternListWithPatterns[],
+  cancelled?: boolean,
 ): IImportPatternListResult {
   return {
     success,
     message,
     ...(patternLists && { patternLists }),
+    ...(cancelled && { cancelled }),
   };
 }

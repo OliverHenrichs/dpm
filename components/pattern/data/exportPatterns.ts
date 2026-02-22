@@ -13,6 +13,8 @@ interface IVideoList {
 
 /**
  * Export selected pattern lists to a JSON file with embedded videos
+ * Note: Always returns success=true after sharing dialog is opened, as the native
+ * sharing API does not distinguish between user cancellation and successful sharing
  */
 export async function exportPatternLists(
   patternLists: PatternListWithPatterns[],
