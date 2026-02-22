@@ -308,6 +308,9 @@ function getIntersectingIntermediateNodes(
   const result: number[] = [];
 
   // Find all nodes at intermediate depths in the same swimlane
+  // We include ALL nodes at intermediate depths, not just those with vertical overlap,
+  // because we need to account for space cleared by other edges that may have already
+  // shifted nodes in this swimlane
   patterns.forEach((intermediatePattern) => {
     if (getType(intermediatePattern) !== edgeType) return;
 
@@ -318,21 +321,17 @@ function getIntersectingIntermediateNodes(
       intermediateDepth > edge.fromDepth &&
       intermediateDepth < edge.toDepth
     ) {
-      const intermediatePos = positions.get(intermediatePattern.id);
-      if (!intermediatePos) return;
-
-      // Check if the edge would pass through this node's vertical region
-      const minEdgeY = Math.min(edge.fromY, edge.toY);
-      const maxEdgeY = Math.max(edge.fromY, edge.toY);
-      const nodeTop = intermediatePos.y - NODE_HEIGHT / 2;
-      const nodeBottom = intermediatePos.y + NODE_HEIGHT / 2;
-
-      // If there's vertical overlap, this edge crosses our node
-      if (maxEdgeY >= nodeTop && minEdgeY <= nodeBottom) {
-        result.push(intermediatePattern.id);
-      }
+      // Include ALL nodes at intermediate depths in the same swimlane
+      // This ensures we account for space cleared by other edges' routing
+      result.push(intermediatePattern.id);
     }
   });
+
+  console.log(
+    `[CollisionAvoidance] All intermediate nodes for edge ${edge.fromId}->${edge.toId} at depths ${edge.fromDepth + 1} to ${edge.toDepth - 1}:`,
+    result.map((id) => patterns.find((p) => p.id === id)?.name),
+  );
+
   return result;
 }
 
