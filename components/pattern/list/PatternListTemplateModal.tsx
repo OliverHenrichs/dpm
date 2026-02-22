@@ -28,7 +28,6 @@ interface PatternListTemplateModalProps {
 interface Template {
   id: string;
   name: string;
-  danceStyle: string;
   description: string;
   create: () => PatternList;
 }
@@ -37,14 +36,12 @@ const TEMPLATES: Template[] = [
   {
     id: "wcs",
     name: "West Coast Swing",
-    danceStyle: "wcs",
     description: "4 pattern types: Push, Pass, Whip, Tuck",
     create: createWestCoastSwingList,
   },
   {
     id: "salsa",
     name: "Salsa",
-    danceStyle: "salsa",
     description:
       "5 pattern types: Basic, Cross-body, Right turn, Left turn, Shine",
     create: createSalsaList,
@@ -52,14 +49,18 @@ const TEMPLATES: Template[] = [
   {
     id: "bachata",
     name: "Bachata",
-    danceStyle: "bachata",
     description: "4 pattern types: Basic, Turn, Dip, Wave",
     create: createBachataList,
   },
   {
     id: "tango",
     name: "Argentine Tango",
-    danceStyle: "tango",
+    description: "5 pattern types: Walk, Ochos, Giros, Sacadas, Boleos",
+    create: createTangoList,
+  },
+  {
+    id: "lindy",
+    name: "Lindy Hop",
     description: "5 pattern types: Walk, Ochos, Giros, Sacadas, Boleos",
     create: createTangoList,
   },

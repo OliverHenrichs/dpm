@@ -109,7 +109,6 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Text style={[styles.listName, isActive && styles.listNameActive]}>
             {item.name}
           </Text>
-          <Text style={styles.listStyle}>{item.danceStyle.toUpperCase()}</Text>
           <View style={styles.typeColorRow}>
             {item.patternTypes.slice(0, 4).map((type) => (
               <View
@@ -117,11 +116,6 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
                 style={[styles.typeColorDot, { backgroundColor: type.color }]}
               />
             ))}
-            {item.patternTypes.length > 4 && (
-              <Text style={styles.moreTypes}>
-                +{item.patternTypes.length - 4}
-              </Text>
-            )}
           </View>
         </View>
         {isActive && <Text style={styles.activeIndicator}>✓</Text>}

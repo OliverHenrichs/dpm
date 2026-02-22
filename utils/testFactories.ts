@@ -36,7 +36,6 @@ export function createTestPatternList(
   return {
     id: generateUUID(),
     name: "Test Dance",
-    danceStyle: "test",
     patternTypes: defaultTypes,
     createdAt: now,
     updatedAt: now,

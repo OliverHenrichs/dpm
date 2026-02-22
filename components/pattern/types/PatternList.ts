@@ -7,7 +7,6 @@ import { PatternType } from "./PatternType";
 export interface PatternList {
   id: string; // UUID for the list
   name: string; // Display name (e.g., "West Coast Swing", "Salsa")
-  danceStyle: string; // Dance style identifier
   patternTypes: PatternType[]; // Available pattern types for this list
   createdAt: number; // Timestamp
   updatedAt: number; // Timestamp
