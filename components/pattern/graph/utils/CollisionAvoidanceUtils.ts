@@ -120,6 +120,11 @@ export function applyCollisionAvoidance(
     }
   });
 
+  // Calculate the maximum slot index used in each swimlane
+  // This determines how much space needs to be cleared
+  const maxSlotPerType = calculateMaxSlotPerType(swimlaneSlotAllocations);
+  console.log("[CollisionAvoidance] Max slot per type:", maxSlotPerType);
+
   const nodesToShift = convertToShiftNodes(nodeToMaxSlot);
   console.log("[CollisionAvoidance] Nodes to shift:", nodesToShift);
   const nodesByDepthType = createNodesByDepthType(
@@ -132,6 +137,7 @@ export function applyCollisionAvoidance(
     nodesByDepthType,
     nodesToShift,
     positions,
+    maxSlotPerType, // Pass slot info to ensure swimlane heights account for all slots
   );
   console.log("[CollisionAvoidance] Max shift per type:", maxShiftPerType);
   const skipLevelEdgeInfos = buildSkipLevelEdgeInfos(
@@ -258,6 +264,28 @@ function allocateDynamicSlot(
   return slotIndex;
 }
 
+/**
+ * Calculate the maximum slot index used in each swimlane.
+ * This determines the total cleared space needed for routing.
+ */
+function calculateMaxSlotPerType(
+  swimlaneSlotAllocations: Map<string, IAllocatedSlot[]>,
+): Map<string, number> {
+  const maxSlotPerType = new Map<string, number>();
+
+  swimlaneSlotAllocations.forEach((allocations, typeId) => {
+    let maxSlot = -1;
+    allocations.forEach((allocation) => {
+      maxSlot = Math.max(maxSlot, allocation.slotIndex);
+    });
+    if (maxSlot >= 0) {
+      maxSlotPerType.set(typeId, maxSlot);
+    }
+  });
+
+  return maxSlotPerType;
+}
+
 function getIntersectingIntermediateNodes(
   edge: IEdge,
   patterns: Pattern[],
@@ -343,8 +371,7 @@ function calculateEdgeYRouting(
       : clearedSpaceTop;
 
   // Use the dynamically allocated slot index
-  const slotHeight = EDGE_VERTICAL_SPACING;
-  const routingY = clearedSpaceTop + slotIndex * slotHeight;
+  const routingY = clearedSpaceTop + slotIndex * EDGE_VERTICAL_SPACING;
 
   // Log for debugging
   console.log(
@@ -416,6 +443,7 @@ function calculateCumulativeShifts(
   nodesByDepthType: Map<string, number[]>,
   nodesToShift: Map<number, number>,
   positions: Map<number, LayoutPosition>,
+  maxSlotPerType: Map<string, number>,
 ) {
   // Calculate cumulative shifts for each stack position
   // Key insight: to maintain equal spacing, each node must shift by the MAXIMUM
@@ -445,9 +473,17 @@ function calculateCumulativeShifts(
       previousShift = cumulativeShift;
     }
 
+    // Use the maximum of:
+    // - The actual max shift in this stack
+    // - The space needed for all slots (maxSlot + 1) * EDGE_VERTICAL_SPACING
+    const maxSlotIndex = maxSlotPerType.get(type) ?? -1;
+    const spaceNeededForSlots =
+      maxSlotIndex >= 0 ? (maxSlotIndex + 1) * EDGE_VERTICAL_SPACING : 0;
+    const finalMaxShift = Math.max(maxShiftInStack, spaceNeededForSlots);
+
     // Track max shift per swimlane type for height adjustment
     const currentMax = maxShiftPerType.get(type) || 0;
-    maxShiftPerType.set(type, Math.max(currentMax, maxShiftInStack));
+    maxShiftPerType.set(type, Math.max(currentMax, finalMaxShift));
   });
 
   // Apply the cumulative shifts
