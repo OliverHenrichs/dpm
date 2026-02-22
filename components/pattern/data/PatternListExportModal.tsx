@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Modal,
   ScrollView,
@@ -12,6 +12,9 @@ import { getPalette, PaletteColor } from "@/components/common/ColorPalette";
 import { useThemeContext } from "@/components/common/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { PatternListWithPatterns } from "@/components/pattern/data/types/IExportData";
+import { useExportSelection } from "@/components/pattern/data/hooks/useExportSelection";
+import { SelectAllButton } from "@/components/pattern/data/components/SelectAllButton";
+import { ExportListItem } from "@/components/pattern/data/components/ExportListItem";
 
 interface PatternListExportModalProps {
   visible: boolean;
@@ -29,28 +32,15 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const styles = getStyles(palette);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    new Set(patternLists.map((l) => l.id)),
-  );
-  const toggleSelection = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-  const toggleSelectAll = () => {
-    if (selectedIds.size === patternLists.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(patternLists.map((l) => l.id)));
-    }
-  };
+  const {
+    selectedIds,
+    toggleSelection,
+    toggleSelectAll,
+    getSelectedLists,
+    stats,
+  } = useExportSelection({ patternLists });
   const handleExport = () => {
-    const selectedLists = patternLists.filter((l) => selectedIds.has(l.id));
-    onExport(selectedLists);
+    onExport(getSelectedLists());
   };
   return (
     <Modal
@@ -62,38 +52,20 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>{t("selectListsToExport")}</Text>
-          <TouchableOpacity
-            style={styles.selectAllButton}
-            onPress={toggleSelectAll}
-          >
-            <Text style={styles.selectAllText}>
-              {selectedIds.size === patternLists.length
-                ? t("deselectAll")
-                : t("selectAll")}
-            </Text>
-          </TouchableOpacity>
+          <SelectAllButton
+            allSelected={stats.allSelected}
+            onToggle={toggleSelectAll}
+            palette={palette}
+          />
           <ScrollView style={styles.listContainer}>
             {patternLists.map((list) => (
-              <TouchableOpacity
+              <ExportListItem
                 key={list.id}
-                style={[
-                  styles.listItem,
-                  selectedIds.has(list.id) && styles.listItemSelected,
-                ]}
-                onPress={() => toggleSelection(list.id)}
-              >
-                <View style={styles.checkbox}>
-                  {selectedIds.has(list.id) && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </View>
-                <View style={styles.listInfo}>
-                  <Text style={styles.listName}>{list.name}</Text>
-                  <Text style={styles.listMeta}>
-                    {list.patterns.length} {t("patterns")} • {list.danceStyle}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                list={list}
+                isSelected={selectedIds.has(list.id)}
+                onToggle={() => toggleSelection(list.id)}
+                palette={palette}
+              />
             ))}
           </ScrollView>
           <View style={styles.buttonRow}>
@@ -103,13 +75,13 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
             <TouchableOpacity
               style={[
                 styles.exportButton,
-                selectedIds.size === 0 && styles.exportButtonDisabled,
+                stats.noneSelected && styles.exportButtonDisabled,
               ]}
               onPress={handleExport}
-              disabled={selectedIds.size === 0}
+              disabled={stats.noneSelected}
             >
               <Text style={styles.exportButtonText}>
-                {t("export")} ({selectedIds.size})
+                {t("export")} ({stats.selectedCount})
               </Text>
             </TouchableOpacity>
           </View>
@@ -141,62 +113,9 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       color: palette[PaletteColor.PrimaryText],
       marginBottom: 16,
     },
-    selectAllButton: {
-      alignSelf: "flex-end",
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      marginBottom: 12,
-    },
-    selectAllText: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: palette[PaletteColor.Primary],
-    },
     listContainer: {
       maxHeight: 400,
       marginBottom: 16,
-    },
-    listItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 8,
-      backgroundColor: palette[PaletteColor.CardBackground],
-      borderWidth: 2,
-      borderColor: "transparent",
-    },
-    listItemSelected: {
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.Primary] + "15",
-    },
-    checkbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 4,
-      borderWidth: 2,
-      borderColor: palette[PaletteColor.Border],
-      marginRight: 12,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    checkmark: {
-      color: palette[PaletteColor.Primary],
-      fontSize: 14,
-      fontWeight: "bold",
-    },
-    listInfo: {
-      flex: 1,
-    },
-    listName: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
-      marginBottom: 4,
-    },
-    listMeta: {
-      fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
     },
     buttonRow: {
       flexDirection: "row",
