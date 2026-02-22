@@ -49,7 +49,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     headerLeft: { flexDirection: "row", alignItems: "center" },
     headerIcon: { fontSize: 32, marginRight: 8 },
     headerTitle: {
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: "bold",
       color: palette[PaletteColor.PrimaryText],
     },

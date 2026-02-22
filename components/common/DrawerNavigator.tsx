@@ -44,19 +44,11 @@ export default function DrawerNavigator() {
           }}
           drawerContent={(props) => <CustomDrawerContent {...props} />}
         >
-          {/* Tier 1: Pattern Lists and Settings */}
           <Drawer.Screen
             name="PatternLists"
             component={PatternListSelector}
             options={{ title: t("patternLists") }}
           />
-          <Drawer.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{ title: t("settingsTab") }}
-          />
-
-          {/* Tier 2: Pattern management for active list */}
           <Drawer.Screen
             name="Patterns"
             component={PatternListManager}
@@ -66,6 +58,11 @@ export default function DrawerNavigator() {
             name="PatternGraph"
             component={PatternGraphScreen}
             options={{ title: t("patternGraph") }}
+          />
+          <Drawer.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ title: t("settingsTab") }}
           />
         </Drawer.Navigator>
       </SafeAreaView>
