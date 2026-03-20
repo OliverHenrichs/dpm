@@ -9,6 +9,7 @@ export interface PatternListWithPatterns extends PatternList {
 export interface IPatternListExportData {
   version: string;
   exportDate: string;
+  includesVideos: boolean; // false when user opted out of embedding local videos
   patternLists: PatternListWithPatterns[];
   videos: {
     [key: string]: string; // key: original local path, value: base64 encoded video

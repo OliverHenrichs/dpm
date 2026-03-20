@@ -126,5 +126,6 @@
   "editPatternList": "Edit Pattern List",
   "saveChanges": "Save",
   "listActions": "List Actions",
-  "cannotRemoveTypeHasPatterns": "Cannot remove — type has patterns"
+  "cannotRemoveTypeHasPatterns": "Cannot remove — type has patterns",
+  "includeVideosInExport": "Include Videos"
 }

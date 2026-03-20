@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -19,7 +20,7 @@ import { ExportListItem } from "@/components/pattern/data/components/ExportListI
 interface PatternListExportModalProps {
   visible: boolean;
   patternLists: PatternListWithPatterns[];
-  onExport: (selectedLists: PatternList[]) => void;
+  onExport: (selectedLists: PatternList[], includeVideos: boolean) => void;
   onCancel: () => void;
 }
 const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
@@ -39,8 +40,9 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
     getSelectedLists,
     stats,
   } = useExportSelection({ patternLists });
+  const [includeVideos, setIncludeVideos] = useState(true);
   const handleExport = () => {
-    onExport(getSelectedLists());
+    onExport(getSelectedLists(), includeVideos);
   };
   return (
     <Modal
@@ -68,6 +70,18 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               />
             ))}
           </ScrollView>
+          <View style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>{t("includeVideosInExport")}</Text>
+            <Switch
+              value={includeVideos}
+              onValueChange={setIncludeVideos}
+              trackColor={{
+                false: palette[PaletteColor.SecondaryText],
+                true: palette[PaletteColor.Primary],
+              }}
+              thumbColor={palette[PaletteColor.Border]}
+            />
+          </View>
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
               <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
@@ -116,6 +130,17 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     listContainer: {
       maxHeight: 400,
       marginBottom: 16,
+    },
+    toggleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 10,
+      marginBottom: 12,
+    },
+    toggleLabel: {
+      fontSize: 15,
+      color: palette[PaletteColor.PrimaryText],
     },
     buttonRow: {
       flexDirection: "row",

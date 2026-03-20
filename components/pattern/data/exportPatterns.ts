@@ -18,10 +18,15 @@ interface IVideoList {
  */
 export async function exportPatternLists(
   patternLists: PatternListWithPatterns[],
+  includeVideos: boolean = true,
 ): Promise<{ success: boolean; message: string }> {
   try {
     const warnings: string[] = [];
-    const exportData = await createExportData(patternLists, warnings);
+    const exportData = await createExportData(
+      patternLists,
+      warnings,
+      includeVideos,
+    );
     const fileUri = await writeExportData(exportData);
 
     if (!(await Sharing.isAvailableAsync())) {
@@ -42,20 +47,34 @@ export async function exportPatternLists(
 async function createExportData(
   patternLists: PatternListWithPatterns[],
   warnings: string[],
+  includeVideos: boolean,
 ): Promise<IPatternListExportData> {
   const videos: IVideoList = {};
 
-  // Process videos from all patterns in all lists
+  // Build the lists, optionally embedding videos and stripping local refs
+  const exportedLists: PatternListWithPatterns[] = [];
   for (const list of patternLists) {
+    const exportedPatterns = [];
     for (const pattern of list.patterns) {
-      await addPatternVideos(pattern.id, pattern.videoRefs, videos, warnings);
+      if (includeVideos) {
+        await addPatternVideos(pattern.id, pattern.videoRefs, videos, warnings);
+        exportedPatterns.push(pattern);
+      } else {
+        // Strip local video refs — they are device-specific and not portable
+        const portableRefs = (pattern.videoRefs ?? []).filter(
+          (ref) => ref.type !== "local",
+        );
+        exportedPatterns.push({ ...pattern, videoRefs: portableRefs });
+      }
     }
+    exportedLists.push({ ...list, patterns: exportedPatterns });
   }
 
   return {
     version: exportDataVersion,
     exportDate: new Date().toISOString(),
-    patternLists,
+    includesVideos: includeVideos,
+    patternLists: exportedLists,
     videos,
   };
 }

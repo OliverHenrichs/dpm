@@ -126,5 +126,6 @@
   "editPatternList": "Figurenliste bearbeiten",
   "saveChanges": "Speichern",
   "listActions": "Listenaktionen",
-  "cannotRemoveTypeHasPatterns": "Kann nicht entfernt werden – Typ hat Figuren"
+  "cannotRemoveTypeHasPatterns": "Kann nicht entfernt werden – Typ hat Figuren",
+  "includeVideosInExport": "Videos einbetten"
 }

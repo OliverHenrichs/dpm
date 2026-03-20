@@ -101,9 +101,10 @@ async function tryAddLocalVideoRef(
     } catch {
       warnings.push(`Failed to restore video for pattern ID ${patternId}`);
     }
-  } else {
+  } else if (data.includesVideos) {
     warnings.push(`Video data missing for pattern ID ${patternId}`);
   }
+  // When includesVideos === false the local ref was intentionally stripped — silently skip it
 }
 
 async function addVideoRefs(
