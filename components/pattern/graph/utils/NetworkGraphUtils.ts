@@ -116,6 +116,24 @@ export function calculateGraphLayout(
     );
   });
 
+  function getPositionDeferred(p: Pattern) {
+    // Place midpoint between all positioned prerequisites, then push outward.
+    const prereqPositions = p.prerequisites.map((id) => positions.get(id)!);
+    const avgX =
+      prereqPositions.reduce((s, pos) => s + pos.x, 0) / prereqPositions.length;
+    const avgY =
+      prereqPositions.reduce((s, pos) => s + pos.y, 0) / prereqPositions.length;
+    // Outward direction from ellipse centre
+    const dx = avgX - centerX;
+    const dy = avgY - centerY;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    positions.set(p.id, {
+      x: avgX + (dx / len) * DEPTH_SPACING,
+      y: avgY + (dy / len) * DEPTH_SPACING,
+    });
+    return { dx, dy };
+  }
+
   // Deferred pass: some nodes require prerequisites from multiple DFS sectors
   // and may still be unpositioned. Retry until no more nodes can be placed.
   let progress = true;
@@ -128,22 +146,7 @@ export function calculateGraphLayout(
       ) {
         positioned.add(p.id);
         progress = true;
-        // Place midpoint between all positioned prerequisites, then push outward.
-        const prereqPositions = p.prerequisites.map((id) => positions.get(id)!);
-        const avgX =
-          prereqPositions.reduce((s, pos) => s + pos.x, 0) /
-          prereqPositions.length;
-        const avgY =
-          prereqPositions.reduce((s, pos) => s + pos.y, 0) /
-          prereqPositions.length;
-        // Outward direction from ellipse center
-        const dx = avgX - centerX;
-        const dy = avgY - centerY;
-        const len = Math.sqrt(dx * dx + dy * dy) || 1;
-        positions.set(p.id, {
-          x: avgX + (dx / len) * DEPTH_SPACING,
-          y: avgY + (dy / len) * DEPTH_SPACING,
-        });
+        const { dx, dy } = getPositionDeferred(p);
         placeChildren(p.id, positions.get(p.id)!, Math.atan2(dy, dx));
       }
     });
