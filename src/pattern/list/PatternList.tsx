@@ -94,6 +94,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         onApplyFilter={setFilter}
         currentFilter={filter}
         allPatterns={props.patterns}
+        patternTypes={props.patternTypes}
       />
 
       <SortBottomSheet

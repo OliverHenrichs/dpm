@@ -10,7 +10,8 @@ import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import { PatternLevel, WCSPatternType } from "@/src/pattern/types/PatternLevel";
+import { PatternLevel } from "@/src/pattern/types/PatternLevel";
+import { PatternType } from "@/src/pattern/types/PatternType";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import NameFilter from "./NameFilter";
 import TypeFilter from "./TypeFilter";
@@ -20,7 +21,7 @@ import TagFilter from "./TagFilter";
 
 export interface PatternFilter {
   name: string;
-  types: WCSPatternType[];
+  types: string[];
   levels: PatternLevel[];
   counts?: number;
   tags: string[];
@@ -32,6 +33,7 @@ interface PatternFilterBottomSheetProps {
   onApplyFilter: (filter: PatternFilter) => void;
   currentFilter: PatternFilter;
   allPatterns: IPattern[];
+  patternTypes?: PatternType[];
 }
 
 const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
@@ -40,6 +42,7 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
   onApplyFilter,
   currentFilter,
   allPatterns,
+  patternTypes = [],
 }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
@@ -59,12 +62,12 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
     );
   }, [allPatterns]);
 
-  const toggleType = (type: WCSPatternType) => {
+  const toggleType = (typeId: string) => {
     setFilter((prev) => ({
       ...prev,
-      types: prev.types.includes(type)
-        ? prev.types.filter((t) => t !== type)
-        : [...prev.types, type],
+      types: prev.types.includes(typeId)
+        ? prev.types.filter((t) => t !== typeId)
+        : [...prev.types, typeId],
     }));
   };
 
@@ -128,6 +131,7 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
         />
 
         <TypeFilter
+          availableTypes={patternTypes}
           selectedTypes={filter.types}
           onToggle={toggleType}
           palette={palette}

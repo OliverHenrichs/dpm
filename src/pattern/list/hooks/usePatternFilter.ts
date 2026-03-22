@@ -15,7 +15,7 @@ export function usePatternFilter(patterns: IPattern[], filter: PatternFilter) {
 
       // Type filter - use typeId
       if (filter.types.length > 0) {
-        if (!filter.types.includes(pattern.typeId as any)) {
+        if (!filter.types.includes(pattern.typeId)) {
           return false;
         }
       }
