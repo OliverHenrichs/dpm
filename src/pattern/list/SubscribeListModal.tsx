@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { fetchSharedList } from "@/src/firebase/FirebaseListService";
@@ -40,6 +41,8 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<PatternListWithPatterns | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const handleLookup = async () => {
     const trimmed = code.trim().toUpperCase();
@@ -80,120 +83,214 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
     handleClose();
   };
 
+  const handleScanPress = async () => {
+    if (!cameraPermission?.granted) {
+      const result = await requestCameraPermission();
+      if (!result.granted) {
+        setError(t("cameraPermissionDenied"));
+        return;
+      }
+    }
+    setScanning(true);
+  };
+
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
+    const trimmed = data.trim().toUpperCase();
+    setScanning(false);
+    if (trimmed.length === 8) {
+      setCode(trimmed);
+      setError(null);
+      setPreview(null);
+      // Auto-lookup after scan
+      setTimeout(() => {
+        setError(null);
+        setIsLoading(true);
+        fetchSharedList(trimmed)
+          .then((result) => {
+            if (!result) {
+              setError(t("shareCodeNotFound"));
+              return;
+            }
+            const localMatch = existingLists.find((l) => l.id === result.id);
+            if (localMatch) {
+              setError(
+                localMatch.shareCode === trimmed
+                  ? t("subscribeErrorOwnList")
+                  : t("subscribeErrorAlreadySubscribed"),
+              );
+              return;
+            }
+            setPreview(result);
+          })
+          .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+          .finally(() => setIsLoading(false));
+      }, 100);
+    } else {
+      setError(t("invalidShareCode"));
+    }
+  };
+
   const handleClose = () => {
     setCode("");
     setError(null);
     setPreview(null);
+    setScanning(false);
     onClose();
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{t("subscribeToList")}</Text>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent
+        onRequestClose={handleClose}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.card}>
+            <Text style={styles.title}>{t("subscribeToList")}</Text>
 
-          {!firebaseAvailable && (
-            <View style={styles.warningBox}>
-              <Icon
-                name="alert-circle-outline"
-                size={18}
-                color={palette[PaletteColor.Error]}
-              />
-              <Text style={styles.warningText}>{t("sharingNotAvailable")}</Text>
-            </View>
-          )}
-
-          {firebaseAvailable && (
-            <>
-              <Text style={styles.label}>{t("enterShareCode")}</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={styles.input}
-                  value={code}
-                  onChangeText={(v) => {
-                    setCode(v.toUpperCase());
-                    setError(null);
-                    setPreview(null);
-                  }}
-                  placeholder="ABC12345"
-                  placeholderTextColor={palette[PaletteColor.SecondaryText]}
-                  autoCapitalize="characters"
-                  maxLength={8}
-                  returnKeyType="search"
-                  onSubmitEditing={handleLookup}
+            {!firebaseAvailable && (
+              <View style={styles.warningBox}>
+                <Icon
+                  name="alert-circle-outline"
+                  size={18}
+                  color={palette[PaletteColor.Error]}
                 />
+                <Text style={styles.warningText}>
+                  {t("sharingNotAvailable")}
+                </Text>
+              </View>
+            )}
+
+            {firebaseAvailable && (
+              <>
+                <Text style={styles.label}>{t("enterShareCode")}</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={code}
+                    onChangeText={(v) => {
+                      setCode(v.toUpperCase());
+                      setError(null);
+                      setPreview(null);
+                    }}
+                    placeholder="ABC12345"
+                    placeholderTextColor={palette[PaletteColor.SecondaryText]}
+                    autoCapitalize="characters"
+                    maxLength={8}
+                    returnKeyType="search"
+                    onSubmitEditing={handleLookup}
+                  />
+                  <TouchableOpacity
+                    style={styles.lookupButton}
+                    onPress={handleScanPress}
+                    accessibilityLabel={t("scanQrCode")}
+                  >
+                    <Icon
+                      name="qrcode-scan"
+                      size={20}
+                      color={palette[PaletteColor.Surface]}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.lookupButton,
+                      code.trim().length !== 8 && styles.lookupButtonDisabled,
+                    ]}
+                    onPress={handleLookup}
+                    disabled={code.trim().length !== 8 || isLoading}
+                  >
+                    <Icon
+                      name="magnify"
+                      size={20}
+                      color={palette[PaletteColor.Surface]}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {error && <Text style={styles.errorText}>{error}</Text>}
+
+                {isLoading && (
+                  <ActivityIndicator
+                    size="small"
+                    color={palette[PaletteColor.Primary]}
+                    style={styles.spinner}
+                  />
+                )}
+
+                {preview && (
+                  <View style={styles.previewBox}>
+                    <Icon
+                      name="cloud-check-outline"
+                      size={20}
+                      color={palette[PaletteColor.Accent]}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.previewName}>{preview.name}</Text>
+                      <Text style={styles.previewMeta}>
+                        {preview.patterns.length} {t("patterns")}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleClose}
+              >
+                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
+              </TouchableOpacity>
+              {firebaseAvailable && (
                 <TouchableOpacity
                   style={[
-                    styles.lookupButton,
-                    code.trim().length !== 8 && styles.lookupButtonDisabled,
+                    styles.confirmButton,
+                    !preview && styles.confirmButtonDisabled,
                   ]}
-                  onPress={handleLookup}
-                  disabled={code.trim().length !== 8 || isLoading}
+                  onPress={handleConfirm}
+                  disabled={!preview}
                 >
-                  <Icon
-                    name="magnify"
-                    size={20}
-                    color={palette[PaletteColor.Surface]}
-                  />
+                  <Text style={styles.confirmButtonText}>
+                    {t("subscribeConfirm")}
+                  </Text>
                 </TouchableOpacity>
-              </View>
-
-              {error && <Text style={styles.errorText}>{error}</Text>}
-
-              {isLoading && (
-                <ActivityIndicator
-                  size="small"
-                  color={palette[PaletteColor.Primary]}
-                  style={styles.spinner}
-                />
               )}
-
-              {preview && (
-                <View style={styles.previewBox}>
-                  <Icon
-                    name="cloud-check-outline"
-                    size={20}
-                    color={palette[PaletteColor.Accent]}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.previewName}>{preview.name}</Text>
-                    <Text style={styles.previewMeta}>
-                      {preview.patterns.length} {t("patterns")}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </>
-          )}
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
-              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-            </TouchableOpacity>
-            {firebaseAvailable && (
-              <TouchableOpacity
-                style={[
-                  styles.confirmButton,
-                  !preview && styles.confirmButtonDisabled,
-                ]}
-                onPress={handleConfirm}
-                disabled={!preview}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {t("subscribeConfirm")}
-                </Text>
-              </TouchableOpacity>
-            )}
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      {/* ── QR code scanner ───────────────────────────────────────────── */}
+      <Modal
+        visible={scanning}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setScanning(false)}
+      >
+        <View style={styles.scannerContainer}>
+          <CameraView
+            style={styles.camera}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={handleBarCodeScanned}
+          />
+          <View style={styles.scannerOverlay}>
+            <View style={styles.scannerFrame} />
+            <Text style={styles.scannerHint}>{t("scanQrCodeHint")}</Text>
+            <TouchableOpacity
+              style={styles.scannerCloseButton}
+              onPress={() => setScanning(false)}
+            >
+              <Icon name="close" size={24} color="#fff" />
+              <Text style={styles.scannerCloseText}>{t("cancel")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -326,6 +423,50 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       fontSize: 16,
       fontWeight: "600",
       color: palette[PaletteColor.Surface],
+    },
+    scannerContainer: {
+      flex: 1,
+      backgroundColor: "#000",
+    },
+    camera: {
+      flex: 1,
+    },
+    scannerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 24,
+    },
+    scannerFrame: {
+      width: 220,
+      height: 220,
+      borderWidth: 3,
+      borderColor: "#fff",
+      borderRadius: 16,
+      backgroundColor: "transparent",
+    },
+    scannerHint: {
+      color: "#fff",
+      fontSize: 14,
+      textAlign: "center",
+      paddingHorizontal: 32,
+      textShadowColor: "rgba(0,0,0,0.8)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    scannerCloseButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      borderRadius: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+    },
+    scannerCloseText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
     },
   });
 

@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import QRCode from "react-native-qrcode-svg";
 import { useTranslation } from "react-i18next";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
@@ -44,6 +45,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   // Pending unpublished list — shown in success dialog before closing the modal
   const [unpublishPending, setUnpublishPending] = useState<IPatternList | null>(
@@ -131,7 +133,28 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                     }
                   />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={() => setShowQr((v) => !v)}
+                  accessibilityLabel={t(showQr ? "hideQrCode" : "showQrCode")}
+                >
+                  <Icon
+                    name={showQr ? "qrcode-remove" : "qrcode"}
+                    size={20}
+                    color={palette[PaletteColor.Primary]}
+                  />
+                </TouchableOpacity>
               </View>
+              {showQr && (
+                <View style={styles.qrContainer}>
+                  <QRCode
+                    value={list.shareCode}
+                    size={160}
+                    color={palette[PaletteColor.PrimaryText]}
+                    backgroundColor={palette[PaletteColor.Surface]}
+                  />
+                </View>
+              )}
               <Text style={styles.hint}>{t("shareCodeHint")}</Text>
             </>
           )}
@@ -271,6 +294,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     copyButton: {
       padding: 4,
+    },
+    qrContainer: {
+      alignItems: "center",
+      paddingVertical: 16,
     },
     hint: {
       fontSize: 13,
