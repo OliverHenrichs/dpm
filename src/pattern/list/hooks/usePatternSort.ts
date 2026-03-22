@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import { SortConfig } from "@/src/pattern/components/sort/SortBottomSheet";
+import { SortConfig } from "@/src/pattern/list/SortBottomSheet";
 
 export function usePatternSort(patterns: IPattern[], sortConfig: SortConfig) {
   const sortedPatterns = useMemo(() => {

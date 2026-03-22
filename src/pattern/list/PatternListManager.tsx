@@ -8,7 +8,7 @@ import PageContainer from "@/src/common/components/PageContainer";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
-import { useActivePatternList } from "@/src/pattern/components/context/ActivePatternListContext";
+import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { useTranslation } from "react-i18next";
 
 function createNewId(patterns: IPattern[]) {

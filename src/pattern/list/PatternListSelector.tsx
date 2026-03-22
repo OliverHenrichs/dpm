@@ -16,7 +16,7 @@ import {
   savePatternList,
   savePatterns,
 } from "@/src/pattern/data/PatternListStorage";
-import { useActivePatternList } from "@/src/pattern/components/context/ActivePatternListContext";
+import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";

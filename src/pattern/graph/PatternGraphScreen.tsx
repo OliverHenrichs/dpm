@@ -9,7 +9,7 @@ import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
 import PatternGraphHeader from "./PatternGraphHeader";
 import GraphViewContainer from "./GraphViewContainer";
 import PatternDetailsModal from "./PatternDetailsModal";
-import { useActivePatternList } from "@/src/pattern/components/context/ActivePatternListContext";
+import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 
 type ViewMode = "timeline" | "graph";
 

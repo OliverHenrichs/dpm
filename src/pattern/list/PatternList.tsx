@@ -10,7 +10,7 @@ import PatternFilterBottomSheet, {
 } from "../filter/components/PatternFilterBottomSheet";
 import SortBottomSheet, {
   SortConfig,
-} from "@/src/pattern/components/sort/SortBottomSheet";
+} from "@/src/pattern/list/SortBottomSheet";
 import PatternListHeader from "./PatternListHeader";
 import PatternListItem from "./PatternListItem";
 import { usePatternFilter } from "./hooks/usePatternFilter";

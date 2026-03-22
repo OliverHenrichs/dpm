@@ -3,7 +3,7 @@ import PatternListManager from "@/src/pattern/list/PatternListManager";
 import PatternGraphScreen from "@/src/pattern/graph/PatternGraphScreen";
 import PatternListSelector from "@/src/pattern/list/PatternListSelector";
 import SettingsScreen from "@/src/settings/SettingsScreen";
-import { ActivePatternListProvider } from "@/src/pattern/components/context/ActivePatternListContext";
+import { ActivePatternListProvider } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
   createDrawerNavigator,
   DrawerContentComponentProps,

@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import PatternDetails from "@/src/pattern/components/common/PatternDetails";
+import PatternDetails from "@/src/pattern/graph/PatternDetails";
 import handleDelete from "@/src/common/utils/PatternDelete";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";

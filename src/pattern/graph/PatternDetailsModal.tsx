@@ -12,7 +12,7 @@ import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
-import PatternDetails from "@/src/pattern/components/common/PatternDetails";
+import PatternDetails from "@/src/pattern/graph/PatternDetails";
 
 interface PatternDetailsModalProps {
   visible: boolean;
