@@ -10,9 +10,10 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { useCameraPermissions } from "expo-camera";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
+import QrCodeScanner from "@/src/common/components/QrCodeScanner";
 import { fetchSharedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
@@ -94,7 +95,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
     setScanning(true);
   };
 
-  const handleBarCodeScanned = ({ data }: { data: string }) => {
+  const handleBarCodeScanned = (data: string) => {
     const trimmed = data.trim().toUpperCase();
     setScanning(false);
     if (trimmed.length === 8) {
@@ -264,32 +265,12 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
       </Modal>
 
       {/* ── QR code scanner ───────────────────────────────────────────── */}
-      <Modal
+      <QrCodeScanner
         visible={scanning}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => setScanning(false)}
-      >
-        <View style={styles.scannerContainer}>
-          <CameraView
-            style={styles.camera}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onBarcodeScanned={handleBarCodeScanned}
-          />
-          <View style={styles.scannerOverlay}>
-            <View style={styles.scannerFrame} />
-            <Text style={styles.scannerHint}>{t("scanQrCodeHint")}</Text>
-            <TouchableOpacity
-              style={styles.scannerCloseButton}
-              onPress={() => setScanning(false)}
-            >
-              <Icon name="close" size={24} color="#fff" />
-              <Text style={styles.scannerCloseText}>{t("cancel")}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        hint={t("scanQrCodeHint")}
+        onScanned={handleBarCodeScanned}
+        onClose={() => setScanning(false)}
+      />
     </>
   );
 };
@@ -423,50 +404,6 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       fontSize: 16,
       fontWeight: "600",
       color: palette[PaletteColor.Surface],
-    },
-    scannerContainer: {
-      flex: 1,
-      backgroundColor: "#000",
-    },
-    camera: {
-      flex: 1,
-    },
-    scannerOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 24,
-    },
-    scannerFrame: {
-      width: 220,
-      height: 220,
-      borderWidth: 3,
-      borderColor: "#fff",
-      borderRadius: 16,
-      backgroundColor: "transparent",
-    },
-    scannerHint: {
-      color: "#fff",
-      fontSize: 14,
-      textAlign: "center",
-      paddingHorizontal: 32,
-      textShadowColor: "rgba(0,0,0,0.8)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 4,
-    },
-    scannerCloseButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      backgroundColor: "rgba(0,0,0,0.6)",
-      borderRadius: 8,
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-    },
-    scannerCloseText: {
-      color: "#fff",
-      fontSize: 16,
-      fontWeight: "600",
     },
   });
 
