@@ -28,6 +28,11 @@ import PlusButton from "@/src/common/components/PlusButton";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import PatternListTemplateModal from "./PatternListTemplateModal";
 import BottomSheet from "@/src/common/components/BottomSheet";
+import ShareListModal from "@/src/pattern/list/ShareListModal";
+import SubscribeListModal from "@/src/pattern/list/SubscribeListModal";
+import { syncPublishedList } from "@/src/firebase/FirebaseListService";
+import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
+import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 
 const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { t } = useTranslation();
@@ -45,6 +50,13 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
   );
   const [editingList, setEditingList] = useState<IPatternList | null>(null);
   const [usedTypeIds, setUsedTypeIds] = useState<Set<string>>(new Set());
+
+  // Cloud sharing state
+  const [shareTarget, setShareTarget] = useState<IPatternList | null>(null);
+  const [sharePatterns, setSharePatterns] = useState<
+    PatternListWithPatterns["patterns"]
+  >([]);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   const loadLists = useCallback(async () => {
     setIsLoading(true);
@@ -108,6 +120,13 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
   const handleSaveList = async (updatedList: IPatternList) => {
     try {
       await savePatternList(updatedList);
+      // If the list is already published, keep Firestore in sync automatically
+      if (updatedList.shareCode) {
+        const patterns = await loadPatterns(updatedList.id);
+        await syncPublishedList(updatedList, patterns).catch((e) =>
+          console.warn("Firestore sync after edit failed:", e),
+        );
+      }
       await loadLists();
       await refreshActiveList();
     } catch (error) {
@@ -115,6 +134,54 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
       Alert.alert(t("error"), t("errorCreatingList"));
     } finally {
       setEditingList(null);
+    }
+  };
+
+  /** Open the ShareListModal for a list, loading its patterns first. */
+  const handleOpenShare = async (list: IPatternList) => {
+    setListActionTarget(null);
+    try {
+      const patterns = await loadPatterns(list.id);
+      setSharePatterns(patterns);
+      setShareTarget(list);
+    } catch (e) {
+      Alert.alert(t("error"), String(e));
+    }
+  };
+
+  /** After a successful publish/unpublish, persist the updated shareCode. */
+  const handleShareUpdated = async (updatedList: IPatternList) => {
+    try {
+      await savePatternList(updatedList);
+      await loadLists();
+      await refreshActiveList();
+    } catch (e) {
+      console.error("Error persisting shareCode:", e);
+    }
+    setShareTarget(updatedList); // keep modal open showing the new code
+  };
+
+  const handleUnpublished = async (updatedList: IPatternList) => {
+    try {
+      await savePatternList(updatedList);
+      await loadLists();
+      await refreshActiveList();
+    } catch (e) {
+      console.error("Error persisting unpublish:", e);
+    }
+    setShareTarget(null);
+  };
+
+  /** Called when user confirms subscribing to a shared list. */
+  const handleSubscribeConfirm = async (fetched: PatternListWithPatterns) => {
+    try {
+      await savePatternList(fetched);
+      await savePatterns(fetched.id, fetched.patterns);
+      await loadLists();
+      await setActiveList(fetched);
+      navigation.navigate("Patterns");
+    } catch (e) {
+      Alert.alert(t("error"), String(e));
     }
   };
 
@@ -155,6 +222,14 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
           </Text>
         </View>
         <View style={styles.listCardIndicators}>
+          {item.shareCode && (
+            <Icon
+              name="cloud-check-outline"
+              size={18}
+              color={palette[PaletteColor.Primary]}
+              accessibilityLabel={t("shareToCloud")}
+            />
+          )}
           {item.readonly && (
             <Icon
               name="lock-outline"
@@ -186,11 +261,26 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
           <SectionHeader
             title={t("patternLists")}
             rightActions={
-              <PlusButton
-                onPress={() => setShowTemplateModal(true)}
-                palette={palette}
-                accessibilityLabel={t("createPatternList")}
-              />
+              <View style={styles.headerActions}>
+                {firebaseAvailable && (
+                  <TouchableOpacity
+                    onPress={() => setShowSubscribeModal(true)}
+                    style={styles.subscribeButton}
+                    accessibilityLabel={t("subscribeToList")}
+                  >
+                    <Icon
+                      name="cloud-download-outline"
+                      size={22}
+                      color={palette[PaletteColor.Primary]}
+                    />
+                  </TouchableOpacity>
+                )}
+                <PlusButton
+                  onPress={() => setShowTemplateModal(true)}
+                  palette={palette}
+                  accessibilityLabel={t("createPatternList")}
+                />
+              </View>
             }
           />
 
@@ -243,6 +333,20 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
             )}
+            {firebaseAvailable && !listActionTarget?.readonly && (
+              <TouchableOpacity
+                style={styles.actionSheetOption}
+                onPress={() =>
+                  listActionTarget && handleOpenShare(listActionTarget)
+                }
+              >
+                <Text style={styles.actionSheetOptionText}>
+                  {listActionTarget?.shareCode
+                    ? t("manageSharing")
+                    : t("shareToCloud")}
+                </Text>
+              </TouchableOpacity>
+            )}
             {!listActionTarget?.readonly && (
               <TouchableOpacity
                 style={[
@@ -270,6 +374,25 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
             )}
           </View>
         </BottomSheet>
+
+        {/* ── Share modal ──────────────────────────────────────────────── */}
+        {shareTarget && (
+          <ShareListModal
+            visible={shareTarget !== null}
+            list={shareTarget}
+            patterns={sharePatterns}
+            onClose={() => setShareTarget(null)}
+            onPublished={handleShareUpdated}
+            onUnpublished={handleUnpublished}
+          />
+        )}
+
+        {/* ── Subscribe modal ──────────────────────────────────────────── */}
+        <SubscribeListModal
+          visible={showSubscribeModal}
+          onClose={() => setShowSubscribeModal(false)}
+          onSubscribe={handleSubscribeConfirm}
+        />
       </PageContainer>
     </View>
   );
@@ -346,6 +469,15 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       fontSize: 14,
       color: palette[PaletteColor.SecondaryText],
       fontStyle: "italic",
+    },
+    headerActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    subscribeButton: {
+      paddingHorizontal: 4,
+      paddingVertical: 2,
     },
     emptyContainer: {
       flex: 1,

@@ -131,5 +131,19 @@
   "exportAsReadonly": "Als schreibgeschützt exportieren",
   "readonlyList": "Schreibgeschützte Liste",
   "readonlyBadge": "SCHREIBGESCHÜTZT",
-  "readonlyListHint": "Diese Liste ist schreibgeschützt und kann nicht bearbeitet oder gelöscht werden."
+  "readonlyListHint": "Diese Liste ist schreibgeschützt und kann nicht bearbeitet oder gelöscht werden.",
+  "shareToCloud": "In der Cloud teilen",
+  "manageSharing": "Cloud-Freigabe verwalten",
+  "publishToCloud": "Veröffentlichen",
+  "syncToCloud": "Änderungen synchronisieren",
+  "unpublish": "Teilen beenden",
+  "shareCode": "Freigabecode",
+  "copyShareCode": "Freigabecode kopieren",
+  "shareCodeHint": "Teile diesen Code mit anderen, damit sie deine Liste abonnieren können.",
+  "subscribeToList": "Geteilter Liste abonnieren",
+  "subscribeConfirm": "Abonnieren",
+  "enterShareCode": "Freigabecode eingeben",
+  "invalidShareCode": "Der Code muss genau 8 Zeichen lang sein.",
+  "shareCodeNotFound": "Keine geteilte Liste für diesen Code gefunden.",
+  "sharingNotAvailable": "Cloud-Teilen ist nicht konfiguriert. Firebase-Zugangsdaten in app.json eintragen."
 }

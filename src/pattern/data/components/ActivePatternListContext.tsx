@@ -13,6 +13,7 @@ import {
   savePatterns,
   setActiveListId,
 } from "@/src/pattern/data/PatternListStorage";
+import { useSharedList } from "@/src/pattern/data/hooks/useSharedList";
 
 interface ActivePatternListContextType {
   activeList: IPatternList | null;
@@ -104,6 +105,11 @@ export const ActivePatternListProvider: React.FC<{
   const refreshActiveList = async () => {
     await loadActiveListAndPatterns();
   };
+
+  // Live subscription: when the active list has a shareCode, keep it in sync
+  // with Firestore. Updates are persisted to AsyncStorage then the state is
+  // refreshed, so the user always sees the publisher's latest version.
+  useSharedList(activeList?.shareCode, loadActiveListAndPatterns);
 
   const value: ActivePatternListContextType = {
     activeList,

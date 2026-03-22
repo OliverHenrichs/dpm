@@ -11,6 +11,7 @@ export interface IPatternList {
   createdAt: number; // Timestamp
   updatedAt: number; // Timestamp
   readonly?: boolean; // When true, the list was exported as read-only and cannot be edited by the importer
+  shareCode?: string; // Firestore document ID when this list is published to the cloud
 }
 
 /**

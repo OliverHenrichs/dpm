@@ -41,6 +41,7 @@
     "expo-video": "~3.0.16",
     "expo-video-thumbnails": "^10.0.8",
     "expo-web-browser": "~15.0.10",
+    "firebase": "^12.11.0",
     "i18next": "^25.7.3",
     "lodash": "^4.17.23",
     "lucide-react": "^0.562.0",

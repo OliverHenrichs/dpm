@@ -10,6 +10,7 @@ import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { useTranslation } from "react-i18next";
+import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 
 function createNewId(patterns: IPattern[]) {
   // Simple id generation by finding the max existing id and adding 1
@@ -40,7 +41,11 @@ const PatternListManager = () => {
       id: createNewId(patterns),
     };
 
-    await updatePatterns([...patterns, newPattern]);
+    const updated = [...patterns, newPattern];
+    await updatePatterns(updated);
+    if (activeList?.shareCode) {
+      syncPublishedList(activeList, updated).catch(() => {});
+    }
     setIsAddingNew(false);
   };
 
@@ -58,6 +63,9 @@ const PatternListManager = () => {
     );
 
     await updatePatterns(updatedPatterns);
+    if (activeList?.shareCode) {
+      syncPublishedList(activeList, updatedPatterns).catch(() => {});
+    }
     setIsEditing(false);
   };
 
@@ -65,6 +73,9 @@ const PatternListManager = () => {
     if (isReadonly) return;
     const updatedPatterns = patterns.filter((p) => p.id !== id);
     await updatePatterns(updatedPatterns);
+    if (activeList?.shareCode) {
+      syncPublishedList(activeList, updatedPatterns).catch(() => {});
+    }
     if (selectedPattern?.id === id) setSelectedPattern(undefined);
   };
 
