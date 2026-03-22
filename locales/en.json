@@ -127,5 +127,9 @@
   "saveChanges": "Save",
   "listActions": "List Actions",
   "cannotRemoveTypeHasPatterns": "Cannot remove — type has patterns",
-  "includeVideosInExport": "Include Videos"
+  "includeVideosInExport": "Include Videos",
+  "exportAsReadonly": "Export as Read-only",
+  "readonlyList": "Read-only list",
+  "readonlyBadge": "READ-ONLY",
+  "readonlyListHint": "This list is read-only and cannot be edited or deleted."
 }

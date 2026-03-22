@@ -60,13 +60,18 @@ export const useDataTransfer = () => {
   }, [patternLists, t]);
 
   const handleExport = useCallback(
-    async (selectedLists: IPatternList[], includeVideos: boolean) => {
+    async (
+      selectedLists: IPatternList[],
+      includeVideos: boolean,
+      exportAsReadonly: boolean,
+    ) => {
       setShowExportModal(false);
       setIsLoading(true);
       try {
         const result = await exportPatternLists(
           selectedLists as PatternListWithPatterns[],
           includeVideos,
+          exportAsReadonly,
         );
         // Only show alert for errors, not success (since native share API doesn't report cancellation)
         if (!result.success) {

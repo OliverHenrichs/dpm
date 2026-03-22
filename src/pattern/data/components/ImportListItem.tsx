@@ -7,6 +7,7 @@ import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { ImportAction } from "@/src/pattern/data/hooks/useImportDecisions";
 import { ConflictBadge } from "./ConflictBadge";
 import { ImportActionButtons } from "./ImportActionButtons";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 interface ImportListItemProps {
   list: PatternListWithPatterns;
@@ -29,10 +30,22 @@ export const ImportListItem: React.FC<ImportListItemProps> = ({
     <View style={styles.listItem}>
       <View style={styles.listHeader}>
         <Text style={styles.listName}>{list.name}</Text>
-        {existingList && <ConflictBadge palette={palette} />}
+        <View style={styles.badges}>
+          {list.readonly && (
+            <View style={styles.readonlyBadge}>
+              <Icon
+                name="lock-outline"
+                size={11}
+                color={palette[PaletteColor.SecondaryText]}
+              />
+              <Text style={styles.readonlyBadgeText}>{t("readonlyBadge")}</Text>
+            </View>
+          )}
+          {existingList && <ConflictBadge palette={palette} />}
+        </View>
       </View>
       <Text style={styles.listMeta}>
-        {list.patterns.length} {t("patterns")} • {list.danceStyle}
+        {list.patterns.length} {t("patterns")}
       </Text>
       <ImportActionButtons
         currentAction={currentAction}
@@ -59,6 +72,25 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       justifyContent: "space-between",
       alignItems: "center",
       marginBottom: 4,
+    },
+    badges: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    readonlyBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      backgroundColor: palette[PaletteColor.SecondaryText] + "20",
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    readonlyBadgeText: {
+      fontSize: 11,
+      color: palette[PaletteColor.SecondaryText],
+      fontWeight: "600",
     },
     listName: {
       fontSize: 16,

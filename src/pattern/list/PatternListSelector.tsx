@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
 import {
@@ -153,7 +154,17 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
             {item.name}
           </Text>
         </View>
-        {isActive && <Text style={styles.activeIndicator}>✓</Text>}
+        <View style={styles.listCardIndicators}>
+          {item.readonly && (
+            <Icon
+              name="lock-outline"
+              size={18}
+              color={palette[PaletteColor.SecondaryText]}
+              accessibilityLabel={t("readonlyList")}
+            />
+          )}
+          {isActive && <Text style={styles.activeIndicator}>✓</Text>}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -220,34 +231,43 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
           minHeight="20%"
         >
           <View style={styles.actionSheetOptions}>
-            <TouchableOpacity
-              style={styles.actionSheetOption}
-              onPress={() =>
-                listActionTarget && handleEditList(listActionTarget)
-              }
-            >
-              <Text style={styles.actionSheetOptionText}>
-                {t("editPatternList")}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.actionSheetOption,
-                styles.actionSheetOptionDestructive,
-              ]}
-              onPress={() =>
-                listActionTarget && handleDeleteList(listActionTarget)
-              }
-            >
-              <Text
-                style={[
-                  styles.actionSheetOptionText,
-                  styles.actionSheetOptionTextDestructive,
-                ]}
+            {!listActionTarget?.readonly && (
+              <TouchableOpacity
+                style={styles.actionSheetOption}
+                onPress={() =>
+                  listActionTarget && handleEditList(listActionTarget)
+                }
               >
-                {t("deletePatternList")}
-              </Text>
-            </TouchableOpacity>
+                <Text style={styles.actionSheetOptionText}>
+                  {t("editPatternList")}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {!listActionTarget?.readonly && (
+              <TouchableOpacity
+                style={[
+                  styles.actionSheetOption,
+                  styles.actionSheetOptionDestructive,
+                ]}
+                onPress={() =>
+                  listActionTarget && handleDeleteList(listActionTarget)
+                }
+              >
+                <Text
+                  style={[
+                    styles.actionSheetOptionText,
+                    styles.actionSheetOptionTextDestructive,
+                  ]}
+                >
+                  {t("deletePatternList")}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {listActionTarget?.readonly && (
+              <View style={styles.actionSheetOption}>
+                <Text style={styles.readonlyHint}>{t("readonlyListHint")}</Text>
+              </View>
+            )}
           </View>
         </BottomSheet>
       </PageContainer>
@@ -316,6 +336,16 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       fontSize: 24,
       color: palette[PaletteColor.Primary],
       fontWeight: "bold",
+    },
+    listCardIndicators: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    readonlyHint: {
+      fontSize: 14,
+      color: palette[PaletteColor.SecondaryText],
+      fontStyle: "italic",
     },
     emptyContainer: {
       flex: 1,

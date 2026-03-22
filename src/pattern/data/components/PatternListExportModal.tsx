@@ -20,7 +20,11 @@ import { ExportListItem } from "@/src/pattern/data/components/ExportListItem";
 interface PatternListExportModalProps {
   visible: boolean;
   patternLists: PatternListWithPatterns[];
-  onExport: (selectedLists: IPatternList[], includeVideos: boolean) => void;
+  onExport: (
+    selectedLists: IPatternList[],
+    includeVideos: boolean,
+    exportAsReadonly: boolean,
+  ) => void;
   onCancel: () => void;
 }
 const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
@@ -41,8 +45,9 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
     stats,
   } = useExportSelection({ patternLists });
   const [includeVideos, setIncludeVideos] = useState(true);
+  const [exportAsReadonly, setExportAsReadonly] = useState(false);
   const handleExport = () => {
-    onExport(getSelectedLists(), includeVideos);
+    onExport(getSelectedLists(), includeVideos, exportAsReadonly);
   };
   return (
     <Modal
@@ -75,6 +80,18 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
             <Switch
               value={includeVideos}
               onValueChange={setIncludeVideos}
+              trackColor={{
+                false: palette[PaletteColor.SecondaryText],
+                true: palette[PaletteColor.Primary],
+              }}
+              thumbColor={palette[PaletteColor.Border]}
+            />
+          </View>
+          <View style={styles.toggleRow}>
+            <Text style={styles.toggleLabel}>{t("exportAsReadonly")}</Text>
+            <Switch
+              value={exportAsReadonly}
+              onValueChange={setExportAsReadonly}
               trackColor={{
                 false: palette[PaletteColor.SecondaryText],
                 true: palette[PaletteColor.Primary],

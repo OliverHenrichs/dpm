@@ -10,6 +10,7 @@ export interface IPatternList {
   patternTypes: PatternType[]; // Available pattern types for this list
   createdAt: number; // Timestamp
   updatedAt: number; // Timestamp
+  readonly?: boolean; // When true, the list was exported as read-only and cannot be edited by the importer
 }
 
 /**

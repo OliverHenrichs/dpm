@@ -30,9 +30,10 @@ const PatternListManager = () => {
   const styles = getStyles(palette);
 
   const patternTypes = activeList?.patternTypes || [];
+  const isReadonly = !!activeList?.readonly;
 
   const addPattern = async (pattern: NewPattern) => {
-    if (!pattern.name.trim()) return;
+    if (isReadonly || !pattern.name.trim()) return;
 
     const newPattern: IPattern = {
       ...pattern,
@@ -44,7 +45,7 @@ const PatternListManager = () => {
   };
 
   const editPattern = async (pattern: NewPattern | IPattern) => {
-    if (!pattern.name.trim()) return;
+    if (isReadonly || !pattern.name.trim()) return;
 
     // If it's a NewPattern (no id), this shouldn't happen in edit mode
     if (!("id" in pattern)) {
@@ -61,6 +62,7 @@ const PatternListManager = () => {
   };
 
   const deletePattern = async (id?: number) => {
+    if (isReadonly) return;
     const updatedPatterns = patterns.filter((p) => p.id !== id);
     await updatePatterns(updatedPatterns);
     if (selectedPattern?.id === id) setSelectedPattern(undefined);
@@ -139,6 +141,7 @@ const PatternListManager = () => {
           <PatternList
             patterns={patterns}
             patternTypes={patternTypes}
+            isReadonly={isReadonly}
             onSelect={(p) => setSelectedPattern(p as IPattern | undefined)}
             onDelete={deletePattern}
             onAdd={() => setIsAddingNew(!isAddingNew)}

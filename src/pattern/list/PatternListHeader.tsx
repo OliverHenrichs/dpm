@@ -9,6 +9,7 @@ import { useThemeContext } from "@/src/common/components/ThemeContext";
 
 interface PatternListHeaderProps {
   hasActiveFilter: boolean;
+  isReadonly?: boolean;
   onSort: () => void;
   onFilter: () => void;
   onAdd: () => void;
@@ -16,6 +17,7 @@ interface PatternListHeaderProps {
 
 const PatternListHeader: React.FC<PatternListHeaderProps> = ({
   hasActiveFilter,
+  isReadonly,
   onSort,
   onFilter,
   onAdd,
@@ -49,11 +51,20 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
           }
         />
       </TouchableOpacity>
-      <PlusButton
-        onPress={onAdd}
-        palette={palette}
-        accessibilityLabel={t("addPattern")}
-      />
+      {isReadonly ? (
+        <Icon
+          name="lock-outline"
+          size={24}
+          color={palette[PaletteColor.SecondaryText]}
+          accessibilityLabel={t("readonlyList")}
+        />
+      ) : (
+        <PlusButton
+          onPress={onAdd}
+          palette={palette}
+          accessibilityLabel={t("addPattern")}
+        />
+      )}
     </>
   );
 

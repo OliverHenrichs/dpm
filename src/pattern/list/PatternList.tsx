@@ -20,6 +20,7 @@ type PatternListProps = {
   patterns: IPattern[];
   patternTypes?: PatternType[];
   selectedPattern?: IPattern;
+  isReadonly?: boolean;
   onSelect: (pattern: IPattern | undefined) => void;
   onDelete: (id?: number) => void;
   onAdd: () => void;
@@ -31,6 +32,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const styles = getStyles(palette);
+  const isReadonly = props.isReadonly ?? false;
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [filter, setFilter] = useState<PatternFilter>({
@@ -57,6 +59,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     <>
       <PatternListHeader
         hasActiveFilter={hasActiveFilter}
+        isReadonly={isReadonly}
         onSort={() => setIsSortVisible(true)}
         onFilter={() => setIsFilterVisible(true)}
         onAdd={props.onAdd}
@@ -69,6 +72,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
             pattern={pattern}
             allPatterns={props.patterns}
             patternTypes={props.patternTypes}
+            isReadonly={isReadonly}
             isSelected={props.selectedPattern?.id === pattern.id}
             onSelect={props.onSelect}
             onEdit={props.onEdit}

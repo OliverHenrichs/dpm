@@ -19,6 +19,7 @@ interface IVideoList {
 export async function exportPatternLists(
   patternLists: PatternListWithPatterns[],
   includeVideos: boolean = true,
+  exportAsReadonly: boolean = false,
 ): Promise<{ success: boolean; message: string }> {
   try {
     const warnings: string[] = [];
@@ -26,6 +27,7 @@ export async function exportPatternLists(
       patternLists,
       warnings,
       includeVideos,
+      exportAsReadonly,
     );
     const fileUri = await writeExportData(exportData);
 
@@ -48,6 +50,7 @@ async function createExportData(
   patternLists: PatternListWithPatterns[],
   warnings: string[],
   includeVideos: boolean,
+  exportAsReadonly: boolean,
 ): Promise<IPatternListExportData> {
   const videos: IVideoList = {};
 
@@ -67,7 +70,11 @@ async function createExportData(
         exportedPatterns.push({ ...pattern, videoRefs: portableRefs });
       }
     }
-    exportedLists.push({ ...list, patterns: exportedPatterns });
+    exportedLists.push({
+      ...list,
+      readonly: exportAsReadonly ? true : undefined,
+      patterns: exportedPatterns,
+    });
   }
 
   return {

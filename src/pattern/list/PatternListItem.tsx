@@ -13,6 +13,7 @@ interface PatternListItemProps {
   pattern: IPattern;
   allPatterns: IPattern[];
   patternTypes?: PatternType[];
+  isReadonly?: boolean;
   isSelected: boolean;
   onSelect: (pattern: IPattern | undefined) => void;
   onEdit: (pattern: IPattern) => void;
@@ -23,6 +24,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   pattern,
   allPatterns,
   patternTypes,
+  isReadonly,
   isSelected,
   onSelect,
   onEdit,
@@ -53,28 +55,36 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
         >
           <Text style={styles.patternName}>{pattern.name}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation?.();
-            onEdit(pattern);
-          }}
-          style={styles.iconButton}
-          accessibilityLabel={t("editPattern")}
-        >
-          <Icon name="pencil" size={20} color={palette[PaletteColor.Primary]} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleDelete(
-            pattern.id,
-            pattern.name,
-            colorScheme,
-            onDelete,
-          )}
-          style={styles.iconButton}
-          accessibilityLabel={t("deletePattern")}
-        >
-          <Text style={styles.deleteIcon}>🗑️</Text>
-        </TouchableOpacity>
+        {!isReadonly && (
+          <>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onEdit(pattern);
+              }}
+              style={styles.iconButton}
+              accessibilityLabel={t("editPattern")}
+            >
+              <Icon
+                name="pencil"
+                size={20}
+                color={palette[PaletteColor.Primary]}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete(
+                pattern.id,
+                pattern.name,
+                colorScheme,
+                onDelete,
+              )}
+              style={styles.iconButton}
+              accessibilityLabel={t("deletePattern")}
+            >
+              <Text style={styles.deleteIcon}>🗑️</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
       {isSelected && (
         <PatternDetails

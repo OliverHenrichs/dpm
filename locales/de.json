@@ -127,5 +127,9 @@
   "saveChanges": "Speichern",
   "listActions": "Listenaktionen",
   "cannotRemoveTypeHasPatterns": "Kann nicht entfernt werden – Typ hat Figuren",
-  "includeVideosInExport": "Videos einbetten"
+  "includeVideosInExport": "Videos einbetten",
+  "exportAsReadonly": "Als schreibgeschützt exportieren",
+  "readonlyList": "Schreibgeschützte Liste",
+  "readonlyBadge": "SCHREIBGESCHÜTZT",
+  "readonlyListHint": "Diese Liste ist schreibgeschützt und kann nicht bearbeitet oder gelöscht werden."
 }
