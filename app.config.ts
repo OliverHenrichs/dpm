@@ -12,12 +12,57 @@ import { ExpoConfig } from "expo/config";
  * so no manual dotenv setup is required.
  */
 
-const base = (require("./app.json") as { expo: ExpoConfig }).expo;
-
 export default (): ExpoConfig => ({
-  ...base,
+  name: "DancePatternMapper",
+  slug: "DancePatternMapper",
+  version: "1.0.0",
+  orientation: "portrait",
+  icon: "./assets/images/favicon.png",
+  scheme: "dancepatternmapper",
+  userInterfaceStyle: "automatic",
+  newArchEnabled: true,
+  ios: {
+    supportsTablet: true,
+  },
+  android: {
+    adaptiveIcon: {
+      backgroundColor: "#E6F4FE",
+      foregroundImage: "./assets/images/favicon.png",
+      backgroundImage: "./assets/images/favicon.png",
+      monochromeImage: "./assets/images/favicon.png",
+    },
+    edgeToEdgeEnabled: true,
+    package: "com.teholi.DancePatternMapper",
+  },
+  web: {
+    output: "static",
+    favicon: "./assets/images/favicon.png",
+  },
+  plugins: [
+    "expo-router",
+    [
+      "expo-splash-screen",
+      {
+        image: "./assets/images/favicon.png",
+        imageWidth: 200,
+        resizeMode: "contain",
+        backgroundColor: "#ffffff",
+        dark: {
+          backgroundColor: "#000000",
+        },
+      },
+    ],
+    "expo-video",
+  ],
+  experiments: {
+    typedRoutes: true,
+    reactCompiler: true,
+  },
   extra: {
-    ...base.extra,
+    router: {},
+    eas: {
+      projectId: "af32961a-d382-4766-86aa-3b3ccafbaa2d",
+    },
     firebase: {
       apiKey: process.env.FIREBASE_API_KEY,
       authDomain: process.env.FIREBASE_AUTH_DOMAIN,
