@@ -49,7 +49,17 @@
       "router": {},
       "eas": {
         "projectId": "af32961a-d382-4766-86aa-3b3ccafbaa2d"
-      }
+      },
+      "firebase": {
+        "apiKey": "AIzaSyCm9dnv0PbmqQ-BcefBwY2T8aMCfZ4nyUI",
+        "authDomain": "dancepatternmapper.firebaseapp.com",
+        "projectId": "dancepatternmapper",
+        "storageBucket": "dancepatternmapper.firebasestorage.app",
+        "messagingSenderId": "403802543234",
+        "appId": "1:403802543234:web:3050c05e82eb0f832d909b",
+        "measurementId": "G-T7RWDJLG3E"
+      },
+      "firebaseAppToken": "DPM-dance-pattern-mapper"
     }
   }
 }
