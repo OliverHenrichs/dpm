@@ -8,7 +8,7 @@
 
 **App name:** DancePatternMapper  
 **Developer / Data Controller:** Oliver Henrichs  
-**Contact email:** ohenrichs@gmail.com  
+**Contact email:** dance-pattern-mapper@pm.me  
 **Website / Support page:** N/A
 
 If you have any questions about this Privacy Policy or wish to exercise your rights, please contact us at the email address above.
@@ -104,7 +104,7 @@ You have the right to:
 - **Objection** — object to processing based on legitimate interest
 - **Lodge a complaint** — with your national data protection authority (e.g. the [BfDI](https://www.bfdi.bund.de/) in Germany, the [ICO](https://ico.org.uk/) in the UK)
 
-**How to delete your published data:** Open the app → Dances → your list → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document. For anything else, contact us at ohenrichs@gmail.com.
+**How to delete your published data:** Open the app → Dances → your list → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document. For anything else, contact us at dance-pattern-mapper@pm.me.
 
 Because the app has no user accounts, we cannot identify which Firestore documents belong to you without you providing the share code. Please include it in any erasure request.
 
@@ -131,5 +131,5 @@ We may update this policy. When we do, we will update the "Last updated" date at
 ## 11. Contact
 
 Oliver Henrichs  
-ohenrichs@gmail.com
+dance-pattern-mapper@pm.me
 
