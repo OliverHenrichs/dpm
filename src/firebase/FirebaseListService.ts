@@ -14,6 +14,7 @@ import {
 } from "@/src/firebase/firebaseConfig";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
+import * as Crypto from "expo-crypto";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,9 +32,15 @@ export interface SharedListDocument {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Generate a short, easy-to-type 8-character alphanumeric share code. */
+/**
+ * Generate a cryptographically secure 8-character alphanumeric share code.
+ * Uses expo-crypto (CSPRNG) instead of Math.random() to ensure sufficient
+ * entropy, as required by GDPR Art. 32 (security of processing).
+ */
 function generateShareCode(): string {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
+  const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const bytes = Crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
 }
 
 function requireDb(): NonNullable<typeof db> {
