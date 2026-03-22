@@ -150,6 +150,9 @@
   "subscribeErrorAlreadySubscribed": "Du hast diese Liste bereits abonniert.",
   "listUnpublishedTitle": "Liste getrennt",
   "listUnpublishedMessage": "\"{{name}}\" wird vom Herausgeber nicht mehr geteilt. Deine Kopie wurde behalten und ist jetzt vollständig bearbeitbar.",
+  "unpublishConfirmTitle": "Teilen beenden?",
+  "unpublishConfirmMessage": "Die Liste wird aus der Cloud entfernt. Andere können sie dann nicht mehr abonnieren.",
   "unpublishSuccessTitle": "Teilen beendet",
-  "unpublishSuccessMessage": "Die Liste wird nicht mehr geteilt."
+  "unpublishSuccessMessage": "Die Liste wird nicht mehr geteilt.",
+  "deletePatternConfirm": "Bist du sicher, dass du die Figur löschen willst?"
 }

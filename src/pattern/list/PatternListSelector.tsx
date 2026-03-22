@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -30,6 +29,7 @@ import PatternListTemplateModal from "./PatternListTemplateModal";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import ShareListModal from "@/src/pattern/list/ShareListModal";
 import SubscribeListModal from "@/src/pattern/list/SubscribeListModal";
+import AppDialog from "@/src/common/components/AppDialog";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
@@ -58,6 +58,16 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
   >([]);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
+  // Dialog state
+  const [deleteConfirmTarget, setDeleteConfirmTarget] =
+    useState<IPatternList | null>(null);
+  const [errorDialog, setErrorDialog] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+  const showError = (message: string) =>
+    setErrorDialog({ title: t("error"), message });
+
   const loadLists = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -83,26 +93,20 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleDeleteList = (list: IPatternList) => {
     setListActionTarget(null);
-    Alert.alert(
-      t("deletePatternList"),
-      t("deletePatternListConfirm", { name: list.name }),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("delete"),
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deletePatternList(list.id);
-              await loadLists();
-              await refreshActiveList();
-            } catch {
-              Alert.alert(t("error"), t("errorDeletingList"));
-            }
-          },
-        },
-      ],
-    );
+    setDeleteConfirmTarget(list);
+  };
+
+  const confirmDeleteList = async () => {
+    if (!deleteConfirmTarget) return;
+    const list = deleteConfirmTarget;
+    setDeleteConfirmTarget(null);
+    try {
+      await deletePatternList(list.id);
+      await loadLists();
+      await refreshActiveList();
+    } catch {
+      showError(t("errorDeletingList"));
+    }
   };
 
   const handleEditList = async (list: IPatternList) => {
@@ -131,7 +135,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
       await refreshActiveList();
     } catch (error) {
       console.error("Error saving pattern list:", error);
-      Alert.alert(t("error"), t("errorCreatingList"));
+      showError(t("errorCreatingList"));
     } finally {
       setEditingList(null);
     }
@@ -145,7 +149,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
       setSharePatterns(patterns);
       setShareTarget(list);
     } catch (e) {
-      Alert.alert(t("error"), String(e));
+      showError(String(e));
     }
   };
 
@@ -183,7 +187,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
       await setActiveList({ ...fetched, readonly: true });
       navigation.navigate("Patterns");
     } catch (e) {
-      Alert.alert(t("error"), String(e));
+      showError(String(e));
     }
   };
 
@@ -192,7 +196,6 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
     initialPatterns: NewPattern[],
   ) => {
     try {
-      console.log("Creating new pattern list:", newList.id, newList.name);
       await savePatternList(newList);
       if (initialPatterns.length > 0) {
         await savePatterns(
@@ -205,7 +208,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
       navigation.navigate("Patterns");
     } catch (error) {
       console.error("Error creating list:", error);
-      Alert.alert(t("error"), t("errorCreatingList"));
+      showError(t("errorCreatingList"));
     }
   };
 
@@ -395,6 +398,30 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
           existingLists={patternLists}
           onClose={() => setShowSubscribeModal(false)}
           onSubscribe={handleSubscribeConfirm}
+        />
+
+        {/* ── Error dialog ────────────────────────────────────────────── */}
+        {errorDialog && (
+          <AppDialog
+            visible={true}
+            title={errorDialog.title}
+            message={errorDialog.message}
+            onClose={() => setErrorDialog(null)}
+          />
+        )}
+
+        {/* ── Delete list confirmation dialog ──────────────────────────── */}
+        <AppDialog
+          visible={deleteConfirmTarget !== null}
+          title={t("deletePatternList")}
+          message={t("deletePatternListConfirm", {
+            name: deleteConfirmTarget?.name ?? "",
+          })}
+          closeLabel={t("cancel")}
+          onClose={() => setDeleteConfirmTarget(null)}
+          confirmLabel={t("delete")}
+          confirmDestructive
+          onConfirm={confirmDeleteList}
         />
       </PageContainer>
     </View>

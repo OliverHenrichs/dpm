@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "@react-navigation/native";
 import { exportPatternLists } from "@/src/pattern/data/exportPatterns";
@@ -25,6 +24,13 @@ export const useDataTransfer = () => {
   const [importedLists, setImportedLists] = useState<PatternListWithPatterns[]>(
     [],
   );
+  const [dialog, setDialog] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+  const showDialog = (title: string, message: string) =>
+    setDialog({ title, message });
+  const closeDialog = () => setDialog(null);
 
   // Load pattern lists whenever the screen is focused
   const loadPatternLists = useCallback(async () => {
@@ -38,7 +44,7 @@ export const useDataTransfer = () => {
       );
       setPatternLists(listsWithPatterns);
     } catch (error) {
-      Alert.alert(
+      showDialog(
         t("error"),
         `Failed to load pattern lists: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -53,7 +59,7 @@ export const useDataTransfer = () => {
 
   const handleExportButtonPress = useCallback(() => {
     if (patternLists.length === 0) {
-      Alert.alert(t("error"), t("noPatternListsToExport"));
+      showDialog(t("error"), t("noPatternListsToExport"));
       return;
     }
     setShowExportModal(true);
@@ -75,10 +81,10 @@ export const useDataTransfer = () => {
         );
         // Only show alert for errors, not success (since native share API doesn't report cancellation)
         if (!result.success) {
-          Alert.alert(t("error"), result.message);
+          showDialog(t("error"), result.message);
         }
       } catch (error) {
-        Alert.alert(
+        showDialog(
           t("error"),
           `Export failed: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -101,10 +107,10 @@ export const useDataTransfer = () => {
         setImportedLists(result.patternLists);
         setShowImportModal(true);
       } else {
-        Alert.alert(t("error"), result.message);
+        showDialog(t("error"), result.message);
       }
     } catch (error) {
-      Alert.alert(
+      showDialog(
         t("error"),
         `Import failed: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -133,12 +139,12 @@ export const useDataTransfer = () => {
           importedCount++;
         }
         await loadPatternLists();
-        Alert.alert(
+        showDialog(
           t("success"),
           `Imported ${importedCount} list(s), skipped ${skippedCount}`,
         );
       } catch (error) {
-        Alert.alert(
+        showDialog(
           t("error"),
           `Import failed: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -161,5 +167,7 @@ export const useDataTransfer = () => {
     handleExport,
     handleImportButtonPress,
     handleImport,
+    dialog,
+    closeDialog,
   };
 };

@@ -14,6 +14,8 @@ import {
   setActiveListId,
 } from "@/src/pattern/data/PatternListStorage";
 import { useSharedList } from "@/src/pattern/data/hooks/useSharedList";
+import { useTranslation } from "react-i18next";
+import AppDialog from "@/src/common/components/AppDialog";
 
 interface ActivePatternListContextType {
   activeList: IPatternList | null;
@@ -46,6 +48,7 @@ export const ActivePatternListProvider: React.FC<{
   const [patterns, setPatternsState] = useState<IPattern[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasLists, setHasLists] = useState(false);
+  const { t } = useTranslation();
 
   // Load active list and patterns on mount
   const loadActiveListAndPatterns = useCallback(async () => {
@@ -109,7 +112,7 @@ export const ActivePatternListProvider: React.FC<{
   // Live subscription: when the active list has a shareCode, keep it in sync
   // with Firestore. Updates are persisted to AsyncStorage then the state is
   // refreshed, so the user always sees the publisher's latest version.
-  useSharedList(
+  const { detachedListName, clearDetachedName } = useSharedList(
     activeList?.shareCode,
     activeList?.id,
     loadActiveListAndPatterns,
@@ -128,6 +131,16 @@ export const ActivePatternListProvider: React.FC<{
   return (
     <ActivePatternListContext.Provider value={value}>
       {children}
+      <AppDialog
+        visible={detachedListName !== null}
+        title={t("listUnpublishedTitle")}
+        message={
+          detachedListName
+            ? t("listUnpublishedMessage", { name: detachedListName })
+            : ""
+        }
+        onClose={clearDetachedName}
+      />
     </ActivePatternListContext.Provider>
   );
 };

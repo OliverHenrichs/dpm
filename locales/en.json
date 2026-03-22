@@ -150,6 +150,9 @@
   "subscribeErrorAlreadySubscribed": "You are already subscribed to this list.",
   "listUnpublishedTitle": "List Detached",
   "listUnpublishedMessage": "\"{{name}}\" is no longer shared by its publisher. Your copy has been kept and is now fully editable.",
+  "unpublishConfirmTitle": "Stop Sharing?",
+  "unpublishConfirmMessage": "This will remove the list from the cloud. Others will no longer be able to subscribe to it.",
   "unpublishSuccessTitle": "Sharing Stopped",
-  "unpublishSuccessMessage": "The list is no longer shared."
+  "unpublishSuccessMessage": "The list is no longer shared.",
+  "deletePatternConfirm": "Are you sure you want to delete this pattern?"
 }

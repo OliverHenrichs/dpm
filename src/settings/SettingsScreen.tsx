@@ -23,6 +23,7 @@ import { LANGUAGES } from "@/src/settings/types/Languages";
 import PatternListExportModal from "@/src/pattern/data/components/PatternListExportModal";
 import PatternListImportModal from "@/src/pattern/data/components/PatternListImportModal";
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
+import AppDialog from "@/src/common/components/AppDialog";
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -52,6 +53,8 @@ const SettingsScreen: React.FC = () => {
     handleExport,
     handleImportButtonPress,
     handleImport,
+    dialog,
+    closeDialog,
   } = useDataTransfer();
 
   return (
@@ -158,6 +161,15 @@ const SettingsScreen: React.FC = () => {
         onImport={handleImport}
         onCancel={() => setShowImportModal(false)}
       />
+
+      {dialog && (
+        <AppDialog
+          visible={true}
+          title={dialog.title}
+          message={dialog.message}
+          onClose={closeDialog}
+        />
+      )}
     </PageContainer>
   );
 };

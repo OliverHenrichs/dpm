@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Clipboard,
   Modal,
   StyleSheet,
@@ -16,6 +15,7 @@ import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPatternList, IPattern } from "@/src/pattern/types/IPatternList";
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
+import AppDialog from "@/src/common/components/AppDialog";
 
 interface ShareListModalProps {
   visible: boolean;
@@ -44,6 +44,11 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false);
+  // Pending unpublished list — shown in success dialog before closing the modal
+  const [unpublishPending, setUnpublishPending] = useState<IPatternList | null>(
+    null,
+  );
 
   const isPublished = !!list.shareCode;
 
@@ -67,8 +72,8 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
     try {
       await unpublishList(list.shareCode);
       const { shareCode: _removed, ...rest } = list;
-      onUnpublished(rest as IPatternList);
-      Alert.alert(t("unpublishSuccessTitle"), t("unpublishSuccessMessage"));
+      // Show success dialog before propagating — the modal stays visible until dismissed
+      setUnpublishPending(rest as IPatternList);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -159,7 +164,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
               {firebaseAvailable && isPublished && (
                 <TouchableOpacity
                   style={styles.destructiveButton}
-                  onPress={handleUnpublish}
+                  onPress={() => setConfirmUnpublish(true)}
                 >
                   <Icon
                     name="cloud-off-outline"
@@ -178,6 +183,36 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           )}
         </View>
       </View>
+
+      {/* ── Unpublish confirmation dialog ────────────────────────────── */}
+      <AppDialog
+        visible={confirmUnpublish}
+        title={t("unpublishConfirmTitle")}
+        message={t("unpublishConfirmMessage")}
+        closeLabel={t("cancel")}
+        onClose={() => setConfirmUnpublish(false)}
+        confirmLabel={t("unpublish")}
+        confirmDestructive
+        onConfirm={() => {
+          setConfirmUnpublish(false);
+          handleUnpublish();
+        }}
+      />
+
+      {/* ── Unpublish success dialog ─────────────────────────────────── */}
+      <AppDialog
+        visible={unpublishPending !== null}
+        title={t("unpublishSuccessTitle")}
+        message={t("unpublishSuccessMessage")}
+        onClose={() => {
+          const pending = unpublishPending;
+          setUnpublishPending(null);
+          if (pending) {
+            onUnpublished(pending);
+            onClose();
+          }
+        }}
+      />
     </Modal>
   );
 };

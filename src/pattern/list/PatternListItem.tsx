@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
-import handleDelete from "@/src/common/utils/PatternDelete";
+import AppDialog from "@/src/common/components/AppDialog";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
@@ -34,6 +34,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const styles = getStyles(palette);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const handleToggleSelect = () => {
     if (isSelected) {
@@ -72,12 +73,10 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
               />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={handleDelete(
-                pattern.id,
-                pattern.name,
-                colorScheme,
-                onDelete,
-              )}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                setShowConfirmDelete(true);
+              }}
               style={styles.iconButton}
               accessibilityLabel={t("deletePattern")}
             >
@@ -94,6 +93,19 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
           palette={palette}
         />
       )}
+      <AppDialog
+        visible={showConfirmDelete}
+        title={t("deletePattern")}
+        message={t("deletePatternConfirm", { name: pattern.name })}
+        closeLabel={t("cancel")}
+        onClose={() => setShowConfirmDelete(false)}
+        confirmLabel={t("delete")}
+        confirmDestructive
+        onConfirm={() => {
+          setShowConfirmDelete(false);
+          onDelete(pattern.id);
+        }}
+      />
     </View>
   );
 };
