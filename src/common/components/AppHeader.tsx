@@ -37,7 +37,12 @@ const AppHeader: React.FC = () => {
           style={styles.headerIcon}
         />
       </View>
-      <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+      <Text
+        style={styles.headerTitle}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        pointerEvents="none"
+      >
         {title}
       </Text>
       <TouchableOpacity
@@ -63,7 +68,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     headerLeft: { flexDirection: "row", alignItems: "center" },
     headerIcon: { width: 32, height: 32, marginRight: 8 },
     headerTitle: {
-      flex: 1,
+      position: "absolute",
+      left: 0,
+      right: 0,
+      textAlign: "center",
       fontSize: 20,
       fontWeight: "bold",
       color: palette[PaletteColor.PrimaryText],

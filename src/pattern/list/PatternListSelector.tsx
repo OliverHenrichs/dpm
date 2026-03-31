@@ -383,7 +383,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
         {/* ── Share modal ──────────────────────────────────────────────── */}
         {shareTarget && (
           <ShareListModal
-            visible={shareTarget !== null}
+            visible={true}
             list={shareTarget}
             patterns={sharePatterns}
             onClose={() => setShareTarget(null)}
