@@ -264,7 +264,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
         <AppHeader />
         <View style={styles.container}>
           <SectionHeader
-            title={t("patternLists")}
+            title={t("patternListsDescription")}
             rightActions={
               <View style={styles.headerActions}>
                 {firebaseAvailable && (
