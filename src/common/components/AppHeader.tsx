@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
@@ -17,10 +17,8 @@ const AppHeader: React.FC = () => {
   return (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
-        <Icon
-          name="dance-ballroom"
-          size={32}
-          color={palette[PaletteColor.Primary]}
+        <Image
+          source={require("@/assets/images/app-icon.png")}
           style={styles.headerIcon}
         />
         <Text style={styles.headerTitle}>{t("appTitle")}</Text>
@@ -47,7 +45,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       backgroundColor: palette[PaletteColor.Background],
     },
     headerLeft: { flexDirection: "row", alignItems: "center" },
-    headerIcon: { fontSize: 32, marginRight: 8 },
+    headerIcon: { width: 32, height: 32, marginRight: 8 },
     headerTitle: {
       fontSize: 20,
       fontWeight: "bold",
