@@ -50,10 +50,10 @@ export default (): ExpoConfig => ({
         image: "./assets/images/splash-icon-dark.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#f5f3ff",
+        backgroundColor: "#000000",
         dark: {
           image: "./assets/images/splash-icon-light.png",
-          backgroundColor: "#18181b",
+          backgroundColor: "#ffffff",
         },
       },
     ],
