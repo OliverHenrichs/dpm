@@ -23,12 +23,17 @@ export default (): ExpoConfig => ({
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    icon: {
+      dark: "./assets/images/ios-dark.png",
+      light: "./assets/images/ios-light.png",
+      tinted: "./assets/images/ios-tinted.png",
+    },
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: "./assets/images/app-icon.png",
-      backgroundColor: "#f5f3ff",
-      monochromeImage: "./assets/images/app-icon.png",
+      foregroundImage: "./assets/images/adaptive-icon.png",
+      monochromeImage: "./assets/images/adaptive-icon.png",
+      backgroundColor: "#18181b",
     },
     edgeToEdgeEnabled: true,
     package: "com.teholi.DancePatternMapper",
@@ -42,12 +47,12 @@ export default (): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/splash-transparent.png",
-        imageWidth: 320,
+        image: "./assets/images/splash-icon-dark.png",
+        imageWidth: 200,
         resizeMode: "contain",
         backgroundColor: "#f5f3ff",
         dark: {
-          image: "./assets/images/splash-dark.png",
+          image: "./assets/images/splash-icon-light.png",
           backgroundColor: "#18181b",
         },
       },
