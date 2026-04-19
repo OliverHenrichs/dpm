@@ -191,5 +191,6 @@
   "noModifiers": "Noch keine Modifikatoren",
   "noModifiersHint": "Tippe auf +, um einen Modifikator hinzuzufügen",
   "modifierUniversalBadge": "UNIVERSAL",
-  "saveModifier": "Speichern"
+  "saveModifier": "Speichern",
+  "variant": "Variante"
 }

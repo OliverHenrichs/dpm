@@ -5,8 +5,7 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
-import { useTranslation } from "react-i18next";
+} from "react-native";import { useTranslation } from "react-i18next";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import {
@@ -67,58 +66,80 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   };
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.strip}
-    >
-      {/* Base pill */}
-      <TouchableOpacity
-        style={[
-          styles.pill,
-          selectedModifierId === null && styles.pillSelected,
-        ]}
-        onPress={() => onSelect(null)}
+    <View style={styles.container}>
+      <Text style={styles.title}>{t("variant")}</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.strip}
       >
-        <Text
-          style={[
-            styles.pillText,
-            selectedModifierId === null && styles.pillTextSelected,
-          ]}
-        >
-          {t("basePattern")}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Universal modifier pills */}
-      {universalModifiers.map((mod) => (
+        {/* Base pill */}
         <TouchableOpacity
-          key={mod.id}
           style={[
             styles.pill,
-            styles.pillUniversal,
-            selectedModifierId === mod.id && styles.pillSelected,
+            selectedModifierId === null && styles.pillSelected,
           ]}
-          onPress={() => onSelect(mod.id)}
+          onPress={() => onSelect(null)}
         >
-          {renderPositionBadge(mod)}
           <Text
             style={[
               styles.pillText,
-              selectedModifierId === mod.id && styles.pillTextSelected,
+              selectedModifierId === null && styles.pillTextSelected,
             ]}
           >
-            {mod.name}
+            {t("basePattern")}
           </Text>
         </TouchableOpacity>
-      ))}
 
-      {/* Non-universal attached modifier pills */}
-      {attachedNonUniversal.map((mod) => (
-        <View key={mod.id} style={styles.pillWrapper}>
+        {/* Non-universal attached modifier pills — before universal */}
+        {attachedNonUniversal.map((mod) => (
+          <View key={mod.id} style={styles.pillWrapper}>
+            <TouchableOpacity
+              style={[
+                styles.pill,
+                selectedModifierId === mod.id && styles.pillSelected,
+              ]}
+              onPress={() => onSelect(mod.id)}
+            >
+              {renderPositionBadge(mod)}
+              <Text
+                style={[
+                  styles.pillText,
+                  selectedModifierId === mod.id && styles.pillTextSelected,
+                ]}
+              >
+                {mod.name}
+              </Text>
+            </TouchableOpacity>
+            {isEditMode && onDetachModifier && (
+              <TouchableOpacity
+                style={styles.detachButton}
+                onPress={() => onDetachModifier(mod.id)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Text style={styles.detachButtonText}>×</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+
+        {/* Attach picker trigger (edit mode only) */}
+        {isEditMode && onShowAttachPicker && (
           <TouchableOpacity
+            style={[styles.pill, styles.pillAttach]}
+            onPress={onShowAttachPicker}
+          >
+            <Text style={styles.pillAttachText}>{t("attachModifier")}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Universal modifier pills — always last */}
+        {universalModifiers.map((mod) => (
+          <TouchableOpacity
+            key={mod.id}
             style={[
               styles.pill,
+              styles.pillUniversal,
               selectedModifierId === mod.id && styles.pillSelected,
             ]}
             onPress={() => onSelect(mod.id)}
@@ -133,33 +154,25 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
               {mod.name}
             </Text>
           </TouchableOpacity>
-          {isEditMode && onDetachModifier && (
-            <TouchableOpacity
-              style={styles.detachButton}
-              onPress={() => onDetachModifier(mod.id)}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Text style={styles.detachButtonText}>×</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ))}
-
-      {/* Attach picker trigger (edit mode only) */}
-      {isEditMode && onShowAttachPicker && (
-        <TouchableOpacity
-          style={[styles.pill, styles.pillAttach]}
-          onPress={onShowAttachPicker}
-        >
-          <Text style={styles.pillAttachText}>{t("attachModifier")}</Text>
-        </TouchableOpacity>
-      )}
-    </ScrollView>
+        ))}
+      </ScrollView>
+    </View>
   );
 };
 
 const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
+    container: {
+      marginVertical: 4,
+    },
+    title: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: palette[PaletteColor.SecondaryText],
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+      marginBottom: 4,
+    },
     strip: {
       flexDirection: "row",
       alignItems: "center",

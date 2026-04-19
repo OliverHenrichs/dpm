@@ -60,9 +60,11 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
 
   return (
     <View style={styles.detailsContainer}>
-      <Text style={styles.patternDetailsDesc}>
-        {selectedPattern.description}
-      </Text>
+      {!!selectedPattern.description && (
+        <Text style={styles.patternDetailsDesc}>
+          {selectedPattern.description}
+        </Text>
+      )}
 
       {/* Modifier pill strip + contextual video carousel */}
       <ModifierPillStrip

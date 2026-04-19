@@ -350,7 +350,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       {/* Modifier pill strip (only shown when modifiers exist) */}
       {modifiers.length > 0 && (
         <View style={styles.modifierSection}>
-          <Text style={styles.label}>{t("modifiers")}</Text>
           <ModifierPillStrip
             modifiers={modifiers}
             modifierRefs={newPattern.modifierRefs ?? []}

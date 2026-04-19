@@ -191,5 +191,6 @@
   "noModifiers": "No modifiers yet",
   "noModifiersHint": "Tap + to add a modifier",
   "modifierUniversalBadge": "UNIVERSAL",
-  "saveModifier": "Save"
+  "saveModifier": "Save",
+  "variant": "Variant"
 }
