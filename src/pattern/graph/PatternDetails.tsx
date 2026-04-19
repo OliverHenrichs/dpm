@@ -60,12 +60,12 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
 
   return (
     <View style={styles.detailsContainer}>
+      {" "}
       {!!selectedPattern.description && (
         <Text style={styles.patternDetailsDesc}>
           {selectedPattern.description}
         </Text>
       )}
-
       {/* Modifier pill strip + contextual video carousel */}
       <ModifierPillStrip
         modifiers={modifiers}
@@ -77,7 +77,6 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
       {activeVideoRefs.length > 0 && (
         <VideoCarousel videoRefs={activeVideoRefs} palette={palette} />
       )}
-
       <View style={styles.patternDetailsRow}>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("counts")}:</Text>
@@ -220,12 +219,10 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     tagItem: getCommonTagItem(palette),
     tagText: getCommonTagText(palette),
     detailsContainer: {
-      borderRadius: 8,
-      borderWidth: 2,
-      borderColor: palette[PaletteColor.Primary],
-      padding: 16,
-      marginTop: 8,
-      backgroundColor: palette[PaletteColor.Surface],
+      borderTopWidth: 1,
+      borderTopColor: palette[PaletteColor.Border],
+      paddingTop: 8,
+      marginTop: 6,
     },
     patternName: {
       fontSize: 20,
