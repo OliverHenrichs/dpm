@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { IPattern } from "@/src/pattern/types/IPatternList";
+import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -13,6 +13,7 @@ interface PatternListItemProps {
   pattern: IPattern;
   allPatterns: IPattern[];
   patternTypes?: PatternType[];
+  modifiers?: IModifier[];
   isReadonly?: boolean;
   isSelected: boolean;
   onSelect: (pattern: IPattern | undefined) => void;
@@ -24,6 +25,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   pattern,
   allPatterns,
   patternTypes,
+  modifiers,
   isReadonly,
   isSelected,
   onSelect,
@@ -90,6 +92,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
           selectedPattern={pattern}
           patterns={allPatterns}
           patternTypes={patternTypes}
+          modifiers={modifiers}
           palette={palette}
         />
       )}

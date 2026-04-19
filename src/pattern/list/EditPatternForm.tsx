@@ -8,7 +8,9 @@ import {
   View,
 } from "react-native";
 import {
+  IModifier,
   IPattern,
+  IPatternModifierRef,
   IVideoReference,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
@@ -17,16 +19,13 @@ import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { useTranslation } from "react-i18next";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import * as ImagePicker from "expo-image-picker";
-import * as VideoThumbnails from "expo-video-thumbnails";
 import PatternVideos from "./PatternVideos";
 import PatternTags from "./PatternTags";
 import AddVideoModal from "./AddVideoModal";
+import ModifierPillStrip from "./ModifierPillStrip";
+import BottomSheet from "@/src/common/components/BottomSheet";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
-import {
-  extractYouTubeVideoId,
-  getYouTubeThumbnailUrl,
-  isYouTubeUrl,
-} from "@/src/common/utils/YouTubeUtils";
+import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import {
   getCommon2ndOrderLabel,
   getCommonBorder,
@@ -40,7 +39,8 @@ import {
 
 type EditPatternFormProps = {
   patterns: IPattern[];
-  patternTypes: PatternType[]; // Dynamic pattern types from active list
+  patternTypes: PatternType[];
+  modifiers: IModifier[];
   onAccepted: (pattern: NewPattern | IPattern) => void;
   onCancel: () => void;
   existing?: IPattern | null;
@@ -51,13 +51,13 @@ const levels = Object.values(PatternLevel);
 const EditPatternForm: React.FC<EditPatternFormProps> = ({
   patterns,
   patternTypes,
+  modifiers,
   onAccepted,
   onCancel,
   existing,
 }) => {
   const { t } = useTranslation();
 
-  // Create default pattern with first type
   const createDefaultPattern = (): NewPattern => ({
     name: "",
     typeId: patternTypes[0]?.id || "",
@@ -67,6 +67,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     description: "",
     tags: [],
     videoRefs: [],
+    modifierRefs: [],
   });
 
   const [newPattern, setNewPattern] = useState<NewPattern>(
@@ -75,38 +76,39 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [prereqFilter, setPrereqFilter] = useState<string>("");
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
+  const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
+    null,
+  );
+  const [showAttachPicker, setShowAttachPicker] = useState(false);
+
+  const { colorScheme } = useThemeContext();
+  const palette = getPalette(colorScheme);
+  const styles = getStyles(palette);
+
+  // Resolve which videoRefs are currently active for the selected pill
+  const activeVideoRefs: IVideoReference[] = (() => {
+    if (selectedModifierId === null) return newPattern.videoRefs ?? [];
+    const mod = modifiers.find((m) => m.id === selectedModifierId);
+    if (!mod) return [];
+    if (mod.universal) return mod.videoRefs ?? []; // read-only
+    const ref = (newPattern.modifierRefs ?? []).find(
+      (r) => r.modifierId === selectedModifierId,
+    );
+    return ref?.videoRefs ?? [];
+  })();
+
+  // True when the currently-selected pill is a universal modifier (read-only)
+  const isActiveVideoReadonly = (() => {
+    if (selectedModifierId === null) return false;
+    return (
+      modifiers.find((m) => m.id === selectedModifierId)?.universal ?? false
+    );
+  })();
 
   useEffect(() => {
-    const generateThumbnails = async () => {
-      if (!newPattern.videoRefs || newPattern.videoRefs.length === 0) {
-        setThumbnails([]);
-        return;
-      }
-      const results: string[] = [];
-      for (const ref of newPattern.videoRefs) {
-        if (ref.type === "url") {
-          if (isYouTubeUrl(ref.value)) {
-            const id = extractYouTubeVideoId(ref.value);
-            results.push(id ? getYouTubeThumbnailUrl(id) : "");
-          } else {
-            results.push("");
-          }
-          continue;
-        }
-        try {
-          const { uri } = await VideoThumbnails.getThumbnailAsync(ref.value, {
-            time: 1000,
-            quality: 0.7,
-          });
-          results.push(uri);
-        } catch {
-          results.push("");
-        }
-      }
-      setThumbnails(results);
-    };
-    generateThumbnails();
-  }, [newPattern.videoRefs]);
+    generateVideoThumbnails(activeVideoRefs).then(setThumbnails);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedModifierId, newPattern.videoRefs, newPattern.modifierRefs]);
 
   const handleFinish = () => {
     onAccepted(newPattern);
@@ -114,26 +116,23 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   };
 
   const openAddVideoModal = () => {
-    if (newPattern.videoRefs && newPattern.videoRefs.length >= 3) return;
+    if (activeVideoRefs.length >= 3) return;
     setShowAddVideoModal(true);
   };
 
   const handlePickFromLibrary = async () => {
-    if (newPattern.videoRefs && newPattern.videoRefs.length >= 3) return;
+    if (activeVideoRefs.length >= 3) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsMultipleSelection: true,
-      selectionLimit: 3 - (newPattern.videoRefs?.length ?? 0),
+      selectionLimit: 3 - activeVideoRefs.length,
     });
     if (!result.canceled) {
       const newVideos: IVideoReference[] = result.assets.map((asset) => ({
         type: "local",
         value: asset.uri,
       }));
-      setNewPattern((prev) => ({
-        ...prev,
-        videoRefs: [...(prev.videoRefs ?? []), ...newVideos],
-      }));
+      applyVideoAdd(newVideos);
     }
   };
 
@@ -143,22 +142,75 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       value: url,
       ...(startTime !== undefined && { startTime }),
     };
-    setNewPattern((prev) => ({
-      ...prev,
-      videoRefs: [...(prev.videoRefs ?? []), newRef],
-    }));
+    applyVideoAdd([newRef]);
+  };
+
+  const applyVideoAdd = (newRefs: IVideoReference[]) => {
+    if (selectedModifierId === null) {
+      setNewPattern((prev) => ({
+        ...prev,
+        videoRefs: [...(prev.videoRefs ?? []), ...newRefs],
+      }));
+    } else {
+      setNewPattern((prev) => ({
+        ...prev,
+        modifierRefs: (prev.modifierRefs ?? []).map((ref) =>
+          ref.modifierId === selectedModifierId
+            ? { ...ref, videoRefs: [...ref.videoRefs, ...newRefs] }
+            : ref,
+        ),
+      }));
+    }
   };
 
   const handleRemoveVideo = (index: number) => {
-    setNewPattern((prev) => ({
-      ...prev,
-      videoRefs: prev.videoRefs?.filter((_, i) => i !== index) || [],
-    }));
+    if (selectedModifierId === null) {
+      setNewPattern((prev) => ({
+        ...prev,
+        videoRefs: prev.videoRefs?.filter((_, i) => i !== index) || [],
+      }));
+    } else {
+      setNewPattern((prev) => ({
+        ...prev,
+        modifierRefs: (prev.modifierRefs ?? []).map((ref) =>
+          ref.modifierId === selectedModifierId
+            ? { ...ref, videoRefs: ref.videoRefs.filter((_, i) => i !== index) }
+            : ref,
+        ),
+      }));
+    }
   };
 
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const handleDetachModifier = (modifierId: string) => {
+    setNewPattern((prev) => ({
+      ...prev,
+      modifierRefs: (prev.modifierRefs ?? []).filter(
+        (ref) => ref.modifierId !== modifierId,
+      ),
+    }));
+    if (selectedModifierId === modifierId) setSelectedModifierId(null);
+  };
+
+  const handleAttachModifier = (modifierId: string) => {
+    if (
+      (newPattern.modifierRefs ?? []).some((r) => r.modifierId === modifierId)
+    )
+      return;
+    const newRef: IPatternModifierRef = { modifierId, videoRefs: [] };
+    setNewPattern((prev) => ({
+      ...prev,
+      modifierRefs: [...(prev.modifierRefs ?? []), newRef],
+    }));
+    setSelectedModifierId(modifierId);
+    setShowAttachPicker(false);
+  };
+
+  // Non-universal modifiers not yet attached to this pattern
+  const unattachedModifiers = modifiers.filter(
+    (m) =>
+      !m.universal &&
+      !(newPattern.modifierRefs ?? []).some((r) => r.modifierId === m.id),
+  );
 
   return (
     <View style={styles.addPatternContainer}>
@@ -178,7 +230,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             placeholderTextColor={palette[PaletteColor.SecondaryText]}
           />
         </View>
-
         <View style={styles.input}>
           <Text style={styles.label}>{t("counts")}</Text>
           <TextInput
@@ -227,12 +278,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 styles.prereqItem,
                 newPattern.level === level && styles.prereqItemSelected,
               ]}
-              onPress={() =>
-                setNewPattern({
-                  ...newPattern,
-                  level,
-                })
-              }
+              onPress={() => setNewPattern({ ...newPattern, level })}
             >
               <Text style={styles.otherLabel}>{level}</Text>
             </TouchableOpacity>
@@ -300,13 +346,40 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         allPatterns={patterns}
         styles={styles}
       />
+
+      {/* Modifier pill strip (only shown when modifiers exist) */}
+      {modifiers.length > 0 && (
+        <View style={styles.modifierSection}>
+          <Text style={styles.label}>{t("modifiers")}</Text>
+          <ModifierPillStrip
+            modifiers={modifiers}
+            modifierRefs={newPattern.modifierRefs ?? []}
+            selectedModifierId={selectedModifierId}
+            onSelect={setSelectedModifierId}
+            isEditMode
+            onDetachModifier={handleDetachModifier}
+            onShowAttachPicker={
+              unattachedModifiers.length > 0
+                ? () => setShowAttachPicker(true)
+                : undefined
+            }
+          />
+          {isActiveVideoReadonly && (
+            <Text style={styles.readonlyHint}>
+              {t("universalVideosReadonly")}
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Videos — contextual based on pill selection */}
       <PatternVideos
-        videoRefs={newPattern.videoRefs ?? []}
+        videoRefs={activeVideoRefs}
         thumbnails={thumbnails}
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
         palette={palette}
-        disabled={newPattern.videoRefs && newPattern.videoRefs.length >= 3}
+        disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
       />
       <AddVideoModal
         visible={showAddVideoModal}
@@ -315,6 +388,34 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onAddUrl={handleAddUrlVideo}
         palette={palette}
       />
+
+      {/* Attach modifier picker */}
+      <BottomSheet
+        visible={showAttachPicker}
+        onClose={() => setShowAttachPicker(false)}
+        title={t("attachModifier")}
+        palette={palette}
+        minHeight="20%"
+        maxHeight="50%"
+      >
+        {unattachedModifiers.map((mod) => (
+          <TouchableOpacity
+            key={mod.id}
+            style={styles.attachPickerItem}
+            onPress={() => handleAttachModifier(mod.id)}
+          >
+            <Text style={styles.attachPickerItemText}>{mod.name}</Text>
+            <Text style={styles.attachPickerPositionText}>
+              {mod.position === "prefix"
+                ? t("modifierPositionPrefix")
+                : mod.position === "postfix"
+                  ? t("modifierPositionPostfix")
+                  : t("modifierPositionAmends")}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </BottomSheet>
+
       <View style={styles.buttonRow}>
         <TouchableOpacity onPress={handleFinish} style={styles.buttonIndigo}>
           <Text style={styles.buttonText}>{t("savePattern")}</Text>
@@ -328,7 +429,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 };
 
 const getStyles = (palette: Record<PaletteColor, string>) => {
-  // Explicit ViewStyle for problematic styles
   const videosRow: import("react-native").ViewStyle = {
     flexDirection: "row",
     alignItems: "center",
@@ -343,7 +443,6 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
   const baseButton = getCommonButton(palette);
   const commonBorder = getCommonBorder(palette);
   return StyleSheet.create({
-    // Containers
     addPatternContainer: {
       ...commonBorder,
       padding: 8,
@@ -357,37 +456,19 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       marginBottom: 8,
     },
     inputRow: { ...getCommonRow(), gap: 8, marginBottom: 8 },
-    // Inputs
-    input: {
-      flex: 1,
-      height: "100%",
-      ...baseInput,
-    },
-    textarea: {
-      ...baseInput,
-      minHeight: 48,
-    },
-    // Labels
+    input: { flex: 1, height: "100%", ...baseInput },
+    textarea: { ...baseInput, minHeight: 48 },
     label: { ...getCommonLabel(palette) },
     otherLabel: { ...getCommon2ndOrderLabel(palette) },
-    // Prerequisites
     prereqContainer: getCommonPrereqContainer(palette),
-    filterInput: {
-      ...baseInput,
-      height: 40,
-      marginBottom: 8,
-    },
+    filterInput: { ...baseInput, height: 40, marginBottom: 8 },
     prereqItem: getCommonPrereqItem(palette),
     prereqItemSelected: { backgroundColor: palette[PaletteColor.Primary] },
-    prereqItemText: {
-      color: palette[PaletteColor.PrimaryText],
-      fontSize: 14,
-    },
+    prereqItemText: { color: palette[PaletteColor.PrimaryText], fontSize: 14 },
     prereqItemTextSelected: {
       color: palette[PaletteColor.Surface],
       fontWeight: "bold",
     },
-    // Buttons
     buttonRow: { ...getCommonRow(), gap: 8 },
     buttonRowWithBorder: { ...getCommonRow(), gap: 8 },
     buttonIndigo: { ...baseButton },
@@ -399,7 +480,6 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       color: palette[PaletteColor.PrimaryText],
       fontWeight: "bold",
     },
-    // Videos
     videosRow,
     videosInputRow,
     addButtonContainer: {
@@ -407,6 +487,32 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       alignItems: "center",
       height: 64,
       marginLeft: 8,
+    },
+    modifierSection: {
+      ...getCommonPrereqContainer(palette),
+    },
+    readonlyHint: {
+      fontSize: 11,
+      color: palette[PaletteColor.SecondaryText],
+      fontStyle: "italic",
+      marginTop: 4,
+    },
+    attachPickerItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: palette[PaletteColor.Border],
+    },
+    attachPickerItemText: {
+      fontSize: 15,
+      color: palette[PaletteColor.PrimaryText],
+      fontWeight: "500",
+    },
+    attachPickerPositionText: {
+      fontSize: 12,
+      color: palette[PaletteColor.SecondaryText],
     },
   });
 };

@@ -57,21 +57,45 @@ async function createExportData(
   // Build the lists, optionally embedding videos and stripping local refs
   const exportedLists: PatternListWithPatterns[] = [];
   for (const list of patternLists) {
+    // Process universal modifier videos
+    const exportedModifiers = [];
+    for (const modifier of list.modifiers ?? []) {
+      if (includeVideos) {
+        await addModifierVideos(modifier.id, modifier.videoRefs, videos, warnings);
+        exportedModifiers.push(modifier);
+      } else {
+        const portableRefs = (modifier.videoRefs ?? []).filter(
+          (ref) => ref.type !== "local",
+        );
+        exportedModifiers.push({ ...modifier, videoRefs: portableRefs });
+      }
+    }
+
     const exportedPatterns = [];
     for (const pattern of list.patterns) {
       if (includeVideos) {
         await addPatternVideos(pattern.id, pattern.videoRefs, videos, warnings);
-        exportedPatterns.push(pattern);
+        // Process per-pattern modifier combination videos
+        const exportedModifierRefs = [];
+        for (const modRef of pattern.modifierRefs ?? []) {
+          await addModifierRefVideos(pattern.id, modRef.modifierId, modRef.videoRefs, videos, warnings);
+          exportedModifierRefs.push(modRef);
+        }
+        exportedPatterns.push({ ...pattern, modifierRefs: exportedModifierRefs });
       } else {
-        // Strip local video refs — they are device-specific and not portable
         const portableRefs = (pattern.videoRefs ?? []).filter(
           (ref) => ref.type !== "local",
         );
-        exportedPatterns.push({ ...pattern, videoRefs: portableRefs });
+        const portableModifierRefs = (pattern.modifierRefs ?? []).map((modRef) => ({
+          ...modRef,
+          videoRefs: (modRef.videoRefs ?? []).filter((ref) => ref.type !== "local"),
+        }));
+        exportedPatterns.push({ ...pattern, videoRefs: portableRefs, modifierRefs: portableModifierRefs });
       }
     }
     exportedLists.push({
       ...list,
+      modifiers: exportedModifiers,
       readonly: exportAsReadonly ? true : undefined,
       patterns: exportedPatterns,
     });
@@ -92,35 +116,54 @@ async function addPatternVideos(
   videos: IVideoList,
   warnings: string[],
 ) {
-  if (!videoRefs) {
-    return;
-  }
+  if (!videoRefs) return;
   for (const videoRef of videoRefs) {
-    if (videoRef.type !== "local" || videos[videoRef.value]) {
-      continue; // Skip non-local or already processed videos
-    }
-    const base64Data = await getVideo(videoRef, warnings, patternId);
-    if (base64Data) {
-      videos[videoRef.value] = base64Data;
-    }
+    if (videoRef.type !== "local" || videos[videoRef.value]) continue;
+    const base64Data = await getVideo(videoRef, warnings, `pattern:${patternId}`);
+    if (base64Data) videos[videoRef.value] = base64Data;
+  }
+}
+
+async function addModifierVideos(
+  modifierId: string,
+  videoRefs: IVideoReference[] | undefined,
+  videos: IVideoList,
+  warnings: string[],
+) {
+  if (!videoRefs) return;
+  for (const videoRef of videoRefs) {
+    if (videoRef.type !== "local" || videos[videoRef.value]) continue;
+    const base64Data = await getVideo(videoRef, warnings, `modifier:${modifierId}`);
+    if (base64Data) videos[videoRef.value] = base64Data;
+  }
+}
+
+async function addModifierRefVideos(
+  patternId: number,
+  modifierId: string,
+  videoRefs: IVideoReference[] | undefined,
+  videos: IVideoList,
+  warnings: string[],
+) {
+  if (!videoRefs) return;
+  for (const videoRef of videoRefs) {
+    if (videoRef.type !== "local" || videos[videoRef.value]) continue;
+    const base64Data = await getVideo(videoRef, warnings, `pattern:${patternId}+modifier:${modifierId}`);
+    if (base64Data) videos[videoRef.value] = base64Data;
   }
 }
 
 async function getVideo(
   videoRef: IVideoReference,
   warnings: string[],
-  patternId: number,
+  context: string,
 ) {
   try {
     const file = new File(videoRef.value);
-    if (!file.exists) {
-      return;
-    }
+    if (!file.exists) return;
     return await file.base64();
   } catch {
-    warnings.push(
-      `Failed to read video: ${videoRef.value} (pattern ID: ${patternId})`,
-    );
+    warnings.push(`Failed to read video: ${videoRef.value} (context: ${context})`);
   }
 }
 

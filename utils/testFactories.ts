@@ -1,8 +1,4 @@
-import {
-  IPattern,
-  IPatternList,
-  IVideoReference,
-} from "@/src/pattern/types/IPatternList";
+import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import {
   generateUUID,
   PATTERN_TYPE_COLORS,
@@ -37,6 +33,7 @@ export function createTestPatternList(
     id: generateUUID(),
     name: "Test Dance",
     patternTypes: defaultTypes,
+    modifiers: [],
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -57,39 +54,7 @@ export function createTestPattern(
     description: "Test description",
     tags: [],
     videoRefs: [],
+    modifierRefs: [],
     ...overrides,
   };
-}
-
-export function createTestVideoReference(
-  overrides?: Partial<IVideoReference>,
-): IVideoReference {
-  return {
-    type: "url",
-    value: "https://example.com/video.mp4",
-    ...overrides,
-  };
-}
-
-/**
- * Create a pattern list with patterns for testing
- */
-export function createTestPatternListWithPatterns(patternCount: number = 3): {
-  list: IPatternList;
-  patterns: IPattern[];
-} {
-  const list = createTestPatternList();
-  const patterns: IPattern[] = [];
-
-  for (let i = 0; i < patternCount; i++) {
-    const typeIndex = i % list.patternTypes.length;
-    patterns.push(
-      createTestPattern(list.patternTypes[typeIndex].id, {
-        id: i,
-        name: `Pattern ${i}`,
-      }),
-    );
-  }
-
-  return { list, patterns };
 }

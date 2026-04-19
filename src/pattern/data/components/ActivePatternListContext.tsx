@@ -10,9 +10,11 @@ import {
   getActiveList,
   hasPatternLists,
   loadPatterns,
+  savePatternList,
   savePatterns,
   setActiveListId,
 } from "@/src/pattern/data/PatternListStorage";
+import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { useSharedList } from "@/src/pattern/data/hooks/useSharedList";
 import { useTranslation } from "react-i18next";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -23,6 +25,10 @@ interface ActivePatternListContextType {
   isLoading: boolean;
   setActiveList: (list: IPatternList | null) => Promise<void>;
   updatePatterns: (patterns: IPattern[]) => Promise<void>;
+  updateActiveList: (
+    list: IPatternList,
+    patternsOverride?: IPattern[],
+  ) => Promise<void>;
   refreshActiveList: () => Promise<void>;
   hasLists: boolean;
 }
@@ -106,6 +112,22 @@ export const ActivePatternListProvider: React.FC<{
     }
   };
 
+  const updateActiveList = async (
+    list: IPatternList,
+    patternsOverride?: IPattern[],
+  ) => {
+    try {
+      await savePatternList(list);
+      setActiveListState(list);
+      if (list.shareCode) {
+        const syncPatterns = patternsOverride ?? patterns;
+        syncPublishedList(list, syncPatterns).catch(() => {});
+      }
+    } catch (error) {
+      console.error("Error updating active list:", error);
+    }
+  };
+
   const refreshActiveList = async () => {
     await loadActiveListAndPatterns();
   };
@@ -125,6 +147,7 @@ export const ActivePatternListProvider: React.FC<{
     isLoading,
     setActiveList,
     updatePatterns,
+    updateActiveList,
     refreshActiveList,
     hasLists,
   };

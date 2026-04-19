@@ -45,3 +45,39 @@ export function isYouTubeUrl(url: string): boolean {
 export function getYouTubeThumbnailUrl(videoId: string): string {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }
+
+/**
+ * Generates display thumbnails for an array of IVideoReference entries.
+ * - URL references: returns a YouTube thumbnail URL when possible, otherwise "".
+ * - Local references: attempts to extract a video frame via expo-video-thumbnails.
+ * Returns a string[] of the same length as `videoRefs`.
+ */
+export async function generateVideoThumbnails(
+  videoRefs: { type: "url" | "local"; value: string }[],
+): Promise<string[]> {
+  // Lazily import expo-video-thumbnails so it is only loaded when needed
+  // and the util stays test-friendly (tests don't have a native module for it).
+  const VideoThumbnails = await import("expo-video-thumbnails");
+  const results: string[] = [];
+  for (const ref of videoRefs) {
+    if (ref.type === "url") {
+      if (isYouTubeUrl(ref.value)) {
+        const id = extractYouTubeVideoId(ref.value);
+        results.push(id ? getYouTubeThumbnailUrl(id) : "");
+      } else {
+        results.push("");
+      }
+      continue;
+    }
+    try {
+      const { uri } = await VideoThumbnails.getThumbnailAsync(ref.value, {
+        time: 1000,
+        quality: 0.7,
+      });
+      results.push(uri);
+    } catch {
+      results.push("");
+    }
+  }
+  return results;
+}

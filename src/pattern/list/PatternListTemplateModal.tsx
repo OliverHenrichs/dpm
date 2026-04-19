@@ -196,6 +196,7 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
         id: generateUUID(),
         name: draftName.trim(),
         patternTypes: finalTypes,
+        modifiers: [],
         createdAt: now,
         updatedAt: now,
       };

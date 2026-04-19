@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { IPattern } from "@/src/pattern/types/IPatternList";
+import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
@@ -14,11 +14,13 @@ import {
   getCommonTagText,
 } from "@/src/common/utils/CommonStyles";
 import VideoCarousel from "@/src/common/components/VideoCarousel";
+import ModifierPillStrip from "@/src/pattern/list/ModifierPillStrip";
 
 type PatternDetailsProps = {
   selectedPattern: IPattern;
   patterns: IPattern[];
   patternTypes?: PatternType[]; // Optional for type name lookup
+  modifiers?: IModifier[];
   palette: Record<PaletteColor, string>;
 };
 
@@ -26,10 +28,14 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   selectedPattern,
   patterns,
   patternTypes,
+  modifiers = [],
   palette,
 }) => {
   const { t } = useTranslation();
   const styles = getStyles(palette);
+  const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
+    null,
+  );
 
   // Get type display name
   const getTypeName = () => {
@@ -38,17 +44,38 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
     return type ? type.slug : selectedPattern.typeId;
   };
 
+  // Resolve which videoRefs to show based on the selected pill
+  const activeVideoRefs = (() => {
+    if (selectedModifierId === null) {
+      return selectedPattern.videoRefs ?? [];
+    }
+    const mod = modifiers.find((m) => m.id === selectedModifierId);
+    if (!mod) return [];
+    if (mod.universal) return mod.videoRefs ?? [];
+    const ref = (selectedPattern.modifierRefs ?? []).find(
+      (r) => r.modifierId === selectedModifierId,
+    );
+    return ref?.videoRefs ?? [];
+  })();
+
   return (
     <View style={styles.detailsContainer}>
       <Text style={styles.patternDetailsDesc}>
         {selectedPattern.description}
       </Text>
-      {selectedPattern.videoRefs && selectedPattern.videoRefs.length > 0 && (
-        <VideoCarousel
-          videoRefs={selectedPattern.videoRefs}
-          palette={palette}
-        />
+
+      {/* Modifier pill strip + contextual video carousel */}
+      <ModifierPillStrip
+        modifiers={modifiers}
+        modifierRefs={selectedPattern.modifierRefs ?? []}
+        selectedModifierId={selectedModifierId}
+        onSelect={setSelectedModifierId}
+        isEditMode={false}
+      />
+      {activeVideoRefs.length > 0 && (
+        <VideoCarousel videoRefs={activeVideoRefs} palette={palette} />
       )}
+
       <View style={styles.patternDetailsRow}>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("counts")}:</Text>

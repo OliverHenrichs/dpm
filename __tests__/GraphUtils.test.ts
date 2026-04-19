@@ -17,6 +17,7 @@ function createTestWCSPattern(overrides?: Partial<IPattern>): IPattern {
     description: "Test description",
     tags: [],
     videoRefs: [],
+    modifierRefs: [],
     ...overrides,
   };
 }

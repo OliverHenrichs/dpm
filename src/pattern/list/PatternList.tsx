@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { IPattern } from "@/src/pattern/types/IPatternList";
+import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
@@ -19,6 +19,7 @@ import { usePatternSort } from "./hooks/usePatternSort";
 type PatternListProps = {
   patterns: IPattern[];
   patternTypes?: PatternType[];
+  modifiers?: IModifier[];
   selectedPattern?: IPattern;
   isReadonly?: boolean;
   onSelect: (pattern: IPattern | undefined) => void;
@@ -72,6 +73,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
             pattern={pattern}
             allPatterns={props.patterns}
             patternTypes={props.patternTypes}
+            modifiers={props.modifiers}
             isReadonly={isReadonly}
             isSelected={props.selectedPattern?.id === pattern.id}
             onSelect={props.onSelect}

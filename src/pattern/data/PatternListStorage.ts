@@ -1,6 +1,24 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 
+// ---------------------------------------------------------------------------
+// Migration helpers — ensure old data without the modifiers fields still works
+// ---------------------------------------------------------------------------
+
+function normalizePatternList(list: IPatternList): IPatternList {
+  return {
+    ...list,
+    modifiers: list.modifiers ?? [],
+  };
+}
+
+function normalizePattern(pattern: IPattern): IPattern {
+  return {
+    ...pattern,
+    modifierRefs: pattern.modifierRefs ?? [],
+  };
+}
+
 // Storage keys
 const PATTERN_LISTS_KEY = "@patternLists";
 const ACTIVE_LIST_ID_KEY = "@activeListId";
@@ -14,7 +32,8 @@ export async function loadAllPatternLists(): Promise<IPatternList[]> {
   try {
     const stored = await AsyncStorage.getItem(PATTERN_LISTS_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed: IPatternList[] = JSON.parse(stored);
+      return parsed.map(normalizePatternList);
     }
     return [];
   } catch (error) {
@@ -120,7 +139,8 @@ export async function loadPatterns(listId: string): Promise<IPattern[]> {
   try {
     const stored = await AsyncStorage.getItem(getPatternsKey(listId));
     if (stored) {
-      return JSON.parse(stored);
+      const parsed: IPattern[] = JSON.parse(stored);
+      return parsed.map(normalizePattern);
     }
     return [];
   } catch (error) {

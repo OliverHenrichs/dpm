@@ -100,6 +100,7 @@ export function createPatternList(
     id: generateUUID(),
     name,
     patternTypes: types,
+    modifiers: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -136,6 +137,7 @@ export function resolveTemplatePatterns(
       description: tp.description,
       tags: [],
       videoRefs: [],
+      modifierRefs: [],
     });
   }
   return result;
