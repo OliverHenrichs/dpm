@@ -60,7 +60,6 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
 
   return (
     <View style={styles.detailsContainer}>
-      {" "}
       {!!selectedPattern.description && (
         <Text style={styles.patternDetailsDesc}>
           {selectedPattern.description}
