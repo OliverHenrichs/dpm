@@ -83,10 +83,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       minWidth: "85%",
       maxHeight: "80%",
       elevation: 5,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
+      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
     },
     modalHeader: {
       flexDirection: "row",

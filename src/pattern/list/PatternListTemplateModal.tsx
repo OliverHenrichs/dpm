@@ -604,10 +604,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: palette[PaletteColor.Border],
       zIndex: 100,
       elevation: 8,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.2)",
     },
     colorSwatchGrid: {
       flexDirection: "row",

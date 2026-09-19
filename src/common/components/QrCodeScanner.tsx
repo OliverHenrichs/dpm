@@ -73,6 +73,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     paddingHorizontal: 32,
+    // react-native-web 0.21 asks for the `textShadow` shorthand instead, but
+    // react-native 0.86 still types only these three props. Revisit when RN catches up.
     textShadowColor: "rgba(0,0,0,0.8)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,

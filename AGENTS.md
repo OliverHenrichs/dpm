@@ -146,6 +146,17 @@ Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, a
 - `src/common/components/YouTubeVideoItem.tsx` uses `react-native-youtube-iframe`, which renders through `react-native-webview`. That library has no web build (its web entry imports the unmaintained `react-native-web-webview`), so `YouTubeVideoItem.web.tsx` embeds the YouTube iframe directly instead. Keep the YouTube player behind this component — importing `react-native-youtube-iframe` anywhere reachable from web breaks the web bundle.
 - Verify both targets with `npx expo export --platform web` and `--platform android`; web also builds an SSR bundle (static rendering is on), so a bad import surfaces twice.
 
+## Dependencies & security
+
+`npm audit` is expected to report **three moderate findings and nothing else**. Anything beyond that is new and worth looking at.
+
+- The three expected ones are one root cause: `expo-router` → `query-string@7` → `decode-uri-component@0.2.2`. The patched `decode-uri-component@0.5.0` is ESM-only, so it cannot be forced under the CJS `query-string@7`; this has to wait for expo-router upstream. Impact is a DoS in query-string decoding, reachable only through a URL the user opens.
+- `overrides` in `package.json` carries the rest. Each entry exists because a parent pins a range that sits below the fix — keep the comment-worthy ones in mind before removing any:
+  `shell-quote` (react-devtools-core), `brace-expansion@1` / `@5` (eslint and @typescript-eslint minimatch), `@humanfs/node` (eslint), `@babel/core`, `flatted` (eslint flat-cache), and `xcode` → `uuid@^11` (xcode only calls `uuid.v4()`, unchanged across those majors; it runs during iOS prebuild).
+- `react-test-renderer` is pinned to the exact `react` version and must be bumped with it.
+- Do **not** run `npx expo install --fix`. Several packages are deliberately ahead of the versions SDK 57 bundles — `@react-native-async-storage/async-storage@3`, `react-native-gesture-handler@3`, `jest@30`, `react@19.2.7`, `react-native-safe-area-context`, `react-native-svg` — and `--fix` would downgrade them, two across a major. `npx expo install --check` listing them is expected.
+- `react-native-web` 0.21 warns that `shadow*` and `textShadow*` style props are deprecated. `shadow*` is migrated to the `boxShadow` shorthand; `textShadow` is not, because react-native 0.86 still types only `textShadowColor` / `textShadowOffset` / `textShadowRadius` (see `QrCodeScanner.tsx`).
+
 ## Developer workflows
 
 ```bash
@@ -159,7 +170,7 @@ npm run test:coverage    # coverage for src/pattern/data/** + src/pattern/graph/
 npm run lint             # ESLint via expo lint
 ```
 
-Stack: Expo SDK ~56 / React Native 0.85 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`).
+Stack: Expo SDK ~57 / React Native 0.86 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`).
 
 ## Testing conventions
 

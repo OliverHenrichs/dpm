@@ -120,10 +120,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       paddingVertical: 8,
       borderRadius: 8,
       elevation: 4,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
+      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
     },
     buttonText: {
       color: palette[PaletteColor.Surface],
@@ -141,10 +138,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       padding: 12,
       maxWidth: 200,
       elevation: 4,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
+      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
     },
     header: {
       flexDirection: "row",
