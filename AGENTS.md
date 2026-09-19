@@ -139,6 +139,13 @@ Expo loads `.env` automatically for `expo start` / `eas build`; for EAS builds t
 
 `@/` resolves to the **project root** (not `src/`). Use `@/src/...` for source imports and `@/utils/...` for test utilities. The same mapping is configured in `tsconfig.json` and in `jest.config.js` (`moduleNameMapper`).
 
+## Platform-specific code
+
+Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape.
+
+- `src/common/components/YouTubeVideoItem.tsx` uses `react-native-youtube-iframe`, which renders through `react-native-webview`. That library has no web build (its web entry imports the unmaintained `react-native-web-webview`), so `YouTubeVideoItem.web.tsx` embeds the YouTube iframe directly instead. Keep the YouTube player behind this component — importing `react-native-youtube-iframe` anywhere reachable from web breaks the web bundle.
+- Verify both targets with `npx expo export --platform web` and `--platform android`; web also builds an SSR bundle (static rendering is on), so a bad import surfaces twice.
+
 ## Developer workflows
 
 ```bash
