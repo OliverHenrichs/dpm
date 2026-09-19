@@ -177,7 +177,7 @@ export async function hasPatternLists(): Promise<boolean> {
  */
 export async function clearAllData(): Promise<void> {
   try {
-    await AsyncStorage.multiRemove([PATTERN_LISTS_KEY, ACTIVE_LIST_ID_KEY]);
+    await AsyncStorage.removeMany([PATTERN_LISTS_KEY, ACTIVE_LIST_ID_KEY]);
     // Note: Individual pattern keys are cleaned up when lists are deleted
   } catch (error) {
     console.error("Error clearing all data:", error);

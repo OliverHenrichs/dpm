@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Modal,
   Pressable,
@@ -16,6 +16,7 @@ import {
   createBachataList,
   createBlankList,
   createLindyHopList,
+  createPatternList,
   createPatternType,
   createSalsaList,
   createTangoList,
@@ -26,7 +27,6 @@ import {
 } from "@/src/pattern/data/DefaultPatternLists";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
 import {
-  generateUUID,
   isSlugUnique,
   normalizeSlug,
   PATTERN_TYPE_COLORS,
@@ -55,6 +55,15 @@ interface Template {
 interface DraftPatternEntry {
   templatePattern: TemplatePattern;
   included: boolean;
+}
+
+/** Applies the edited name/types to an existing list and re-stamps updatedAt. */
+function applyListEdits(
+  list: IPatternList,
+  name: string,
+  patternTypes: PatternType[],
+): IPatternList {
+  return { ...list, name, patternTypes, updatedAt: Date.now() };
 }
 
 const COLOR_VALUES = Object.values(PATTERN_TYPE_COLORS) as string[];
@@ -101,8 +110,40 @@ const TEMPLATES: Template[] = [
   },
 ];
 
+type TemplateModalBodyProps = Omit<PatternListTemplateModalProps, "visible">;
+
 const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
   visible,
+  ...bodyProps
+}) => {
+  const { colorScheme } = useThemeContext();
+  const palette = getPalette(colorScheme);
+  const styles = getStyles(palette);
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={bodyProps.onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          {/* Keyed by what the modal is currently open on, so opening it (or
+              switching to another list) re-mounts the body with its drafts
+              seeded from the props, and closing it throws them away. That is
+              what replaces the old seed/reset effect. */}
+          <TemplateModalBody
+            key={visible ? (bodyProps.editList?.id ?? "new") : "closed"}
+            {...bodyProps}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   onClose,
   onCreateList,
   editList,
@@ -117,34 +158,18 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
   const isEditMode = !!editList; // this operator ensures editList is not undefined or null, treating both as "not in edit mode"
 
   type Step = "pick" | "configure";
-  const [step, setStep] = useState<Step>("pick");
+  // In edit mode the drafts start out mirroring the list being edited and the
+  // template picker is skipped; otherwise everything starts empty.
+  const [step, setStep] = useState<Step>(isEditMode ? "configure" : "pick");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
     null,
   );
-  const [draftName, setDraftName] = useState("");
-  const [draftTypes, setDraftTypes] = useState<PatternType[]>([]);
+  const [draftName, setDraftName] = useState(editList?.name ?? "");
+  const [draftTypes, setDraftTypes] = useState<PatternType[]>(() =>
+    (editList?.patternTypes ?? []).map((pt) => ({ ...pt })),
+  );
   const [draftPatterns, setDraftPatterns] = useState<DraftPatternEntry[]>([]);
   const [colorPopoverId, setColorPopoverId] = useState<string | null>(null);
-
-  // When the modal opens in edit mode, seed draft state from the existing list
-  useEffect(() => {
-    if (visible && isEditMode && editList) {
-      setDraftName(editList.name);
-      setDraftTypes(editList.patternTypes.map((pt) => ({ ...pt })));
-      setDraftPatterns([]);
-      setColorPopoverId(null);
-      setStep("configure");
-    }
-    if (!visible) {
-      // Reset everything when closed
-      setStep("pick");
-      setSelectedTemplate(null);
-      setDraftName("");
-      setDraftTypes([]);
-      setDraftPatterns([]);
-      setColorPopoverId(null);
-    }
-  }, [visible, isEditMode, editList]);
 
   // ── Slug validation ────────────────────────────────────────────────────────
   const slugErrors: Record<string, string> = {};
@@ -175,7 +200,6 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
 
   const handleCreate = () => {
     if (!canCreate) return;
-    const now = Date.now();
     const finalTypes: PatternType[] = draftTypes.map((dt) => ({
       ...dt,
       slug: normalizeSlug(dt.slug),
@@ -183,23 +207,10 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
 
     if (isEditMode && editList && onSaveList) {
       // ── Edit path ─────────────────────────────────────────────────────
-      const updatedList: IPatternList = {
-        ...editList,
-        name: draftName.trim(),
-        patternTypes: finalTypes,
-        updatedAt: now,
-      };
-      onSaveList(updatedList);
+      onSaveList(applyListEdits(editList, draftName.trim(), finalTypes));
     } else {
       // ── Create path ───────────────────────────────────────────────────
-      const newList: IPatternList = {
-        id: generateUUID(),
-        name: draftName.trim(),
-        patternTypes: finalTypes,
-        modifiers: [],
-        createdAt: now,
-        updatedAt: now,
-      };
+      const newList = createPatternList(draftName.trim(), finalTypes);
       const includedPatterns = draftPatterns
         .filter((e) => e.included)
         .map((e) => e.templatePattern);
@@ -489,20 +500,7 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
       </ScrollView>
     </Pressable>
   );
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={handleClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          {step === "pick" ? renderPickStep() : renderConfigureStep()}
-        </View>
-      </View>
-    </Modal>
-  );
+  return step === "pick" ? renderPickStep() : renderConfigureStep();
 };
 
 const getStyles = (palette: Record<PaletteColor, string>) =>

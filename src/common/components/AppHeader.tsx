@@ -2,33 +2,29 @@ import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
-import {
-  DrawerActions,
-  useNavigation,
-  useRoute,
-} from "@react-navigation/native";
+import { useNavigation, usePathname } from "expo-router";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
+import { DRAWER_ROUTES } from "@/src/common/components/DrawerRoutes";
 
-const CONTENT_ROUTES = new Set(["Patterns", "PatternGraph"]);
+/** Only the drawer-specific part of the navigation object is needed here. */
+type DrawerNavigation = { openDrawer: () => void };
+
 const AppHeader: React.FC = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<DrawerNavigation>();
+  const pathname = usePathname();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const { activeList } = useActivePatternList();
   const styles = getStyles(palette);
-  const screenTitles: Record<string, string> = {
-    PatternLists: t("appTitle"),
-    Patterns: t("patternTab"),
-    PatternGraph: t("patternGraph"),
-    Settings: t("settingsTab"),
-  };
-  const title = CONTENT_ROUTES.has(route.name)
-    ? (activeList?.name ?? screenTitles[route.name])
-    : (screenTitles[route.name] ?? route.name);
+  const route = DRAWER_ROUTES.find((r) => r.href === pathname);
+  const screenTitle =
+    route?.name === "index" ? t("appTitle") : route && t(route.titleKey);
+  const title = route?.showsActiveListName
+    ? (activeList?.name ?? screenTitle)
+    : (screenTitle ?? pathname);
   return (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
@@ -46,7 +42,7 @@ const AppHeader: React.FC = () => {
         {title}
       </Text>
       <TouchableOpacity
-        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        onPress={() => navigation.openDrawer()}
         style={styles.hamburgerButton}
         accessibilityLabel={t("openMenu")}
       >

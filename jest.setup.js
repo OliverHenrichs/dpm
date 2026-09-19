@@ -4,7 +4,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(),
   setItem: jest.fn(),
   removeItem: jest.fn(),
-  multiRemove: jest.fn(),
+  removeMany: jest.fn(),
 }));
 
 // Suppress console warnings during tests

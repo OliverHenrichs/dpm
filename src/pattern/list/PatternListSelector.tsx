@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useFocusEffect } from "@react-navigation/native";
+import { router, useFocusEffect } from "expo-router";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
 import {
   deletePatternList,
@@ -34,7 +34,7 @@ import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 
-const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
+const PatternListSelector: React.FC = () => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
@@ -88,7 +88,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleSelectList = async (list: IPatternList) => {
     await setActiveList(list);
-    navigation.navigate("Patterns");
+    router.navigate("/patterns");
   };
 
   const handleDeleteList = (list: IPatternList) => {
@@ -185,7 +185,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
       await savePatterns(fetched.id, fetched.patterns);
       await loadLists();
       await setActiveList({ ...fetched, readonly: true });
-      navigation.navigate("Patterns");
+      router.navigate("/patterns");
     } catch (e) {
       showError(String(e));
     }
@@ -205,7 +205,7 @@ const PatternListSelector: React.FC<{ navigation: any }> = ({ navigation }) => {
       }
       await loadLists();
       await setActiveList(newList);
-      navigation.navigate("Patterns");
+      router.navigate("/patterns");
     } catch (error) {
       console.error("Error creating list:", error);
       showError(t("errorCreatingList"));

@@ -5,23 +5,52 @@ Expo/React Native (TypeScript) app for mapping partner-dance prerequisite graphs
 ## Architecture overview
 
 ```
-app/index.tsx          ← single Expo Router entry point
+app/_layout.tsx        ← root layout (imports @/src/i18n)
   ThemeProvider        ← global light/dark theme
-    DrawerNavigator    ← 4 routes: PatternLists | Patterns | PatternGraph | Settings
-      ActivePatternListProvider  ← global state: active list + its patterns
+    ActivePatternListProvider  ← global state: active list + its patterns
+      Drawer           ← expo-router/drawer, 4 file-based routes
 ```
 
-All screens share state through `ActivePatternListContext` (`src/pattern/data/components/ActivePatternListContext.tsx`). Every screen reads `activeList`, `patterns`, `isLoading`, and `hasLists` from `useActivePatternList()` — never loads storage directly. The provider also maintains a live Firestore subscription via `useSharedList` when the active list has a `shareCode`.
+Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (SDK 56 forbids importing those from app code — Metro fails the bundle). Import `Drawer` from `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from `expo-router`.
+
+| File | Path | Screen component |
+|---|---|---|
+| `app/index.tsx` | `/` | `src/pattern/list/PatternListSelector.tsx` |
+| `app/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` |
+| `app/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` |
+| `app/settings.tsx` | `/settings` | `src/settings/SettingsScreen.tsx` |
+
+Each route file is a one-line re-export; the screens live in `src/`. `src/common/components/DrawerRoutes.ts` is the single source of truth for the route list (name, href, i18n title key, whether the header shows the active list's name) and is consumed by the navigator, the drawer menu (`DrawerContent.tsx`) and `AppHeader.tsx` — add a route there and in `app/`, not in three places.
+
+Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop. The drawer is opened from `AppHeader` via `useNavigation<{ openDrawer: () => void }>()`; `DrawerContent` must take `navigation` from the `drawerContent` render prop instead, since it sits beside the screens and `useNavigation()` there does not resolve to the drawer navigator.
+
+All screens share state through `ActivePatternListContext` (`src/pattern/data/components/ActivePatternListContext.tsx`). Every screen reads `activeList`, `patterns`, `isLoading`, and `hasLists` from `useActivePatternList()` and mutates via `setActiveList`, `updatePatterns`, `updateActiveList(list, patternsOverride?)`, `refreshActiveList` — never loads storage directly. The provider also maintains a live Firestore subscription via `useSharedList` when the active list has a `shareCode`.
 
 ## Core data model
 
+Everything lives in `src/pattern/types/IPatternList.ts` (plus `PatternType.ts`, `PatternLevel.ts`).
+
 | Type | Id type | Key detail |
 |---|---|---|
-| `IPatternList` | `string` (UUID) | Owns its own `PatternType[]` — types are **per-list**, not global; optional `readonly?: boolean` (subscriber copy) and `shareCode?: string` (Firestore doc ID) |
+| `IPatternList` | `string` (UUID) | Owns its own `PatternType[]` **and** `IModifier[]` — both are **per-list**, not global; optional `readonly?: boolean` (subscriber/read-only copy) and `shareCode?: string` (Firestore doc ID) |
 | `PatternType` | `string` (UUID) | `slug` = display name; `color` = hex; referenced from patterns via `typeId` |
-| `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `videoRefs: IVideoReference[]` holds `{type: "url"|"local", value: string}` entries |
+| `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `tags: string[]`; optional `level` (`PatternLevel` value); `videoRefs: IVideoReference[]`; `modifierRefs: IPatternModifierRef[]` |
+| `IModifier` | `string` (UUID) | `position: "prefix" \| "postfix" \| "amends"`; `universal: boolean`; `videoRefs` are only used when `universal === true` |
+| `IPatternModifierRef` | — | `{ modifierId, videoRefs }` — a non-universal modifier attached to one pattern, with videos of that pattern **executed with** the modifier |
+| `IVideoReference` | — | `{ type: "url" \| "local", value: string, startTime?: number }` (`startTime` for URL videos only) |
 
-Key files: `src/pattern/types/IPatternList.ts`, `src/pattern/types/PatternType.ts`, `src/pattern/types/PatternLevel.ts`.
+Creation helper types: `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`.
+
+`PatternType.ts` also exports `PATTERN_TYPE_COLORS` (12 named hex colours), `generateUUID()`, `normalizeSlug()`, and `isSlugUnique()`.
+
+## Modifiers
+
+Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pattern:
+
+- **Universal** modifiers implicitly apply to every pattern in the list and carry their own `videoRefs`.
+- **Non-universal** modifiers are attached per-pattern through `IPattern.modifierRefs`; each attachment carries its own videos of that specific combination.
+
+`PatternListManager` has a `patterns` / `modifiers` tab switch and owns modifier CRUD (`addModifier`, `editModifier`, `deleteModifier` — deleting also scrubs the id from every pattern's `modifierRefs`). UI: `ModifierList` → `ModifierListItem` → `ModifierDetails`, editing via `EditModifierForm`; `ModifierPillStrip` renders/toggles a pattern's modifiers inside `EditPatternForm` and `PatternDetails`.
 
 ## Persistence (AsyncStorage)
 
@@ -30,7 +59,7 @@ Storage keys in `src/pattern/data/PatternListStorage.ts`:
 - `@patterns_{listId}` — serialised `IPattern[]` for a given list
 - `@activeListId` — UUID of the currently active list
 
-Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` — never call `AsyncStorage` directly from UI code.
+Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`) — never call `AsyncStorage` directly from UI code.
 
 ## Theming
 
@@ -40,67 +69,94 @@ const { colorScheme } = useThemeContext();       // "light" | "dark"
 const palette = getPalette(colorScheme);          // → LightPalette or DarkPalette
 // then: palette[PaletteColor.Background], etc.
 ```
-Styles are created inline per-render (no shared static stylesheets). `PaletteColor` enum and both palettes live in `src/common/utils/ColorPalette.ts`.
+Styles are created inline per-render (no shared static stylesheets). `PaletteColor` enum and both palettes live in `src/common/utils/ColorPalette.ts`. Recurring style fragments are factored into `src/common/utils/CommonStyles.ts` (`getCommonButton`, `getCommonInput`, `getCommonLabel`, …) and `src/pattern/filter/FilterCommonStyles.ts` (chips, filter sections) — reuse those instead of re-declaring them.
 
 ## Internationalisation
 
-All user-facing strings use `const { t } = useTranslation()`. Translation keys must be added to **both** `locales/en.json` and `locales/de.json`. i18n is initialised once in `app/i18n.ts` (imported at entry point).
+All user-facing strings use `const { t } = useTranslation()`. Translation keys must be added to **both** `locales/en.json` and `locales/de.json` (flat key/value, no nesting). i18n is initialised once in `src/i18n.ts` (imported by `app/_layout.tsx`; it lives outside `app/` because every file in there becomes a route); available languages are listed in `src/settings/types/Languages.ts`.
 
 ## Graph views
 
-`src/pattern/graph/` contains two switchable views driven by `IPattern.prerequisites[]`:
-- **Timeline** — swimlane by `PatternType`, left-to-right by depth (`TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
-- **Network** — force-free hierarchical layout (`NetworkGraphUtils.ts`); layout logic extracted into the `useGraphLayout` hook (`src/pattern/graph/hooks/useGraphLayout.ts`)
+`src/pattern/graph/` contains two switchable views (`ViewMode = "timeline" | "graph"`, selected in `PatternGraphScreen`, rendered by `GraphViewContainer` alongside `Legend`) driven by `IPattern.prerequisites[]`:
+- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by depth (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
+- **Network** (`NetworkGraphView.tsx`) — force-free hierarchical layout (`calculateGraphLayout` in `NetworkGraphUtils.ts`); layout logic extracted into the `useGraphLayout` hook (`src/pattern/graph/hooks/useGraphLayout.ts`)
 
-Shared graph utilities: `GenericGraphUtils.ts` (depth map, circular-dependency detection), `GraphUtils.ts` (edge generation, SVG path helpers). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `src/pattern/graph/types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `src/pattern/graph/types/IGraphSvgProps.ts`.
+Shared graph utilities: `GenericGraphUtils.ts` (`generateEdges`, `detectCircularDependencies`, `calculatePrerequisiteDepthMap` — generic over `PatternLike`), `GraphUtils.ts` (`LayoutPosition`, edge generation, `generateOrthogonalPath` / `generateSkipLevelPath`). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `src/pattern/graph/types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `src/pattern/graph/types/IGraphSvgProps.ts` (rendered by `GraphSvg.tsx` / `PatternNode.tsx`). Tapping a node opens `PatternDetailsModal` → `PatternDetails`.
+
+## Filtering & sorting
+
+- `PatternFilter` (`src/pattern/filter/components/PatternFilterBottomSheet.tsx`): `{ name, types, levels, counts?, tags }`, applied by `usePatternFilter` (`src/pattern/list/hooks/usePatternFilter.ts`). Sub-panels: `NameFilter`, `TypeFilter`, `LevelFilter`, `CountsFilter`, `TagFilter`.
+- `SortConfig` (`src/pattern/list/SortBottomSheet.tsx`): `{ field, order }` with `SortField = "name" | "typeId" | "level" | "counts" | "id"` and `SortOrder = "asc" | "desc"`, applied by `usePatternSort`.
+
+Both panels are rendered through the shared `BottomSheet` component (`src/common/components/BottomSheet.tsx`).
 
 ## Default list templates
 
-`src/pattern/data/DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`). Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s. The companion `TemplatePattern` type uses `typeSlug` (not `typeId`) so templates stay stable across renames.
+`src/pattern/data/DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames. Picking a template happens in `PatternListTemplateModal`.
 
 ## Export / Import format
 
-Version `"2.0.0"` JSON (`IPatternListExportData` in `src/pattern/data/types/IExportData.ts`). Local videos are base64-embedded under the `videos` map keyed by original path. Import decodes them back to the local filesystem via `expo-file-system`.
+Version `"3.0.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `src/pattern/data/types/IExportData.ts`:
 
-Export/import UI lives in `src/pattern/data/components/` (`PatternListExportModal`, `PatternListImportModal`, and helpers `ConflictBadge`, `ExportListItem`, `ImportListItem`, `ImportSummary`, `SelectAllButton`, `ImportActionButtons`). The backing hooks are `useExportSelection` and `useImportDecisions` in `src/pattern/data/hooks/`; `src/settings/hooks/useDataTransfer.ts` orchestrates the full flow from `SettingsScreen`.
+```ts
+{ version, exportDate, includesVideos, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
+```
+
+- `exportPatternLists(lists, includeVideos, exportAsReadonly)` (`exportPatterns.ts`) writes the file to the document directory and hands it to `expo-sharing`. With `includeVideos === false` local refs are stripped instead of embedded (URL refs always survive); with `exportAsReadonly` each list gets `readonly: true`.
+- Videos are keyed in the `videos` map by their **original local path**; pattern videos, universal-modifier videos and per-pattern modifier-combination videos are all embedded.
+- `importPatternLists()` (`ImportPatterns.ts`) picks a file via `expo-document-picker`, decodes base64 videos back to the local filesystem via `expo-file-system`, and returns the lists — collecting non-fatal `warnings` for missing/unreadable videos.
+
+Export/import UI lives in `src/pattern/data/components/` (`PatternListExportModal`, `PatternListImportModal`, and helpers `ConflictBadge`, `ExportListItem`, `ImportListItem`, `ImportSummary`, `SelectAllButton`, `ImportActionButtons`). The backing hooks are `useExportSelection` and `useImportDecisions` (`ImportAction = "skip" | "replace"` per list, defaulting to `skip` on id conflict) in `src/pattern/data/hooks/`; `src/settings/hooks/useDataTransfer.ts` orchestrates the full flow from `SettingsScreen`.
 
 ## Firebase / cloud sharing
 
 `src/firebase/` provides optional Firestore-backed list sharing:
-- `firebaseConfig.ts` — reads credentials from `app.json` `extra.firebase`; when absent, `firebaseAvailable === false` and all service calls are no-ops.
-- `FirebaseListService.ts` — `publishList`, `syncPublishedList`, `unpublishList`, `fetchSharedList`, `subscribeToSharedList`.
+- `firebaseConfig.ts` — reads credentials from `Constants.expoConfig.extra.firebase`; when absent, `firebaseAvailable === false` and all service calls throw/no-op rather than crash the app. Also exports `db`, `APP_TOKEN` (write guard checked by Firestore Security Rules) and `SHARED_LISTS_COLLECTION = "sharedLists"`.
+- `FirebaseListService.ts` — `publishList`, `syncPublishedList`, `unpublishList`, `fetchSharedList`, `subscribeToSharedList`; documents follow `SharedListDocument` (`list`, `patterns`, `publisherVersion`, `publishedAt`, `appToken`). Share codes are 8-char alphanumeric, generated with `expo-crypto` (CSPRNG).
 - `useSharedList` (`src/pattern/data/hooks/useSharedList.ts`) — called inside `ActivePatternListProvider`; maintains a live `onSnapshot` listener while `activeList.shareCode` is set; handles publisher unpublishing (clears `shareCode`/`readonly` locally and surfaces a themed dialog).
 
-**Publisher flow**: `ShareListModal` → `publishList()` → `IPatternList.shareCode` set → stored locally.  
-**Subscriber flow**: `SubscribeListModal` → enter 8-char code → `fetchSharedList()` → list saved with `readonly: true` and `shareCode` → `useSharedList` keeps it in sync.
+**Publisher flow**: `ShareListModal` → `publishList()` → `IPatternList.shareCode` set → stored locally; the modal can render the code as a QR code (`react-native-qrcode-svg`).
+**Subscriber flow**: `SubscribeListModal` → type the 8-char code or scan the QR with `QrCodeScanner` (`expo-camera`) → `fetchSharedList()` → list saved with `readonly: true` and `shareCode` → `useSharedList` keeps it in sync.
 
-To configure, add to `app.json`:
-```json
-"extra": {
-  "firebase": { "apiKey": "...", "projectId": "...", ... },
-  "firebaseAppToken": "YOUR_WRITE_TOKEN"
-}
+Writes are also pushed opportunistically from the UI: `PatternListManager` calls `syncPublishedList(activeList, patterns)` after pattern CRUD when a `shareCode` exists.
+
+### Configuration
+
+Config is **dynamic** — `app.config.ts` (there is no `app.json`) reads credentials from environment variables, so nothing secret is committed. Copy `.env.example` to `.env` (gitignored) and fill in:
+
 ```
+FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET,
+FIREBASE_MESSAGING_SENDER_ID, FIREBASE_APP_ID, FIREBASE_MEASUREMENT_ID, FIREBASE_APP_TOKEN
+```
+
+Expo loads `.env` automatically for `expo start` / `eas build`; for EAS builds the same names must exist as EAS Secrets. Without them the app runs local-only.
+
+## Read-only lists
+
+`IPatternList.readonly` is set on imported read-only exports and on subscribed cloud lists. Every mutating path must guard on it (`const isReadonly = !!activeList?.readonly`) — pattern and modifier CRUD in `PatternListManager` already does.
 
 ## Path alias
 
-`@/` resolves to the **project root** (not `src/`). Use `@/src/...` for source imports and `@/utils/...` for test utilities.
+`@/` resolves to the **project root** (not `src/`). Use `@/src/...` for source imports and `@/utils/...` for test utilities. The same mapping is configured in `tsconfig.json` and in `jest.config.js` (`moduleNameMapper`).
 
 ## Developer workflows
 
 ```bash
 npm install              # install deps
-npx expo start           # dev server (LAN)
+npm start                # expo start --lan (or: npx expo start)
+npm run android          # expo start --android
+npm run ios              # expo start --ios
 npm test                 # Jest (node env, no device needed)
 npm run test:watch       # watch mode
 npm run test:coverage    # coverage for src/pattern/data/** + src/pattern/graph/utils/**
 npm run lint             # ESLint via expo lint
 ```
 
+Stack: Expo SDK ~56 / React Native 0.85 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`).
+
 ## Testing conventions
 
-- All tests live in `__tests__/` (not co-located). Test environment is `node`.
+- All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Test environment is `node`; transform is `ts-jest`.
 - Coverage is scoped to `src/pattern/data/**` and `src/pattern/graph/utils/**`.
-- Use factory helpers from `utils/testFactories.ts` (`createTestPattern`, `createTestPatternList`, `createTestPatternType`) — do not inline raw object literals in tests.
-- `IPattern.id` in tests should be a plain integer; `PatternType.id` / `IPatternList.id` should use `generateUUID()`.
-
+- Use factory helpers from `utils/testFactories.ts` (`createTestPattern`, `createTestPatternList`, `createTestPatternType`) — do not inline raw object literals in tests. They already supply `modifiers: []` / `modifierRefs: []`, so new required fields belong there too.
+- `IPattern.id` in tests should be a plain integer; `PatternType.id` / `IPatternList.id` / `IModifier.id` should use `generateUUID()`.

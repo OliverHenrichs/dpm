@@ -56,9 +56,11 @@ export const ActivePatternListProvider: React.FC<{
   const [hasLists, setHasLists] = useState(false);
   const { t } = useTranslation();
 
-  // Load active list and patterns on mount
+  // Load active list and patterns. Deliberately does not raise `isLoading`
+  // itself: on mount the state already starts out loading, and the live
+  // Firestore subscription reuses this to apply remote updates without
+  // flashing the whole screen back into a loading state.
   const loadActiveListAndPatterns = useCallback(async () => {
-    setIsLoading(true);
     try {
       const hasAnyLists = await hasPatternLists();
       setHasLists(hasAnyLists);
@@ -82,7 +84,9 @@ export const ActivePatternListProvider: React.FC<{
   }, []);
 
   useEffect(() => {
-    loadActiveListAndPatterns();
+    (async () => {
+      await loadActiveListAndPatterns();
+    })();
   }, [loadActiveListAndPatterns]);
 
   const setActiveList = async (list: IPatternList | null) => {
@@ -129,6 +133,7 @@ export const ActivePatternListProvider: React.FC<{
   };
 
   const refreshActiveList = async () => {
+    setIsLoading(true);
     await loadActiveListAndPatterns();
   };
 

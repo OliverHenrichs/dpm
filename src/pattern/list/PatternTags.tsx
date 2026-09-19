@@ -24,13 +24,12 @@ const PatternTags: React.FC<PatternTagsProps> = ({
   tags,
   setTags,
   allPatterns,
-  styles,
+  styles: styleOverrides,
 }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
-  const localStyles = getStyles(palette);
-  styles = { ...styles, ...localStyles };
+  const styles = { ...styleOverrides, ...getStyles(palette) };
 
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 

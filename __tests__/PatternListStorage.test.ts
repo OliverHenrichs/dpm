@@ -21,7 +21,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(),
   setItem: jest.fn(),
   removeItem: jest.fn(),
-  multiRemove: jest.fn(),
+  removeMany: jest.fn(),
 }));
 
 describe("PatternListStorage", () => {
@@ -197,7 +197,7 @@ describe("PatternListStorage", () => {
     it("should remove all storage keys", async () => {
       await clearAllData();
 
-      expect(AsyncStorage.multiRemove).toHaveBeenCalledWith([
+      expect(AsyncStorage.removeMany).toHaveBeenCalledWith([
         "@patternLists",
         "@activeListId",
       ]);

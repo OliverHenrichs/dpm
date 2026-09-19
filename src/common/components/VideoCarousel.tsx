@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { VideoItem } from "@/src/common/components/VideoItem";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
+
+// FlatList requires a referentially stable viewability config, so it lives
+// outside the component rather than being rebuilt per render.
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
 
 type VideoCarouselProps = {
   videoRefs: IVideoReference[];
@@ -17,15 +21,11 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
   const [containerWidth, setContainerWidth] = useState(0);
   const styles = getStyles(palette);
 
-  const onViewableItemsChanged = React.useRef(({ viewableItems }: any) => {
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
       setCurrentIndex(viewableItems[0].index ?? 0);
     }
-  }).current;
-
-  const viewabilityConfig = React.useRef({
-    itemVisiblePercentThreshold: 50,
-  }).current;
+  }, []);
 
   return (
     <View
@@ -48,7 +48,7 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
           decelerationRate="fast"
           showsHorizontalScrollIndicator={false}
           onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
+          viewabilityConfig={VIEWABILITY_CONFIG}
         />
       )}
       {videoRefs.length > 1 && (

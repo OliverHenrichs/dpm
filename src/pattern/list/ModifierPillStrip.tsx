@@ -5,7 +5,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";import { useTranslation } from "react-i18next";
+} from "react-native";
+import { useTranslation } from "react-i18next";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import {

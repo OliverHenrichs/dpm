@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { useColorScheme as useNativeColorScheme } from "react-native";
 
 export type ThemeType = "light" | "dark" | "system";
@@ -20,17 +20,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [theme, setTheme] = useState<ThemeType>("system");
   const systemColorScheme = useNativeColorScheme(); // "light" | "dark" | null
-  const [colorScheme, setColorScheme] = useState<"light" | "dark">(
-    systemColorScheme === "dark" ? "dark" : "light",
-  );
 
-  useEffect(() => {
-    if (theme === "system") {
-      setColorScheme(systemColorScheme === "dark" ? "dark" : "light");
-    } else {
-      setColorScheme(theme);
-    }
-  }, [theme, systemColorScheme]);
+  // Derived straight from the inputs — no state/effect needed, so the very
+  // first render already paints in the right scheme.
+  const colorScheme: "light" | "dark" =
+    theme === "system"
+      ? systemColorScheme === "dark"
+        ? "dark"
+        : "light"
+      : theme;
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, colorScheme }}>

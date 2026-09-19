@@ -3,9 +3,7 @@ module.exports = {
     "^.+\\.(ts|tsx)$": [
       "ts-jest",
       {
-        tsconfig: {
-          jsx: "react",
-        },
+        tsconfig: "<rootDir>/tsconfig.jest.json",
       },
     ],
   },

@@ -20,7 +20,6 @@ export default (): ExpoConfig => ({
   icon: "./assets/images/app-icon.png",
   scheme: "dancepatternmapper",
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
   ios: {
     supportsTablet: true,
     icon: {
@@ -35,7 +34,6 @@ export default (): ExpoConfig => ({
       monochromeImage: "./assets/images/adaptive-icon.png",
       backgroundColor: "#18181b",
     },
-    edgeToEdgeEnabled: true,
     package: "com.teholi.DancePatternMapper",
   },
   web: {

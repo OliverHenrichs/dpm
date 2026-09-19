@@ -61,7 +61,12 @@ async function createExportData(
     const exportedModifiers = [];
     for (const modifier of list.modifiers ?? []) {
       if (includeVideos) {
-        await addModifierVideos(modifier.id, modifier.videoRefs, videos, warnings);
+        await addModifierVideos(
+          modifier.id,
+          modifier.videoRefs,
+          videos,
+          warnings,
+        );
         exportedModifiers.push(modifier);
       } else {
         const portableRefs = (modifier.videoRefs ?? []).filter(
@@ -78,19 +83,36 @@ async function createExportData(
         // Process per-pattern modifier combination videos
         const exportedModifierRefs = [];
         for (const modRef of pattern.modifierRefs ?? []) {
-          await addModifierRefVideos(pattern.id, modRef.modifierId, modRef.videoRefs, videos, warnings);
+          await addModifierRefVideos(
+            pattern.id,
+            modRef.modifierId,
+            modRef.videoRefs,
+            videos,
+            warnings,
+          );
           exportedModifierRefs.push(modRef);
         }
-        exportedPatterns.push({ ...pattern, modifierRefs: exportedModifierRefs });
+        exportedPatterns.push({
+          ...pattern,
+          modifierRefs: exportedModifierRefs,
+        });
       } else {
         const portableRefs = (pattern.videoRefs ?? []).filter(
           (ref) => ref.type !== "local",
         );
-        const portableModifierRefs = (pattern.modifierRefs ?? []).map((modRef) => ({
-          ...modRef,
-          videoRefs: (modRef.videoRefs ?? []).filter((ref) => ref.type !== "local"),
-        }));
-        exportedPatterns.push({ ...pattern, videoRefs: portableRefs, modifierRefs: portableModifierRefs });
+        const portableModifierRefs = (pattern.modifierRefs ?? []).map(
+          (modRef) => ({
+            ...modRef,
+            videoRefs: (modRef.videoRefs ?? []).filter(
+              (ref) => ref.type !== "local",
+            ),
+          }),
+        );
+        exportedPatterns.push({
+          ...pattern,
+          videoRefs: portableRefs,
+          modifierRefs: portableModifierRefs,
+        });
       }
     }
     exportedLists.push({
@@ -119,7 +141,11 @@ async function addPatternVideos(
   if (!videoRefs) return;
   for (const videoRef of videoRefs) {
     if (videoRef.type !== "local" || videos[videoRef.value]) continue;
-    const base64Data = await getVideo(videoRef, warnings, `pattern:${patternId}`);
+    const base64Data = await getVideo(
+      videoRef,
+      warnings,
+      `pattern:${patternId}`,
+    );
     if (base64Data) videos[videoRef.value] = base64Data;
   }
 }
@@ -133,7 +159,11 @@ async function addModifierVideos(
   if (!videoRefs) return;
   for (const videoRef of videoRefs) {
     if (videoRef.type !== "local" || videos[videoRef.value]) continue;
-    const base64Data = await getVideo(videoRef, warnings, `modifier:${modifierId}`);
+    const base64Data = await getVideo(
+      videoRef,
+      warnings,
+      `modifier:${modifierId}`,
+    );
     if (base64Data) videos[videoRef.value] = base64Data;
   }
 }
@@ -148,7 +178,11 @@ async function addModifierRefVideos(
   if (!videoRefs) return;
   for (const videoRef of videoRefs) {
     if (videoRef.type !== "local" || videos[videoRef.value]) continue;
-    const base64Data = await getVideo(videoRef, warnings, `pattern:${patternId}+modifier:${modifierId}`);
+    const base64Data = await getVideo(
+      videoRef,
+      warnings,
+      `pattern:${patternId}+modifier:${modifierId}`,
+    );
     if (base64Data) videos[videoRef.value] = base64Data;
   }
 }
@@ -163,7 +197,9 @@ async function getVideo(
     if (!file.exists) return;
     return await file.base64();
   } catch {
-    warnings.push(`Failed to read video: ${videoRef.value} (context: ${context})`);
+    warnings.push(
+      `Failed to read video: ${videoRef.value} (context: ${context})`,
+    );
   }
 }
 
