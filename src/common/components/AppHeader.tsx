@@ -2,11 +2,17 @@ import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
-import { useNavigation, usePathname } from "expo-router";
+import { router, useNavigation, usePathname } from "expo-router";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
-import { DRAWER_ROUTES } from "@/src/common/components/DrawerRoutes";
+import {
+  DRAWER_ROUTES,
+  HOME_ROUTE,
+} from "@/src/common/components/DrawerRoutes";
+
+/** The app icon is smaller than a comfortable tap target, so grow it by touch only. */
+const HOME_BUTTON_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 
 /** Only the drawer-specific part of the navigation object is needed here. */
 type DrawerNavigation = { openDrawer: () => void };
@@ -27,18 +33,19 @@ const AppHeader: React.FC = () => {
     : (screenTitle ?? pathname);
   return (
     <View style={styles.header}>
-      <View style={styles.headerLeft}>
+      <TouchableOpacity
+        onPress={() => router.navigate(HOME_ROUTE.href)}
+        style={styles.headerLeft}
+        hitSlop={HOME_BUTTON_HIT_SLOP}
+        accessibilityRole="button"
+        accessibilityLabel={t("goHome")}
+      >
         <Image
           source={require("@/assets/images/app-icon-in-app.png")}
           style={styles.headerIcon}
         />
-      </View>
-      <Text
-        style={styles.headerTitle}
-        numberOfLines={1}
-        ellipsizeMode="tail"
-        pointerEvents="none"
-      >
+      </TouchableOpacity>
+      <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
       <TouchableOpacity
@@ -64,6 +71,8 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     headerLeft: { flexDirection: "row", alignItems: "center" },
     headerIcon: { width: 32, height: 32, marginRight: 8 },
     headerTitle: {
+      // Spans the whole header, so it must not swallow taps on the buttons underneath.
+      pointerEvents: "none",
       position: "absolute",
       left: 0,
       right: 0,

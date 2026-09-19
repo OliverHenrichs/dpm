@@ -33,3 +33,9 @@ export const DRAWER_ROUTES: DrawerRoute[] = [
   },
   { name: "settings", href: "/settings", titleKey: "settingsTab" },
 ];
+
+/**
+ * The screen the app returns to from the header icon ("home" button).
+ * It is the drawer's first entry, i.e. the pattern-list ("Dances") overview.
+ */
+export const HOME_ROUTE: DrawerRoute = DRAWER_ROUTES[0];
