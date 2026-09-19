@@ -1,5 +1,6 @@
 import React from "react";
-import { G, Rect, Text as SvgText } from "react-native-svg";
+import { Rect, Text as SvgText } from "react-native-svg";
+import PatternNodeGroup from "@/src/pattern/graph/PatternNodeGroup";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
@@ -70,7 +71,7 @@ const PatternNode = <T extends BasePattern>({
       : pattern.name;
 
   return (
-    <G onPress={() => onPress(pattern)}>
+    <PatternNodeGroup onPress={() => onPress(pattern)}>
       {/* Main background */}
       <Rect
         x={x - NODE_WIDTH / 2}
@@ -120,7 +121,7 @@ const PatternNode = <T extends BasePattern>({
       >
         {`${pattern.counts} count`}
       </SvgText>
-    </G>
+    </PatternNodeGroup>
   );
 };
 

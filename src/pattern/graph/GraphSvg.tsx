@@ -11,6 +11,7 @@ import {
   generateOrthogonalPath,
   LayoutPosition,
 } from "@/src/pattern/graph/utils/GraphUtils";
+import { rasterizeLargeGraph } from "@/src/pattern/graph/utils/RasterizeProps";
 
 export const ArrowheadMarker: React.FC<{
   palette: Record<PaletteColor, string>;
@@ -104,7 +105,7 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
     <Svg
       width={svgWidth}
       height={svgHeight}
-      shouldRasterizeIOS={patterns.length > 100}
+      {...rasterizeLargeGraph(patterns.length)}
     >
       <ArrowheadMarker palette={palette} />
       {drawEdges(edges, positions, palette)}

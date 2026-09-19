@@ -144,7 +144,8 @@ Expo loads `.env` automatically for `expo start` / `eas build`; for EAS builds t
 Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape.
 
 - `src/common/components/YouTubeVideoItem.tsx` uses `react-native-youtube-iframe`, which renders through `react-native-webview`. That library has no web build (its web entry imports the unmaintained `react-native-web-webview`), so `YouTubeVideoItem.web.tsx` embeds the YouTube iframe directly instead. Keep the YouTube player behind this component — importing `react-native-youtube-iframe` anywhere reachable from web breaks the web bundle.
-- Verify both targets with `npx expo export --platform web` and `--platform android`; web also builds an SSR bundle (static rendering is on), so a bad import surfaces twice.
+- `src/pattern/graph/PatternNodeGroup.tsx` is the tappable `<G>` around a graph node. On native it just sets `onPress`; on web that would make react-native-svg spread six react-native responder handlers onto the DOM node, one React console error each, per node — so `PatternNodeGroup.web.tsx` takes the DOM node through `forwardedRef` and binds the listener itself. Route node presses through this component rather than putting `onPress` on an SVG element directly.
+- Verify both targets with `npx expo export --platform web` and `--platform android`; web also builds an SSR bundle (static rendering is on), so a bad import surfaces twice. Console errors like these only appear with a populated graph, so check a list that actually has patterns.
 
 ## Dependencies & security
 

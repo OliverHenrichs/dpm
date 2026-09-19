@@ -17,6 +17,7 @@ import {
   LayoutPosition,
 } from "./utils/GraphUtils";
 import { ArrowheadMarker, drawNodes } from "./GraphSvg";
+import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import { useTranslation } from "react-i18next";
 import {
   MIN_PATTERN_HEIGHT,
@@ -99,7 +100,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         <Svg
           width={svgWidth}
           height={svgHeight}
-          shouldRasterizeIOS={patterns.length > 100}
+          {...rasterizeLargeGraph(patterns.length)}
         >
           <ArrowheadMarker palette={palette} />
           {drawSwimlanes(swimlanes, svgWidth)}
