@@ -65,6 +65,21 @@ jest.mock("react-native-youtube-iframe", () => "YoutubePlayer");
 
 jest.mock("react-native-qrcode-svg", () => "QRCode");
 
+// Screens render AppHeader, which resolves the drawer navigator. There is no
+// navigator in a component test, so stand the router down to the four APIs the
+// app actually uses (verified by grep over src/). Tests that care about
+// navigation assert on `router.navigate`.
+jest.mock("expo-router", () => ({
+  router: { navigate: jest.fn(), push: jest.fn(), back: jest.fn() },
+  useNavigation: () => ({ openDrawer: jest.fn(), closeDrawer: jest.fn() }),
+  usePathname: () => "/patterns",
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    // The real hook runs on focus; in a test the screen is always focused.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    require("react").useEffect(callback, []);
+  },
+}));
+
 // generateVideoThumbnails reaches expo-video-thumbnails through a dynamic
 // `await import(...)`, which jest's CJS VM rejects outright ("A dynamic import
 // callback was invoked without --experimental-vm-modules") — so mocking

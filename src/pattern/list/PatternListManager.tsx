@@ -22,23 +22,26 @@ import PageContainer from "@/src/common/components/PageContainer";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
-import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { useTranslation } from "react-i18next";
-import { syncPublishedList } from "@/src/firebase/FirebaseListService";
-import { generateUUID } from "@/src/pattern/types/PatternType";
-import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
-
-function createNewId(patterns: IPattern[]) {
-  // Simple id generation by finding the max existing id and adding 1
-  return patterns.length > 0 ? Math.max(...patterns.map((p) => p.id)) + 1 : 1;
-}
+import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
-  const { activeList, patterns, updatePatterns, updateActiveList } =
-    useActivePatternList();
+  const {
+    activeList,
+    patterns,
+    patternTypes,
+    modifiers,
+    isReadonly,
+    addPattern,
+    editPattern,
+    deletePattern,
+    addModifier,
+    editModifier,
+    deleteModifier,
+  } = usePatternCrud();
 
   const [selectedPattern, setSelectedPattern] = useState<IPattern | undefined>(
     undefined,
@@ -55,52 +58,22 @@ const PatternListManager = () => {
   >(undefined);
   const styles = getStyles(palette);
 
-  const patternTypes = activeList?.patternTypes || [];
-  const modifiers = activeList?.modifiers || [];
-  const isReadonly = !!activeList?.readonly;
-
-  const addPattern = async (pattern: NewPattern) => {
-    if (isReadonly || !pattern.name.trim()) return;
-    const newPattern: IPattern = { ...pattern, id: createNewId(patterns) };
-    const updated = [...patterns, newPattern];
-    await updatePatterns(updated);
-    if (activeList?.shareCode) {
-      syncPublishedList(activeList, updated).catch(() => {});
-    }
-    setIsAddingNew(false);
+  // The mutations live in usePatternCrud; what is left here is which modal is
+  // open. Each returns whether it was applied, so a rejected edit — a blank
+  // name, a read-only list — leaves the form open instead of silently
+  // discarding what the user typed.
+  const handleAddPattern = async (pattern: NewPattern) => {
+    if (await addPattern(pattern)) setIsAddingNew(false);
   };
 
-  const editPattern = async (pattern: NewPattern | IPattern) => {
-    if (isReadonly || !pattern.name.trim()) return;
-    if (!("id" in pattern)) {
-      console.error("Cannot edit pattern without id");
-      return;
-    }
-    const updatedPatterns = patterns.map((p) =>
-      p.id === pattern.id ? (pattern as IPattern) : p,
-    );
-    await updatePatterns(updatedPatterns);
-    if (activeList?.shareCode) {
-      syncPublishedList(activeList, updatedPatterns).catch(() => {});
-    }
-    setIsEditing(false);
+  const handleSavePattern = async (pattern: NewPattern | IPattern) => {
+    if (await editPattern(pattern)) setIsEditing(false);
   };
 
-  const deletePattern = async (id?: number) => {
-    if (isReadonly) return;
-    // Drop the pattern *and* every reference to it, the way deleteModifier
-    // scrubs modifierRefs below. A left-behind prerequisite id is not
-    // cosmetic: the network layout could not place a node whose prerequisites
-    // were not all positioned, so the dependent — and its whole subtree —
-    // disappeared from the graph without any error.
-    const updatedPatterns = repairDanglingPrerequisites(
-      patterns.filter((p) => p.id !== id),
-    );
-    await updatePatterns(updatedPatterns);
-    if (activeList?.shareCode) {
-      syncPublishedList(activeList, updatedPatterns).catch(() => {});
+  const handleDeletePattern = async (id?: number) => {
+    if (await deletePattern(id)) {
+      if (selectedPattern?.id === id) setSelectedPattern(undefined);
     }
-    if (selectedPattern?.id === id) setSelectedPattern(undefined);
   };
 
   const handleEditPattern = (pattern: IPattern) => {
@@ -108,42 +81,12 @@ const PatternListManager = () => {
     setIsEditing(true);
   };
 
-  const addModifier = async (modifier: NewModifier | IModifier) => {
-    if (!activeList || isReadonly) return;
-    const newModifier: IModifier = { ...modifier, id: generateUUID() };
-    const updatedList = {
-      ...activeList,
-      modifiers: [...modifiers, newModifier],
-    };
-    await updateActiveList(updatedList);
-    setIsAddingModifier(false);
+  const handleAddModifier = async (modifier: NewModifier | IModifier) => {
+    if (await addModifier(modifier)) setIsAddingModifier(false);
   };
 
-  const editModifier = async (modifier: NewModifier | IModifier) => {
-    if (!activeList || isReadonly || !("id" in modifier)) return;
-    const updatedList = {
-      ...activeList,
-      modifiers: modifiers.map((m) =>
-        m.id === modifier.id ? (modifier as IModifier) : m,
-      ),
-    };
-    await updateActiveList(updatedList);
-    setIsEditingModifier(false);
-  };
-
-  const deleteModifier = async (modifierId: string) => {
-    if (!activeList || isReadonly) return;
-    const updatedModifiers = modifiers.filter((m) => m.id !== modifierId);
-    const updatedList = { ...activeList, modifiers: updatedModifiers };
-    // Scrub modifier refs from all patterns
-    const updatedPatterns = patterns.map((p) => ({
-      ...p,
-      modifierRefs: (p.modifierRefs ?? []).filter(
-        (ref) => ref.modifierId !== modifierId,
-      ),
-    }));
-    await updateActiveList(updatedList, updatedPatterns);
-    await updatePatterns(updatedPatterns);
+  const handleSaveModifier = async (modifier: NewModifier | IModifier) => {
+    if (await editModifier(modifier)) setIsEditingModifier(false);
   };
 
   const handleEditModifier = (modifier: IModifier) => {
@@ -191,7 +134,7 @@ const PatternListManager = () => {
                   patterns={patterns}
                   patternTypes={patternTypes}
                   modifiers={modifiers}
-                  onAccepted={addPattern}
+                  onAccepted={handleAddPattern}
                   onCancel={() => setIsAddingNew(false)}
                 />
               </ScrollView>
@@ -211,7 +154,7 @@ const PatternListManager = () => {
                   patterns={patterns}
                   patternTypes={patternTypes}
                   modifiers={modifiers}
-                  onAccepted={editPattern}
+                  onAccepted={handleSavePattern}
                   onCancel={() => setIsEditing(false)}
                   existing={selectedPattern}
                 />
@@ -230,7 +173,7 @@ const PatternListManager = () => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <EditModifierForm
-                onAccepted={addModifier}
+                onAccepted={handleAddModifier}
                 onCancel={() => setIsAddingModifier(false)}
               />
             </View>
@@ -246,7 +189,7 @@ const PatternListManager = () => {
             <View style={styles.modalContent}>
               <EditModifierForm
                 existing={selectedModifier}
-                onAccepted={editModifier}
+                onAccepted={handleSaveModifier}
                 onCancel={() => setIsEditingModifier(false)}
               />
             </View>
@@ -294,7 +237,7 @@ const PatternListManager = () => {
               modifiers={modifiers}
               isReadonly={isReadonly}
               onSelect={(p) => setSelectedPattern(p as IPattern | undefined)}
-              onDelete={deletePattern}
+              onDelete={handleDeletePattern}
               onAdd={() => setIsAddingNew(!isAddingNew)}
               onEdit={handleEditPattern}
               selectedPattern={selectedPattern}

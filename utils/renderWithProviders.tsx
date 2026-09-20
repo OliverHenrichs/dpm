@@ -1,5 +1,10 @@
 import React from "react";
-import { render, RenderOptions } from "@testing-library/react-native";
+import {
+  render,
+  renderHook,
+  RenderHookOptions,
+  RenderOptions,
+} from "@testing-library/react-native";
 import { I18nextProvider } from "react-i18next";
 import i18n from "@/src/i18n";
 import { ThemeProvider } from "@/src/common/components/ThemeContext";
@@ -37,6 +42,20 @@ export function renderWithProviders(
     ...renderOptions
   }: RenderWithProvidersOptions = {},
 ) {
+  const Wrapper = buildWrapper({ lists, patterns, activeListId, language });
+  return render(ui, { wrapper: Wrapper, ...renderOptions });
+}
+
+/**
+ * Build the provider wrapper and seed storage, without rendering anything.
+ * Shared by `renderWithProviders` and `renderHookWithProviders`.
+ */
+function buildWrapper({
+  lists = [],
+  patterns = {},
+  activeListId,
+  language = "en",
+}: Omit<RenderWithProvidersOptions, keyof RenderOptions>) {
   const seed: Record<string, string> = {};
   if (lists.length > 0) seed["@patternLists"] = JSON.stringify(lists);
   for (const [listId, listPatterns] of Object.entries(patterns)) {
@@ -57,8 +76,29 @@ export function renderWithProviders(
       </ThemeProvider>
     </I18nextProvider>
   );
+  return Wrapper;
+}
 
-  return render(ui, { wrapper: Wrapper, ...renderOptions });
+/**
+ * Renders a hook inside the same provider stack, for logic that reads the
+ * active list. `ActivePatternListProvider` loads storage on mount, so a test
+ * must `await waitFor(...)` on the loaded state before acting.
+ */
+export function renderHookWithProviders<Result>(
+  hook: () => Result,
+  {
+    lists = [],
+    patterns = {},
+    activeListId,
+    language = "en",
+    ...options
+  }: RenderWithProvidersOptions = {},
+) {
+  const wrapper = buildWrapper({ lists, patterns, activeListId, language });
+  return renderHook(hook, {
+    wrapper,
+    ...(options as RenderHookOptions<never>),
+  });
 }
 
 export * from "@testing-library/react-native";

@@ -30,6 +30,9 @@ module.exports = {
     {
       displayName: "unit",
       testEnvironment: "node",
+      // Mock call history must not leak between tests, or an assertion can
+      // pass on a call another test made.
+      clearMocks: true,
       testMatch: ["<rootDir>/__tests__/unit/**/*.(test|spec).(ts|tsx|js)"],
       transform: tsJestTransform,
       moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
@@ -39,6 +42,7 @@ module.exports = {
     {
       displayName: "components",
       preset: "jest-expo",
+      clearMocks: true,
       testMatch: [
         "<rootDir>/__tests__/components/**/*.(test|spec).(ts|tsx|js)",
       ],
@@ -64,11 +68,14 @@ module.exports = {
     // NB: these are keyed off the numbers jest reports when a threshold is
     // *missed*, which differ from the summary table's percentages — the two
     // use different denominators. Read a failure message, not the table.
+    // NB: a file with its own entry below is *removed* from this global pool,
+    // so pinning well-covered files pushes this number down. It measures what
+    // is left over — mostly untested UI — not the project as a whole.
     global: {
-      statements: 15,
-      branches: 9,
-      functions: 14,
-      lines: 18,
+      statements: 22,
+      branches: 16,
+      functions: 20,
+      lines: 25,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -97,6 +104,33 @@ module.exports = {
       branches: 78,
       functions: 95,
       lines: 95,
+    },
+    // The mutations behind every pattern and modifier edit.
+    "src/pattern/list/hooks/usePatternCrud.ts": {
+      statements: 90,
+      branches: 82,
+      functions: 92,
+      lines: 92,
+    },
+    // Prerequisite integrity: the helpers that stop nodes vanishing from the
+    // graph, and the layout that must place every node it is given.
+    "src/pattern/graph/utils/GenericGraphUtils.ts": {
+      statements: 68,
+      branches: 64,
+      functions: 60,
+      lines: 72,
+    },
+    "src/pattern/graph/utils/NetworkGraphUtils.ts": {
+      statements: 76,
+      branches: 68,
+      functions: 80,
+      lines: 78,
+    },
+    "src/pattern/list/PatternList.tsx": {
+      statements: 82,
+      branches: 85,
+      functions: 66,
+      lines: 82,
     },
   },
 };

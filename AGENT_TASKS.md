@@ -1025,20 +1025,28 @@ Three of the new suites earn their place immediately:
   `{{placeholders}}` across locales, and that every literal `t("…")` in `src/` resolves — with a
   guard test so a broken scanner cannot pass silently.
 
+#### Landed since
+
+| | What |
+|---|---|
+| ✅ | **`usePatternCrud` extracted** (`src/pattern/list/hooks/usePatternCrud.ts`). `PatternListManager` went 392 → ~300 lines and now holds only which modal is open. The read-only guard, id allocation, the prerequisite scrub and the opportunistic Firestore push each live in one place instead of being restated per handler. Every mutation returns whether it was applied, so a rejected edit leaves the form open rather than silently discarding what was typed — previously the caller could not tell. |
+| ✅ | **Component coverage widened**: `usePatternCrud` (26 cases, incl. the cloud-sync behaviour that was duplicated three ways), `PatternListManager` (10, end-to-end through the real screen), `EditPatternForm` (10). 127 → **208 tests**. |
+| ✅ | **Thresholds ratcheted**, roughly doubled: statements 15 → 22, branches 9 → 16, functions 14 → 20, lines 18 → 25, plus per-file floors for `usePatternCrud`, `PatternList`, `GenericGraphUtils` and `NetworkGraphUtils`. Verified stable across three run modes. |
+| ✅ | **`clearMocks: true`** on both projects, after a mock's call log leaked between tests and let an assertion pass on another test's call. |
+
+Two coverage mechanics are now written down in AGENTS.md, because both cost time here: a file with
+its own threshold entry is *removed* from the `global` pool (so pinning good files pushes the
+global number down), and per-file percentages drift several points between run modes because files
+imported by both projects get instrumented twice.
+
 #### Still outstanding
 
 1. **Conflict resolution** — `useImportDecisions` / `useExportSelection` (the `skip` vs `replace`
    decision on an id clash) are not covered yet. The round-trip suite stops at the module
    boundary; these hooks decide what actually lands in storage.
-2. **Widen component coverage** — `PatternListManager` CRUD, the filter/sort sheets,
-   `PatternListSelector`. The infrastructure is proven by one suite; the rest is volume.
-3. **Extract `usePatternCrud`** from `PatternListManager` (7 `useState` + 7 inline async handlers,
-   each repeating *storage write → local state → opportunistic Firestore sync*). Testable without
-   rendering, and collapses the duplicated `if (activeList?.shareCode) syncPublishedList(...)`
-   from three call sites. ~1.5 days.
-4. **Ratchet the thresholds up** as 1–3 land. They are currently a floor, not a target.
-5. **Verify the workflow on GitHub.** Every step was run locally and passes, but the workflow file
-   itself has never executed on a runner.
+2. **More screens** — `PatternListSelector`, `SettingsScreen`, the filter/sort sheets, the share
+   and subscribe modals. `EditPatternForm` is at 45% and is the largest form in the app.
+3. **Verify the workflow on GitHub.** Every step passes locally, including both bundle exports.
 
 #### Original plan, for reference
 
