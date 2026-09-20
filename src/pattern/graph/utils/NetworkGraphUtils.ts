@@ -2,6 +2,21 @@ import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { calculatePrerequisiteDepthMap } from "@/src/pattern/graph/utils/GenericGraphUtils";
 
+/**
+ * ~137.5°. Stepping by it spreads successive points evenly around a circle
+ * without any two landing close together, which is what keeps unanchored
+ * nodes from stacking on top of each other.
+ */
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+/** Shared by the foundational ring and the unanchored-node fallback. */
+function getEllipseRadii(width: number, height: number) {
+  return {
+    ellipseRadiusX: Math.min(width * 0.3, 500),
+    ellipseRadiusY: Math.min(height * 0.3, 400),
+  };
+}
+
 export interface GraphLayout {
   positions: Map<number, LayoutPosition>;
   /** The center of the foundational ellipse in the same coordinate space as positions. */
@@ -116,13 +131,34 @@ export function calculateGraphLayout(
     );
   });
 
-  function getPositionDeferred(p: IPattern) {
-    // Place midpoint between all positioned prerequisites, then push outward.
-    const prereqPositions = p.prerequisites.map((id) => positions.get(id)!);
-    const avgX =
-      prereqPositions.reduce((s, pos) => s + pos.x, 0) / prereqPositions.length;
-    const avgY =
-      prereqPositions.reduce((s, pos) => s + pos.y, 0) / prereqPositions.length;
+  /**
+   * Place `p` between whichever of its prerequisites are already positioned,
+   * pushed one ring further out, and return the outward angle so the caller
+   * can lay out its children along the same direction.
+   *
+   * With no positioned prerequisite to hang off there is nothing to anchor to,
+   * so the node goes on a ring outside the foundational ellipse, stepped by
+   * the golden angle to keep successive ones from stacking.
+   */
+  function placeFromAnchors(
+    p: IPattern,
+    anchors: LayoutPosition[],
+    unanchoredIndex: number,
+  ): number {
+    if (anchors.length === 0) {
+      const { ellipseRadiusX, ellipseRadiusY } = getEllipseRadii(width, height);
+      const angle = (unanchoredIndex * GOLDEN_ANGLE) % (2 * Math.PI);
+      const radius =
+        Math.max(ellipseRadiusX, ellipseRadiusY) + DEPTH_SPACING * 2;
+      positions.set(p.id, {
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius,
+      });
+      return angle;
+    }
+
+    const avgX = anchors.reduce((s, pos) => s + pos.x, 0) / anchors.length;
+    const avgY = anchors.reduce((s, pos) => s + pos.y, 0) / anchors.length;
     // Outward direction from ellipse centre
     const dx = avgX - centerX;
     const dy = avgY - centerY;
@@ -131,8 +167,13 @@ export function calculateGraphLayout(
       x: avgX + (dx / len) * DEPTH_SPACING,
       y: avgY + (dy / len) * DEPTH_SPACING,
     });
-    return { dx, dy };
+    return Math.atan2(dy, dx);
   }
+
+  const positionedPrereqsOf = (p: IPattern) =>
+    p.prerequisites
+      .map((id) => positions.get(id))
+      .filter((pos): pos is LayoutPosition => pos !== undefined);
 
   // Deferred pass: some nodes require prerequisites from multiple DFS sectors
   // and may still be unpositioned. Retry until no more nodes can be placed.
@@ -146,11 +187,33 @@ export function calculateGraphLayout(
       ) {
         positioned.add(p.id);
         progress = true;
-        const { dx, dy } = getPositionDeferred(p);
-        placeChildren(p.id, positions.get(p.id)!, Math.atan2(dy, dx));
+        const angle = placeFromAnchors(p, positionedPrereqsOf(p), 0);
+        placeChildren(p.id, positions.get(p.id)!, angle);
       }
     });
   }
+
+  // Fallback pass. Whatever is still unplaced either sits in a prerequisite
+  // cycle or names a prerequisite that no longer exists, so the
+  // `every(positioned)` gate above can never open for it.
+  //
+  // Neither is supposed to happen, and both are now prevented at the source,
+  // but data written by older builds still contains them — and a node this
+  // function declines to position is simply never drawn. It vanishes from the
+  // graph along with everything downstream of it, silently, while the timeline
+  // view still lists it. Placing it imperfectly beats losing it.
+  let unanchoredIndex = 0;
+  patterns.forEach((p) => {
+    if (positioned.has(p.id)) return;
+    positioned.add(p.id);
+    const anchors = positionedPrereqsOf(p);
+    const angle = placeFromAnchors(
+      p,
+      anchors,
+      anchors.length === 0 ? unanchoredIndex++ : 0,
+    );
+    placeChildren(p.id, positions.get(p.id)!, angle);
+  });
 
   addSizeSafeguards(positions);
   return { positions, ellipseCenterX: centerX, ellipseCenterY: centerY };
@@ -164,8 +227,7 @@ function calculateFoundationalPatternPositions(
   foundationalPatterns: IPattern[],
 ): { positions: Map<number, LayoutPosition>; foundationalAngles: number[] } {
   // Larger ellipse radii so the ring isn't cramped
-  const ellipseRadiusX = Math.min(width * 0.3, 500);
-  const ellipseRadiusY = Math.min(height * 0.3, 400);
+  const { ellipseRadiusX, ellipseRadiusY } = getEllipseRadii(width, height);
 
   const positions = new Map<number, LayoutPosition>();
   const foundationalAngles: number[] = [];

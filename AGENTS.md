@@ -63,6 +63,34 @@ Patterns and lists are stored under **separate keys**. Always use the helpers in
 
 `clearAllData` removes the per-list `@patterns_*` keys as well as the two top-level ones. `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list no longer exists and is called once, unawaited, from `ActivePatternListProvider` after the initial load — it must never delay or fail first paint.
 
+## Prerequisite integrity
+
+`IPattern.prerequisites` is the data model — both graph views are built from it — and two ways of
+corrupting it used to make patterns disappear from the network view while the list and timeline
+still showed them. Three rules keep that shut, and all three live in
+`src/pattern/graph/utils/GenericGraphUtils.ts`:
+
+- **Never remove a pattern without scrubbing references to it.** `deletePattern` composes deletion
+  as `repairDanglingPrerequisites(patterns.filter(...))` rather than filtering alone. The helper
+  returns the same array reference when there is nothing to repair, so the healthy path is free.
+- **`loadPatterns` repairs on read**, so lists corrupted by older builds heal themselves as they
+  load. Do not remove this in favour of a one-off migration — there is no migration runner yet
+  ([F3](AGENT_TASKS.md)).
+- **The prerequisite picker refuses cycles.** `findIneligiblePrerequisiteIds(patterns, id)` returns
+  the pattern plus everything that already depends on it; `EditPatternForm` disables those chips.
+  Note the direction: `P.prerequisites = [Q]` means Q comes *before* P, so the edge runs Q → P and
+  "would cycle" means Q already depends on P. Use `collectDependentIds` to walk forwards; it is a
+  BFS over an index, not the path-enumerating `detectCircularDependencies` beside it.
+
+Belt and braces, and the part that actually protects the user: **`calculateGraphLayout` must place
+every node it is given.** Its DFS only places a node once all prerequisites are positioned, so a
+dangling id or a cycle leaves one unplaceable — and `drawNodes` renders nothing for a node with no
+position, losing it and its whole subtree silently. A fallback pass positions whatever is left
+over from its known prerequisites, or on a ring outside the foundational ellipse. Keep that pass,
+and keep `__tests__/unit/GraphLayoutInvariants.test.ts` asserting
+`positions.size === patterns.length` for degenerate input: imports, shared lists and old devices
+still supply both kinds of bad data.
+
 ## Theming
 
 Every component that needs colours does:

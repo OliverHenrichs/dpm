@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
+import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
 
 // ---------------------------------------------------------------------------
 // Migration helpers — ensure old data without the modifiers fields still works
@@ -140,7 +141,12 @@ export async function loadPatterns(listId: string): Promise<IPattern[]> {
     const stored = await AsyncStorage.getItem(getPatternsKey(listId));
     if (stored) {
       const parsed: IPattern[] = JSON.parse(stored);
-      return parsed.map(normalizePattern);
+      // Self-heal on read: deleting a pattern used to leave its id behind in
+      // every pattern that required it, and such a node could not be laid out
+      // in the network graph at all. Lists written by those builds are still
+      // on people's devices, so repair them as they load. The repaired array
+      // persists the next time anything saves.
+      return repairDanglingPrerequisites(parsed.map(normalizePattern));
     }
     return [];
   } catch (error) {

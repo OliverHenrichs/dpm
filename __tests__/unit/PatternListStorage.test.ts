@@ -207,6 +207,34 @@ describe("PatternListStorage", () => {
       await expect(loadPatterns("unknown")).resolves.toEqual([]);
     });
 
+    it("drops prerequisite ids whose pattern is gone", async () => {
+      // What a build that deleted a pattern without scrubbing it left behind.
+      // Such a node could not be laid out in the network graph at all, so the
+      // repair happens on read rather than waiting for the next write.
+      seedAsyncStorage({
+        [patternsKey("l")]: JSON.stringify([
+          createTestPattern("type1", { id: 2, prerequisites: [1] }),
+          createTestPattern("type1", { id: 3, prerequisites: [2, 99] }),
+        ]),
+      });
+
+      const loaded = await loadPatterns("l");
+
+      expect(loaded[0].prerequisites).toEqual([]);
+      expect(loaded[1].prerequisites).toEqual([2]);
+    });
+
+    it("leaves healthy prerequisites untouched", async () => {
+      await savePatterns("l", [
+        createTestPattern("type1", { id: 1, prerequisites: [] }),
+        createTestPattern("type1", { id: 2, prerequisites: [1] }),
+      ]);
+
+      const loaded = await loadPatterns("l");
+
+      expect(loaded.map((p) => p.prerequisites)).toEqual([[], [1]]);
+    });
+
     it("defaults `modifierRefs` for patterns written before modifiers existed", async () => {
       const legacy = createTestPattern("type1", { id: 1 });
       delete (legacy as Partial<typeof legacy>).modifierRefs;

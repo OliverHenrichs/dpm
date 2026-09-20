@@ -30,8 +30,10 @@ function timelinePositions(patterns: IPattern[]) {
  * returns null for it — so it vanishes from the graph with no error anywhere.
  *
  * "Every node gets a position" is therefore the invariant worth holding onto,
- * and the cases that break it are recorded below as `test.failing`, which
- * passes while the bug exists and starts failing the moment it is fixed.
+ * and it has to hold for degenerate input too: cycles and dangling
+ * prerequisite ids are prevented at the source now, but lists written by older
+ * builds still contain them, and losing a node is far worse than drawing it in
+ * an odd place.
  */
 describe("graph layout invariants", () => {
   describe("network layout", () => {
@@ -109,31 +111,71 @@ describe("graph layout invariants", () => {
     });
 
     // ---------------------------------------------------------------------
-    // Known defects. See AGENT_TASKS.md B1 and B2.
+    // Degenerate input. Cycles and dangling prerequisite ids are now prevented
+    // at the source (AGENT_TASKS.md B1/B2), but data written by older builds
+    // still contains them, so the layout has to cope rather than drop nodes.
     // ---------------------------------------------------------------------
 
-    test.failing(
-      "positions a node that lists a prerequisite which no longer exists (B1)",
-      () => {
-        // Deleting pattern 1 does not scrub it from pattern 2's prerequisites,
-        // so id 1 is never positioned, the `prerequisites.every(positioned)`
-        // gate never opens, and 2 and 3 silently disappear from the graph.
-        const patterns = [pattern(2, [1]), pattern(3, [2])];
+    it("positions a node that lists a prerequisite which no longer exists", () => {
+      const patterns = [pattern(2, [1]), pattern(3, [2])];
 
-        expect(networkPositions(patterns).size).toBe(patterns.length);
-      },
-    );
+      expect(networkPositions(patterns).size).toBe(patterns.length);
+    });
 
-    test.failing("positions nodes that form a cycle (B2)", () => {
-      // Nothing prevents the user from creating A -> B -> A, and neither node
-      // can ever satisfy the gate.
+    it("positions a whole chain hanging off a missing prerequisite", () => {
+      const patterns = [
+        pattern(2, [1]),
+        pattern(3, [2]),
+        pattern(4, [3]),
+        pattern(5, [3]),
+      ];
+
+      expect(networkPositions(patterns).size).toBe(patterns.length);
+    });
+
+    it("positions nodes that form a cycle", () => {
       const patterns = [pattern(1, [2]), pattern(2, [1])];
 
       expect(networkPositions(patterns).size).toBe(patterns.length);
     });
 
-    test.failing("positions a node that is its own prerequisite (B2)", () => {
+    it("positions nodes in a longer cycle", () => {
+      const patterns = [pattern(1, [3]), pattern(2, [1]), pattern(3, [2])];
+
+      expect(networkPositions(patterns).size).toBe(patterns.length);
+    });
+
+    it("positions a node that is its own prerequisite", () => {
       expect(networkPositions([pattern(1, [1])]).size).toBe(1);
+    });
+
+    it("positions a healthy graph hanging off a cycle", () => {
+      const patterns = [
+        pattern(1, [2]),
+        pattern(2, [1]),
+        pattern(3, [1]),
+        pattern(4, [3]),
+      ];
+
+      expect(networkPositions(patterns).size).toBe(patterns.length);
+    });
+
+    it("keeps unanchored nodes from stacking on one another", () => {
+      // None of these can be anchored to a prerequisite, so they go on the
+      // fallback ring; they must still be distinguishable.
+      const patterns = [pattern(1, [99]), pattern(2, [98]), pattern(3, [97])];
+
+      const positions = networkPositions(patterns);
+      const distinct = new Set(
+        [...positions.values()].map((p) => `${p.x},${p.y}`),
+      );
+      expect(distinct.size).toBe(3);
+    });
+
+    it("positions every node when the entire graph is one cycle", () => {
+      const patterns = [pattern(1, [2]), pattern(2, [3]), pattern(3, [1])];
+
+      expect(networkPositions(patterns).size).toBe(patterns.length);
     });
   });
 
@@ -162,6 +204,16 @@ describe("graph layout invariants", () => {
 
       expect(positions.get(1)!.x).toBeLessThan(positions.get(2)!.x);
       expect(positions.get(2)!.x).toBeLessThan(positions.get(3)!.x);
+    });
+
+    it("still positions nodes caught in a cycle", () => {
+      const patterns = [pattern(1, [2]), pattern(2, [1])];
+
+      expect(timelinePositions(patterns).size).toBe(patterns.length);
+    });
+
+    it("still positions a node that is its own prerequisite", () => {
+      expect(timelinePositions([pattern(1, [1])]).size).toBe(1);
     });
 
     it("handles an empty pattern set", () => {

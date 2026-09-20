@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -26,6 +26,7 @@ import ModifierPillStrip from "./ModifierPillStrip";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
+import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import {
   getCommon2ndOrderLabel,
   getCommonBorder,
@@ -80,6 +81,19 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     null,
   );
   const [showAttachPicker, setShowAttachPicker] = useState(false);
+
+  /**
+   * Patterns that cannot be prerequisites of this one without closing a cycle.
+   *
+   * Derived from the saved graph, not from the pending edit: which patterns
+   * depend on this one is unaffected by what this form does to *its own*
+   * prerequisites, so the set is stable for the life of the form. A pattern
+   * being created has no dependents yet, so nothing is ineligible.
+   */
+  const ineligiblePrerequisiteIds = useMemo(
+    () => findIneligiblePrerequisiteIds(patterns, existing?.id),
+    [patterns, existing?.id],
+  );
 
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
@@ -311,34 +325,61 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 ? p.name.toLowerCase().includes(prereqFilter.toLowerCase())
                 : true,
             )
-            .map((p) => (
-              <TouchableOpacity
-                key={p.id}
-                style={[
-                  styles.prereqItem,
-                  newPattern.prerequisites.includes(p.id) &&
-                    styles.prereqItemSelected,
-                ]}
-                onPress={() => {
-                  if (newPattern.prerequisites.includes(p.id)) {
-                    setNewPattern({
-                      ...newPattern,
-                      prerequisites: newPattern.prerequisites.filter(
-                        (id: number) => id !== p.id,
-                      ),
-                    });
-                  } else {
-                    setNewPattern({
-                      ...newPattern,
-                      prerequisites: [...newPattern.prerequisites, p.id],
-                    });
+            .map((p) => {
+              const isSelected = newPattern.prerequisites.includes(p.id);
+              // Picking something that already depends on this pattern — or
+              // the pattern itself — would close a prerequisite cycle, and a
+              // cycle has no valid learning order.
+              const wouldCycle = ineligiblePrerequisiteIds.has(p.id);
+              return (
+                <TouchableOpacity
+                  key={p.id}
+                  disabled={wouldCycle}
+                  accessibilityRole="button"
+                  accessibilityLabel={p.name}
+                  accessibilityState={{
+                    disabled: wouldCycle,
+                    selected: isSelected,
+                  }}
+                  accessibilityHint={
+                    wouldCycle ? t("prerequisiteWouldCycle") : undefined
                   }
-                }}
-              >
-                <Text style={styles.otherLabel}>{p.name}</Text>
-              </TouchableOpacity>
-            ))}
+                  style={[
+                    styles.prereqItem,
+                    isSelected && styles.prereqItemSelected,
+                    wouldCycle && styles.prereqItemDisabled,
+                  ]}
+                  onPress={() => {
+                    if (isSelected) {
+                      setNewPattern({
+                        ...newPattern,
+                        prerequisites: newPattern.prerequisites.filter(
+                          (id: number) => id !== p.id,
+                        ),
+                      });
+                    } else {
+                      setNewPattern({
+                        ...newPattern,
+                        prerequisites: [...newPattern.prerequisites, p.id],
+                      });
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.otherLabel,
+                      wouldCycle && styles.prereqItemTextDisabled,
+                    ]}
+                  >
+                    {p.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
         </ScrollView>
+        {ineligiblePrerequisiteIds.size > 0 && (
+          <Text style={styles.prereqHint}>{t("prerequisiteWouldCycle")}</Text>
+        )}
       </View>
       <PatternTags
         tags={newPattern.tags}
@@ -463,6 +504,16 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     filterInput: { ...baseInput, height: 40, marginBottom: 8 },
     prereqItem: getCommonPrereqItem(palette),
     prereqItemSelected: { backgroundColor: palette[PaletteColor.Primary] },
+    prereqItemDisabled: { opacity: 0.35 },
+    prereqItemTextDisabled: {
+      textDecorationLine: "line-through",
+    },
+    prereqHint: {
+      color: palette[PaletteColor.SecondaryText],
+      fontSize: 12,
+      fontStyle: "italic",
+      marginTop: 6,
+    },
     prereqItemText: { color: palette[PaletteColor.PrimaryText], fontSize: 14 },
     prereqItemTextSelected: {
       color: palette[PaletteColor.Surface],

@@ -195,5 +195,6 @@
   "saveModifier": "Speichern",
   "variant": "Variante",
   "appliedToPatterns": "Angewendet auf",
-  "notAppliedToAnyPattern": "Noch auf keine Figur angewendet"
+  "notAppliedToAnyPattern": "Noch auf keine Figur angewendet",
+  "prerequisiteWouldCycle": "Ausgegraute Figuren würden eine Voraussetzungs-Schleife erzeugen."
 }

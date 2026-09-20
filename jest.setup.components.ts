@@ -65,6 +65,18 @@ jest.mock("react-native-youtube-iframe", () => "YoutubePlayer");
 
 jest.mock("react-native-qrcode-svg", () => "QRCode");
 
+// generateVideoThumbnails reaches expo-video-thumbnails through a dynamic
+// `await import(...)`, which jest's CJS VM rejects outright ("A dynamic import
+// callback was invoked without --experimental-vm-modules") — so mocking
+// expo-video-thumbnails is not enough, the call site has to be replaced. Every
+// form that edits videos runs this on mount. The rest of the module is real.
+jest.mock("@/src/common/utils/YouTubeUtils", () => ({
+  ...jest.requireActual("@/src/common/utils/YouTubeUtils"),
+  generateVideoThumbnails: jest.fn(async (refs: unknown[]) =>
+    refs.map(() => ""),
+  ),
+}));
+
 // The firebase SDK ships untranspiled ESM that jest cannot parse, and adding it
 // to transformIgnorePatterns would mean Babel-compiling the whole SDK for every
 // suite. Mocking is both faster and closer to how the app behaves without

@@ -49,8 +49,8 @@ evidence.
 | [F1](#f1--test-infrastructure-and-ci--in-progress) | Test infrastructure and CI | **L** | ◐ in progress | 3 test files / 529 lines against ~12 900 lines of source; component testing was installed but could not run; no CI at all. Gates every other item. |
 | [F2](#f2--graph-domain-layer) | Graph domain layer | **M–L** | open | L1 and L2 both need a stable graph model; today the views own the computation and paper over it with `as any`. |
 | [F3](#f3--storage-schema-versioning-and-import-validation) | Storage schema versioning + import validation | **M** | open | No schema version, no migration runner, no validation of imported files, lossy concurrent writes. L2 and L3 both add persisted data. |
-| [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids) | Deleting a pattern leaves dangling prerequisite ids | **M** | open — now reproduced by a `test.failing` | Makes patterns silently vanish from the network graph, and lets a recycled id inherit stale links. |
-| [B2](#b2--no-cycle-prevention-when-editing-prerequisites) | No cycle prevention when editing prerequisites | **S–M** | open — now reproduced by a `test.failing` | Same failure mode as B1: nodes in a cycle are never laid out. |
+| [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done) | Deleting a pattern leaves dangling prerequisite ids | **M** | ✅ done | Made patterns silently vanish from the network graph, and let a recycled id inherit stale links. |
+| [B2](#b2--no-cycle-prevention-when-editing-prerequisites--done) | No cycle prevention when editing prerequisites | **S–M** | ✅ done | Same failure mode as B1: nodes in a cycle were never laid out. |
 | [B3](#b3--pattern-delete-confirmation-is-hardcoded-english--done-was-misdiagnosed) | ~~Delete confirmation is hardcoded English~~ dead helper + dropped `{{name}}` | **S** | ✅ done | Was misdiagnosed in triage — see the entry. |
 | [B4](#b4--the-pattern-list-is-not-virtualised--done) | Pattern list is not virtualised | **S** | ✅ done | `ScrollView` + `.map`, each row mounting thumbnails. |
 | [B5](#b5--clearalldata-orphans-every-pattern-key--done) | `clearAllData` orphans every pattern key | **S** | ✅ done | Acknowledged in a code comment. |
@@ -63,12 +63,12 @@ evidence.
 ```
 Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3         (quick wins + data safety)
-Phase 2  B1  B2  M1  M2                        F2          (defects + the graph model)
+Phase 2  B1✅ B2✅ M1  M2                       F2          (defects + the graph model)
 Phase 3  L1 ──────────────► L2                             (needs F2)
 Phase 4  L3 (spike first) ─────────────────────►           (needs F3, independent of L1/L2)
 ```
 
-**Phase 1 is complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
+**Phase 1 is complete, and Phase 2's defects are cleared.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
 landed and what is still outstanding.
 
 L1 before L2: filtering changes which nodes exist, and manual node positions have to reconcile
@@ -412,7 +412,7 @@ and the deferred pass applies the same gate (`NetworkGraphUtils.ts:144-145`). A 
 that points outside the subset is never positioned, so the node never is either; `drawNodes`
 then finds no position and returns `null` (`GraphSvg.tsx:75-76`). The node — and everything
 downstream of it — disappears with no error. This is the same mechanism as
-[B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids), which is a live bug today.
+[B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done), which is a live bug today.
 
 So filtering is not "pass a shorter array". It requires **rewriting the prerequisite edges** of
 the subgraph.
@@ -554,7 +554,7 @@ rendered node count; chain mode changes it; reset restores.
   Debounce the name input (~200 ms) and memoise on a stable filter key, not the filter object
   (`PatternFilterBottomSheet` already applies only on "Apply", so this bites only if live search
   is added — and live search is what "searchable" implies).
-- **Cycles.** Until [B2](#b2--no-cycle-prevention-when-editing-prerequisites) is fixed, a user can
+- **Cycles.** Until [B2](#b2--no-cycle-prevention-when-editing-prerequisites--done) is fixed, a user can
   create a cycle; BFS handles it, but the layout functions do not. Ship B2 first or make the model
   surface cycles so the view can warn.
 - **Scope creep into "saved views".** Users will ask for saved filters next. Design the filter
@@ -697,7 +697,7 @@ they need answers before code:
 Pure-unit (the majority of the value):
 - `resolveLayout`: empty stored layout; full stored layout; one pattern added; one deleted; all
   deleted; a stored position for an id that now belongs to a *different* pattern (possible today
-  because of [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids)'s id recycling — this
+  because of [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done)'s id recycling — this
   is a concrete reason to fix B1 before L2); positions at the `MAX_COORDINATE` clamp
   (`NetworkGraphUtils.ts:195-201`).
 - Seeded placement: a new pattern with one prerequisite lands within `DEPTH_SPACING` of it; with
@@ -1016,8 +1016,8 @@ Three of the new suites earn their place immediately:
 
 - **`__tests__/unit/GraphLayoutInvariants.test.ts`** pins "every node the layout is given gets a
   position", the invariant whose violation makes patterns silently vanish. It records
-  [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids) and
-  [B2](#b2--no-cycle-prevention-when-editing-prerequisites) as `test.failing` — passing while the
+  [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done) and
+  [B2](#b2--no-cycle-prevention-when-editing-prerequisites--done) as `test.failing` — passing while the
   bug exists, failing the moment it is fixed. This is executable confirmation that both defects
   reproduce exactly as filed, and it also confirms the timeline view is *not* affected, which is
   why the bug presents as "the graph is missing patterns the list shows".
@@ -1099,7 +1099,7 @@ Three of the new suites earn their place immediately:
 |---|---|---|
 | 1 | **Export/import round-trip** | This is real user data leaving and re-entering the app, with base64 video embedding, three video locations, and a conflict-resolution UI. A silent regression here loses somebody's lists. |
 | 2 | **Storage + migrations** ([F3](#f3--storage-schema-versioning-and-import-validation)) | Same reason, one layer down. |
-| 3 | **Graph layout invariants** | Property-style: every node gets a position; no node is dropped; prerequisites are a subset of the node set; layout is deterministic for a given input. Would have caught [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids). |
+| 3 | **Graph layout invariants** | Property-style: every node gets a position; no node is dropped; prerequisites are a subset of the node set; layout is deterministic for a given input. Would have caught [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done). |
 | 4 | **i18n key parity** | Two assertions: `en.json` and `de.json` have identical key sets (true today — 197 each), and every `t("literal")` in `src/` resolves against `en.json`. Both are ~20 lines and prevent a whole class of shipped bug. |
 | 5 | **Filter + sort hooks** | Pure, cheap, and the logic is about to be reused by [L1](#l1--searchable--filterable-pattern-graph). |
 | 6 | **`PatternListManager` CRUD** | The state transitions there are the app's core, and they are currently entangled with JSX (384 lines). Testing them is most of the reason to extract them — see below. |
@@ -1229,9 +1229,9 @@ only orphans are removed.
 
 ## 6. Defects found during triage
 
-### B1 — Deleting a pattern leaves dangling prerequisite ids
+### B1 — Deleting a pattern leaves dangling prerequisite ids — DONE
 
-**Severity: high — silent data corruption plus invisible nodes.**
+**Severity was: high — silent data corruption plus invisible nodes.**
 
 `deletePattern` filters the pattern out of the array and writes
 (`src/pattern/list/PatternListManager.tsx:88-98`). It never removes that id from any other
@@ -1254,33 +1254,66 @@ Two distinct consequences, both reachable by an ordinary user:
    highest-id pattern, create a new one, and it takes the dead id — inheriting every dangling
    inbound link. A freshly created pattern silently becomes a prerequisite of unrelated patterns.
 
-**Fix:**
-- Scrub the deleted id from every pattern's `prerequisites` in the same write, mirroring
-  `deleteModifier`.
-- Replace `max + 1` with a monotonic `nextPatternId` stored on `IPatternList` (a migration — see
-  [F3](#f3--storage-schema-versioning-and-import-validation)), so ids are never reused.
-- Add a repair pass on load that drops prerequisite ids with no matching pattern, so existing
-  corrupted lists heal themselves.
-- Regression test: `positions.size === patterns.length` for every layout function, plus a
-  delete-then-create round-trip asserting no prerequisite points at a non-existent pattern.
+**Fixed** in three places:
+
+- **Scrub on delete.** `deletePattern` now composes the deletion out of the same tested helper the
+  repair pass uses — `repairDanglingPrerequisites(patterns.filter(p => p.id !== id))` — so the
+  deleted id cannot survive in anyone's `prerequisites`.
+- **Self-heal on read.** `loadPatterns` runs the same repair, so lists already corrupted on
+  people's devices fix themselves as they load; the repaired array persists on the next write.
+  `repairDanglingPrerequisites` returns the *same array reference* when there is nothing to
+  repair, so the healthy path costs nothing.
+- **The layout no longer drops anything.** `calculateGraphLayout` gained a fallback pass: whatever
+  the DFS and deferred passes could not place is positioned from whichever prerequisites *are*
+  known, or on a golden-angle ring outside the foundational ellipse when none are. This is the
+  part that matters most — prevention only helps new data, and a node the layout declines to
+  position is never drawn.
+
+**Not done, deliberately:** `createNewId` still hands out `max(id) + 1`. Monotonic ids would mean
+adding `nextPatternId` to `IPatternList`, which is a schema change, and the migration runner it
+needs is [F3](#f3--storage-schema-versioning-and-import-validation). Recycling is safe now that
+nothing can hold a reference to a deleted id — there is a test pinning exactly that — so this is a
+robustness improvement rather than an outstanding bug.
+
+**Covered by** `__tests__/unit/PrerequisiteIntegrity.test.ts` (the helper, plus a
+"as used by pattern deletion" group), the repair cases in `PatternListStorage.test.ts`, and eight
+degenerate-input cases in `GraphLayoutInvariants.test.ts`. Each fix was verified load-bearing by
+reverting it and watching its tests fail.
 
 ---
 
-### B2 — No cycle prevention when editing prerequisites
+### B2 — No cycle prevention when editing prerequisites — DONE
 
-`EditPatternForm` renders every pattern in the list as a togglable prerequisite chip
-(`src/pattern/list/EditPatternForm.tsx:307-339`) with no eligibility filtering. A pattern can be
-made its own prerequisite, and A→B→A is two taps away.
+`EditPatternForm` rendered every pattern in the list as a togglable prerequisite chip with no
+eligibility filtering. A pattern could be made its own prerequisite, and A→B→A was two taps away.
 
-Cycles are only *detected*, at render time, by `detectCircularDependencies`, whose entire effect
-is a `console.warn` (`GenericGraphUtils.ts:41-44`). In the network view, patterns in a cycle can
+Cycles were only *detected*, at render time, by `detectCircularDependencies`, whose entire effect
+is a `console.warn` (`GenericGraphUtils.ts:41-44`). In the network view, patterns in a cycle could
 never satisfy the `prerequisites.every(positioned)` gate, so — exactly as in B1 — they silently
-disappear.
+disappeared.
 
-**Fix:** compute reachability from the graph model ([F2](#f2--graph-domain-layer)) and disable
-chips that would close a cycle, with a short explanation on the disabled chip. Belt and braces:
-have the layout functions place unplaceable nodes at a fallback position and have the model expose
-`cycles` so the view can show a warning banner rather than a mystery.
+**Fixed** by computing the ineligible set and disabling those chips.
+`findIneligiblePrerequisiteIds` returns the pattern itself plus everything that already depends on
+it — a BFS over a dependents index built once, so O(V + E) and cycle-safe, unlike the
+path-enumerating `detectCircularDependencies` next to it. The set is derived from the saved graph
+and memoised: what depends on this pattern is unaffected by what the form does to *its own*
+prerequisites, so it is stable for the life of the form. A pattern being created has no dependents
+yet, so nothing is disabled.
+
+Disabled chips are dimmed with a struck-through label, carry `accessibilityState.disabled` and a
+hint, and a line under the picker explains why. The chips also gained
+`accessibilityRole="button"` and a label — screen readers previously announced them as plain text.
+
+**Belt and braces:** the layout fallback described under B1 means a cycle that reaches the graph by
+some other route (an import, a shared list, an older build) is still drawn rather than dropped.
+
+**Not done:** surfacing cycles in the UI as a warning banner. That wants the graph model's `cycles`
+output from [F2](#f2--graph-domain-layer), and there is no longer a way for the app itself to
+create one.
+
+**Covered by** `__tests__/components/EditPatternForm.test.tsx` (10 cases) and the
+`findIneligiblePrerequisiteIds` / `collectDependentIds` groups in
+`__tests__/unit/PrerequisiteIntegrity.test.ts`.
 
 ---
 

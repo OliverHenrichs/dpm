@@ -195,5 +195,6 @@
   "saveModifier": "Save",
   "variant": "Variant",
   "appliedToPatterns": "Applied to",
-  "notAppliedToAnyPattern": "Not applied to any pattern yet"
+  "notAppliedToAnyPattern": "Not applied to any pattern yet",
+  "prerequisiteWouldCycle": "Greyed-out patterns would create a prerequisite loop."
 }

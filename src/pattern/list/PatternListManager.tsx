@@ -26,6 +26,7 @@ import { useActivePatternList } from "@/src/pattern/data/components/ActivePatter
 import { useTranslation } from "react-i18next";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { generateUUID } from "@/src/pattern/types/PatternType";
+import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
 
 function createNewId(patterns: IPattern[]) {
   // Simple id generation by finding the max existing id and adding 1
@@ -87,7 +88,14 @@ const PatternListManager = () => {
 
   const deletePattern = async (id?: number) => {
     if (isReadonly) return;
-    const updatedPatterns = patterns.filter((p) => p.id !== id);
+    // Drop the pattern *and* every reference to it, the way deleteModifier
+    // scrubs modifierRefs below. A left-behind prerequisite id is not
+    // cosmetic: the network layout could not place a node whose prerequisites
+    // were not all positioned, so the dependent — and its whole subtree —
+    // disappeared from the graph without any error.
+    const updatedPatterns = repairDanglingPrerequisites(
+      patterns.filter((p) => p.id !== id),
+    );
     await updatePatterns(updatedPatterns);
     if (activeList?.shareCode) {
       syncPublishedList(activeList, updatedPatterns).catch(() => {});
