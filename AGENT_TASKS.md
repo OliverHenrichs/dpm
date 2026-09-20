@@ -1046,7 +1046,14 @@ imported by both projects get instrumented twice.
    boundary; these hooks decide what actually lands in storage.
 2. **More screens** — `PatternListSelector`, `SettingsScreen`, the filter/sort sheets, the share
    and subscribe modals. `EditPatternForm` is at 45% and is the largest form in the app.
-3. **Verify the workflow on GitHub.** Every step passes locally, including both bundle exports.
+3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
+   had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
+   components that rely on the automatic runtime; it printed to stderr without failing the run, so
+   those files had been silently missing from the report (and the thresholds set against it). And
+   the first component test timed out at the 5s default, because `npm ci` wipes the Babel cache and
+   that test pays to transform the whole RN + Expo tree — ~300ms warm, ~3.5s with caches cleared
+   locally, more on a runner. Both fixed; the cold path is now reproducible locally with
+   `npx jest --clearCache && rm -rf node_modules/.cache`.
 
 #### Original plan, for reference
 

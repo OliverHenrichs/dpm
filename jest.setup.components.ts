@@ -1,7 +1,13 @@
 // @testing-library/react-native v13 registers its Jest matchers automatically;
 // the separate @testing-library/jest-native package is deprecated and gone.
+import { configure } from "@testing-library/react-native";
 import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/async-storage";
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
+
+// `waitFor` defaults to 1s, which is not enough for the first mount of the
+// full provider stack on a cold CI runner — and it would surface as a
+// confusing assertion error rather than as a timeout.
+configure({ asyncUtilTimeout: 10000 });
 
 beforeEach(() => {
   resetAsyncStorageMock();
