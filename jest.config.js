@@ -65,10 +65,10 @@ module.exports = {
     // *missed*, which differ from the summary table's percentages — the two
     // use different denominators. Read a failure message, not the table.
     global: {
-      statements: 11,
-      branches: 5,
-      functions: 11,
-      lines: 14,
+      statements: 15,
+      branches: 9,
+      functions: 14,
+      lines: 18,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -82,6 +82,21 @@ module.exports = {
       branches: 50,
       functions: 75,
       lines: 78,
+    },
+    // Export/import moves data that cannot be recreated if the format breaks,
+    // and the two modules only agree through the on-disk shape — so both ends
+    // are held near-total and the suite exercises them as a round trip.
+    "src/pattern/data/exportPatterns.ts": {
+      statements: 90,
+      branches: 70,
+      functions: 95,
+      lines: 95,
+    },
+    "src/pattern/data/ImportPatterns.ts": {
+      statements: 95,
+      branches: 78,
+      functions: 95,
+      lines: 95,
     },
   },
 };

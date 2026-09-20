@@ -5,6 +5,7 @@ import {
   IPatternListExportData,
   PatternListWithPatterns,
 } from "@/src/pattern/data/types/IExportData";
+import { generateUUID } from "@/src/pattern/types/PatternType";
 
 interface IImportPatternListResult {
   success: boolean;
@@ -152,10 +153,23 @@ async function addVideoRefs(
   return updatedVideoRefs;
 }
 
+/**
+ * Build the on-device path for a restored video.
+ *
+ * The suffix must be unique **per video**, not per context: `contextId` is the
+ * same string for every video of a pattern, so anything derived only from it —
+ * `Date.now()`, as this used to use — collides. The restore loop is tight and
+ * the writes are synchronous, so two videos of one pattern reliably landed in
+ * the same millisecond, the second overwriting the first and both refs ending
+ * up on one file. Pattern ids are also only unique within a list, so two lists
+ * in one import file collided the same way.
+ *
+ * `contextId` is kept in the name purely so the files stay identifiable on
+ * disk; uniqueness comes from the UUID alone.
+ */
 function generateVideoUri(contextId: string) {
-  const timestamp = Date.now();
   const safeId = contextId.replace(/[^a-zA-Z0-9]/g, "_");
-  return `${Paths.document.uri}imported-${safeId}-${timestamp}.mp4`;
+  return `${Paths.document.uri}imported-${safeId}-${generateUUID()}.mp4`;
 }
 
 function createSuccessMessage(
