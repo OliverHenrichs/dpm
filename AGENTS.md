@@ -59,7 +59,9 @@ Storage keys in `src/pattern/data/PatternListStorage.ts`:
 - `@patterns_{listId}` — serialised `IPattern[]` for a given list
 - `@activeListId` — UUID of the currently active list
 
-Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`) — never call `AsyncStorage` directly from UI code.
+Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`, `collectOrphanedPatternKeys`) — never call `AsyncStorage` directly from UI code.
+
+`clearAllData` removes the per-list `@patterns_*` keys as well as the two top-level ones. `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list no longer exists and is called once, unawaited, from `ActivePatternListProvider` after the initial load — it must never delay or fail first paint.
 
 ## Theming
 
@@ -131,6 +133,16 @@ FIREBASE_MESSAGING_SENDER_ID, FIREBASE_APP_ID, FIREBASE_MEASUREMENT_ID, FIREBASE
 
 Expo loads `.env` automatically for `expo start` / `eas build`; for EAS builds the same names must exist as EAS Secrets. Without them the app runs local-only.
 
+### Config plugins
+
+**Config plugins are applied only when listed in `app.config.ts` → `plugins`; autolinking does not apply them.** `expo-camera` and `expo-image-picker` are listed there purely so their iOS usage strings (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`) reach the generated `Info.plist` — iOS terminates an app that touches those APIs without them, and Android's permission arrives via manifest merging regardless, so the omission is invisible until an iOS device runs it. Both pass `microphonePermission: false` (and camera `recordAudioAndroid: false`) because nothing in the app records audio; that also blocks `RECORD_AUDIO` from being merged in by a transitive dependency.
+
+`expo-document-picker` is deliberately **not** listed: its plugin only sets iCloud entitlements, and only when `ios.usesIcloudStorage` is set, which this app does not use.
+
+`ios.bundleIdentifier` must stay in `app.config.ts`. There is no `app.json`, so the CLI cannot write it for you — without it `expo prebuild --platform ios` and EAS iOS builds both refuse to run.
+
+Verify a change here by running `npx expo prebuild --platform ios --no-install --clean` and grepping the generated `ios/*/Info.plist`; `npx expo config --type prebuild` will *not* show these, because the plugins apply through mods that only run during prebuild. Prebuild also rewrites the `android` / `ios` npm scripts to `expo run:*` — revert that, the project uses the `--dev-client` workflow.
+
 ## Read-only lists
 
 `IPatternList.readonly` is set on imported read-only exports and on subscribed cloud lists. Every mutating path must guard on it (`const isReadonly = !!activeList?.readonly`) — pattern and modifier CRUD in `PatternListManager` already does.
@@ -154,7 +166,7 @@ Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, a
 - The three expected ones are one root cause: `expo-router` → `query-string@7` → `decode-uri-component@0.2.2`. The patched `decode-uri-component@0.5.0` is ESM-only, so it cannot be forced under the CJS `query-string@7`; this has to wait for expo-router upstream. Impact is a DoS in query-string decoding, reachable only through a URL the user opens.
 - `overrides` in `package.json` carries the rest. Each entry exists because a parent pins a range that sits below the fix — keep the comment-worthy ones in mind before removing any:
   `shell-quote` (react-devtools-core), `brace-expansion@1` / `@5` (eslint and @typescript-eslint minimatch), `@humanfs/node` (eslint), `@babel/core`, `flatted` (eslint flat-cache), and `xcode` → `uuid@^11` (xcode only calls `uuid.v4()`, unchanged across those majors; it runs during iOS prebuild).
-- `react-test-renderer` is pinned to the exact `react` version and must be bumped with it.
+- `react-test-renderer` is pinned to the exact `react` version and must be bumped with it. `jest-expo` must track the SDK major.
 - Do **not** run `npx expo install --fix`. Several packages are deliberately ahead of the versions SDK 57 bundles — `@react-native-async-storage/async-storage@3`, `react-native-gesture-handler@3`, `jest@30`, `react@19.2.7`, `react-native-safe-area-context`, `react-native-svg` — and `--fix` would downgrade them, two across a major. `npx expo install --check` listing them is expected.
 - `react-native-web` 0.21 warns that `shadow*` and `textShadow*` style props are deprecated. `shadow*` is migrated to the `boxShadow` shorthand; `textShadow` is not, because react-native 0.86 still types only `textShadowColor` / `textShadowOffset` / `textShadowRadius` (see `QrCodeScanner.tsx`).
 
@@ -165,17 +177,46 @@ npm install              # install deps
 npm start                # expo start --lan (or: npx expo start)
 npm run android          # expo start --android
 npm run ios              # expo start --ios
-npm test                 # Jest (node env, no device needed)
+npm test                 # Jest, both projects (no device needed)
+npm run test:unit        # pure-logic project only — sub-second feedback loop
+npm run test:components  # rendering project only (jest-expo)
 npm run test:watch       # watch mode
-npm run test:coverage    # coverage for src/pattern/data/** + src/pattern/graph/utils/**
+npm run test:coverage    # coverage over all of src/, with thresholds enforced
 npm run lint             # ESLint via expo lint
+npm run format:check     # Prettier, same glob CI uses
+npm run format           # Prettier, write
+npm run typecheck        # tsc --noEmit
 ```
 
 Stack: Expo SDK ~57 / React Native 0.86 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`).
 
 ## Testing conventions
 
-- All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Test environment is `node`; transform is `ts-jest`.
-- Coverage is scoped to `src/pattern/data/**` and `src/pattern/graph/utils/**`.
+All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs **two projects** (`jest.config.js`), and a test must go in the directory matching its project:
+
+| Project | Directory | Environment | Use it for |
+|---|---|---|---|
+| `unit` | `__tests__/unit/` | `node` + `ts-jest` | Pure logic — storage, graph maths, hooks-free helpers. Fast; this is where most tests belong. |
+| `components` | `__tests__/components/` | `jest-expo` preset | Anything that renders. |
+
+`npm test` runs both; `npm run test:unit` / `npm run test:components` run one. A test placed in the wrong directory is silently never run.
+
+- **AsyncStorage is mocked globally and behaviourally.** `__mocks__/@react-native-async-storage/async-storage.ts` is a real in-memory store implementing the v3 surface, applied automatically (a `__mocks__` directory beside `node_modules` needs no `jest.mock()` call). Both setup files reset it per test. Assert on observable state (`await loadPatterns(id)`) rather than on mock bookkeeping (`setItem.mock.calls[0][1]`), so tests survive refactors of the storage internals. `seedAsyncStorage` / `peekAsyncStorage` are there for setup and assertions.
+- **The filesystem is mocked globally too.** `__mocks__/expo-file-system.ts` is an in-memory `File` / `Paths` implementation that stores real bytes and does real base64, so no test can touch the real disk and an export→import round trip has to preserve bytes exactly. `seedFile` / `seedBinaryFile` set fixtures up, `readFileBytes` / `readFileText` / `listFileUris` assert on the result. It implements only the surface the app uses and throws on anything else, so a new call site surfaces here rather than silently no-oping.
+- **Export and import are tested as a round trip**, not separately (`__tests__/unit/ExportImportRoundTrip.test.ts`): the two modules only agree through the on-disk format, so exercising them apart proves very little. Add a case there when changing either side or the format version.
+- **Component tests render through `renderWithProviders`** (`utils/renderWithProviders.tsx`), which supplies the real provider stack — i18n, `ThemeProvider`, `ActivePatternListProvider` — and seeds storage before mounting. It re-exports everything from `@testing-library/react-native`, so import `screen`, `fireEvent`, `within` from it rather than from the library directly.
+- **Native modules are mocked in `jest.setup.components.ts`** (expo-video, expo-camera, the pickers, haptics, sharing, the YouTube player, QR codes). The firebase SDK is mocked there too: it ships untranspiled ESM that jest cannot parse, and mocking matches how the app behaves without credentials (`firebaseAvailable === false`). Tests that need sharing should mock `@/src/firebase/FirebaseListService` directly.
 - Use factory helpers from `utils/testFactories.ts` (`createTestPattern`, `createTestPatternList`, `createTestPatternType`) — do not inline raw object literals in tests. They already supply `modifiers: []` / `modifierRefs: []`, so new required fields belong there too.
 - `IPattern.id` in tests should be a plain integer; `PatternType.id` / `IPatternList.id` / `IModifier.id` should use `generateUUID()`.
+- **Coverage thresholds are a ratchet**, set just under measured reality so CI is green on arrival (`jest.config.js` → `coverageThreshold`). Raise them as suites land; never lower them. A file imported by both projects is instrumented by two different transforms and its merged branch percentage drifts a few points, so per-file floors carry headroom.
+- **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. `__tests__/unit/GraphLayoutInvariants.test.ts` uses it to pin the dangling-prerequisite and cycle defects (AGENT_TASKS.md B1/B2). Prefer it over deleting or skipping a test that documents real broken behaviour.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `master` and every PR, in three jobs:
+
+- **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`.
+- **bundle** — `npx expo export` for **both** `web` and `android`. Metro resolves `.web.tsx` over `.tsx`, so a bad import can break exactly one platform; web additionally builds an SSR bundle (static rendering is on) and surfaces such a fault twice. This is the gate that catches the class of problem described under "Platform-specific code".
+- **audit** — fails if `npm audit` drifts from the documented baseline of exactly three moderate findings (see "Dependencies & security"). If a change to that baseline is intentional, update both the workflow's `expected` map and this file.
+
+Run the same checks locally before pushing; every one of them passes on `master`.
