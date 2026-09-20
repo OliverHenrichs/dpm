@@ -62,7 +62,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
           <>
             <TouchableOpacity
               onPress={(e) => {
-                e.stopPropagation?.();
+                e?.stopPropagation?.();
                 onEdit(pattern);
               }}
               style={styles.iconButton}
@@ -76,7 +76,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
             </TouchableOpacity>
             <TouchableOpacity
               onPress={(e) => {
-                e.stopPropagation?.();
+                e?.stopPropagation?.();
                 setShowConfirmDelete(true);
               }}
               style={styles.iconButton}
@@ -149,4 +149,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
   });
 
-export default PatternListItem;
+// Rows are rendered by a FlatList and get identical props on most re-renders of
+// the list; memoising keeps unrelated rows (and their thumbnails) from
+// re-rendering when one row's selection changes.
+export default React.memo(PatternListItem);

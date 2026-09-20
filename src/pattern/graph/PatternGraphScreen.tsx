@@ -38,8 +38,9 @@ const PatternGraphScreen: React.FC = () => {
     setSelectedPattern(undefined);
   };
 
-  // Get pattern types from active list or empty array
+  // Get pattern types / modifiers from active list or empty array
   const patternTypes = activeList?.patternTypes ?? [];
+  const modifiers = activeList?.modifiers ?? [];
 
   return (
     <View style={{ flex: 1 }}>
@@ -69,6 +70,7 @@ const PatternGraphScreen: React.FC = () => {
           pattern={selectedPattern}
           allPatterns={patterns}
           patternTypes={patternTypes}
+          modifiers={modifiers}
           onClose={handleCloseModal}
         />
       </PageContainer>

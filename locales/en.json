@@ -162,7 +162,7 @@
   "unpublishConfirmMessage": "This will remove the list from the cloud. Others will no longer be able to subscribe to it.",
   "unpublishSuccessTitle": "Sharing Stopped",
   "unpublishSuccessMessage": "The list is no longer shared.",
-  "deletePatternConfirm": "Are you sure you want to delete this pattern?",
+  "deletePatternConfirm": "Are you sure you want to delete '{{name}}'?",
   "addVideo": "Add Video",
   "addFromLibrary": "Pick from Library",
   "addFromUrl": "Online Video URL",

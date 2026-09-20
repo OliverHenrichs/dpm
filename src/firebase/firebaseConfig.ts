@@ -25,8 +25,7 @@ import Constants from "expo-constants";
  * commit this file to a public repository.
  */
 const cfg = Constants.expoConfig?.extra?.firebase as
-  | Record<string, string>
-  | undefined;
+  Record<string, string> | undefined;
 
 export const firebaseAvailable = !!(cfg?.apiKey && cfg?.projectId);
 

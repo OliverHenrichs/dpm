@@ -344,7 +344,6 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           onChangeText={setDraftName}
           placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
           placeholderTextColor={palette[PaletteColor.SecondaryText]}
-          autoFocus
         />
 
         {/* ── Pattern Types ─────────────────────────────────────────────── */}

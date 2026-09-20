@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import {
+  collectOrphanedPatternKeys,
   getActiveList,
   hasPatternLists,
   loadPatterns,
@@ -86,6 +87,9 @@ export const ActivePatternListProvider: React.FC<{
   useEffect(() => {
     (async () => {
       await loadActiveListAndPatterns();
+      // Reclaim pattern keys left behind by deleted lists. Deliberately after
+      // the load and unawaited: it must never delay or fail the first paint.
+      collectOrphanedPatternKeys().catch(() => {});
     })();
   }, [loadActiveListAndPatterns]);
 

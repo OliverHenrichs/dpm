@@ -11,7 +11,7 @@ import {
   HOME_ROUTE,
 } from "@/src/common/components/DrawerRoutes";
 
-/** The app icon is smaller than a comfortable tap target, so grow it by touch only. */
+/** Padding already takes the button past the 48dp minimum; hit slop adds margin for error. */
 const HOME_BUTTON_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 
 /** Only the drawer-specific part of the navigation object is needed here. */
@@ -65,11 +65,17 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       alignItems: "center",
       marginBottom: 0,
       paddingLeft: 8,
+      paddingRight: 8,
       justifyContent: "space-between",
       backgroundColor: palette[PaletteColor.Background],
     },
-    headerLeft: { flexDirection: "row", alignItems: "center" },
-    headerIcon: { width: 32, height: 32, marginRight: 8 },
+    headerLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      // Mirrors hamburgerButton so both ends of the header are the same size.
+      padding: 8,
+    },
+    headerIcon: { width: 40, height: 40 },
     headerTitle: {
       // Spans the whole header, so it must not swallow taps on the buttons underneath.
       pointerEvents: "none",

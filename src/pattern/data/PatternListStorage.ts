@@ -177,10 +177,45 @@ export async function hasPatternLists(): Promise<boolean> {
  */
 export async function clearAllData(): Promise<void> {
   try {
-    await AsyncStorage.removeMany([PATTERN_LISTS_KEY, ACTIVE_LIST_ID_KEY]);
-    // Note: Individual pattern keys are cleaned up when lists are deleted
+    const allKeys = await AsyncStorage.getAllKeys();
+    const patternKeys = allKeys.filter((key) =>
+      key.startsWith(PATTERNS_KEY_PREFIX),
+    );
+    await AsyncStorage.removeMany([
+      PATTERN_LISTS_KEY,
+      ACTIVE_LIST_ID_KEY,
+      ...patternKeys,
+    ]);
   } catch (error) {
     console.error("Error clearing all data:", error);
     throw error;
+  }
+}
+
+/**
+ * Remove `@patterns_{listId}` entries whose list no longer exists.
+ *
+ * Deleting a list removes its pattern key, but a crash between the two writes —
+ * or data written by an older build — can leave the key behind, where nothing
+ * would ever read or delete it again. Safe to call at any time; returns the
+ * number of keys reclaimed.
+ */
+export async function collectOrphanedPatternKeys(): Promise<number> {
+  try {
+    const [allKeys, lists] = await Promise.all([
+      AsyncStorage.getAllKeys(),
+      loadAllPatternLists(),
+    ]);
+    const liveKeys = new Set(lists.map((list) => getPatternsKey(list.id)));
+    const orphaned = allKeys.filter(
+      (key) => key.startsWith(PATTERNS_KEY_PREFIX) && !liveKeys.has(key),
+    );
+    if (orphaned.length > 0) {
+      await AsyncStorage.removeMany(orphaned);
+    }
+    return orphaned.length;
+  } catch (error) {
+    console.error("Error collecting orphaned pattern keys:", error);
+    return 0;
   }
 }

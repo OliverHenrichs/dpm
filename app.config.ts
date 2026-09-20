@@ -21,6 +21,9 @@ export default (): ExpoConfig => ({
   scheme: "dancepatternmapper",
   userInterfaceStyle: "automatic",
   ios: {
+    // Required for prebuild/EAS; there is no app.json for the CLI to write it
+    // into, so it has to live here. Mirrors android.package.
+    bundleIdentifier: "com.teholi.DancePatternMapper",
     supportsTablet: true,
     icon: {
       dark: "./assets/images/ios-dark.png",
@@ -42,6 +45,28 @@ export default (): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
+    // The iOS usage strings below exist only because these plugins are listed;
+    // config plugins are not applied by autolinking. Without them iOS kills the
+    // app the first time it touches the camera or the photo library.
+    [
+      "expo-camera",
+      {
+        cameraPermission:
+          "Allow $(PRODUCT_NAME) to use the camera to scan a pattern list share code.",
+        // QR scanning only — no audio is ever recorded.
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "Allow $(PRODUCT_NAME) to access your videos so you can attach them to a pattern.",
+        // Videos are only ever picked from the library, never recorded in-app.
+        microphonePermission: false,
+      },
+    ],
     [
       "expo-splash-screen",
       {
