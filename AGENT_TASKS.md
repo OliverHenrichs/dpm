@@ -59,6 +59,7 @@ evidence.
 | [B8](#b8--imported-videos-overwrite-each-other--done) | Imported videos overwrite each other | **S** | ✅ done | A pattern with two local videos lost one on every import. Found by the new round-trip suite. |
 | [B9](#b9--the-skip-on-conflict-import-default-never-applied) | Skip-on-conflict import default never applied | **S** | ✅ done | Importing a list you already had silently replaced it. Found by covering the decision hook. |
 | [B10](#b10--imported-and-subscribed-lists-duplicated-every-pattern-into-the-list-record) | Import and subscribe duplicated every pattern into the list record | **S** | ✅ done | A second copy of the data that nothing read and nothing kept in step. |
+| [B11](#b11--the-header-title-covered-the-home-button) | Header title covered the home button | **S** | ✅ done | Reported from the device: the button worked ~1 press in 10, even at 56pt. |
 
 ### Suggested sequencing
 
@@ -1051,10 +1052,21 @@ imported by both projects get instrumented twice.
 | ✅ | **`testTimeout` moved to the config root.** It is not a valid per-project option — Jest ignores it there and only warns, so the value set during the CI fix was doing nothing. Verified by a probe test that sleeps 7s. |
 | ✅ | `renderWithProviders` accepts `activeListId: null` for the genuine no-active-list state, which also stops the header repeating a list name a test asserts on. |
 
+#### Landed since (3)
+
+| | What |
+|---|---|
+| ✅ | **`PatternListTemplateModal` covered** (31 cases): both steps, template seeding, starter-pattern selection, slug validation and normalisation, type add/remove, and the whole edit-mode path including `usedTypeIds`. It reached 90% and **no bugs were found** — worth saying, because it already solves by remounting on a `key` the exact prop-seeding problem that [B9](#b9--the-skip-on-conflict-import-default-never-applied) got wrong. The right pattern was already in the codebase. |
+| ✅ | **`AppHeader` covered** (7 cases) alongside the [B11](#b11--the-header-title-covered-the-home-button) fix. |
+| ✅ | 273 → **311 tests**. Thresholds ratcheted: statements 37 → 39, branches 25 → 28, functions 32 → 36, lines 39 → 41, plus per-file floors for the template modal and the header. |
+
+Three inputs gained accessible names while writing these: the list-name field (whose placeholder is
+the *template* name, so it could never serve as a label), and the Skip/Replace controls. Each was
+needed to query the element, and each was a real gap.
+
 #### Still outstanding
 
-1. **The remaining screens** — the filter/sort sheets, the share and subscribe modals, and
-   `PatternListTemplateModal` (786 lines, the largest file in the app, untested).
+1. **The remaining screens** — the filter/sort sheets, and the share and subscribe modals.
    `EditPatternForm` sits at ~45%.
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
@@ -1450,6 +1462,33 @@ subscription wrote a second copy of every pattern that nothing read and nothing 
 **Fixed** at the storage boundary rather than at the two call sites, so a third caller cannot
 reintroduce it: `normalizePatternList` now strips `patterns`, and `savePatternList` normalises
 before writing. That also cleans up devices that are already bloated, since the strip runs on read.
+
+---
+
+### B11 — The header title covered the home button
+
+**Severity was: high for usability — the home button worked roughly one press in ten.**
+
+**Reported from the device**, after [S2](#s2--enlarge-the-home-button-target--done) had already
+grown the target to 56pt plus hit slop. That it *stayed* broken at that size was the clue: a target
+that big failing nine times out of ten is not a sizing problem, something is on top of it.
+
+`AppHeader` rendered the title as a `Text` with `position: "absolute"` spanning `left: 0,
+right: 0` — the full width of the header, directly over both buttons. It was kept harmless by
+`pointerEvents: "none"`… except that is a **View** style prop, and React Native's `Text` has no
+`pointerEvents` handling at all (nothing in `Libraries/Text/Text.js` or `TextNativeComponent.js`
+reads it). So the title stayed hit-testable and swallowed most taps; the occasional success was a
+tap landing where the text view did not claim it.
+
+**Fixed** by removing the overlay rather than patching the property. The header is now three flex
+children — a 56pt slot, the title at `flex: 1`, another 56pt slot. Equal-width sides mean the title
+still lands on the centre of the screen, and nothing is positioned on top of anything. The
+hamburger gained the `button` role and hit slop it was missing.
+
+**Note for the next person:** a unit test cannot catch this. RNTL has no layout engine, so no
+assertion there can tell that one view covers another; the suite pins the *structural* decision
+("the title is laid out in flow, not absolutely") as the closest available guard, and reverting the
+fix does make it fail. The real check is tapping the icon on a device.
 
 ---
 

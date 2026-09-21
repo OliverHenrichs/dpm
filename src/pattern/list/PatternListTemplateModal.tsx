@@ -342,6 +342,10 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           style={styles.input}
           value={draftName}
           onChangeText={setDraftName}
+          // The placeholder is the template's name, so it cannot double as the
+          // field's label — a screen reader would announce the suggestion and
+          // never say what the field is for.
+          accessibilityLabel={t("listName")}
           placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
           placeholderTextColor={palette[PaletteColor.SecondaryText]}
         />

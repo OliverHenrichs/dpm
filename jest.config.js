@@ -82,10 +82,10 @@ module.exports = {
     // so pinning well-covered files pushes this number down. It measures what
     // is left over — mostly untested UI — not the project as a whole.
     global: {
-      statements: 37,
-      branches: 25,
-      functions: 32,
-      lines: 39,
+      statements: 39,
+      branches: 28,
+      functions: 36,
+      lines: 41,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -160,6 +160,20 @@ module.exports = {
       branches: 90,
       functions: 68,
       lines: 82,
+    },
+    // The other path that creates lists, and the header whose title used to
+    // sit on top of the home button.
+    "src/pattern/list/PatternListTemplateModal.tsx": {
+      statements: 86,
+      branches: 86,
+      functions: 78,
+      lines: 86,
+    },
+    "src/common/components/AppHeader.tsx": {
+      statements: 88,
+      branches: 55,
+      functions: 74,
+      lines: 88,
     },
     "src/pattern/list/PatternList.tsx": {
       statements: 82,

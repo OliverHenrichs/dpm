@@ -67,6 +67,20 @@ Patterns and lists are stored under **separate keys**. Always use the helpers in
 
 `clearAllData` removes the per-list `@patterns_*` keys as well as the two top-level ones. `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list no longer exists and is called once, unawaited, from `ActivePatternListProvider` after the initial load — it must never delay or fail first paint.
 
+## Header layout
+
+`AppHeader` lays its three children out in flow — a fixed-width button slot, the title at `flex: 1`,
+another slot of the same width. Because both sides are equal the title lands on the centre of the
+screen without being positioned over anything.
+
+**Do not make the title absolute again.** It used to be `position: "absolute"` across the full
+header width, relying on `pointerEvents: "none"` to stay out of the way — but that is a View style
+prop and React Native's `Text` does not implement it, so the title sat on top of the home button
+and swallowed most presses. A component test cannot catch that (RNTL has no layout engine and
+cannot tell that one view covers another), so the guard in
+`__tests__/components/AppHeader.test.tsx` pins the structure instead, and the real check is tapping
+the icon on a device.
+
 ## Prerequisite integrity
 
 `IPattern.prerequisites` is the data model — both graph views are built from it — and two ways of
@@ -139,7 +153,9 @@ arrived as a prop change. Every conflicting list then fell through to `replace` 
 overwritten.
 
 The same shape applies to any hook behind one of these always-mounted modals: derive from props,
-do not snapshot them at mount.
+or remount so the snapshot is retaken. `PatternListTemplateModal` takes the second route — it keys
+its body on what the modal is open on, so opening it re-mounts with drafts seeded fresh — and that
+is equally correct. What is not correct is snapshotting once and leaving it.
 
 ## Export / Import format
 
