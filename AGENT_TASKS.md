@@ -61,6 +61,7 @@ evidence.
 | [B10](#b10--imported-and-subscribed-lists-duplicated-every-pattern-into-the-list-record) | Import and subscribe duplicated every pattern into the list record | **S** | ✅ done | A second copy of the data that nothing read and nothing kept in step. |
 | [B11](#b11--the-header-title-covered-the-home-button) | Header title covered the home button | **S** | ✅ done | Reported from the device: the button worked ~1 press in 10, even at 56pt. |
 | [B12](#b12--a-refused-save-wiped-the-edit-form) | A refused save wiped the edit form | **S** | ✅ done | Clearing the name and saving destroyed the edit and wedged the form. |
+| [B13](#b13--press-handlers-assumed-the-event-object-exists) | Press handlers assumed the event object exists | **S** | ✅ done | Latent in production; made four controls untestable. |
 
 ### Suggested sequencing
 
@@ -1086,12 +1087,29 @@ Two more controls gained accessible names, both bare `×` buttons that announced
 a video, and detaching a modifier (which names the modifier, so several on screen stay
 distinguishable).
 
+#### Landed since (6)
+
+| | What |
+|---|---|
+| ✅ | **The modifier tab covered** (33 cases): the list and its empty/read-only states, expanding a row to see which patterns use a modifier, delete confirmation, and the form — position, the universal toggle, videos appearing only for universal modifiers, the three-video cap, and blank-name refusal. `ModifierListItem` and `ModifierDetails` reached 100%, `ModifierList` 93%, `EditModifierForm` 82%. Found [B13](#b13--press-handlers-assumed-the-event-object-exists). |
+| ✅ | **Shared components covered** (19 cases): `AppDialog` and `BottomSheet` both to **100%**, `PatternDetails` to 97% including variant-scoped video switching, `VideoCarousel` paging. |
+| ✅ | 398 → **450 tests**; global thresholds 41/32/40/43. |
+
 #### Still outstanding
 
-1. **Smaller shared components** — `VideoCarousel`, `BottomSheet`, `AppDialog`, `PatternDetails`,
-   the filter sub-panels.
-2. **`PatternListManager` is at 60%** — the modifier-tab half of the screen (`ModifierList`,
-   `EditModifierForm`, `ModifierDetails`) has no coverage at all.
+F1 has reached the point of diminishing returns. What is left is genuinely low-risk presentational
+code, and the bug record supports stopping here: **eight defects across fourteen suites, every one
+of them in code that writes data, in layout, or in an event handler — none in read-only rendering.**
+
+If more is wanted, the remaining gaps in rough order of value:
+
+1. `PatternListManager` at 60% — the uncovered half is its modal wiring, which the child suites
+   already exercise from the inside.
+2. The filter sub-panels (`TagPickerBottomSheet` 61%, `PatternFilterBottomSheet` 58%,
+   `SortBottomSheet` 76%) — the sheets are covered through the hooks; what is untested is their
+   chip-toggling UI.
+3. `VideoCarousel` at 60% — the untested part is `onViewableItemsChanged`, which needs a real
+   scroll and is not worth simulating.
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
    components that rely on the automatic runtime; it printed to stderr without failing the run, so
@@ -1550,6 +1568,24 @@ the outcome they were already computing.
 **Still worth doing:** the form gives no feedback at all when a save is refused — it just sits
 there. Now that the user's input survives, an inline "name is required" message is the obvious
 next step, and is a UI addition rather than a bug fix.
+
+---
+
+### B13 — Press handlers assumed the event object exists
+
+**Severity was: low — latent, but it crashed under test on every affected control.**
+
+`ModifierListItem`'s edit and delete buttons, `BottomSheet`'s inner press-swallower and
+`PatternListTemplateModal`'s colour swatch all did `e.stopPropagation()` (or
+`e.stopPropagation?.()`) — optional-chaining the *method* while assuming the *event* is there.
+`PatternListItem` had the same shape and was fixed earlier; these were the remaining four.
+
+React Native always supplies an event in the app, so this never fired in production. It does
+throw as soon as a handler is invoked without one, which is what a press-simulating test does, so
+the pattern quietly makes those controls untestable.
+
+**Fixed** by guarding the event too — `e?.stopPropagation?.()` — at all four sites. A grep for
+`e.stopPropagation` now returns nothing unguarded.
 
 ---
 

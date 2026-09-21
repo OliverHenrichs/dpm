@@ -40,7 +40,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
       <Pressable style={styles.modalOverlay} onPress={onClose}>
         <Pressable
           style={styles.bottomSheet}
-          onPress={(e) => e.stopPropagation()}
+          onPress={(e) => e?.stopPropagation?.()}
         >
           <View style={styles.bottomSheetHeader}>
             <Text style={styles.bottomSheetTitle}>{title}</Text>

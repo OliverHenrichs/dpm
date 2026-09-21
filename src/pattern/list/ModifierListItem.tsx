@@ -73,7 +73,7 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
           <View style={styles.actions}>
             <TouchableOpacity
               onPress={(e) => {
-                e.stopPropagation?.();
+                e?.stopPropagation?.();
                 onEdit(modifier);
               }}
               style={styles.iconButton}
@@ -87,7 +87,7 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
             </TouchableOpacity>
             <TouchableOpacity
               onPress={(e) => {
-                e.stopPropagation?.();
+                e?.stopPropagation?.();
                 setShowConfirmDelete(true);
               }}
               style={styles.iconButton}

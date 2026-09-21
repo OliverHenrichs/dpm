@@ -86,10 +86,10 @@ module.exports = {
     // instrumented twice and the merge depends on which worker saw them first.
     // Set a floor under the lowest of several runs, not under the best one.
     global: {
-      statements: 40,
-      branches: 30,
-      functions: 38,
-      lines: 42,
+      statements: 41,
+      branches: 32,
+      functions: 40,
+      lines: 43,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -228,6 +228,49 @@ module.exports = {
       branches: 62,
       functions: 94,
       lines: 85,
+    },
+    // The modifier tab, and the dialogs/sheets every screen builds on.
+    "src/pattern/list/ModifierList.tsx": {
+      statements: 88,
+      branches: 84,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/list/ModifierListItem.tsx": {
+      statements: 94,
+      branches: 80,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/list/ModifierDetails.tsx": {
+      statements: 94,
+      branches: 70,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/list/EditModifierForm.tsx": {
+      statements: 76,
+      branches: 46,
+      functions: 78,
+      lines: 80,
+    },
+    "src/common/components/AppDialog.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/common/components/BottomSheet.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/PatternDetails.tsx": {
+      statements: 92,
+      branches: 72,
+      functions: 94,
+      lines: 94,
     },
     "src/pattern/list/PatternList.tsx": {
       statements: 82,

@@ -361,7 +361,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
               {/* Color dot → popover */}
               <TouchableOpacity
                 onPress={(e) => {
-                  e.stopPropagation();
+                  e?.stopPropagation?.();
                   setColorPopoverId((prev) => (prev === dt.id ? null : dt.id));
                 }}
                 style={[styles.typeColorDot, { backgroundColor: dt.color }]}
