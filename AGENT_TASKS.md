@@ -825,8 +825,41 @@ can call them with synthetic events. That is what makes the pan/pinch/zoom *arit
 points, clamping, cumulative-versus-incremental scale — testable at 100% coverage without a
 device. Reverting the focal-point maths fails three tests.
 
-**Still to do:** step 2, persistence and reconciliation (`resolveLayout`, `GraphLayoutStorage`),
-which is pure and needs no gestures; then step 3, the drag interaction itself.
+#### Landed so far — step 2 of 3: persistence and reconciliation
+
+Pure and gesture-free, so all of it is unit-tested. **744 tests** (was 696).
+
+- **`model/resolveLayout.ts`** — merges a stored layout with the patterns that exist now. A
+  stored pattern keeps its position (clamped to the same box the automatic layout uses, because a
+  node outside it could never be dragged back); a pattern added since is **seeded near its
+  prerequisites**, never by re-running the global layout; a stored entry whose pattern is gone is
+  reported stale for pruning. A list with nothing stored behaves exactly as it did before manual
+  layouts existed.
+- **`data/GraphLayoutStorage.ts`** — `@graphLayout_{listId}`, following the existing helpers-only
+  convention: reads degrade to null on any failure, writes propagate, and there is an orphan
+  collector matching `collectOrphanedPatternKeys`. No write lock, unlike `savePatternList`: this
+  is a whole-value write of a key only the graph touches, not a read-modify-write over a shared
+  array, so the later of two overlapping saves simply wins — which is what the user just did.
+- **`deletePatternList` and `clearAllData` now remove layout keys**, or they would leak exactly
+  as [B5](#b5--clearalldata-orphans-every-pattern-key--done) did.
+- **`data/GraphLayoutKeys.ts`** — the key alone, in a module with no imports. `PatternListStorage`
+  needs it to clean up, and importing `GraphLayoutStorage` for it dragged the whole
+  reconciliation layer into every bundle touching list storage. That showed up as a coverage
+  swing: `resolveLayout` reported 69% or 89% depending on which instrumented copy won the merge.
+  Splitting the key fixed the cause; it now reports 100% on every run.
+
+**Seeding is the behaviour that matters**, and it is tested as such: a new pattern lands one
+level from its prerequisite, between two of them when it has two, off its *dependents* when it
+has no prerequisites, and on a ring outside everything when it is unconnected. Chains of new
+patterns hang off each other rather than all stacking on the same anchor, and a cycle among new
+patterns terminates instead of looping.
+
+**Found while doing this: [B14](#b14--pattern-ids-are-recycled).** `createNewId` is
+`max(id) + 1`, so ids are reused after a delete. Nothing depended on that until a stored layout
+started outliving individual patterns. Mitigated here by pruning stale entries; the real fix is a
+per-list high-water mark and is written up separately rather than smuggled into L2.
+
+**Still to do:** step 3, the drag interaction itself.
 
 **Not yet verified on device.** Nothing in this step can be: whether a tap still reaches a node
 under the canvas pan, whether the drawer's edge swipe and the canvas pan arbitrate sensibly, and
@@ -1768,6 +1801,34 @@ the pattern quietly makes those controls untestable.
 
 **Fixed** by guarding the event too — `e?.stopPropagation?.()` — at all four sites. A grep for
 `e.stopPropagation` now returns nothing unguarded.
+
+---
+
+### B14 — Pattern ids are recycled
+
+**Found during [L2](#l2--moveable-patterns-in-the-network-graph) step 2. Not fixed; mitigated.**
+
+`createNewId` is `Math.max(...ids) + 1` (`src/pattern/list/hooks/usePatternCrud.ts:36`), so
+deleting the highest-id pattern and adding another gives the new one the id the deleted one had.
+Ids are unique *at any instant*, never unique *over time*.
+
+Nothing depended on that until now. `prerequisites` are repaired when a pattern is deleted
+([B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done)), so a recycled id cannot
+resurrect an edge. But the manual graph layout is keyed by pattern id and outlives any single
+pattern, so a stored position can attach to a pattern that merely inherited the id — the new
+pattern appears where the deleted one sat, instead of being seeded near its prerequisites.
+
+**Mitigation in place:** `resolveLayout` reports stale entries and the caller prunes them, so the
+window is only "a pattern was deleted and another added before the graph screen next resolved a
+layout". The consequence inside that window is a node in the wrong place, which the user can drag
+— nothing is lost or corrupted.
+
+**The real fix** is a per-list high-water mark (`nextPatternId` on `IPatternList`) so ids are
+never reused, with a migration seeding it from `max(id) + 1`. The migration runner from
+[F3](#f3--storage-schema-versioning-and-import-validation--done) makes that cheap. It was left
+out of L2 deliberately: it changes the data model, it touches the export format question, and it
+is not what makes dragging work. **Do it before anything else starts keying long-lived data by
+pattern id.**
 
 ---
 

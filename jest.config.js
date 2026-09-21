@@ -358,6 +358,28 @@ module.exports = {
       functions: 70,
       lines: 74,
     },
+    // L2: the manual layout. `resolveLayout` decides what happens to an
+    // arrangement the user built by hand when the pattern set changes
+    // underneath it, so it is held near-total; its uncovered branches are
+    // defensive `?? []` fallbacks over maps that always have an entry.
+    "src/pattern/graph/model/resolveLayout.ts": {
+      statements: 95,
+      branches: 82,
+      functions: 95,
+      lines: 95,
+    },
+    "src/pattern/graph/data/GraphLayoutStorage.ts": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/data/GraphLayoutKeys.ts": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
     // L2: the pan/pinch canvas that replaced the PanResponder-based zoomable
     // view. Its gestures cannot be dispatched under jest, but the arithmetic
     // they drive can: the mock records each registered handler and the tests

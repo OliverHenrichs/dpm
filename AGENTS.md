@@ -172,6 +172,31 @@ It replaced `@openspacelabs/react-native-zoomable-view`, which is implemented wi
 - Pinch reports *cumulative* scale; the canvas converts it to a per-frame factor so pinch and pan can both write `translate` without fighting.
 - **No `GestureHandlerRootView` is mounted in `src/`, deliberately.** On native the drawer supplies a real one (`react-native-drawer-layout`'s `Drawer.native` renders one around its children, so every screen is inside it). On web RNGH's root view is a plain `View` plus a context flag, so gestures work without one. Nesting another around the graph would take that area out of the drawer's own gesture tree.
 
+### Manual layout
+
+A user-arranged network layout is stored per list, per device, at `@graphLayout_{listId}`
+(`data/GraphLayoutStorage.ts`, with the key itself in the import-free `data/GraphLayoutKeys.ts`
+so `PatternListStorage` can clean it up without pulling in the reconciliation layer).
+
+`model/resolveLayout.ts` merges what is stored with the patterns that exist now, and the rule that
+matters is: **a pattern added since must be seeded near its prerequisites, never by re-running the
+global layout.** Re-laying-out would be correct and would also throw away everything the user
+arranged, every time they add a pattern. Stored positions are clamped to `MAX_GRAPH_COORDINATE` —
+a node outside that box could not be dragged back, because it would never be on screen.
+
+- A stored entry whose pattern no longer exists is reported as stale and pruned on save. That is
+  also the mitigation for [B14](AGENT_TASKS.md) — pattern ids are recycled (`createNewId` is
+  `max(id) + 1`), so a stored position can in principle attach to a pattern that merely inherited
+  the id. Do not key any other long-lived data by pattern id until that is fixed properly.
+- **Filtering must not prune.** Filtering hides patterns, it does not delete them; `resolveLayout`
+  reports them stale because it only sees the patterns it was handed, so the caller passes the
+  *unfiltered* set when deciding what to persist.
+- A manual layout is **never written to the Firestore shared document**. A subscriber's
+  arrangement is theirs, and `syncPublishedList` runs after every pattern CRUD — a layout in there
+  would fire a network write on every drag.
+- Dragging is allowed on read-only lists. It is a local view preference, not a content edit, so it
+  is a deliberate exception to the `isReadonly` guard every mutating path has.
+
 ### The views
 
 - **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
