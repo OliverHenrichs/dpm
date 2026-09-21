@@ -26,9 +26,15 @@ export const ImportActionButtons: React.FC<ImportActionButtonsProps> = ({
       </View>
     );
   }
+  // A two-option exclusive choice, so the buttons carry the radio role and
+  // their selected state: which one is active was previously conveyed by
+  // colour alone, which a screen reader cannot read out.
   return (
-    <View style={styles.actionButtons}>
+    <View style={styles.actionButtons} accessibilityRole="radiogroup">
       <TouchableOpacity
+        accessibilityRole="radio"
+        accessibilityLabel={t("skip")}
+        accessibilityState={{ selected: currentAction === "skip" }}
         style={[
           styles.actionButton,
           currentAction === "skip" && styles.actionButtonSelected,
@@ -45,6 +51,9 @@ export const ImportActionButtons: React.FC<ImportActionButtonsProps> = ({
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
+        accessibilityRole="radio"
+        accessibilityLabel={t("replace")}
+        accessibilityState={{ selected: currentAction === "replace" }}
         style={[
           styles.actionButton,
           currentAction === "replace" && styles.actionButtonSelected,

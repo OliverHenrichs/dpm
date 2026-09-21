@@ -63,6 +63,8 @@ Storage keys in `src/pattern/data/PatternListStorage.ts`:
 
 Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`, `collectOrphanedPatternKeys`) — never call `AsyncStorage` directly from UI code.
 
+**`@patternLists` holds lists without patterns.** The import and cloud-subscribe paths both hand over a `PatternListWithPatterns`, whose extra `patterns` array TypeScript cannot see because `IPatternList` has no such field — so `savePatternList` strips it rather than trusting callers, and `loadAllPatternLists` strips it again to clean up records an older build already bloated. Do not "simplify" that away: it writes a second copy of every pattern that nothing reads and nothing keeps in step.
+
 `clearAllData` removes the per-list `@patterns_*` keys as well as the two top-level ones. `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list no longer exists and is called once, unawaited, from `ActivePatternListProvider` after the initial load — it must never delay or fail first paint.
 
 ## Prerequisite integrity
@@ -125,6 +127,19 @@ Both panels are rendered through the shared `BottomSheet` component (`src/common
 ## Default list templates
 
 `src/pattern/data/DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames. Picking a template happens in `PatternListTemplateModal`.
+
+## Import conflict resolution
+
+`useImportDecisions` derives each list's default from its props on every read — `skip` when the id
+already exists locally, `replace` when it does not — and keeps only the user's explicit choices in
+state. It must stay that way. The defaults used to be snapshotted by a lazy `useState`
+initialiser, which never saw real data: `SettingsScreen` mounts `PatternListImportModal`
+permanently and only toggles `visible`, so the hook first ran with an empty list and the real one
+arrived as a prop change. Every conflicting list then fell through to `replace` and was silently
+overwritten.
+
+The same shape applies to any hook behind one of these always-mounted modals: derive from props,
+do not snapshot them at mount.
 
 ## Export / Import format
 

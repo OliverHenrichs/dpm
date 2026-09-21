@@ -99,6 +99,44 @@ describe("PatternListStorage", () => {
     });
   });
 
+  describe("keeping patterns out of the list record", () => {
+    // `@patternLists` holds lists without patterns. The import and
+    // cloud-subscribe paths both hand over a `PatternListWithPatterns`, whose
+    // extra array TypeScript cannot see because `IPatternList` has no such
+    // field — so the storage layer strips it rather than trusting callers.
+    it("drops a patterns array handed in by a caller", async () => {
+      const list = createTestPatternList();
+      await savePatternList({
+        ...list,
+        patterns: [createTestPattern("type1", { id: 1 })],
+      } as never);
+
+      const [stored] = await loadAllPatternLists();
+      expect(stored).not.toHaveProperty("patterns");
+      expect(stored.id).toBe(list.id);
+    });
+
+    it("drops one that an older build already wrote", async () => {
+      const list = createTestPatternList();
+      seedAsyncStorage({
+        [LISTS_KEY]: JSON.stringify([
+          { ...list, patterns: [createTestPattern("type1", { id: 1 })] },
+        ]),
+      });
+
+      const [stored] = await loadAllPatternLists();
+      expect(stored).not.toHaveProperty("patterns");
+    });
+
+    it("leaves the real per-list pattern key alone", async () => {
+      const list = createTestPatternList();
+      await savePatterns(list.id, [createTestPattern("type1", { id: 1 })]);
+      await savePatternList({ ...list, patterns: [] } as never);
+
+      await expect(loadPatterns(list.id)).resolves.toHaveLength(1);
+    });
+  });
+
   describe("getPatternListById", () => {
     it("finds a stored list", async () => {
       const list = createTestPatternList();

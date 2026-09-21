@@ -17,8 +17,12 @@ export interface RenderWithProvidersOptions extends RenderOptions {
   lists?: IPatternList[];
   /** Patterns per list id, placed in storage before the provider mounts. */
   patterns?: Record<string, IPattern[]>;
-  /** Which list the provider should come up with as active. */
-  activeListId?: string;
+  /**
+   * Which list the provider should come up with as active. Defaults to the
+   * first seeded list; pass `null` for the genuine no-active-list state (which
+   * also keeps the header from repeating a list name the test asserts on).
+   */
+  activeListId?: string | null;
   /** Language to render in. Defaults to English. */
   language?: string;
 }
@@ -61,7 +65,8 @@ function buildWrapper({
   for (const [listId, listPatterns] of Object.entries(patterns)) {
     seed[`@patterns_${listId}`] = JSON.stringify(listPatterns);
   }
-  const resolvedActiveId = activeListId ?? lists[0]?.id;
+  const resolvedActiveId =
+    activeListId === null ? undefined : (activeListId ?? lists[0]?.id);
   if (resolvedActiveId) seed["@activeListId"] = resolvedActiveId;
   seedAsyncStorage(seed);
 

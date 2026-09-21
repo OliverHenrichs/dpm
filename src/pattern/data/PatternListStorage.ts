@@ -6,10 +6,26 @@ import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGr
 // Migration helpers — ensure old data without the modifiers fields still works
 // ---------------------------------------------------------------------------
 
+/**
+ * Coerce a stored record back to the declared `IPatternList` shape.
+ *
+ * `patterns` is stripped deliberately. The two keys have distinct jobs —
+ * `@patternLists` holds lists *without* patterns, `@patterns_{listId}` holds
+ * the patterns — but the import and cloud-subscribe paths both hand over a
+ * `PatternListWithPatterns`, whose extra `patterns` array the type system does
+ * not see because `IPatternList` has no such field. Left alone it is written
+ * into `@patternLists` as well, duplicating every pattern and leaving a second
+ * copy that nothing reads and nothing keeps in step. Normalising at the
+ * storage boundary fixes both directions at once: new writes stay clean, and
+ * lists already bloated on a device shed the duplicate as they load.
+ */
 function normalizePatternList(list: IPatternList): IPatternList {
+  const { patterns: _patterns, ...rest } = list as IPatternList & {
+    patterns?: unknown;
+  };
   return {
-    ...list,
-    modifiers: list.modifiers ?? [],
+    ...rest,
+    modifiers: rest.modifiers ?? [],
   };
 }
 
@@ -48,12 +64,11 @@ export async function savePatternList(list: IPatternList): Promise<void> {
     const lists = await loadAllPatternLists();
     const existingIndex = lists.findIndex((l) => l.id === list.id);
 
+    const normalized = { ...normalizePatternList(list), updatedAt: Date.now() };
     if (existingIndex >= 0) {
-      // Update existing list
-      lists[existingIndex] = { ...list, updatedAt: Date.now() };
+      lists[existingIndex] = normalized;
     } else {
-      // Add new list
-      lists.push({ ...list, updatedAt: Date.now() });
+      lists.push(normalized);
     }
 
     await AsyncStorage.setItem(PATTERN_LISTS_KEY, JSON.stringify(lists));

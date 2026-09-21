@@ -57,6 +57,8 @@ evidence.
 | [B6](#b6--camera-and-media-config-plugins-are-not-registered--done-confirmed-and-worse-than-filed) | Camera/media config plugins not registered | **S** | ✅ done | Confirmed — and iOS prebuild was blocked outright by a missing `bundleIdentifier`. |
 | [B7](#b7--the-graphs-detail-modal-can-never-show-modifiers--done) | Graph detail modal never receives `modifiers` | **S** | ✅ done | Half of original item 4. |
 | [B8](#b8--imported-videos-overwrite-each-other--done) | Imported videos overwrite each other | **S** | ✅ done | A pattern with two local videos lost one on every import. Found by the new round-trip suite. |
+| [B9](#b9--the-skip-on-conflict-import-default-never-applied) | Skip-on-conflict import default never applied | **S** | ✅ done | Importing a list you already had silently replaced it. Found by covering the decision hook. |
+| [B10](#b10--imported-and-subscribed-lists-duplicated-every-pattern-into-the-list-record) | Import and subscribe duplicated every pattern into the list record | **S** | ✅ done | A second copy of the data that nothing read and nothing kept in step. |
 
 ### Suggested sequencing
 
@@ -1039,13 +1041,21 @@ its own threshold entry is *removed* from the `global` pool (so pinning good fil
 global number down), and per-file percentages drift several points between run modes because files
 imported by both projects get instrumented twice.
 
+#### Landed since (2)
+
+| | What |
+|---|---|
+| ✅ | **Conflict resolution covered**: `useImportDecisions` (12), `useExportSelection` (10), `useDataTransfer` (16) — the orchestration that actually writes the skip/replace outcome to storage. Found [B9](#b9--the-skip-on-conflict-import-default-never-applied) and [B10](#b10--imported-and-subscribed-lists-duplicated-every-pattern-into-the-list-record). |
+| ✅ | **Screens covered**: `PatternListSelector` (13) and `SettingsScreen` (11), including the end-to-end skip-on-conflict default. 208 → **273 tests**. |
+| ✅ | **Thresholds ratcheted again**, roughly doubled: statements 19 → 37, branches 13 → 25, functions 17 → 32, lines 22 → 39, plus per-file floors for the three decision hooks and `SettingsScreen`. |
+| ✅ | **`testTimeout` moved to the config root.** It is not a valid per-project option — Jest ignores it there and only warns, so the value set during the CI fix was doing nothing. Verified by a probe test that sleeps 7s. |
+| ✅ | `renderWithProviders` accepts `activeListId: null` for the genuine no-active-list state, which also stops the header repeating a list name a test asserts on. |
+
 #### Still outstanding
 
-1. **Conflict resolution** — `useImportDecisions` / `useExportSelection` (the `skip` vs `replace`
-   decision on an id clash) are not covered yet. The round-trip suite stops at the module
-   boundary; these hooks decide what actually lands in storage.
-2. **More screens** — `PatternListSelector`, `SettingsScreen`, the filter/sort sheets, the share
-   and subscribe modals. `EditPatternForm` is at 45% and is the largest form in the app.
+1. **The remaining screens** — the filter/sort sheets, the share and subscribe modals, and
+   `PatternListTemplateModal` (786 lines, the largest file in the app, untested).
+   `EditPatternForm` sits at ~45%.
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
    components that rely on the automatic runtime; it printed to stderr without failing the run, so
@@ -1394,6 +1404,52 @@ different context ids and never collided; it is there to document that.
   so they leak into the documents directory. Same family as
   [B5](#b5--clearalldata-orphans-every-pattern-key--done) and best handled by the generic startup
   GC proposed in [F3](#f3--storage-schema-versioning-and-import-validation).
+
+---
+
+### B9 — The skip-on-conflict import default never applied
+
+**Severity was: high — silent overwrite of a list the user already had.**
+
+**Found by** covering `useImportDecisions`, and confirmed end-to-end through `SettingsScreen`.
+
+The hook snapshotted its defaults into state with a lazy `useState` initialiser, marking a list
+whose id already existed as `skip` and anything new as `replace`. That looked right and never ran
+with real data: `SettingsScreen` mounts `PatternListImportModal` permanently and only toggles
+`visible`, so the hook first ran with `importedLists === []` and the real lists arrived later as a
+prop change. The map stayed empty, and every lookup fell through its `|| "replace"` fallback — in
+the hook *and* again in the modal's render.
+
+So importing a file containing a list you already had **replaced it by default**, with the UI
+showing Replace as the chosen action. AGENTS.md documents the opposite, and `handleImport` writes
+straight to storage.
+
+**Fixed** by keeping only the user's explicit overrides in state and deriving the default from the
+props on every read, so late-arriving props and a second import both work. The dead `|| "replace"`
+fallbacks are now genuinely unreachable.
+
+The Skip/Replace buttons also conveyed their state by colour alone. They now carry
+`accessibilityRole="radio"` and `accessibilityState.selected` inside a `radiogroup` — which is how
+the regression test reads them, and what a screen reader needed anyway.
+
+---
+
+### B10 — Imported and subscribed lists duplicated every pattern into the list record
+
+**Severity was: medium — storage bloat and a second, divergent copy of the data.**
+
+**Found by** the `useDataTransfer` suite.
+
+`@patternLists` holds lists *without* patterns; `@patterns_{listId}` holds the patterns. But the
+import path (`useDataTransfer.handleImport`) and the cloud-subscribe path
+(`PatternListSelector.handleSubscribeConfirm`) both hand `savePatternList` a
+`PatternListWithPatterns`. TypeScript cannot see the extra `patterns` array, because `IPatternList`
+has no such field — so it was serialised into `@patternLists` too. Every import and every
+subscription wrote a second copy of every pattern that nothing read and nothing kept in step.
+
+**Fixed** at the storage boundary rather than at the two call sites, so a third caller cannot
+reintroduce it: `normalizePatternList` now strips `patterns`, and `savePatternList` normalises
+before writing. That also cleans up devices that are already bloated, since the strip runs on read.
 
 ---
 

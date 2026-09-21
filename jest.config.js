@@ -30,9 +30,6 @@ module.exports = {
     {
       displayName: "unit",
       testEnvironment: "node",
-      // A timeout is here to catch a hang, not to enforce speed; the default
-      // 5s is too tight on a cold runner. Pure tests are quick even so.
-      testTimeout: 30000,
       // Mock call history must not leak between tests, or an assertion can
       // pass on a call another test made.
       clearMocks: true,
@@ -46,12 +43,6 @@ module.exports = {
       displayName: "components",
       preset: "jest-expo",
       clearMocks: true,
-      // Generous on purpose. `npm ci` wipes the Babel cache, so the first
-      // component test on a CI runner pays to transform the whole React
-      // Native + Expo tree before it can render anything — locally that test
-      // takes ~300ms, on a cold runner it exceeded 5s. The timeout still
-      // catches a genuine hang, just not quickly.
-      testTimeout: 60000,
       testMatch: [
         "<rootDir>/__tests__/components/**/*.(test|spec).(ts|tsx|js)",
       ],
@@ -60,6 +51,16 @@ module.exports = {
       setupFilesAfterEnv: ["<rootDir>/jest.setup.components.ts"],
     },
   ],
+
+  // Root level on purpose: `testTimeout` is not a valid per-project option —
+  // Jest ignores it there and only warns ("Unknown option"), so a per-project
+  // value silently does nothing.
+  //
+  // Generous because `npm ci` wipes the Babel cache, so the first component
+  // test on a CI runner pays to transform the whole React Native + Expo tree
+  // before it can render: ~330ms warm, ~3.5s here with caches cleared, and
+  // more on a slower runner. This catches a hang, it does not enforce speed.
+  testTimeout: 60000,
 
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
@@ -81,10 +82,10 @@ module.exports = {
     // so pinning well-covered files pushes this number down. It measures what
     // is left over — mostly untested UI — not the project as a whole.
     global: {
-      statements: 19,
-      branches: 13,
-      functions: 17,
-      lines: 22,
+      statements: 37,
+      branches: 25,
+      functions: 32,
+      lines: 39,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -134,6 +135,31 @@ module.exports = {
       branches: 68,
       functions: 80,
       lines: 78,
+    },
+    // The import/export decision hooks: what lands in storage on a conflict.
+    "src/pattern/data/hooks/useImportDecisions.ts": {
+      statements: 95,
+      branches: 95,
+      functions: 95,
+      lines: 95,
+    },
+    "src/pattern/data/hooks/useExportSelection.ts": {
+      statements: 95,
+      branches: 95,
+      functions: 95,
+      lines: 95,
+    },
+    "src/settings/hooks/useDataTransfer.ts": {
+      statements: 88,
+      branches: 58,
+      functions: 84,
+      lines: 90,
+    },
+    "src/settings/SettingsScreen.tsx": {
+      statements: 82,
+      branches: 90,
+      functions: 68,
+      lines: 82,
     },
     "src/pattern/list/PatternList.tsx": {
       statements: 82,
