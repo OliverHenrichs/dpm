@@ -61,6 +61,14 @@ Storage keys in `src/pattern/data/PatternListStorage.ts`:
 - `@patterns_{listId}` — serialised `IPattern[]` for a given list
 - `@activeListId` — UUID of the currently active list
 
+**Writes to the same key are serialised.** `savePatternList` and `deletePatternList` are
+read-modify-write over the whole list array, so two overlapping calls used to both read the
+pre-change array and the second silently discarded the first's change — reachable in the app,
+since `PatternListSelector.handleSaveList` and the context's `updateActiveList` can be in flight
+together. `withWriteLock` queues the **entire operation**, not just its final `setItem`; the read
+has to be inside the critical section too. Reads are not queued, so a locked operation can read
+freely without deadlocking against itself.
+
 Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`, `collectOrphanedPatternKeys`) — never call `AsyncStorage` directly from UI code.
 
 **`@patternLists` holds lists without patterns.** The import and cloud-subscribe paths both hand over a `PatternListWithPatterns`, whose extra `patterns` array TypeScript cannot see because `IPatternList` has no such field — so `savePatternList` strips it rather than trusting callers, and `loadAllPatternLists` strips it again to clean up records an older build already bloated. Do not "simplify" that away: it writes a second copy of every pattern that nothing reads and nothing keeps in step.
@@ -141,6 +149,45 @@ Both panels are rendered through the shared `BottomSheet` component (`src/common
 ## Default list templates
 
 `src/pattern/data/DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames. Picking a template happens in `PatternListTemplateModal`.
+
+## Schema versioning and migrations
+
+Stored data carries a version under `@schemaVersion`, and `runMigrations()`
+(`src/pattern/data/migrations/`) brings it up to `SCHEMA_VERSION` **before anything reads pattern
+data** — it is awaited first in `ActivePatternListProvider`'s mount effect, behind the loading
+state that was already there.
+
+Rules for adding one: bump `SCHEMA_VERSION`, add the migration to `MIGRATIONS`, and make it
+**idempotent** — a crash part-way through leaves the version marker unchanged, so it runs again
+next launch. Migrations never run backwards: if the stored version is *ahead* of the build (the
+user installed an older APK over a newer one), nothing runs and the marker is left alone, because
+downgrading the data would discard whatever the newer build added. A failed migration is logged
+and does not block startup; the read-time repairs still cope.
+
+The read-time normalisation in `PatternListStorage` stays even though migration 001 materialises
+it — data still arrives from imports and cloud syncs after migrations have run.
+
+## Import validation
+
+**Never trust an import file.** It comes from a document picker, so it comes from anywhere, and
+everything downstream writes it to storage and then to the screen.
+`validateExportData` (`src/pattern/data/validation/`) is the only gate, and `ImportPatterns` calls
+it before touching anything. It splits problems in two:
+
+- **Fatal** — not an object, an unsupported version, `patternLists` not an array, a list with no
+  id, a pattern whose id is not an integer, duplicate ids. The whole file is refused, because a
+  half-import leaves the user unable to tell what landed.
+- **Repairable** — a pattern pointing at a type that is not in its list, a prerequisite matching
+  no pattern, a malformed video reference. Cleaned, reported through the existing `warnings`
+  channel, and the import proceeds.
+
+What it returns is normalised: optional fields filled in, references resolvable. Nothing
+downstream re-checks it.
+
+`canImport` (`types/ExportVersion.ts`) owns compatibility, separate from `exportDataVersion` which
+is what we *write*. A newer **minor** is refused rather than parsed best-effort: the writer added
+a field this build cannot carry, and saving over it would silently drop the user's data. Bumping
+the format means bumping `SUPPORTED_MINOR` here too.
 
 ## Import conflict resolution
 

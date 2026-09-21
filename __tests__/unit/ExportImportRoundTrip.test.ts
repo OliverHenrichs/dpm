@@ -66,11 +66,24 @@ function urlRef(value: string, startTime?: number): IVideoReference {
   return { type: "url", value, ...(startTime !== undefined && { startTime }) };
 }
 
+/**
+ * Every pattern here is built with `TYPE.id`, and every list carries `TYPE` —
+ * so a list is internally consistent. The fixtures previously used a literal
+ * `"t"` for `typeId` while the list's own types were generated UUIDs, which
+ * the import validator now correctly reports as a pattern whose type is not in
+ * its list.
+ */
+const TYPE = createTestPatternType({ slug: "push" });
+
 function listWith(
   patterns: IPattern[],
   overrides: Partial<PatternListWithPatterns> = {},
 ): PatternListWithPatterns {
-  return { ...createTestPatternList(), patterns, ...overrides };
+  return {
+    ...createTestPatternList({ patternTypes: [TYPE] }),
+    patterns,
+    ...overrides,
+  };
 }
 
 /**
@@ -160,13 +173,13 @@ describe("export → import round trip", () => {
     });
 
     it("round-trips several lists independently", async () => {
-      const a = listWith([createTestPattern("t", { id: 1, name: "A1" })], {
+      const a = listWith([createTestPattern(TYPE.id, { id: 1, name: "A1" })], {
         name: "Salsa",
       });
       const b = listWith(
         [
-          createTestPattern("t", { id: 1, name: "B1" }),
-          createTestPattern("t", { id: 2, name: "B2" }),
+          createTestPattern(TYPE.id, { id: 1, name: "B1" }),
+          createTestPattern(TYPE.id, { id: 2, name: "B2" }),
         ],
         { name: "Bachata" },
       );
@@ -203,7 +216,7 @@ describe("export → import round trip", () => {
         universal: false,
         videoRefs: [],
       };
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         modifierRefs: [{ modifierId: modifier.id, videoRefs: [] }],
       });
@@ -220,7 +233,7 @@ describe("export → import round trip", () => {
     });
 
     it("tolerates a list written before modifiers existed", async () => {
-      const list = listWith([createTestPattern("t", { id: 1 })]);
+      const list = listWith([createTestPattern(TYPE.id, { id: 1 })]);
       // Simulate pre-modifier data reaching the exporter.
       delete (list as Partial<PatternListWithPatterns>).modifiers;
       delete (list.patterns[0] as Partial<IPattern>).modifierRefs;
@@ -238,7 +251,7 @@ describe("export → import round trip", () => {
   describe("videos", () => {
     it("brings a local video back byte-for-byte", async () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A)],
       });
@@ -257,7 +270,7 @@ describe("export → import round trip", () => {
         urlRef("https://youtu.be/abc123", 42),
         urlRef("https://example.com/clip.mp4"),
       ];
-      const pattern = createTestPattern("t", { id: 1, videoRefs: refs });
+      const pattern = createTestPattern(TYPE.id, { id: 1, videoRefs: refs });
 
       const { importResult } = await roundTrip([listWith([pattern])]);
 
@@ -275,7 +288,7 @@ describe("export → import round trip", () => {
       };
 
       const { importResult } = await roundTrip([
-        listWith([createTestPattern("t", { id: 1 })], {
+        listWith([createTestPattern(TYPE.id, { id: 1 })], {
           modifiers: [modifier],
         }),
       ]);
@@ -293,7 +306,7 @@ describe("export → import round trip", () => {
         universal: false,
         videoRefs: [],
       };
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         modifierRefs: [
           { modifierId: modifier.id, videoRefs: [localRef(VIDEO_C)] },
@@ -312,8 +325,8 @@ describe("export → import round trip", () => {
     it("embeds a shared video only once", async () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
       const patterns = [
-        createTestPattern("t", { id: 1, videoRefs: [localRef(VIDEO_A)] }),
-        createTestPattern("t", { id: 2, videoRefs: [localRef(VIDEO_A)] }),
+        createTestPattern(TYPE.id, { id: 1, videoRefs: [localRef(VIDEO_A)] }),
+        createTestPattern(TYPE.id, { id: 2, videoRefs: [localRef(VIDEO_A)] }),
       ];
 
       const { exported } = await roundTrip([listWith(patterns)]);
@@ -323,7 +336,7 @@ describe("export → import round trip", () => {
 
     it("keys embedded videos by their original local path", async () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A)],
       });
@@ -337,7 +350,7 @@ describe("export → import round trip", () => {
   describe("excluding videos", () => {
     it("strips local refs but keeps URL refs", async () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A), urlRef("https://youtu.be/abc")],
       });
@@ -365,7 +378,7 @@ describe("export → import round trip", () => {
         universal: true,
         videoRefs: [localRef(VIDEO_C)],
       };
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         modifierRefs: [
           {
@@ -389,7 +402,7 @@ describe("export → import round trip", () => {
 
     it("does not warn about the videos it was told to leave out", async () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A)],
       });
@@ -464,8 +477,8 @@ describe("export → import round trip", () => {
     it("reports how much was exported", async () => {
       const { exportResult } = await roundTrip([
         listWith([
-          createTestPattern("t", { id: 1 }),
-          createTestPattern("t", { id: 2 }),
+          createTestPattern(TYPE.id, { id: 1 }),
+          createTestPattern(TYPE.id, { id: 2 }),
         ]),
       ]);
 
@@ -477,7 +490,7 @@ describe("export → import round trip", () => {
   describe("degraded inputs", () => {
     it("skips a video whose file has vanished, and says so on import", async () => {
       // Referenced but never seeded — the user deleted it from the gallery.
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A)],
       });
@@ -495,7 +508,7 @@ describe("export → import round trip", () => {
       jest
         .spyOn(File.prototype, "base64")
         .mockRejectedValue(new Error("permission denied"));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A)],
       });
@@ -510,7 +523,7 @@ describe("export → import round trip", () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
       const withMissing = listWith(
         [
-          createTestPattern("t", {
+          createTestPattern(TYPE.id, {
             id: 1,
             videoRefs: [localRef("file:///gone.mp4")],
           }),
@@ -518,7 +531,7 @@ describe("export → import round trip", () => {
         { name: "Has a gap" },
       );
       const healthy = listWith(
-        [createTestPattern("t", { id: 1, videoRefs: [localRef(VIDEO_A)] })],
+        [createTestPattern(TYPE.id, { id: 1, videoRefs: [localRef(VIDEO_A)] })],
         { name: "Fine" },
       );
 
@@ -589,7 +602,7 @@ describe("export → import round trip", () => {
       const result = await importPatternLists();
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("Invalid import file format");
+      expect(result.message).toBe("The file is not a pattern list export");
     });
 
     it("rejects an export with no version", async () => {
@@ -605,7 +618,7 @@ describe("export → import round trip", () => {
       const result = await importPatternLists();
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("Invalid import file format");
+      expect(result.message).toBe("The file is not a pattern list export");
     });
 
     it("reports a missing file instead of throwing", async () => {
@@ -635,7 +648,7 @@ describe("export → import round trip", () => {
       jest.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
       seedBinaryFile(VIDEO_A, videoBytes(1));
       seedBinaryFile(VIDEO_B, videoBytes(2));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A), localRef(VIDEO_B)],
       });
@@ -655,12 +668,12 @@ describe("export → import round trip", () => {
       seedBinaryFile(VIDEO_B, videoBytes(2));
       const lists = [
         listWith([
-          createTestPattern("t", { id: 1, videoRefs: [localRef(VIDEO_A)] }),
+          createTestPattern(TYPE.id, { id: 1, videoRefs: [localRef(VIDEO_A)] }),
         ]),
         // A different list, but pattern ids are only unique within a list, so
         // this shares the `pattern:1` context id.
         listWith([
-          createTestPattern("t", { id: 1, videoRefs: [localRef(VIDEO_B)] }),
+          createTestPattern(TYPE.id, { id: 1, videoRefs: [localRef(VIDEO_B)] }),
         ]),
       ];
 
@@ -684,7 +697,7 @@ describe("export → import round trip", () => {
         universal: false,
         videoRefs: [],
       };
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A)],
         modifierRefs: [
@@ -709,7 +722,7 @@ describe("export → import round trip", () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
       seedBinaryFile(VIDEO_B, videoBytes(2));
       seedBinaryFile(VIDEO_C, videoBytes(3));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A), localRef(VIDEO_B), localRef(VIDEO_C)],
       });
@@ -727,7 +740,7 @@ describe("export → import round trip", () => {
   describe("filesystem hygiene", () => {
     it("writes exactly one new file per restored video", async () => {
       seedBinaryFile(VIDEO_A, videoBytes(1));
-      const pattern = createTestPattern("t", {
+      const pattern = createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [localRef(VIDEO_A)],
       });

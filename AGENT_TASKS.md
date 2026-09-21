@@ -48,7 +48,7 @@ evidence.
 |---|---|---|---|---|
 | [F1](#f1--test-infrastructure-and-ci--in-progress) | Test infrastructure and CI | **L** | ◐ in progress | 3 test files / 529 lines against ~12 900 lines of source; component testing was installed but could not run; no CI at all. Gates every other item. |
 | [F2](#f2--graph-domain-layer) | Graph domain layer | **M–L** | open | L1 and L2 both need a stable graph model; today the views own the computation and paper over it with `as any`. |
-| [F3](#f3--storage-schema-versioning-and-import-validation) | Storage schema versioning + import validation | **M** | open | No schema version, no migration runner, no validation of imported files, lossy concurrent writes. L2 and L3 both add persisted data. |
+| [F3](#f3--storage-schema-versioning-and-import-validation--done) | Storage schema versioning + import validation | **M** | ✅ done | No schema version, no migration runner, no validation of imported files, lossy concurrent writes. L2 and L3 both add persisted data. |
 | [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done) | Deleting a pattern leaves dangling prerequisite ids | **M** | ✅ done | Made patterns silently vanish from the network graph, and let a recycled id inherit stale links. |
 | [B2](#b2--no-cycle-prevention-when-editing-prerequisites--done) | No cycle prevention when editing prerequisites | **S–M** | ✅ done | Same failure mode as B1: nodes in a cycle were never laid out. |
 | [B3](#b3--pattern-delete-confirmation-is-hardcoded-english--done-was-misdiagnosed) | ~~Delete confirmation is hardcoded English~~ dead helper + dropped `{{name}}` | **S** | ✅ done | Was misdiagnosed in triage — see the entry. |
@@ -70,7 +70,7 @@ Phase 0  F1 ◐ ─────────────────────�
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3         (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1  M2                       F2          (defects + the graph model)
 Phase 3  L1 ──────────────► L2                             (needs F2)
-Phase 4  L3 (spike first) ─────────────────────►           (needs F3, independent of L1/L2)
+Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
 ```
 
 **Phase 1 is complete, and Phase 2's defects are cleared.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
@@ -199,7 +199,7 @@ Covered by six tests including the "leaves unrelated keys alone" case.
 are deleted" — which is exactly the path `clearAllData` skips.
 
 **Change:** enumerate keys with `AsyncStorage.getAllKeys()`, remove everything matching the
-`@patterns_` prefix. Fold the same sweep into a startup GC (see [F3](#f3--storage-schema-versioning-and-import-validation))
+`@patterns_` prefix. Fold the same sweep into a startup GC (see [F3](#f3--storage-schema-versioning-and-import-validation--done))
 so storage left behind by earlier versions is reclaimed too.
 
 **Note:** the existing test mock (`jest.setup.js`) stubs exactly four AsyncStorage methods and
@@ -688,7 +688,7 @@ they need answers before code:
    **recommend not exporting it**, which keeps the format untouched. If it is exported anyway, that
    is a bump to `3.1.0` *and* real version handling in `ImportPatterns.ts`, which today accepts any
    truthy `version` with no branching (`ImportPatterns.ts:29`) — see
-   [F3](#f3--storage-schema-versioning-and-import-validation).
+   [F3](#f3--storage-schema-versioning-and-import-validation--done).
 8. **Web.** The web build binds click listeners by hand (`PatternNodeGroup.web.tsx`). RNGH pan on
    web is a separate code path; budget a verification pass with
    `npx expo export --platform web` and a real browser, per `AGENTS.md`'s platform-specific
@@ -917,7 +917,7 @@ export interface IVideoReference {
 ```
 
 That is an export-format bump to `"3.1.0"` plus real version handling on import
-([F3](#f3--storage-schema-versioning-and-import-validation)). Older app versions reading a 3.1.0
+([F3](#f3--storage-schema-versioning-and-import-validation--done)). Older app versions reading a 3.1.0
 file will ignore the new fields, which is the right failure mode — but only if they do not
 validate strictly, so **[verify]** the forward-compatibility story before bumping.
 
@@ -1209,7 +1209,7 @@ layout, or in an event handler; none in read-only rendering.**
 | # | Suite | Why |
 |---|---|---|
 | 1 | **Export/import round-trip** | This is real user data leaving and re-entering the app, with base64 video embedding, three video locations, and a conflict-resolution UI. A silent regression here loses somebody's lists. |
-| 2 | **Storage + migrations** ([F3](#f3--storage-schema-versioning-and-import-validation)) | Same reason, one layer down. |
+| 2 | **Storage + migrations** ([F3](#f3--storage-schema-versioning-and-import-validation--done)) | Same reason, one layer down. |
 | 3 | **Graph layout invariants** | Property-style: every node gets a position; no node is dropped; prerequisites are a subset of the node set; layout is deterministic for a given input. Would have caught [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done). |
 | 4 | **i18n key parity** | Two assertions: `en.json` and `de.json` have identical key sets (true today — 197 each), and every `t("literal")` in `src/` resolves against `en.json`. Both are ~20 lines and prevent a whole class of shipped bug. |
 | 5 | **Filter + sort hooks** | Pure, cheap, and the logic is about to be reused by [L1](#l1--searchable--filterable-pattern-graph). |
@@ -1283,7 +1283,22 @@ algorithmic fixes) so the diff is reviewable.
 
 ---
 
-### F3 — Storage schema versioning and import validation
+### F3 — Storage schema versioning and import validation — DONE
+
+All five parts landed. **579 tests** (was 511), no new defects — but the work did surface that the
+export/import fixtures had always been internally inconsistent (patterns carrying a `typeId` of
+`"t"` while their list's types were generated UUIDs). The new validator flagged it immediately,
+which is a reasonable first result for a validator.
+
+| | What landed |
+|---|---|
+| 1 | **Schema version + migration runner** (`src/pattern/data/migrations/`). `@schemaVersion` records what the stored data is; `runMigrations()` is awaited *before* the first read in `ActivePatternListProvider`. Migrations are idempotent, never run backwards, and a failure is logged rather than blocking startup. Migration 001 materialises into storage what the read path had been repairing on every launch: the `?? []` defaults, the duplicated `patterns` array from [B10](#b10--imported-and-subscribed-lists-duplicated-every-pattern-into-the-list-record), and the dangling prerequisites from [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done). |
+| 2 | **Import validation** (`src/pattern/data/validation/validateExportData.ts`), hand-written guards, no new dependency. Fatal vs. repairable, as planned — a file is refused whole rather than half-imported, but a pattern pointing at a missing type is fixed and reported through the existing `warnings` channel. 60 cases including hostile input: 200-deep nesting, every field the wrong type, a 2000-pattern file. |
+| 3 | **Write serialisation.** `withWriteLock` queues the *whole* read-modify-write per key, not just the final `setItem` — the read has to be inside the critical section or the lost update survives. Six concurrency tests; removing the lock fails three of them. |
+| 4 | **Startup GC** — already in place from [B5](#b5--clearalldata-orphans-every-pattern-key--done) via `collectOrphanedPatternKeys`, called unawaited after the first load. |
+| 5 | **Export version handling** (`types/ExportVersion.ts`). `canImport` is separate from `exportDataVersion`: the first is what we accept, the second what we write. A newer *minor* is refused rather than best-effort parsed, so L2 and L3 can bump the format without either inventing the mechanism. |
+
+**Original evidence and plan below, for reference.**
 
 **Evidence:**
 
@@ -1382,7 +1397,7 @@ Two distinct consequences, both reachable by an ordinary user:
 
 **Not done, deliberately:** `createNewId` still hands out `max(id) + 1`. Monotonic ids would mean
 adding `nextPatternId` to `IPatternList`, which is a schema change, and the migration runner it
-needs is [F3](#f3--storage-schema-versioning-and-import-validation). Recycling is safe now that
+needs is [F3](#f3--storage-schema-versioning-and-import-validation--done). Recycling is safe now that
 nothing can hold a reference to a deleted id — there is a test pinning exactly that — so this is a
 robustness improvement rather than an outstanding bug.
 
@@ -1489,7 +1504,7 @@ different context ids and never collided; it is there to document that.
 - Nothing cleans up restored video files if the user then cancels the import at the decision step,
   so they leak into the documents directory. Same family as
   [B5](#b5--clearalldata-orphans-every-pattern-key--done) and best handled by the generic startup
-  GC proposed in [F3](#f3--storage-schema-versioning-and-import-validation).
+  GC proposed in [F3](#f3--storage-schema-versioning-and-import-validation--done).
 
 ---
 

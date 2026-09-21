@@ -137,6 +137,94 @@ describe("PatternListStorage", () => {
     });
   });
 
+  describe("concurrent writes", () => {
+    /**
+     * `savePatternList` is a read-modify-write over the whole list array. Two
+     * overlapping calls used to both read the pre-change array, so whichever
+     * wrote second silently discarded the other's change. That is reachable in
+     * the app: `PatternListSelector.handleSaveList` and the context's
+     * `updateActiveList` can be in flight together.
+     */
+    it("does not lose one of two lists saved at the same time", async () => {
+      const a = createTestPatternList({ name: "A" });
+      const b = createTestPatternList({ name: "B" });
+
+      await Promise.all([savePatternList(a), savePatternList(b)]);
+
+      const stored = await loadAllPatternLists();
+      expect(stored.map((l) => l.name).sort()).toEqual(["A", "B"]);
+    });
+
+    it("keeps every one of many simultaneous saves", async () => {
+      const lists = Array.from({ length: 20 }, (_, i) =>
+        createTestPatternList({ name: `L${i}` }),
+      );
+
+      await Promise.all(lists.map(savePatternList));
+
+      expect(await loadAllPatternLists()).toHaveLength(20);
+    });
+
+    it("applies the last edit when the same list is saved twice at once", async () => {
+      const list = createTestPatternList({ name: "First" });
+      await savePatternList(list);
+
+      await Promise.all([
+        savePatternList({ ...list, name: "Second" }),
+        savePatternList({ ...list, name: "Third" }),
+      ]);
+
+      const stored = await loadAllPatternLists();
+      expect(stored).toHaveLength(1);
+      // Whichever ran second wins; what must not happen is both being applied
+      // to the same stale read and one disappearing.
+      expect(["Second", "Third"]).toContain(stored[0].name);
+    });
+
+    it("does not lose a save that races a delete", async () => {
+      const keep = createTestPatternList({ name: "Keep" });
+      const doomed = createTestPatternList({ name: "Doomed" });
+      await savePatternList(doomed);
+
+      await Promise.all([savePatternList(keep), deletePatternList(doomed.id)]);
+
+      const stored = await loadAllPatternLists();
+      expect(stored.map((l) => l.name)).toEqual(["Keep"]);
+    });
+
+    it("keeps a failed write from poisoning the ones behind it", async () => {
+      const failing = createTestPatternList({ name: "Fails" });
+      const following = createTestPatternList({ name: "Follows" });
+      jest
+        .spyOn(AsyncStorage, "setItem")
+        .mockRejectedValueOnce(new Error("disk full"));
+
+      const results = await Promise.allSettled([
+        savePatternList(failing),
+        savePatternList(following),
+      ]);
+
+      expect(results[0].status).toBe("rejected");
+      expect(results[1].status).toBe("fulfilled");
+      expect((await loadAllPatternLists()).map((l) => l.name)).toEqual([
+        "Follows",
+      ]);
+    });
+
+    it("serialises pattern writes per list without blocking other lists", async () => {
+      await Promise.all([
+        savePatterns("a", [createTestPattern("type1", { id: 1 })]),
+        savePatterns("b", [
+          createTestPattern("type1", { id: 1 }),
+          createTestPattern("type1", { id: 2 }),
+        ]),
+      ]);
+
+      await expect(loadPatterns("a")).resolves.toHaveLength(1);
+      await expect(loadPatterns("b")).resolves.toHaveLength(2);
+    });
+  });
+
   describe("getPatternListById", () => {
     it("finds a stored list", async () => {
       const list = createTestPatternList();

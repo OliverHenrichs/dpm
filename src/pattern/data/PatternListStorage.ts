@@ -36,6 +36,40 @@ function normalizePattern(pattern: IPattern): IPattern {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Write serialisation
+// ---------------------------------------------------------------------------
+
+/** The tail of the pending write chain for each key. */
+const writeChains = new Map<string, Promise<unknown>>();
+
+/**
+ * Run `work` after every write already queued for `key` has finished.
+ *
+ * `savePatternList` and `deletePatternList` are read-modify-write over the
+ * whole list array: load all, change one, write all back. Two of those
+ * overlapping — entirely possible, since `PatternListSelector.handleSaveList`
+ * and the context's `updateActiveList` can both be in flight — and the second
+ * one's read happens before the first one's write, so the first change is
+ * silently lost.
+ *
+ * Serialising the *whole* operation, not just its final `setItem`, is what
+ * fixes that: the read has to be inside the critical section too. Only
+ * mutating helpers queue; reads run freely, which also means a queued
+ * operation can safely read without deadlocking against itself.
+ */
+function withWriteLock<T>(key: string, work: () => Promise<T>): Promise<T> {
+  const previous = writeChains.get(key) ?? Promise.resolve();
+  // Swallow a previous failure so one rejected write does not poison the
+  // queue for every later one; the original caller still sees its own error.
+  const result = previous.then(work, work);
+  writeChains.set(
+    key,
+    result.catch(() => undefined),
+  );
+  return result;
+}
+
 // Storage keys
 const PATTERN_LISTS_KEY = "@patternLists";
 const ACTIVE_LIST_ID_KEY = "@activeListId";
@@ -60,42 +94,49 @@ export async function loadAllPatternLists(): Promise<IPatternList[]> {
 }
 
 export async function savePatternList(list: IPatternList): Promise<void> {
-  try {
-    const lists = await loadAllPatternLists();
-    const existingIndex = lists.findIndex((l) => l.id === list.id);
+  return withWriteLock(PATTERN_LISTS_KEY, async () => {
+    try {
+      const lists = await loadAllPatternLists();
+      const existingIndex = lists.findIndex((l) => l.id === list.id);
 
-    const normalized = { ...normalizePatternList(list), updatedAt: Date.now() };
-    if (existingIndex >= 0) {
-      lists[existingIndex] = normalized;
-    } else {
-      lists.push(normalized);
+      const normalized = {
+        ...normalizePatternList(list),
+        updatedAt: Date.now(),
+      };
+      if (existingIndex >= 0) {
+        lists[existingIndex] = normalized;
+      } else {
+        lists.push(normalized);
+      }
+
+      await AsyncStorage.setItem(PATTERN_LISTS_KEY, JSON.stringify(lists));
+    } catch (error) {
+      console.error("Error saving pattern list:", error);
+      throw error;
     }
-
-    await AsyncStorage.setItem(PATTERN_LISTS_KEY, JSON.stringify(lists));
-  } catch (error) {
-    console.error("Error saving pattern list:", error);
-    throw error;
-  }
+  });
 }
 
 export async function deletePatternList(listId: string): Promise<void> {
-  try {
-    const lists = await loadAllPatternLists();
-    const filtered = lists.filter((l) => l.id !== listId);
-    await AsyncStorage.setItem(PATTERN_LISTS_KEY, JSON.stringify(filtered));
+  return withWriteLock(PATTERN_LISTS_KEY, async () => {
+    try {
+      const lists = await loadAllPatternLists();
+      const filtered = lists.filter((l) => l.id !== listId);
+      await AsyncStorage.setItem(PATTERN_LISTS_KEY, JSON.stringify(filtered));
 
-    // Also delete the patterns for this list
-    await AsyncStorage.removeItem(getPatternsKey(listId));
+      // Also delete the patterns for this list
+      await AsyncStorage.removeItem(getPatternsKey(listId));
 
-    // If this was the active list, clear active list
-    const activeId = await getActiveListId();
-    if (activeId === listId) {
-      await AsyncStorage.removeItem(ACTIVE_LIST_ID_KEY);
+      // If this was the active list, clear active list
+      const activeId = await getActiveListId();
+      if (activeId === listId) {
+        await AsyncStorage.removeItem(ACTIVE_LIST_ID_KEY);
+      }
+    } catch (error) {
+      console.error("Error deleting pattern list:", error);
+      throw error;
     }
-  } catch (error) {
-    console.error("Error deleting pattern list:", error);
-    throw error;
-  }
+  });
 }
 
 export async function getPatternListById(
@@ -174,15 +215,17 @@ export async function savePatterns(
   listId: string,
   patterns: IPattern[],
 ): Promise<void> {
-  try {
-    await AsyncStorage.setItem(
-      getPatternsKey(listId),
-      JSON.stringify(patterns),
-    );
-  } catch (error) {
-    console.error("Error saving patterns:", error);
-    throw error;
-  }
+  return withWriteLock(getPatternsKey(listId), async () => {
+    try {
+      await AsyncStorage.setItem(
+        getPatternsKey(listId),
+        JSON.stringify(patterns),
+      );
+    } catch (error) {
+      console.error("Error saving patterns:", error);
+      throw error;
+    }
+  });
 }
 
 /**

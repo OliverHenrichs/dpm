@@ -102,10 +102,10 @@ module.exports = {
     // by babel via jest-expo — and the merged branch count differs by a few
     // points between those transforms. Leave headroom rather than chase it.
     "src/pattern/data/PatternListStorage.ts": {
-      statements: 78,
-      branches: 50,
-      functions: 75,
-      lines: 78,
+      statements: 88,
+      branches: 82,
+      functions: 90,
+      lines: 88,
     },
     // Export/import moves data that cannot be recreated if the format breaks,
     // and the two modules only agree through the on-disk shape — so both ends
@@ -307,6 +307,31 @@ module.exports = {
       lines: 90,
     },
     "src/common/components/VideoCarousel.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    // F3: the gate between a picked file and storage, and the schema runner.
+    "src/pattern/data/validation/validateExportData.ts": {
+      statements: 84,
+      branches: 80,
+      functions: 94,
+      lines: 84,
+    },
+    "src/pattern/data/types/ExportVersion.ts": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/data/migrations/index.ts": {
+      statements: 84,
+      branches: 64,
+      functions: 90,
+      lines: 84,
+    },
+    "src/pattern/data/migrations/001_normaliseShape.ts": {
       statements: 94,
       branches: 94,
       functions: 94,

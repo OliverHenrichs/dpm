@@ -6,6 +6,7 @@ import {
   PatternListWithPatterns,
 } from "@/src/pattern/data/types/IExportData";
 import { generateUUID } from "@/src/pattern/types/PatternType";
+import { validateExportData } from "@/src/pattern/data/validation/validateExportData";
 
 interface IImportPatternListResult {
   success: boolean;
@@ -26,12 +27,19 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
     if (typeof fileUri !== "string") {
       return fileUri;
     }
-    const data = await importData(fileUri);
-    if (!data.version || !data.patternLists) {
-      return createResult(false, "Invalid import file format");
-    }
+    const parsed = await importData(fileUri);
 
-    const warnings: string[] = [];
+    // Everything after this point writes to storage and then to the screen,
+    // and the file came from a document picker — i.e. from anywhere. Validate
+    // before trusting any of it. `data` comes back normalised: optional fields
+    // filled in, references resolvable, malformed entries already dropped.
+    const validation = validateExportData(parsed);
+    if (!validation.valid || !validation.data) {
+      return createResult(false, validation.errors.join("\n"));
+    }
+    const data = validation.data;
+
+    const warnings: string[] = [...validation.warnings];
     const updatedLists: PatternListWithPatterns[] = [];
 
     for (const list of data.patternLists) {
@@ -101,11 +109,11 @@ async function getImportDocument() {
   return result.assets[0].uri;
 }
 
-async function importData(fileUri: string) {
+/** Read and parse the picked file. Shape checking happens separately. */
+async function importData(fileUri: string): Promise<unknown> {
   const file = new File(fileUri);
   const content = await file.text();
-  const importData: IPatternListExportData = JSON.parse(content);
-  return importData;
+  return JSON.parse(content);
 }
 
 async function tryAddLocalVideoRef(
