@@ -18,6 +18,7 @@ import {
 import {
   ArrowheadMarker,
   drawNodes,
+  ELIDED_DASH,
 } from "@/src/pattern/graph/render/GraphPrimitives";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,8 @@ interface TimelineViewProps {
   model: GraphModel;
   patternTypes: PatternType[];
   palette: Record<PaletteColor, string>;
+  /** Distinguishes "nothing matched" from "this list is empty". */
+  hasActiveFilter: boolean;
   onNodeTap: (pattern: IPattern) => void;
 }
 
@@ -43,6 +46,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   model,
   patternTypes,
   palette,
+  hasActiveFilter,
   onNodeTap,
 }) => {
   const patterns = model.patterns;
@@ -68,6 +72,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         patternTypes,
         screenWidth,
         baseHeight,
+        // The model's depth map, not one derived from `patterns`: under a
+        // filter those differ, and re-deriving it would re-base every column
+        // so patterns jumped sideways as the filter was toggled.
+        model.depthMap,
       );
 
       return {
@@ -77,12 +85,16 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         swimlanes: dynamicSwimlanes,
         skipLevelEdges: skipLevelEdgeInfos,
       };
-    }, [patterns, patternTypes, screenHeight, screenWidth]);
+    }, [patterns, patternTypes, screenHeight, screenWidth, model.depthMap]);
 
   if (patterns.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>{t("noPatternsToVisualize")}</Text>
+        <Text style={styles.emptyText}>
+          {t(
+            hasActiveFilter ? "noPatternsMatchFilter" : "noPatternsToVisualize",
+          )}
+        </Text>
       </View>
     );
   }
@@ -152,15 +164,17 @@ function drawTimelineEdges(
           pathData = generateOrthogonalPath(fromPos, toPos, true);
         }
 
+        const elided = edge.kind === "elided";
         return (
           <Path
             key={`edge-${index}`}
             d={pathData}
             stroke={palette[PaletteColor.Primary]}
             strokeWidth={2}
+            strokeDasharray={elided ? ELIDED_DASH : undefined}
             fill="none"
             markerEnd="url(#arrowhead-graph)"
-            opacity={0.6}
+            opacity={elided ? 0.4 : 0.6}
           />
         );
       })}

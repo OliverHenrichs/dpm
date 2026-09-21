@@ -3,18 +3,45 @@ import { useWindowDimensions } from "react-native";
 import { LayoutPosition } from "../utils/GraphUtils";
 import { calculateGraphLayout } from "@/src/pattern/graph/utils/NetworkGraphUtils";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
+import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
 
 const INITIAL_WIDTH_MULTIPLIER = 3;
 const INITIAL_HEIGHT_MULTIPLIER = 2;
 const CONTENT_PADDING = 300;
 
+/**
+ * Bounds on the fitted zoom.
+ *
+ * The floor matches the zoomable view's own `minZoom`. The ceiling stops a
+ * two-node graph filling the screen with two enormous boxes — past 1:1 the
+ * nodes are bigger than they are anywhere else in the app.
+ */
+const MIN_FITTED_ZOOM = 0.15;
+const MAX_FITTED_ZOOM = 1;
+/** Breathing room around the content once fitted. */
+const FIT_MARGIN = 0.9;
+
 interface GraphLayoutResult {
   positions: Map<number, LayoutPosition>;
   svgWidth: number;
   svgHeight: number;
-  /** Ellipse center in normalized SVG coordinates (post-padding offset). */
-  ellipseCenterX: number;
-  ellipseCenterY: number;
+  /**
+   * Centre of what is actually drawn, in normalized SVG coordinates.
+   *
+   * The bounding box's centre rather than the ellipse's: they coincide for a
+   * full radial layout, but a filtered graph can sit well off to one side of
+   * the ellipse the unfiltered layout would have used.
+   */
+  contentCenterX: number;
+  contentCenterY: number;
+  /**
+   * Zoom that frames the drawn content in the viewport.
+   *
+   * Fixed at 0.35 before filtering existed, which is about right for a whole
+   * list and leaves the user staring at empty canvas once a filter narrows it
+   * to a handful of nodes.
+   */
+  initialZoom: number;
 }
 
 interface ContentBounds {
@@ -48,8 +75,9 @@ export function useGraphLayout(model: GraphModel): GraphLayoutResult {
         positions,
         svgWidth: initialWidth,
         svgHeight: initialHeight,
-        ellipseCenterX: initialWidth / 2,
-        ellipseCenterY: initialHeight / 2,
+        contentCenterX: initialWidth / 2,
+        contentCenterY: initialHeight / 2,
+        initialZoom: MAX_FITTED_ZOOM,
       };
     }
 
@@ -64,11 +92,23 @@ export function useGraphLayout(model: GraphModel): GraphLayoutResult {
     const offsetX = -bounds.minX + CONTENT_PADDING / 2;
     const offsetY = -bounds.minY + CONTENT_PADDING / 2;
 
+    // Post-normalization the content starts at CONTENT_PADDING / 2, so its
+    // extent is all that is left to measure.
+    const contentWidth = bounds.maxX - bounds.minX + NODE_WIDTH;
+    const contentHeight = bounds.maxY - bounds.minY + NODE_HEIGHT;
+
     return {
       positions: normalizePositions(offsetX, offsetY, positions),
       ...dimensions,
-      ellipseCenterX: layout.ellipseCenterX + offsetX,
-      ellipseCenterY: layout.ellipseCenterY + offsetY,
+      contentCenterX: CONTENT_PADDING / 2 + (bounds.maxX - bounds.minX) / 2,
+      contentCenterY: CONTENT_PADDING / 2 + (bounds.maxY - bounds.minY) / 2,
+      initialZoom: Math.min(
+        MAX_FITTED_ZOOM,
+        Math.max(
+          MIN_FITTED_ZOOM,
+          Math.min(width / contentWidth, height / contentHeight) * FIT_MARGIN,
+        ),
+      ),
     };
   }, [patterns, width, height]);
 }

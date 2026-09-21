@@ -11,7 +11,10 @@ import GraphViewContainer from "./GraphViewContainer";
 import PatternDetailsModal from "./PatternDetailsModal";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
-import { useGraphModel } from "@/src/pattern/graph/hooks/useGraphModel";
+import { useGraphFilter } from "@/src/pattern/graph/hooks/useGraphFilter";
+import PatternFilterBottomSheet from "@/src/pattern/filter/components/PatternFilterBottomSheet";
+import ChainModeFilter from "@/src/pattern/graph/components/ChainModeFilter";
+import GraphFilterSummary from "@/src/pattern/graph/components/GraphFilterSummary";
 
 const PatternGraphScreen: React.FC = () => {
   const { colorScheme } = useThemeContext();
@@ -24,6 +27,7 @@ const PatternGraphScreen: React.FC = () => {
     undefined,
   );
   const [resetKey, setResetKey] = useState(0);
+  const [filterVisible, setFilterVisible] = useState(false);
 
   const handleToggleView = () => {
     setViewMode((prev) => (prev === "timeline" ? "graph" : "timeline"));
@@ -43,8 +47,24 @@ const PatternGraphScreen: React.FC = () => {
   const modifiers = activeList?.modifiers ?? [];
 
   // One model, shared by both views: switching between them costs nothing and
-  // they cannot disagree about depth, edges or cycles.
-  const model = useGraphModel(patterns, patternTypes);
+  // they cannot disagree about depth, edges or cycles. Narrowed to the filter's
+  // matches and their chains when a filter is active.
+  const {
+    model,
+    filter,
+    setFilter,
+    chainMode,
+    setChainMode,
+    hasActiveFilter,
+    matchedCount,
+    shownCount,
+    totalCount,
+    clearFilter,
+  } = useGraphFilter(patterns, patternTypes, activeList?.id);
+
+  // Re-fit the viewport when the drawn set changes, or a narrowed graph opens
+  // at the zoom the whole graph needed and reads as an empty canvas.
+  const contentKey = `${resetKey}-${model.nodes.length}-${chainMode}`;
 
   return (
     <View style={{ flex: 1 }}>
@@ -57,6 +77,17 @@ const PatternGraphScreen: React.FC = () => {
           <PatternGraphHeader
             viewMode={viewMode}
             onToggleView={handleToggleView}
+            hasActiveFilter={hasActiveFilter}
+            onFilter={() => setFilterVisible(true)}
+          />
+
+          <GraphFilterSummary
+            visible={hasActiveFilter}
+            matched={matchedCount}
+            shown={shownCount}
+            total={totalCount}
+            onClear={clearFilter}
+            palette={palette}
           />
 
           <GraphViewContainer
@@ -64,10 +95,27 @@ const PatternGraphScreen: React.FC = () => {
             model={model}
             patternTypes={patternTypes}
             palette={palette}
-            resetKey={resetKey}
+            resetKey={contentKey}
+            hasActiveFilter={hasActiveFilter}
             onNodeTap={handleNodeTap}
           />
         </View>
+
+        <PatternFilterBottomSheet
+          visible={filterVisible}
+          onClose={() => setFilterVisible(false)}
+          onApplyFilter={setFilter}
+          currentFilter={filter}
+          allPatterns={patterns}
+          patternTypes={patternTypes}
+          headerSection={
+            <ChainModeFilter
+              chainMode={chainMode}
+              onChange={setChainMode}
+              palette={palette}
+            />
+          }
+        />
 
         <PatternDetailsModal
           visible={selectedPattern !== undefined}

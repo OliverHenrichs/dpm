@@ -11,19 +11,26 @@ import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 interface NetworkGraphViewProps {
   model: GraphModel;
   palette: Record<PaletteColor, string>;
+  /** Distinguishes "nothing matched" from "this list is empty". */
+  hasActiveFilter: boolean;
   onNodeTap: (pattern: IPattern) => void;
 }
-
-const INITIAL_ZOOM = 0.35;
 
 const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   model,
   palette,
+  hasActiveFilter,
   onNodeTap,
 }) => {
   const { t } = useTranslation();
-  const { positions, svgWidth, svgHeight, ellipseCenterX, ellipseCenterY } =
-    useGraphLayout(model);
+  const {
+    positions,
+    svgWidth,
+    svgHeight,
+    contentCenterX,
+    contentCenterY,
+    initialZoom,
+  } = useGraphLayout(model);
   const styles = getStyles(palette);
 
   // Hooks first, then the empty case. This used to be a plain function that
@@ -33,15 +40,19 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   if (model.nodes.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>{t("noPatternsToVisualize")}</Text>
+        <Text style={styles.emptyText}>
+          {t(
+            hasActiveFilter ? "noPatternsMatchFilter" : "noPatternsToVisualize",
+          )}
+        </Text>
       </View>
     );
   }
 
   // The zoomable view centers the SVG mid-point in the viewport by default.
-  // Shift by the difference to the ellipse center instead, scaled by zoom.
-  const initialOffsetX = (svgWidth / 2 - ellipseCenterX) * INITIAL_ZOOM;
-  const initialOffsetY = (svgHeight / 2 - ellipseCenterY) * INITIAL_ZOOM;
+  // Shift by the difference to the content's center instead, scaled by zoom.
+  const initialOffsetX = (svgWidth / 2 - contentCenterX) * initialZoom;
+  const initialOffsetY = (svgHeight / 2 - contentCenterY) * initialZoom;
 
   return (
     <View style={styles.container}>
@@ -49,7 +60,7 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
         maxZoom={4.5}
         minZoom={0.15}
         zoomStep={0.5}
-        initialZoom={INITIAL_ZOOM}
+        initialZoom={initialZoom}
         initialOffsetX={initialOffsetX}
         initialOffsetY={initialOffsetY}
         bindToBorders={false}

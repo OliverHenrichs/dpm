@@ -18,6 +18,10 @@ export interface GraphNode {
   color?: string;
   /** True when the pattern sits in a prerequisite cycle. */
   inCycle: boolean;
+  /** Matched the active filter directly. True throughout an unfiltered model. */
+  isMatch: boolean;
+  /** Drawn only because it is on a match's chain. Never true unfiltered. */
+  isContext: boolean;
 }
 
 export interface GraphEdge {
@@ -25,6 +29,12 @@ export interface GraphEdge {
   from: number;
   /** The pattern that requires it. */
   to: number;
+  /**
+   * `"elided"` means the real path runs through nodes a filter is hiding, so
+   * the view can draw it differently rather than implying the chain is direct.
+   * Always `"direct"` in an unfiltered model.
+   */
+  kind: "direct" | "elided";
 }
 
 export interface GraphModel {
@@ -72,12 +82,14 @@ export function buildGraphModel(
     foundational: (adjacency.prereqsOf.get(pattern.id) ?? []).length === 0,
     color: typeColorMap.get(pattern.typeId),
     inCycle: cyclicIds.has(pattern.id),
+    isMatch: true,
+    isContext: false,
   }));
 
   const edges: GraphEdge[] = [];
   for (const id of adjacency.ids) {
     for (const prereqId of adjacency.prereqsOf.get(id) ?? []) {
-      edges.push({ from: prereqId, to: id });
+      edges.push({ from: prereqId, to: id, kind: "direct" });
     }
   }
 

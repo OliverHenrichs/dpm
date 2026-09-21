@@ -199,5 +199,12 @@
   "prerequisiteWouldCycle": "Greyed-out patterns would create a prerequisite loop.",
   "removeVideo": "Remove video",
   "detachModifier": "Detach modifier",
-  "prerequisiteCycleWarning": "{{count}} patterns are in a prerequisite loop, so their order cannot be shown."
+  "prerequisiteCycleWarning": "{{count}} patterns are in a prerequisite loop, so their order cannot be shown.",
+  "chainMode": "Show along with matches",
+  "chainModeMatchesOnly": "Matches only",
+  "chainModePrerequisites": "Path to",
+  "chainModeFullChain": "Everything connected",
+  "graphFilterSummary": "{{matched}} matched · {{shown}} shown of {{total}}",
+  "clearFilter": "Clear filter",
+  "noPatternsMatchFilter": "No patterns match this filter"
 }
