@@ -2,10 +2,6 @@ import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import {
-  buildAdjacency,
-  buildDepthMap,
-} from "@/src/pattern/graph/model/adjacency";
-import {
   HORIZONTAL_SPACING,
   LEFT_MARGIN,
   NODE_HEIGHT,
@@ -41,6 +37,7 @@ export function calculateDynamicTimelineLayout(
   patternTypes: PatternType[],
   width: number,
   baseHeight: number,
+  depthMap: Map<number, number>,
 ): {
   positions: Map<number, LayoutPosition>;
   minHeight: number;
@@ -49,7 +46,6 @@ export function calculateDynamicTimelineLayout(
   skipLevelEdgeInfos: SkipLevelEdgeInfo[];
   typeColorMap: Map<string, string>;
 } {
-  const depthMap = buildDepthMap(buildAdjacency(patterns));
   const grouped = groupPatternsByTypeId(patterns, patternTypes);
   const maxStackPerType = calculateMaxStackPerTypeDynamic(grouped, depthMap);
 
@@ -98,7 +94,7 @@ export function calculateDynamicTimelineLayout(
   return {
     positions,
     minHeight: Math.max(baseHeight, cumulativeY),
-    actualWidth: calculateActualWidth(depthMap, width),
+    actualWidth: calculateActualWidth(patterns, depthMap, width),
     swimlanes,
     skipLevelEdgeInfos,
     typeColorMap,
@@ -107,9 +103,18 @@ export function calculateDynamicTimelineLayout(
 
 /**
  * Calculates max depth to determine required width.
+ *
+ * Measured over the patterns actually being laid out, not over every entry in
+ * `depthMap`: under a filter the map is the full graph's, so that a node keeps
+ * the column it had unfiltered, and sizing the canvas from it would reserve
+ * width for columns nothing is drawn in.
  * */
-function calculateActualWidth(depthMap: Map<number, number>, width: number) {
-  const maxDepth = Math.max(...Array.from(depthMap.values()), 0);
+function calculateActualWidth(
+  patterns: IPattern[],
+  depthMap: Map<number, number>,
+  width: number,
+) {
+  const maxDepth = Math.max(...patterns.map((p) => depthMap.get(p.id) ?? 0), 0);
   const requiredWidth = LEFT_MARGIN + (maxDepth + 0.5) * HORIZONTAL_SPACING;
   return Math.max(width, requiredWidth);
 }

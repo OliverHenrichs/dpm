@@ -296,8 +296,8 @@ describe("buildGraphModel", () => {
     );
 
     expect(model.edges).toHaveLength(3);
-    expect(model.edges).toContainEqual({ from: 1, to: 2 });
-    expect(model.edges).toContainEqual({ from: 2, to: 3 });
+    expect(model.edges).toContainEqual({ from: 1, to: 2, kind: "direct" });
+    expect(model.edges).toContainEqual({ from: 2, to: 3, kind: "direct" });
   });
 
   it("produces no edge for a dangling prerequisite", () => {

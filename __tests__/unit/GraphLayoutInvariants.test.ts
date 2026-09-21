@@ -2,6 +2,10 @@ import { IPattern } from "@/src/pattern/types/IPatternList";
 import { calculateGraphLayout } from "@/src/pattern/graph/utils/NetworkGraphUtils";
 import { calculateDynamicTimelineLayout } from "@/src/pattern/graph/utils/TimelineGraphUtils";
 import {
+  buildAdjacency,
+  buildDepthMap,
+} from "@/src/pattern/graph/model/adjacency";
+import {
   createTestPattern,
   createTestPatternType,
 } from "@/utils/testFactories";
@@ -20,8 +24,13 @@ function networkPositions(patterns: IPattern[]) {
 }
 
 function timelinePositions(patterns: IPattern[]) {
-  return calculateDynamicTimelineLayout(patterns, [TYPE], WIDTH, HEIGHT)
-    .positions;
+  return calculateDynamicTimelineLayout(
+    patterns,
+    [TYPE],
+    WIDTH,
+    HEIGHT,
+    buildDepthMap(buildAdjacency(patterns)),
+  ).positions;
 }
 
 /**

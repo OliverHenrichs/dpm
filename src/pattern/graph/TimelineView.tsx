@@ -68,6 +68,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         patternTypes,
         screenWidth,
         baseHeight,
+        // The model's depth map, not one derived from `patterns`: under a
+        // filter those differ, and re-deriving it would re-base every column
+        // so patterns jumped sideways as the filter was toggled.
+        model.depthMap,
       );
 
       return {
@@ -77,7 +81,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         swimlanes: dynamicSwimlanes,
         skipLevelEdges: skipLevelEdgeInfos,
       };
-    }, [patterns, patternTypes, screenHeight, screenWidth]);
+    }, [patterns, patternTypes, screenHeight, screenWidth, model.depthMap]);
 
   if (patterns.length === 0) {
     return (
