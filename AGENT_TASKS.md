@@ -1064,10 +1064,22 @@ Three inputs gained accessible names while writing these: the list-name field (w
 the *template* name, so it could never serve as a label), and the Skip/Replace controls. Each was
 needed to query the element, and each was a real gap.
 
+#### Landed since (4)
+
+| | What |
+|---|---|
+| ✅ | **Cloud sharing covered**: `ShareListModal` (16) and `SubscribeListModal` (23), including publish/sync/unpublish with their failure paths, the duplicate-subscription refusals, and the whole QR scan path — camera permission refusal, auto-lookup, a scanned code that is not a share code. `SubscribeListModal` went 62% → 95%. |
+| ✅ | **Filter and sort covered** (19): every filter dimension and their combination, `hasActiveFilter`, and the sort comparator including numeric-vs-string ordering and missing values. `usePatternFilter` reached 100%. These are the hooks [L1](#l1--searchable--filterable-pattern-graph) will build the graph filter on. |
+| ✅ | 311 → **376 tests**. Global thresholds re-floored with real headroom after discovering the figure swings several points between identical runs. |
+
+No bugs in any of these four — worth recording alongside the six that earlier suites found, because it says something about where the risk actually sits: every bug so far has been in code that *writes* data or in layout, none in the read-only view logic.
+
 #### Still outstanding
 
-1. **The remaining screens** — the filter/sort sheets, and the share and subscribe modals.
-   `EditPatternForm` sits at ~45%.
+1. **`EditPatternForm`** sits at ~45% — the largest form in the app. The video attach/remove and
+   modifier-attachment paths are the untested parts.
+2. **Smaller shared components** — `VideoCarousel`, `BottomSheet`, `AppDialog`, `PatternDetails`,
+   the filter sub-panels.
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
    components that rely on the automatic runtime; it printed to stderr without failing the run, so

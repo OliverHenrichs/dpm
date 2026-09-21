@@ -81,11 +81,15 @@ module.exports = {
     // NB: a file with its own entry below is *removed* from this global pool,
     // so pinning well-covered files pushes this number down. It measures what
     // is left over — mostly untested UI — not the project as a whole.
+    // Generous headroom: the global figure swings several points between
+    // otherwise identical runs, because files imported by both projects are
+    // instrumented twice and the merge depends on which worker saw them first.
+    // Set a floor under the lowest of several runs, not under the best one.
     global: {
-      statements: 39,
-      branches: 28,
-      functions: 36,
-      lines: 41,
+      statements: 35,
+      branches: 22,
+      functions: 32,
+      lines: 38,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -174,6 +178,31 @@ module.exports = {
       branches: 55,
       functions: 74,
       lines: 88,
+    },
+    // Cloud sharing: publishing, unpublishing and subscribing.
+    "src/pattern/list/ShareListModal.tsx": {
+      statements: 90,
+      branches: 80,
+      functions: 86,
+      lines: 94,
+    },
+    "src/pattern/list/SubscribeListModal.tsx": {
+      statements: 86,
+      branches: 80,
+      functions: 84,
+      lines: 88,
+    },
+    "src/pattern/list/hooks/usePatternFilter.ts": {
+      statements: 95,
+      branches: 95,
+      functions: 95,
+      lines: 95,
+    },
+    "src/pattern/list/hooks/usePatternSort.ts": {
+      statements: 88,
+      branches: 84,
+      functions: 95,
+      lines: 95,
     },
     "src/pattern/list/PatternList.tsx": {
       statements: 82,
