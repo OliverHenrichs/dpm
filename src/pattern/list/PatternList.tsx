@@ -19,7 +19,7 @@ import SortBottomSheet, {
 } from "@/src/pattern/list/SortBottomSheet";
 import PatternListHeader from "./PatternListHeader";
 import PatternListItem from "./PatternListItem";
-import { usePatternFilter } from "./hooks/usePatternFilter";
+import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
 
 type PatternListProps = {

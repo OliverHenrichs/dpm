@@ -88,21 +88,26 @@ function buildWrapper({
  * Renders a hook inside the same provider stack, for logic that reads the
  * active list. `ActivePatternListProvider` loads storage on mount, so a test
  * must `await waitFor(...)` on the loaded state before acting.
+ *
+ * `Props` is inferred, so a hook taking arguments can be re-rendered with new
+ * ones via `rerender(props)` — which is how a test exercises what happens when
+ * the thing a hook keys off changes.
  */
-export function renderHookWithProviders<Result>(
-  hook: () => Result,
+export function renderHookWithProviders<Result, Props = undefined>(
+  hook: (props: Props) => Result,
   {
     lists = [],
     patterns = {},
     activeListId,
     language = "en",
     ...options
-  }: RenderWithProvidersOptions = {},
+  }: RenderWithProvidersOptions &
+    Partial<RenderHookOptions<Props>> = {} as RenderWithProvidersOptions,
 ) {
   const wrapper = buildWrapper({ lists, patterns, activeListId, language });
   return renderHook(hook, {
     wrapper,
-    ...(options as RenderHookOptions<never>),
+    ...(options as RenderHookOptions<Props>),
   });
 }
 

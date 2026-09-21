@@ -15,6 +15,13 @@ interface PatternNodeProps {
   onPress: (pattern: IPattern) => void;
 }
 
+/**
+ * How far back a context node is drawn — one pulled in by a filter's chain
+ * mode rather than matching it. Low enough to read as secondary, high enough
+ * to still be legible, since the whole point is showing what leads to a match.
+ */
+const CONTEXT_OPACITY = 0.45;
+
 /** Denser fill for harder patterns, so level reads at a glance. */
 function backgroundOpacity(level: string | undefined): number {
   switch (level) {
@@ -44,7 +51,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
   palette,
   onPress,
 }) => {
-  const { pattern, color, foundational } = node;
+  const { pattern, color, foundational, isContext } = node;
   const borderColor = color ?? palette[PaletteColor.Primary];
   const bgOpacity = backgroundOpacity(pattern.level);
 
@@ -54,7 +61,10 @@ const PatternNode: React.FC<PatternNodeProps> = ({
       : pattern.name;
 
   return (
-    <PatternNodeGroup onPress={() => onPress(pattern)}>
+    <PatternNodeGroup
+      onPress={() => onPress(pattern)}
+      opacity={isContext ? CONTEXT_OPACITY : undefined}
+    >
       {/* Main background */}
       <Rect
         x={x - NODE_WIDTH / 2}

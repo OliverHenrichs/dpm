@@ -199,5 +199,12 @@
   "prerequisiteWouldCycle": "Ausgegraute Figuren würden eine Voraussetzungs-Schleife erzeugen.",
   "removeVideo": "Video entfernen",
   "detachModifier": "Modifikator lösen",
-  "prerequisiteCycleWarning": "{{count}} Figuren bilden eine Voraussetzungsschleife; ihre Reihenfolge kann nicht dargestellt werden."
+  "prerequisiteCycleWarning": "{{count}} Figuren bilden eine Voraussetzungsschleife; ihre Reihenfolge kann nicht dargestellt werden.",
+  "chainMode": "Zusammen mit Treffern zeigen",
+  "chainModeMatchesOnly": "Nur Treffer",
+  "chainModePrerequisites": "Weg dorthin",
+  "chainModeFullChain": "Alles Verbundene",
+  "graphFilterSummary": "{{matched}} Treffer · {{shown}} von {{total}} gezeigt",
+  "clearFilter": "Filter zurücksetzen",
+  "noPatternsMatchFilter": "Keine Figuren passen zu diesem Filter"
 }

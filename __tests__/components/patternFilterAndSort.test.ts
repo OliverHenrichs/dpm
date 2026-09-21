@@ -1,5 +1,5 @@
 import { renderHook } from "@testing-library/react-native";
-import { usePatternFilter } from "@/src/pattern/list/hooks/usePatternFilter";
+import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "@/src/pattern/list/hooks/usePatternSort";
 import { PatternFilter } from "@/src/pattern/filter/components/PatternFilterBottomSheet";
 import { SortConfig } from "@/src/pattern/list/SortBottomSheet";

@@ -15,7 +15,14 @@ interface GraphViewContainerProps {
   model: GraphModel;
   patternTypes: PatternType[];
   palette: Record<PaletteColor, string>;
-  resetKey: number;
+  /**
+   * Remounts the view when it changes, which re-fits the viewport. Includes
+   * the drawn node count, so a filter that narrows the graph does not leave
+   * the user at the zoom the whole graph needed.
+   */
+  resetKey: string;
+  /** Distinguishes "nothing matched" from "this list is empty". */
+  hasActiveFilter: boolean;
   onNodeTap: (pattern: IPattern) => void;
 }
 
@@ -25,6 +32,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   patternTypes,
   palette,
   resetKey,
+  hasActiveFilter,
   onNodeTap,
 }) => {
   const styles = getStyles(palette);
@@ -40,6 +48,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
             model={model}
             patternTypes={patternTypes}
             palette={palette}
+            hasActiveFilter={hasActiveFilter}
             onNodeTap={onNodeTap}
           />
         ) : (
@@ -47,6 +56,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
             key={`graph-${resetKey}`}
             model={model}
             palette={palette}
+            hasActiveFilter={hasActiveFilter}
             onNodeTap={onNodeTap}
           />
         )}

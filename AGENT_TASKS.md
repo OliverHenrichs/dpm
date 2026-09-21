@@ -27,7 +27,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 |---|---|---|---|---|
 | 1 | Don't focus the pattern-list name right after picking a starting point — the keyboard hides too much | **S** | ✅ done | [S1](#s1--stop-auto-focusing-the-list-name-field--done) |
 | 2 | App's swipe-left gesture fights the OS back gesture | **M** | open | [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture) |
-| 2b | Searchable/filterable pattern graph (only show direct chains of filtered figures) | **L** | open | [L1](#l1--searchable--filterable-pattern-graph) |
+| 2b | Searchable/filterable pattern graph (only show direct chains of filtered figures) | **L** | ✅ done | [L1](#l1--searchable--filterable-pattern-graph) |
 | 3 | Moveable patterns in network graph | **L** | open | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ◐ details half done ([B7](#b7--the-graphs-detail-modal-can-never-show-modifiers--done)) | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
@@ -69,13 +69,13 @@ evidence.
 Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1  M2                       F2✅        (defects + the graph model)
-Phase 3  L1 ──────────────► L2                             (F2 done — ready)
+Phase 3  L1✅ ─────────────► L2                             (L1 done — L2 ready)
 Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
 ```
 
 **Phases 1 and 2 are complete**, bar the two Mediums (M1, M2). Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
-landed and what is still outstanding. **Phase 3 is unblocked:** F2 landed, so L1 has the stable
-graph model it was waiting on.
+landed and what is still outstanding. **L1 has landed**, so L2 — moveable nodes — is next, with
+the node set it has to reconcile against now well defined.
 
 L1 before L2: filtering changes which nodes exist, and manual node positions have to reconcile
 against a changing node set. Building L2 first means building the reconciliation twice.
@@ -375,7 +375,7 @@ changes, the test plan, the risks, and an estimate.
 
 ---
 
-### L1 — Searchable / filterable pattern graph
+### L1 — Searchable / filterable pattern graph — DONE
 
 > *"Searchable/filterable pattern graph (only show direct chains of filtered figures)"*
 
@@ -572,6 +572,54 @@ rendered node count; chain mode changes it; reset restores.
 **4–7 days** assuming F2 has landed (2–3 of those are F2 itself if it has not). Roughly: 1 day
 `selectSubgraph` + tests, 1 day edge rewriting + the property test, 1 day model plumbing and
 removing the `as any` casts, 1–2 days UI, 1 day states/polish/i18n.
+
+#### Landed
+
+**676 tests** (was 652 mid-way, 603 before L1 started). Design items 1 and most of 4 had already
+landed with [F2](#f2--graph-domain-layer).
+
+- **`model/selectSubgraph.ts`** — multi-source BFS over the adjacency index, O(V + E), four chain
+  modes and an optional radius. Seeding the visited set with every match makes it one walk rather
+  than one per match, and cycle-safe by construction.
+- **`model/filterGraphModel.ts`** — the edge rewriting, which is the whole reason this was sized
+  Large. Direct / elided / dropped, with direct winning over elided for the same pair and no node
+  eliding onto itself. The property test runs 40 seeded random graphs with dangling ids and
+  cycles mixed in, across all four modes, asserting every node's prerequisites are a subset of
+  the shown ids — and asserts the consequence directly too, that `calculateGraphLayout` places
+  every node it is given. Reverting the rewriting fails three tests.
+- **`hooks/useGraphFilter.ts`** — filter and chain-mode state, with the narrowing pass skipped
+  entirely when no filter is active or the filter excludes nothing (the common case).
+- **UI** — filter button in `PatternGraphHeader` using `PatternListHeader`'s icon/colour
+  convention; `ChainModeFilter` injected into the shared sheet through a new `headerSection`
+  slot, so the list screen does not grow a graph concept; `GraphFilterSummary` ("1 matched · 3
+  shown of 4") with a clear button; context nodes dimmed through the group's opacity; elided
+  edges dashed in both views; filter-aware empty-state copy.
+- **`usePatternFilter` moved** to `src/pattern/filter/hooks/`, and the `as any` in its level
+  comparison removed — `IPattern.level` is a bare string, so comparing as strings is both correct
+  and honest about what older lists carry.
+- **The network view's initial zoom is now fitted to the drawn content.** It was a fixed 0.35,
+  which is about right for a whole list and leaves a three-node filtered graph as empty canvas.
+  Centring moved from the ellipse centre to the content bounding box's centre for the same reason.
+
+**Three decisions worth recording.**
+
+1. **Only three chain modes are offered.** `dependents` alone is supported by the model but not
+   exposed: four segments do not fit a phone, and "what leads out of this but not into it" is a
+   question almost nobody asks. `types/ChainMode.ts` says so at the definition.
+2. **Depth stays full-graph, `foundational` does not.** Depth stability is what stops timeline
+   columns re-basing; `foundational` anchors the network ellipse and so must describe what is
+   actually drawn. That needed `calculateDynamicTimelineLayout` to accept a depth map instead of
+   deriving one, and its canvas width to be measured over the shown patterns.
+3. **The list-change reset adjusts state during render, not in an effect.** The lint rule
+   `Calling setState synchronously within an effect can trigger cascading renders` caught the
+   effect version; the render-time adjustment is the documented React pattern and means nothing
+   downstream ever observes the stale filter.
+
+**A testing limit found here.** The test renderer does not descend into `RNSVGSvgView`, so no
+component test can assert on what the graph draws — node labels included. The filter UI is
+therefore covered at two levels: the chrome around the graph (`graphFiltering.test.tsx`) and the
+model the screen would render (`useGraphFilter.test.ts`, `filterGraphModel.test.ts`). This is the
+same split the rest of the graph already used; it is now a deliberate one.
 
 ---
 

@@ -149,6 +149,18 @@ All user-facing strings use `const { t } = useTranslation()`. Translation keys m
 - Keep the model pure and cheap. It is rebuilt on every change to the pattern set, and `PatternNode` takes a `GraphNode` rather than a bare pattern plus a colour map — that is what removed the `as any` casts at each call site.
 - `model.cycles` is not just diagnostics: `CycleWarning.tsx` renders a banner above the graph when it is non-empty. Cycle detection used to run on every render and emit only a `console.warn`.
 
+### Filtering
+
+The graph screen filters through the same `PatternFilter` and `PatternFilterBottomSheet` the list screen uses (`usePatternFilter` lives in `src/pattern/filter/hooks/`, shared by both). `useGraphFilter` owns the filter and chain-mode state and produces the model to render.
+
+**Never hand a filtered `patterns` array to a layout function.** The network layout places a node only once *every* prerequisite is positioned, and `drawNodes` renders nothing for an unpositioned node — so one id pointing outside the shown set deletes that node and its whole subtree with no error. `filterGraphModel` (`model/filterGraphModel.ts`) exists to prevent that: it rewrites every surviving node's `prerequisites` against the shown set, turning a prerequisite hidden by the filter into an *elided* edge onto the nearest shown ancestor (drawn dashed, `ELIDED_DASH`) or dropping it when there is none. `__tests__/unit/filterGraphModel.test.ts` holds this as a property over random graphs; do not weaken it.
+
+- `selectSubgraph` decides which nodes appear: a multi-source BFS, O(V + E), with `matchesOnly` / `prerequisites` / `dependents` / `fullChain` and an optional radius. Only three of those are offered in the UI — see `types/ChainMode.ts` for why.
+- **Depth stays on full-graph terms** so a node keeps its timeline column when a filter is toggled; that is why `calculateDynamicTimelineLayout` takes a `depthMap` rather than deriving one. `foundational` deliberately does not, because it anchors the network ellipse and must describe what is drawn. `cycles` stay full-graph too — data a filter hides is still corrupt.
+- Context nodes (shown but not matched) dim via the group's `opacity`, never via `PatternNode`'s fill opacity, which already encodes level.
+- The network view's initial zoom is fitted to the drawn content (`useGraphLayout`). It was a fixed 0.35, which leaves a filtered graph as a mostly empty canvas.
+- Filter state is **not persisted**, deliberately: a filter that survives a navigation away is invisible on return and reads as "my patterns disappeared". It resets when the active list changes, adjusted during render rather than in an effect.
+
 ### The views
 
 - **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`

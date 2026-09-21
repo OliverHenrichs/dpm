@@ -10,11 +10,15 @@ import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
 interface PatternGraphHeaderProps {
   viewMode: ViewMode;
   onToggleView: () => void;
+  hasActiveFilter: boolean;
+  onFilter: () => void;
 }
 
 const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
   viewMode,
   onToggleView,
+  hasActiveFilter,
+  onFilter,
 }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
@@ -22,18 +26,37 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
   const styles = getStyles(palette);
 
   const rightActions = (
-    <TouchableOpacity
-      style={styles.controlButton}
-      onPress={onToggleView}
-      accessibilityLabel={t("toggleView")}
-    >
-      <Icon
-        name={viewMode === "timeline" ? "graph" : "timeline"}
-        size={15}
-        color={palette[PaletteColor.Surface]}
-      />
-      <Text style={styles.buttonText}>{t("toggleView")}</Text>
-    </TouchableOpacity>
+    <>
+      {/* Same icon/colour convention as PatternListHeader, so an active
+          filter reads the same on both screens. */}
+      <TouchableOpacity
+        onPress={onFilter}
+        style={styles.iconButton}
+        accessibilityLabel={t("filterPatterns")}
+      >
+        <Icon
+          name={hasActiveFilter ? "filter" : "filter-outline"}
+          size={24}
+          color={
+            hasActiveFilter
+              ? palette[PaletteColor.Accent]
+              : palette[PaletteColor.Primary]
+          }
+        />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.controlButton}
+        onPress={onToggleView}
+        accessibilityLabel={t("toggleView")}
+      >
+        <Icon
+          name={viewMode === "timeline" ? "graph" : "timeline"}
+          size={15}
+          color={palette[PaletteColor.Surface]}
+        />
+        <Text style={styles.buttonText}>{t("toggleView")}</Text>
+      </TouchableOpacity>
+    </>
   );
 
   return (
@@ -54,6 +77,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       paddingVertical: 8,
       borderRadius: 8,
       gap: 6,
+    },
+    iconButton: {
+      paddingHorizontal: 4,
+      paddingVertical: 2,
     },
     buttonText: {
       color: palette[PaletteColor.Surface],

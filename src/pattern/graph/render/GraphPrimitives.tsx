@@ -34,6 +34,14 @@ export const ArrowheadMarker: React.FC<{
   </Defs>
 );
 
+/**
+ * Dash pattern for an edge that spans nodes a filter is hiding.
+ *
+ * Without it a chain A → B → C with B filtered out would draw as a solid
+ * A → C, telling the user those two are adjacent when they are not.
+ */
+export const ELIDED_DASH = "6 4";
+
 /** Edges whose endpoints are both laid out; the rest are skipped silently. */
 export function drawEdges(
   edges: GraphEdge[],
@@ -46,15 +54,17 @@ export function drawEdges(
         const fromPos = positions.get(edge.from);
         const toPos = positions.get(edge.to);
         if (!fromPos || !toPos) return null;
+        const elided = edge.kind === "elided";
         return (
           <Path
             key={`edge-${index}`}
             d={generateOrthogonalPath(fromPos, toPos)}
             stroke={palette[PaletteColor.Primary]}
             strokeWidth={2}
+            strokeDasharray={elided ? ELIDED_DASH : undefined}
             fill="none"
             markerEnd="url(#arrowhead-graph)"
-            opacity={0.6}
+            opacity={elided ? 0.4 : 0.6}
           />
         );
       })}

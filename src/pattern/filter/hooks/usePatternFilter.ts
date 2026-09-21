@@ -2,6 +2,12 @@ import { useMemo } from "react";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternFilter } from "@/src/pattern/filter/components/PatternFilterBottomSheet";
 
+/**
+ * Apply a `PatternFilter` to a pattern array.
+ *
+ * Lives beside the filter it implements rather than under `list/`: the graph
+ * screen filters too, and nothing in here was ever list-specific.
+ */
 export function usePatternFilter(patterns: IPattern[], filter: PatternFilter) {
   const filteredPatterns = useMemo(() => {
     return patterns.filter((pattern) => {
@@ -20,10 +26,13 @@ export function usePatternFilter(patterns: IPattern[], filter: PatternFilter) {
         }
       }
 
-      // Level filter
+      // Level filter. `IPattern.level` is a bare string — older lists carry
+      // values that are not in the enum — so compare as strings rather than
+      // casting one side into the other.
       if (
         filter.levels.length > 0 &&
-        (!pattern.level || !filter.levels.includes(pattern.level as any))
+        (!pattern.level ||
+          !filter.levels.some((level) => level === pattern.level))
       ) {
         return false;
       }

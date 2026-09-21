@@ -199,7 +199,7 @@ module.exports = {
       functions: 84,
       lines: 88,
     },
-    "src/pattern/list/hooks/usePatternFilter.ts": {
+    "src/pattern/filter/hooks/usePatternFilter.ts": {
       statements: 95,
       branches: 95,
       functions: 95,
@@ -357,6 +357,41 @@ module.exports = {
       branches: 54,
       functions: 70,
       lines: 74,
+    },
+    // L1: the filtering layer. `filterGraphModel` is what stops a narrowed
+    // graph losing nodes, so it is held near-total on statements and lines;
+    // its branch floor is lower because the same double-instrumentation swing
+    // documented on the global block moves it by several points between runs
+    // (69.4 and 76.8 both observed), and the floor goes under the worse one.
+    "src/pattern/graph/model/selectSubgraph.ts": {
+      statements: 94,
+      branches: 72,
+      functions: 95,
+      lines: 95,
+    },
+    "src/pattern/graph/model/filterGraphModel.ts": {
+      statements: 96,
+      branches: 64,
+      functions: 95,
+      lines: 95,
+    },
+    "src/pattern/graph/hooks/useGraphFilter.ts": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/components/ChainModeFilter.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/components/GraphFilterSummary.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
     },
     // The cycle detector's first user-visible output: it used to console.warn.
     "src/pattern/graph/CycleWarning.tsx": {

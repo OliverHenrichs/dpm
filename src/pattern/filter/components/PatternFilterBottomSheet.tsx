@@ -34,6 +34,11 @@ interface PatternFilterBottomSheetProps {
   currentFilter: PatternFilter;
   allPatterns: IPattern[];
   patternTypes?: PatternType[];
+  /**
+   * Rendered above the criteria. The graph screen puts its chain-mode control
+   * here rather than the sheet growing a graph concept the list has no use for.
+   */
+  headerSection?: React.ReactNode;
 }
 
 const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
@@ -43,6 +48,7 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
   currentFilter,
   allPatterns,
   patternTypes = [],
+  headerSection,
 }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
@@ -124,6 +130,8 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
+        {headerSection}
+
         <NameFilter
           value={filter.name}
           onChange={(text) => setFilter({ ...filter, name: text })}

@@ -3,6 +3,8 @@ import { G, GProps } from "react-native-svg";
 
 export type PatternNodeGroupProps = {
   onPress: () => void;
+  /** See the native file: dims a context node without touching its fill. */
+  opacity?: number;
   children: ReactNode;
 };
 
@@ -26,7 +28,11 @@ const WebG = G as unknown as FC<WebGProps>;
  * in with `props.onPress`, which is `undefined` here. So take the DOM node and
  * bind the listener ourselves, leaving the group's press props unset.
  */
-const PatternNodeGroup: FC<PatternNodeGroupProps> = ({ onPress, children }) => {
+const PatternNodeGroup: FC<PatternNodeGroupProps> = ({
+  onPress,
+  opacity,
+  children,
+}) => {
   // Callers pass a fresh closure every render; read it through a ref so the
   // listener is bound once per node rather than rebound on every re-render.
   const handler = useRef(onPress);
@@ -44,7 +50,11 @@ const PatternNodeGroup: FC<PatternNodeGroupProps> = ({ onPress, children }) => {
     unbind.current = () => element.removeEventListener("click", listener);
   }, []);
 
-  return <WebG forwardedRef={bind}>{children}</WebG>;
+  return (
+    <WebG forwardedRef={bind} opacity={opacity}>
+      {children}
+    </WebG>
+  );
 };
 
 export default PatternNodeGroup;
