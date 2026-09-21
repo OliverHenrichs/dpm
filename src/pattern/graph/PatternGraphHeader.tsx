@@ -5,8 +5,7 @@ import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
-
-type ViewMode = "timeline" | "graph";
+import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
 
 interface PatternGraphHeaderProps {
   viewMode: ViewMode;

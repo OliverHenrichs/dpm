@@ -198,5 +198,6 @@
   "notAppliedToAnyPattern": "Noch auf keine Figur angewendet",
   "prerequisiteWouldCycle": "Ausgegraute Figuren würden eine Voraussetzungs-Schleife erzeugen.",
   "removeVideo": "Video entfernen",
-  "detachModifier": "Modifikator lösen"
+  "detachModifier": "Modifikator lösen",
+  "prerequisiteCycleWarning": "{{count}} Figuren bilden eine Voraussetzungsschleife; ihre Reihenfolge kann nicht dargestellt werden."
 }

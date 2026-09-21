@@ -89,10 +89,10 @@ module.exports = {
     // well-covered files moved out of this pool and into their own entries
     // below. The leftovers are the graph views and their SVG rendering.
     global: {
-      statements: 34,
-      branches: 23,
-      functions: 38,
-      lines: 36,
+      statements: 43,
+      branches: 32,
+      functions: 44,
+      lines: 44,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -137,11 +137,15 @@ module.exports = {
       functions: 60,
       lines: 72,
     },
+    // Lower than it was: the B1/B2 fallback pass is now a deep safety net
+    // that healthy *and* degenerate input both bypass, because the model's
+    // depth map treats a node with no resolvable prerequisite as a root. The
+    // net stays; see the comment on the pass itself.
     "src/pattern/graph/utils/NetworkGraphUtils.ts": {
-      statements: 76,
-      branches: 68,
-      functions: 80,
-      lines: 78,
+      statements: 64,
+      branches: 56,
+      functions: 66,
+      lines: 64,
     },
     // The import/export decision hooks: what lands in storage on a conflict.
     "src/pattern/data/hooks/useImportDecisions.ts": {
@@ -336,6 +340,36 @@ module.exports = {
       branches: 94,
       functions: 94,
       lines: 94,
+    },
+    // F2: the graph's domain layer. It is pure, cheap and used by every view,
+    // so it is held near-total. The branch floors are lower than the rest
+    // because `Map.get` is typed `T | undefined` and each `??` fallback is a
+    // branch that `buildAdjacency`'s own guarantee makes unreachable.
+    //
+    // `adjacency.ts` is the clearest case of the double-instrumentation swing
+    // described on the global block: the unit project exercises all of it and
+    // reports 91/67/89/96, while the components project reaches it only
+    // through `GenericGraphUtils` (storage's prerequisite repair), never runs
+    // `buildDepthMap`, and reports 78/58/75/78. Whichever copy wins the merge
+    // decides the run, so the floor sits under the *lower* pole.
+    "src/pattern/graph/model/adjacency.ts": {
+      statements: 74,
+      branches: 54,
+      functions: 70,
+      lines: 74,
+    },
+    // The cycle detector's first user-visible output: it used to console.warn.
+    "src/pattern/graph/CycleWarning.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/model/GraphModel.ts": {
+      statements: 95,
+      branches: 45,
+      functions: 95,
+      lines: 95,
     },
     "src/pattern/list/PatternList.tsx": {
       statements: 82,

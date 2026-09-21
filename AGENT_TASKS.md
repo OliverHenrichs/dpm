@@ -47,7 +47,7 @@ evidence.
 | # | Item | Size | Status | Why it's here |
 |---|---|---|---|---|
 | [F1](#f1--test-infrastructure-and-ci--in-progress) | Test infrastructure and CI | **L** | ◐ in progress | 3 test files / 529 lines against ~12 900 lines of source; component testing was installed but could not run; no CI at all. Gates every other item. |
-| [F2](#f2--graph-domain-layer) | Graph domain layer | **M–L** | open | L1 and L2 both need a stable graph model; today the views own the computation and paper over it with `as any`. |
+| [F2](#f2--graph-domain-layer) | Graph domain layer | **M–L** | ✅ done | L1 and L2 both need a stable graph model; today the views own the computation and paper over it with `as any`. |
 | [F3](#f3--storage-schema-versioning-and-import-validation--done) | Storage schema versioning + import validation | **M** | ✅ done | No schema version, no migration runner, no validation of imported files, lossy concurrent writes. L2 and L3 both add persisted data. |
 | [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done) | Deleting a pattern leaves dangling prerequisite ids | **M** | ✅ done | Made patterns silently vanish from the network graph, and let a recycled id inherit stale links. |
 | [B2](#b2--no-cycle-prevention-when-editing-prerequisites--done) | No cycle prevention when editing prerequisites | **S–M** | ✅ done | Same failure mode as B1: nodes in a cycle were never laid out. |
@@ -67,14 +67,15 @@ evidence.
 
 ```
 Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
-Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3         (quick wins + data safety)
-Phase 2  B1✅ B2✅ M1  M2                       F2          (defects + the graph model)
-Phase 3  L1 ──────────────► L2                             (needs F2)
+Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
+Phase 2  B1✅ B2✅ M1  M2                       F2✅        (defects + the graph model)
+Phase 3  L1 ──────────────► L2                             (F2 done — ready)
 Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
 ```
 
-**Phase 1 is complete, and Phase 2's defects are cleared.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
-landed and what is still outstanding.
+**Phases 1 and 2 are complete**, bar the two Mediums (M1, M2). Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
+landed and what is still outstanding. **Phase 3 is unblocked:** F2 landed, so L1 has the stable
+graph model it was waiting on.
 
 L1 before L2: filtering changes which nodes exist, and manual node positions have to reconcile
 against a changing node set. Building L2 first means building the reconciliation twice.
@@ -344,13 +345,13 @@ variable** — growing the node changes timeline layout everywhere.
    has video", so the video predicate is
    `videoRefs.length > 0 || modifierRefs.some(r => r.videoRefs.length > 0)`.
 3. The predicates are pure functions of a pattern and belong in the graph model
-   ([F2](#f2--graph-domain-layer)) as `nodeBadges(pattern)`, not inline in the SVG component —
-   they are the one part of this that is unit-testable.
-4. `PatternNode` currently declares its own structural `BasePattern` type
-   (`PatternNode.tsx:8-15`) that does *not* include `videoRefs`/`modifierRefs`, which is why the
-   call sites need `patterns as any` (`NetworkGraphView.tsx:99`). Adding badges means widening
-   that type — do it by replacing `BasePattern` with the model's node type from F2 rather than
-   adding two more optional fields.
+   ([F2](#f2--graph-domain-layer), now landed) as `nodeBadges(pattern)`, not inline in the SVG
+   component — they are the one part of this that is unit-testable.
+4. ~~`PatternNode` declares its own structural `BasePattern` type that does not include
+   `videoRefs`/`modifierRefs`, which is why the call sites need `patterns as any`.~~ **Resolved
+   by F2:** `PatternNode` now takes a `GraphNode`, which wraps the whole `IPattern`, so both
+   fields are already in scope and the casts are gone. Put the predicates on the node in
+   `buildGraphModel` if they need to be precomputed, or call them in the renderer if not.
 5. Update `Legend` (`src/pattern/graph/Legend.tsx`) to explain the badges; it currently only
    explains type colours.
 6. Contrast: the node background already varies opacity by level (0.3/0.5/0.7,
@@ -359,10 +360,11 @@ variable** — growing the node changes timeline layout everywhere.
    and check both palettes.
 
 **Tests:** unit tests for `nodeBadges` covering: no videos, pattern videos only, modifier-combo
-videos only, universal-modifier-only (→ no badge), and the read-only-list case. Visual regression
-is out of scope until F1 lands a component-test environment.
+videos only, universal-modifier-only (→ no badge), and the read-only-list case. The component
+environment F1 asked for exists now, so the rendered badge is testable too.
 
-**Effort:** 2–3 days including the F2-lite type cleanup, 1 day if F2 has already landed.
+**Effort:** ~1 day. F2 has landed, so the type cleanup that made up most of the original estimate
+is already done.
 
 ---
 
@@ -1136,9 +1138,10 @@ which turns it from a once-in-a-while CI mystery into a deterministic local repr
 #### Still outstanding
 
 Nothing worth chasing. What remains uncovered is the graph rendering (`GraphSvg`, `PatternNode`,
-`TimelineView`, `NetworkGraphView`) — SVG drawing whose *logic* already lives in the graph utils
-and is covered there, and whose output a component test cannot meaningfully assert on. That is
-[F2](#f2--graph-domain-layer)'s territory, and L1/L2 will rewrite it.
+`TimelineView`, `NetworkGraphView`) — SVG drawing whose *logic* already lives in the graph model
+and is covered there, and whose output a component test cannot meaningfully assert on. Since
+[F2](#f2--graph-domain-layer) landed, that separation is a design property rather than an excuse:
+the views hold no computation to test. L1/L2 will rewrite them anyway.
 
 **Final record: eight defects across seventeen suites — every one in code that writes data, in
 layout, or in an event handler; none in read-only rendering.**
@@ -1227,7 +1230,7 @@ someone adds an eighth mutation.
 
 ---
 
-### F2 — Graph domain layer
+### F2 — Graph domain layer — DONE
 
 **Evidence of the current shape:**
 
@@ -1280,6 +1283,51 @@ position" invariant against both layout functions.
 
 **Effort:** 3–5 days. Do it as two PRs (extract-and-move with no behaviour change; then the
 algorithmic fixes) so the diff is reviewable.
+
+#### Landed
+
+All seven plan items, plus one the plan implied but did not spell out. **603 tests** (was 599).
+No new defects — every `as any` the plan named was removed, and the type errors they were hiding
+turned out to be genuine mismatches rather than noise.
+
+- **`model/adjacency.ts`** — `buildAdjacency` (both directions, one pass, dangling prerequisite
+  ids dropped at the boundary), `collectDependents` / `collectPrerequisites` (BFS, cycle-safe),
+  `findCycles` (iterative Tarjan) and `buildDepthMap` (iterative longest-path DFS with
+  memoisation). Every walk is iterative: a 5000-long chain is now a test, because the recursion
+  it replaced would have blown the stack on a list a determined user could actually build.
+- **`model/GraphModel.ts`** — `buildGraphModel(patterns, patternTypes)` returning nodes, edges,
+  adjacency, depth map, cycles, colour map; `useGraphModel` memoises it at `PatternGraphScreen`
+  and both views render from the same instance, so switching views is free and they cannot
+  disagree.
+- **`render/GraphPrimitives.tsx`** — `ArrowheadMarker`, `drawEdges`, `drawNodes`. `TimelineView`
+  no longer imports from `GraphSvg`; `GraphSvg` is now the network view's `<Svg>` and nothing
+  else, 31 lines.
+- **`types/ViewMode.ts`** — declared once, was three times.
+- **The rules-of-hooks violation is gone.** The empty-state path no longer changes the hook count
+  between renders, and the `eslint-disable` came out with it.
+- **The exponential cycle detector is deleted**, along with the recursive depth calculation and a
+  duplicate `collectDependentIds`. `GenericGraphUtils` keeps only the two helpers used outside
+  the graph — the editor's cycle guard and storage's repair-on-read — and both delegate to the
+  model.
+- **`CycleWarning.tsx`** — the plan asked for the detector to return "something the UI can
+  actually use (a cycle banner) instead of a console warning", so the banner exists: a strip above
+  the graph naming how many patterns are caught in a loop. Detection had been running on every
+  render for the entire life of the feature and its only output went to a console no user reads.
+
+**A behaviour change worth knowing about.** Because `buildAdjacency` drops prerequisite ids that
+match no pattern, a pattern whose prerequisites are *all* missing now has none as far as the
+layout is concerned: it scores depth 0 and is laid out as a root on the foundational ellipse,
+rather than falling through to the B1/B2 rescue pass. That is better placement for the commonest
+kind of corrupt import. The rescue pass stays as the deeper net for nodes inside a genuine cycle,
+with a comment saying so, and `NetworkGraphUtils`'s coverage floors came *down* (64/56/66/64) to
+match — not because coverage fell, but because healthy and degenerate input now take the same
+path.
+
+**One deviation from the plan.** Item 4 also listed `PatternNode` and `PatternNodeGroup` for the
+move into `render/`. They stayed where they are: `PatternNodeGroup` has a `.web.tsx` sibling, and
+moving a platform-split pair for tidiness alone is churn in a diff that already touches every
+view. `PatternNode` did get the substantive half of the change — it takes a `GraphNode` instead
+of a bare pattern plus a colour map, which is what made the four casts unnecessary.
 
 ---
 

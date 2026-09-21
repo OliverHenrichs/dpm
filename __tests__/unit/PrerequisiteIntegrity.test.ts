@@ -1,6 +1,5 @@
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
-  collectDependentIds,
   findIneligiblePrerequisiteIds,
   repairDanglingPrerequisites,
 } from "@/src/pattern/graph/utils/GenericGraphUtils";
@@ -16,69 +15,11 @@ const ids = (set: Set<number>) => [...set].sort((a, b) => a - b);
  * `prerequisites` points *backwards*: `P.prerequisites = [Q]` means Q must be
  * learned before P, i.e. the edge runs Q → P. Getting that direction wrong is
  * the easy mistake here, so the tests name it explicitly.
+ *
+ * The graph traversal these are built on lives in `model/adjacency.ts` and is
+ * covered by GraphModel.test.ts; what is tested here is the two helpers the
+ * editor and the storage layer call.
  */
-describe("collectDependentIds", () => {
-  it("finds the direct dependents of a pattern", () => {
-    const patterns = [pattern(1), pattern(2, [1]), pattern(3, [1])];
-
-    expect(ids(collectDependentIds(patterns, 1))).toEqual([2, 3]);
-  });
-
-  it("follows the chain transitively", () => {
-    const patterns = [pattern(1), pattern(2, [1]), pattern(3, [2])];
-
-    expect(ids(collectDependentIds(patterns, 1))).toEqual([2, 3]);
-  });
-
-  it("does not walk backwards into prerequisites", () => {
-    const patterns = [pattern(1), pattern(2, [1]), pattern(3, [2])];
-
-    expect(ids(collectDependentIds(patterns, 3))).toEqual([]);
-  });
-
-  it("returns nothing for a leaf", () => {
-    const patterns = [pattern(1), pattern(2, [1])];
-
-    expect(ids(collectDependentIds(patterns, 2))).toEqual([]);
-  });
-
-  it("collects each dependent once through a diamond", () => {
-    const patterns = [
-      pattern(1),
-      pattern(2, [1]),
-      pattern(3, [1]),
-      pattern(4, [2, 3]),
-    ];
-
-    expect(ids(collectDependentIds(patterns, 1))).toEqual([2, 3, 4]);
-  });
-
-  it("terminates on a cycle instead of looping forever", () => {
-    const patterns = [pattern(1, [2]), pattern(2, [1])];
-
-    expect(ids(collectDependentIds(patterns, 1))).toEqual([1, 2]);
-  });
-
-  it("terminates on a self-reference", () => {
-    expect(ids(collectDependentIds([pattern(1, [1])], 1))).toEqual([1]);
-  });
-
-  it("ignores prerequisite ids that match no pattern", () => {
-    const patterns = [pattern(2, [99])];
-
-    expect(ids(collectDependentIds(patterns, 99))).toEqual([2]);
-    expect(ids(collectDependentIds(patterns, 2))).toEqual([]);
-  });
-
-  it("returns nothing for an unknown id", () => {
-    expect(ids(collectDependentIds([pattern(1)], 42))).toEqual([]);
-  });
-
-  it("handles an empty pattern set", () => {
-    expect(ids(collectDependentIds([], 1))).toEqual([]);
-  });
-});
-
 describe("findIneligiblePrerequisiteIds", () => {
   it("excludes the pattern itself", () => {
     expect(ids(findIneligiblePrerequisiteIds([pattern(1)], 1))).toEqual([1]);

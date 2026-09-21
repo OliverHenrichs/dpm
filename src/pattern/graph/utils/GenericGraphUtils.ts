@@ -1,97 +1,22 @@
-// Type that can be either Pattern or WCSPattern (for backward compatibility)
-interface PatternLike {
-  id: number;
-  prerequisites: number[];
-}
-
-export function generateEdges<T extends PatternLike>(patterns: T[]) {
-  return patterns.flatMap((pattern) =>
-    pattern.prerequisites.map((prereqId) => ({
-      from: prereqId,
-      to: pattern.id,
-    })),
-  );
-}
+import {
+  buildAdjacency,
+  collectDependents,
+  PatternLike,
+} from "@/src/pattern/graph/model/adjacency";
 
 /**
- * Detect circular dependencies in the pattern graph.
- * Returns an array of cycles (each cycle is an array of pattern ids).
- * Logs warnings for each detected cycle.
- */
-export function detectCircularDependencies<T extends PatternLike>(
-  patterns: T[],
-): number[][] {
-  const cycles: number[][] = [];
-  const patternMap = new Map<number, T>();
-  patterns.forEach((p) => patternMap.set(p.id, p));
-
-  function findCycles(
-    patternId: number,
-    visited: Set<number>,
-    path: number[],
-  ): void {
-    if (visited.has(patternId)) {
-      // Found a cycle
-      const cycleStart = path.indexOf(patternId);
-      if (cycleStart !== -1) {
-        const cycle = path.slice(cycleStart);
-        cycles.push(cycle);
-        console.warn(
-          `Warning: Circular dependency detected between patterns: ${cycle.join(" -> ")}`,
-        );
-      }
-      return;
-    }
-
-    const pattern = patternMap.get(patternId);
-    if (!pattern) return;
-
-    visited.add(patternId);
-    path.push(patternId);
-
-    pattern.prerequisites.forEach((prereqId) => {
-      findCycles(prereqId, new Set(visited), [...path]);
-    });
-  }
-
-  patterns.forEach((p) => findCycles(p.id, new Set(), []));
-
-  return cycles;
-}
-
-/**
- * Every pattern that transitively depends on `rootId` — i.e. everything
- * reachable by walking *forwards* along prerequisite edges, since
- * `prerequisites` points backwards from a pattern to what must be learned
- * first.
+ * Prerequisite integrity helpers used outside the graph views.
  *
- * Breadth-first over an index built once, so it is O(V + E) and cycle-safe:
- * the visited set stops a cycle from looping forever. `rootId` itself is
- * included only when something genuinely leads back to it.
+ * The graph itself works from `GraphModel`; these two exist because the
+ * pattern editor and the storage layer need the same reasoning without
+ * building a whole model. Both delegate to the model's adjacency index rather
+ * than walking the pattern array themselves.
+ *
+ * What used to live here as well — a cycle detector that enumerated every
+ * distinct path, and a recursive depth calculation — is gone. `findCycles` and
+ * `buildDepthMap` in `model/adjacency.ts` replace them: O(V + E), iterative,
+ * and computed once per model instead of per render.
  */
-export function collectDependentIds<T extends PatternLike>(
-  patterns: T[],
-  rootId: number,
-): Set<number> {
-  const dependentsOf = new Map<number, number[]>();
-  for (const pattern of patterns) {
-    for (const prereqId of pattern.prerequisites) {
-      const existing = dependentsOf.get(prereqId);
-      if (existing) existing.push(pattern.id);
-      else dependentsOf.set(prereqId, [pattern.id]);
-    }
-  }
-
-  const dependents = new Set<number>();
-  const queue = [...(dependentsOf.get(rootId) ?? [])];
-  while (queue.length > 0) {
-    const id = queue.pop()!;
-    if (dependents.has(id)) continue;
-    dependents.add(id);
-    queue.push(...(dependentsOf.get(id) ?? []));
-  }
-  return dependents;
-}
 
 /**
  * The patterns that may not be used as a prerequisite of `patternId` because
@@ -106,7 +31,7 @@ export function findIneligiblePrerequisiteIds<T extends PatternLike>(
   patternId: number | undefined,
 ): Set<number> {
   if (patternId === undefined) return new Set<number>();
-  const ineligible = collectDependentIds(patterns, patternId);
+  const ineligible = collectDependents(buildAdjacency(patterns), patternId);
   ineligible.add(patternId);
   return ineligible;
 }
@@ -135,58 +60,4 @@ export function repairDanglingPrerequisites<T extends PatternLike & object>(
   });
 
   return changed ? repaired : patterns;
-}
-
-/**
- * Calculate the prerequisite depth for each pattern using DFS.
- * Depth is the longest chain from foundational patterns (prerequisites: []).
- * Returns a map of pattern id -> depth.
- */
-export function calculatePrerequisiteDepthMap<T extends PatternLike>(
-  patterns: T[],
-): Map<number, number> {
-  const depthMap = new Map<number, number>();
-  const patternMap = new Map<number, T>();
-
-  // Create pattern lookup map
-  patterns.forEach((pattern) => patternMap.set(pattern.id, pattern));
-
-  function getDepth(
-    patternId: number,
-    visited: Set<number> = new Set(),
-  ): number {
-    // Check if already calculated
-    if (depthMap.has(patternId)) {
-      return depthMap.get(patternId)!;
-    }
-
-    // Detect circular dependency
-    if (visited.has(patternId)) {
-      return 0; // Break cycle
-    }
-
-    const pattern = patternMap.get(patternId);
-    if (!pattern) return 0;
-
-    // Foundational pattern (no prerequisites)
-    if (pattern.prerequisites.length === 0) {
-      depthMap.set(patternId, 0);
-      return 0;
-    }
-
-    // Calculate depth as 1 + max depth of all prerequisites
-    visited.add(patternId);
-    const maxPrereqDepth = Math.max(
-      ...pattern.prerequisites.map((prereqId) => getDepth(prereqId, visited)),
-    );
-    const depth = maxPrereqDepth + 1;
-
-    depthMap.set(patternId, depth);
-    return depth;
-  }
-
-  // Calculate depth for all patterns
-  patterns.forEach((p) => getDepth(p.id));
-
-  return depthMap;
 }

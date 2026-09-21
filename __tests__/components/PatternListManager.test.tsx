@@ -61,6 +61,9 @@ async function renderManager(
   await waitFor(() =>
     expect(screen.getByLabelText("Sort Patterns")).toBeOnTheScreen(),
   );
+  // The list and its patterns load from separate keys, so the sort button can
+  // be up while the rows are not. Anchor on a row too when one is expected.
+  if (patterns.length > 0) await screen.findByText(patterns[0].name);
   return { list };
 }
 

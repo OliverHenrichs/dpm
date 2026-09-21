@@ -1,6 +1,9 @@
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import { calculatePrerequisiteDepthMap } from "@/src/pattern/graph/utils/GenericGraphUtils";
+import {
+  buildAdjacency,
+  buildDepthMap,
+} from "@/src/pattern/graph/model/adjacency";
 
 /**
  * ~137.5°. Stepping by it spreads successive points evenly around a circle
@@ -40,7 +43,7 @@ export function calculateGraphLayout(
   width: number,
   height: number,
 ): GraphLayout {
-  const depthMap = calculatePrerequisiteDepthMap(patterns);
+  const depthMap = buildDepthMap(buildAdjacency(patterns));
   const foundationalPatterns = getFoundationalPatterns(patterns, depthMap);
 
   const centerX = width / 2;
@@ -193,9 +196,17 @@ export function calculateGraphLayout(
     });
   }
 
-  // Fallback pass. Whatever is still unplaced either sits in a prerequisite
-  // cycle or names a prerequisite that no longer exists, so the
-  // `every(positioned)` gate above can never open for it.
+  // Fallback pass — now a deep safety net rather than the first line of
+  // defence. Since depth comes from the model's adjacency index, which drops
+  // prerequisites that match no pattern, a node whose prerequisites are all
+  // missing or cyclic scores depth 0 and is treated as a root: it lands on the
+  // ellipse with the other roots, which is where it belongs, instead of being
+  // rescued onto a ring out here.
+  //
+  // What remains is anything the DFS and deferred passes still cannot reach.
+  // Keeping it costs nothing and the invariant it protects — every node given
+  // to this function gets a position — is the one whose violation made
+  // patterns silently vanish (AGENT_TASKS.md B1/B2).
   //
   // Neither is supposed to happen, and both are now prevented at the source,
   // but data written by older builds still contains them — and a node this

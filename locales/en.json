@@ -198,5 +198,6 @@
   "notAppliedToAnyPattern": "Not applied to any pattern yet",
   "prerequisiteWouldCycle": "Greyed-out patterns would create a prerequisite loop.",
   "removeVideo": "Remove video",
-  "detachModifier": "Detach modifier"
+  "detachModifier": "Detach modifier",
+  "prerequisiteCycleWarning": "{{count}} patterns are in a prerequisite loop, so their order cannot be shown."
 }

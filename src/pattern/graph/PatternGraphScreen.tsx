@@ -10,8 +10,8 @@ import PatternGraphHeader from "./PatternGraphHeader";
 import GraphViewContainer from "./GraphViewContainer";
 import PatternDetailsModal from "./PatternDetailsModal";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
-
-type ViewMode = "timeline" | "graph";
+import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
+import { useGraphModel } from "@/src/pattern/graph/hooks/useGraphModel";
 
 const PatternGraphScreen: React.FC = () => {
   const { colorScheme } = useThemeContext();
@@ -42,6 +42,10 @@ const PatternGraphScreen: React.FC = () => {
   const patternTypes = activeList?.patternTypes ?? [];
   const modifiers = activeList?.modifiers ?? [];
 
+  // One model, shared by both views: switching between them costs nothing and
+  // they cannot disagree about depth, edges or cycles.
+  const model = useGraphModel(patterns, patternTypes);
+
   return (
     <View style={{ flex: 1 }}>
       <PageContainer
@@ -57,7 +61,7 @@ const PatternGraphScreen: React.FC = () => {
 
           <GraphViewContainer
             viewMode={viewMode}
-            patterns={patterns}
+            model={model}
             patternTypes={patternTypes}
             palette={palette}
             resetKey={resetKey}

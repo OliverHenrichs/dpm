@@ -105,17 +105,22 @@ still showed them. Three rules keep that shut, and all three live in
 - **The prerequisite picker refuses cycles.** `findIneligiblePrerequisiteIds(patterns, id)` returns
   the pattern plus everything that already depends on it; `EditPatternForm` disables those chips.
   Note the direction: `P.prerequisites = [Q]` means Q comes *before* P, so the edge runs Q → P and
-  "would cycle" means Q already depends on P. Use `collectDependentIds` to walk forwards; it is a
-  BFS over an index, not the path-enumerating `detectCircularDependencies` beside it.
+  "would cycle" means Q already depends on P. Use `collectDependents` from `model/adjacency.ts` to
+  walk forwards — a BFS over the index, not a path enumeration.
 
 Belt and braces, and the part that actually protects the user: **`calculateGraphLayout` must place
 every node it is given.** Its DFS only places a node once all prerequisites are positioned, so a
 dangling id or a cycle leaves one unplaceable — and `drawNodes` renders nothing for a node with no
-position, losing it and its whole subtree silently. A fallback pass positions whatever is left
-over from its known prerequisites, or on a ring outside the foundational ellipse. Keep that pass,
-and keep `__tests__/unit/GraphLayoutInvariants.test.ts` asserting
-`positions.size === patterns.length` for degenerate input: imports, shared lists and old devices
-still supply both kinds of bad data.
+position, losing it and its whole subtree silently.
+
+Since the model landed, most degenerate input never reaches that hazard: `buildAdjacency` drops
+prerequisite ids matching no pattern, so a pattern whose prerequisites are all missing has none as
+far as the layout is concerned, scores depth 0, and is laid out as a root on the foundational
+ellipse. The fallback pass — position whatever is left over from its known prerequisites, else on
+a ring outside the ellipse — is retained as the deeper net for what the model cannot resolve
+(nodes inside a genuine cycle). Keep it, and keep
+`__tests__/unit/GraphLayoutInvariants.test.ts` asserting `positions.size === patterns.length` for
+degenerate input: imports, shared lists and old devices still supply both kinds of bad data.
 
 ## Theming
 
@@ -133,11 +138,25 @@ All user-facing strings use `const { t } = useTranslation()`. Translation keys m
 
 ## Graph views
 
-`src/pattern/graph/` contains two switchable views (`ViewMode = "timeline" | "graph"`, selected in `PatternGraphScreen`, rendered by `GraphViewContainer` alongside `Legend`) driven by `IPattern.prerequisites[]`:
-- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by depth (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
-- **Network** (`NetworkGraphView.tsx`) — force-free hierarchical layout (`calculateGraphLayout` in `NetworkGraphUtils.ts`); layout logic extracted into the `useGraphLayout` hook (`src/pattern/graph/hooks/useGraphLayout.ts`)
+`src/pattern/graph/` contains two switchable views (`ViewMode = "timeline" | "graph"`, declared once in `src/pattern/graph/types/ViewMode.ts`, selected in `PatternGraphScreen`, rendered by `GraphViewContainer` alongside `Legend`), both driven by `IPattern.prerequisites[]`.
 
-Shared graph utilities: `GenericGraphUtils.ts` (`generateEdges`, `detectCircularDependencies`, `calculatePrerequisiteDepthMap` — generic over `PatternLike`), `GraphUtils.ts` (`LayoutPosition`, edge generation, `generateOrthogonalPath` / `generateSkipLevelPath`). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `src/pattern/graph/types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `src/pattern/graph/types/IGraphSvgProps.ts` (rendered by `GraphSvg.tsx` / `PatternNode.tsx`). Tapping a node opens `PatternDetailsModal` → `PatternDetails`.
+### The graph model
+
+**Both views render from one `GraphModel`, built once.** `buildGraphModel(patterns, patternTypes)` (`model/GraphModel.ts`) returns nodes, edges, the adjacency index, the depth map, the cycles and the type-colour map; `useGraphModel(patterns, patternTypes)` memoises it on the screen and hands it down. This is the contract every view, layout function and renderer agrees on — nothing derives depth, edges or colour for itself any more.
+
+- `model/adjacency.ts` is the whole graph maths: `buildAdjacency` (indexes both directions and **drops prerequisite ids that match no pattern**, so no consumer guards against a dangling id), `collectDependents` / `collectPrerequisites` (BFS, cycle-safe), `findCycles` (iterative Tarjan, O(V + E)) and `buildDepthMap` (iterative longest-path DFS with memoisation). All iterative on purpose: a 5000-long chain must not blow the stack, and the detector this replaced enumerated every distinct path.
+- A `GraphNode` carries `{ pattern, depth, foundational, color, inCycle }`. `foundational` is judged on *resolvable* prerequisites, so a pattern pointing only at missing ids is a root.
+- Keep the model pure and cheap. It is rebuilt on every change to the pattern set, and `PatternNode` takes a `GraphNode` rather than a bare pattern plus a colour map — that is what removed the `as any` casts at each call site.
+- `model.cycles` is not just diagnostics: `CycleWarning.tsx` renders a banner above the graph when it is non-empty. Cycle detection used to run on every render and emit only a `console.warn`.
+
+### The views
+
+- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
+- **Network** (`NetworkGraphView.tsx`) — force-free hierarchical layout (`calculateGraphLayout` in `NetworkGraphUtils.ts`), driven by the `useGraphLayout` hook (`hooks/useGraphLayout.ts`)
+
+Both draw through the shared primitives in `render/GraphPrimitives.tsx` (`ArrowheadMarker`, `drawEdges`, `drawNodes`) rather than one view importing from its sibling. `GraphSvg.tsx` is now just the network view's `<Svg>` around those primitives.
+
+`utils/GenericGraphUtils.ts` keeps only what is needed *outside* the views — `findIneligiblePrerequisiteIds` (the editor's cycle guard) and `repairDanglingPrerequisites` (storage's repair-on-read) — and both delegate to `model/adjacency.ts`. `GraphUtils.ts` holds `LayoutPosition` and the path geometry (`generateOrthogonalPath` / `generateSkipLevelPath`). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `types/IGraphSvgProps.ts`. Tapping a node opens `PatternDetailsModal` → `PatternDetails`.
 
 ## Filtering & sorting
 
@@ -326,6 +345,8 @@ All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs
 - **`VideoCarousel` renders nothing until it is measured.** It keeps `containerWidth` at 0 and mounts its list only once `onLayout` fires, which nothing does under jest — fire it yourself (`fireEvent(view, "layout", { nativeEvent: { layout: { width: 320 } } })`) or the component looks empty and untestable.
 - **A callback that is not a touch event** — `onViewableItemsChanged`, say — is invoked through the prop rather than `fireEvent`, so wrap it in `act()` or its state update never lands.
 - **Never poll for a node's *absence* with `waitFor`.** `waitFor(() => expect(screen.queryByX(...)).toBeNull())` is unreliable on a loaded CI runner: it re-runs its check inside `act`, and under contention it can still be observing the pre-update tree when its budget expires — even though the state itself settled in tens of milliseconds. Wait on something positive instead — a node appearing, a mock being called, storage reaching its expected value — and then assert the absence synchronously. This cost a red CI run; it reproduces locally with `for i in $(seq 8); do (while :; do :; done) & done` to saturate the CPU.
+
+- **A render helper must wait on something the _data_ produced, not on chrome.** `renderSelector` used to wait for the "Pattern Lists" header, which renders synchronously and therefore says nothing about whether the read from storage has landed; under CPU contention a run lost a list row between that wait and the assertion. Anchor on a value only the loaded data can produce (`await screen.findByText(lists[0].name)`). Where a screen loads from more than one key — `PatternListManager` reads `@patternLists` and `@patterns_<id>` separately — anchor on each, or the rows can still be missing while the chrome for the list is already up.
 - **The Android back button is testable.** Each `Modal` handles it through `onRequestClose`; `fireEvent(modal, "requestClose")` exercises that path, and it is a real user action worth covering rather than a formality.
 - **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. `__tests__/unit/GraphLayoutInvariants.test.ts` uses it to pin the dangling-prerequisite and cycle defects (AGENT_TASKS.md B1/B2). Prefer it over deleting or skipping a test that documents real broken behaviour.
 

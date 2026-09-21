@@ -2,69 +2,52 @@ import React from "react";
 import { Rect, Text as SvgText } from "react-native-svg";
 import PatternNodeGroup from "@/src/pattern/graph/PatternNodeGroup";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
+import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
+import { GraphNode } from "@/src/pattern/graph/model/GraphModel";
 
-interface BasePattern {
-  id: number;
-  name: string;
-  counts: number;
-  prerequisites: number[];
-  level?: string;
-  typeId?: string;
-  type?: any;
-}
-
-interface PatternNodeProps<T extends BasePattern> {
-  pattern: T;
+interface PatternNodeProps {
+  node: GraphNode;
   x: number;
   y: number;
   palette: Record<PaletteColor, string>;
-  onPress: (pattern: T) => void;
-  typeColorMap: Map<string, string>;
+  onPress: (pattern: IPattern) => void;
 }
 
-const PatternNode = <T extends BasePattern>({
-  pattern,
+/** Denser fill for harder patterns, so level reads at a glance. */
+function backgroundOpacity(level: string | undefined): number {
+  switch (level) {
+    case PatternLevel.INTERMEDIATE:
+    case "intermediate":
+      return 0.5;
+    case PatternLevel.ADVANCED:
+    case "advanced":
+      return 0.7;
+    default:
+      return 0.3;
+  }
+}
+
+/**
+ * One node in either graph view.
+ *
+ * Takes a `GraphNode` rather than a bare pattern plus a colour map: the type
+ * colour and whether the pattern is foundational are both decided once in the
+ * model. It used to declare its own structural prop type — which included a
+ * `type?: any` — and every call site cast to `any` to satisfy it.
+ */
+const PatternNode: React.FC<PatternNodeProps> = ({
+  node,
   x,
   y,
   palette,
   onPress,
-  typeColorMap,
-}: PatternNodeProps<T>) => {
-  // Determine border color based on pattern type
-  const getBorderColor = (): string => {
-    // If we have a typeColorMap and typeId, use it
-    if (typeColorMap && pattern.typeId) {
-      return typeColorMap.get(pattern.typeId) || palette[PaletteColor.Primary];
-    }
-    return palette[PaletteColor.Primary];
-  };
+}) => {
+  const { pattern, color, foundational } = node;
+  const borderColor = color ?? palette[PaletteColor.Primary];
+  const bgOpacity = backgroundOpacity(pattern.level);
 
-  // Determine background opacity based on level
-  const getBackgroundOpacity = (): number => {
-    if (!pattern.level) return 0.3;
-
-    switch (pattern.level) {
-      case PatternLevel.BEGINNER:
-      case "beginner":
-        return 0.3;
-      case PatternLevel.INTERMEDIATE:
-      case "intermediate":
-        return 0.5;
-      case PatternLevel.ADVANCED:
-      case "advanced":
-        return 0.7;
-      default:
-        return 0.3;
-    }
-  };
-
-  const isFoundational = pattern.prerequisites.length === 0;
-  const borderColor = getBorderColor();
-  const bgOpacity = getBackgroundOpacity();
-
-  // Truncate long pattern names
   const displayName =
     pattern.name.length > 12
       ? pattern.name.substring(0, 11) + "..."
@@ -86,7 +69,7 @@ const PatternNode = <T extends BasePattern>({
       />
 
       {/* Double border for foundational patterns */}
-      {isFoundational && (
+      {foundational && (
         <Rect
           x={x - NODE_WIDTH / 2 + 3}
           y={y - NODE_HEIGHT / 2 + 3}
@@ -125,4 +108,4 @@ const PatternNode = <T extends BasePattern>({
   );
 };
 
-export default React.memo(PatternNode) as typeof PatternNode;
+export default React.memo(PatternNode);

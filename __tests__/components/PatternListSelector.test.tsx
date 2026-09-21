@@ -35,11 +35,15 @@ const storedLists = async (): Promise<IPatternList[]> =>
  * Rendered with no active list: the header shows the active list's name, so an
  * active list would make every `getByText(name)` ambiguous with the card.
  * The active-list highlight has its own test below.
+ *
+ * Waits on something the stored lists produce, not on the header — the header
+ * renders synchronously, so waiting for it says nothing about whether the read
+ * from storage has landed. Under load that gap is wide enough to lose a row.
  */
 async function renderSelector(lists: IPatternList[] = []) {
   renderWithProviders(<PatternListSelector />, { lists, activeListId: null });
-  await waitFor(() =>
-    expect(screen.getByText("Pattern Lists")).toBeOnTheScreen(),
+  await screen.findByText(
+    lists.length > 0 ? lists[0].name : "No pattern lists yet",
   );
 }
 

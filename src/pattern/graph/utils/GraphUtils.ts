@@ -1,18 +1,8 @@
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
-import { IPattern } from "@/src/pattern/types/IPatternList";
 
 export interface LayoutPosition {
   x: number;
   y: number;
-}
-
-export function generateEdges(patterns: IPattern[]) {
-  return patterns.flatMap((pattern) =>
-    pattern.prerequisites.map((prereqId) => ({
-      from: prereqId,
-      to: pattern.id,
-    })),
-  );
 }
 
 /**
