@@ -67,6 +67,13 @@ async function renderManager(
 const storedPatterns = async (listId: string): Promise<IPattern[]> =>
   JSON.parse((await AsyncStorage.getItem(`@patterns_${listId}`)) ?? "[]");
 
+const storedList = async (listId: string): Promise<IPatternList> => {
+  const lists: IPatternList[] = JSON.parse(
+    (await AsyncStorage.getItem("@patternLists")) ?? "[]",
+  );
+  return lists.find((l) => l.id === listId)!;
+};
+
 describe("PatternListManager", () => {
   describe("empty state", () => {
     it("prompts to create a list when there is none", async () => {
@@ -160,6 +167,233 @@ describe("PatternListManager", () => {
       expect(await storedPatterns(list.id)).toEqual([]);
       // Still showing the form rather than silently discarding the attempt.
       expect(screen.getByPlaceholderText("Pattern Name")).toBeOnTheScreen();
+    });
+  });
+
+  describe("editing a pattern", () => {
+    it("opens the form pre-filled from the row", async () => {
+      await renderManager([pattern(1, "Sugar Push", { counts: 6 })]);
+
+      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+
+      expect(screen.getByText("Edit Pattern")).toBeOnTheScreen();
+      expect(screen.getByPlaceholderText("Pattern Name").props.value).toBe(
+        "Sugar Push",
+      );
+    });
+
+    it("persists the change", async () => {
+      const { list } = await renderManager([pattern(1, "Sugar Push")]);
+
+      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      fireEvent.changeText(
+        screen.getByPlaceholderText("Pattern Name"),
+        "Sugar Tuck",
+      );
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () =>
+        expect((await storedPatterns(list.id)).map((p) => p.name)).toEqual([
+          "Sugar Tuck",
+        ]),
+      );
+    });
+
+    it("keeps the form open, and the edit, when the name is cleared", async () => {
+      const { list } = await renderManager([
+        pattern(1, "Sugar Push", { counts: 6 }),
+      ]);
+
+      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "");
+      fireEvent.press(screen.getByText("Save"));
+
+      // AGENT_TASKS.md B12: this used to wipe the form and strand the user.
+      await waitFor(() =>
+        expect(screen.getByPlaceholderText("Counts").props.value).toBe("6"),
+      );
+      expect((await storedPatterns(list.id))[0].name).toBe("Sugar Push");
+    });
+
+    it("closes without saving when cancelled", async () => {
+      const { list } = await renderManager([pattern(1, "Sugar Push")]);
+
+      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      fireEvent.changeText(
+        screen.getByPlaceholderText("Pattern Name"),
+        "Discarded",
+      );
+      fireEvent.press(screen.getByText("Cancel"));
+
+      expect((await storedPatterns(list.id))[0].name).toBe("Sugar Push");
+    });
+  });
+
+  describe("selection", () => {
+    it("forgets a selected pattern once it is deleted", async () => {
+      await renderManager([
+        pattern(1, "Sugar Push", { description: "The basic" }),
+      ]);
+
+      // Selecting expands the row into its details.
+      fireEvent.press(screen.getByLabelText("Select Pattern"));
+      expect(screen.getByText("The basic")).toBeOnTheScreen();
+
+      fireEvent.press(screen.getByLabelText("Delete Pattern"));
+      fireEvent.press(screen.getByText("Delete"));
+
+      await waitFor(() => expect(screen.queryByText("The basic")).toBeNull());
+    });
+  });
+
+  describe("the modifier tab", () => {
+    const openModifiers = () => fireEvent.press(screen.getByText(/Modifiers/));
+
+    it("adds one", async () => {
+      const { list } = await renderManager([]);
+
+      openModifiers();
+      fireEvent.press(screen.getByLabelText("Add Modifier"));
+      fireEvent.changeText(
+        screen.getByPlaceholderText("Modifier Name"),
+        "with a spin",
+      );
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () =>
+        expect(
+          (await storedList(list.id)).modifiers.map((m) => m.name),
+        ).toEqual(["with a spin"]),
+      );
+    });
+
+    it("keeps the form open when the name is blank", async () => {
+      const { list } = await renderManager([]);
+
+      openModifiers();
+      fireEvent.press(screen.getByLabelText("Add Modifier"));
+      fireEvent.press(screen.getByText("Save"));
+
+      expect((await storedList(list.id)).modifiers).toEqual([]);
+      expect(screen.getByPlaceholderText("Modifier Name")).toBeOnTheScreen();
+    });
+
+    it("edits one", async () => {
+      const mod = modifier("with a spin");
+      const { list } = await renderManager([], { modifiers: [mod] });
+
+      openModifiers();
+      fireEvent.press(screen.getByLabelText("Edit Modifier"));
+      fireEvent.changeText(
+        screen.getByPlaceholderText("Modifier Name"),
+        "renamed",
+      );
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () =>
+        expect((await storedList(list.id)).modifiers[0].name).toBe("renamed"),
+      );
+    });
+
+    it("deletes one, detaching it from every pattern", async () => {
+      const mod = modifier("with a spin");
+      const { list } = await renderManager(
+        [
+          pattern(1, "Whip", {
+            modifierRefs: [{ modifierId: mod.id, videoRefs: [] }],
+          }),
+        ],
+        { modifiers: [mod] },
+      );
+
+      openModifiers();
+      fireEvent.press(screen.getByLabelText("Delete Modifier"));
+      fireEvent.press(screen.getByText("Delete"));
+
+      await waitFor(async () =>
+        expect((await storedList(list.id)).modifiers).toEqual([]),
+      );
+      expect((await storedPatterns(list.id))[0].modifierRefs).toEqual([]);
+    });
+  });
+
+  describe("dismissing the modals", () => {
+    const { Modal } = require("react-native");
+
+    /** The Android hardware back button, which each Modal handles itself. */
+    const pressSystemBack = () => {
+      const open = screen
+        .UNSAFE_getAllByType(Modal)
+        .find((m) => m.props.visible);
+      fireEvent(open!, "requestClose");
+    };
+
+    it("closes the add-pattern form on cancel", async () => {
+      await renderManager([]);
+
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      expect(screen.getByPlaceholderText("Pattern Name")).toBeOnTheScreen();
+      fireEvent.press(screen.getByText("Cancel"));
+
+      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+    });
+
+    it("closes the add-pattern form on the system back button", async () => {
+      await renderManager([]);
+
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      pressSystemBack();
+
+      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+    });
+
+    it("closes the edit-pattern form on the system back button", async () => {
+      await renderManager([pattern(1, "Sugar Push")]);
+
+      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      pressSystemBack();
+
+      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+    });
+
+    it("closes the add-modifier form on cancel", async () => {
+      await renderManager([]);
+
+      fireEvent.press(screen.getByText(/Modifiers/));
+      fireEvent.press(screen.getByLabelText("Add Modifier"));
+      fireEvent.press(screen.getByText("Cancel"));
+
+      expect(screen.queryByPlaceholderText("Modifier Name")).toBeNull();
+    });
+
+    it("closes the add-modifier form on the system back button", async () => {
+      await renderManager([]);
+
+      fireEvent.press(screen.getByText(/Modifiers/));
+      fireEvent.press(screen.getByLabelText("Add Modifier"));
+      pressSystemBack();
+
+      expect(screen.queryByPlaceholderText("Modifier Name")).toBeNull();
+    });
+
+    it("closes the edit-modifier form on cancel", async () => {
+      await renderManager([], { modifiers: [modifier("with a spin")] });
+
+      fireEvent.press(screen.getByText(/Modifiers/));
+      fireEvent.press(screen.getByLabelText("Edit Modifier"));
+      fireEvent.press(screen.getByText("Cancel"));
+
+      expect(screen.queryByPlaceholderText("Modifier Name")).toBeNull();
+    });
+
+    it("closes the edit-modifier form on the system back button", async () => {
+      await renderManager([], { modifiers: [modifier("with a spin")] });
+
+      fireEvent.press(screen.getByText(/Modifiers/));
+      fireEvent.press(screen.getByLabelText("Edit Modifier"));
+      pressSystemBack();
+
+      expect(screen.queryByPlaceholderText("Modifier Name")).toBeNull();
     });
   });
 

@@ -12,6 +12,7 @@ import {
   createTestPatternType,
 } from "@/utils/testFactories";
 import {
+  act,
   fireEvent,
   renderWithProviders,
   screen,
@@ -174,14 +175,61 @@ describe("BottomSheet", () => {
 });
 
 describe("VideoCarousel", () => {
-  const renderCarousel = (videoRefs: IVideoReference[]) =>
-    renderWithProviders(
+  const { FlatList, View } = require("react-native");
+
+  const renderCarousel = (videoRefs: IVideoReference[]) => {
+    const view = renderWithProviders(
       <VideoCarousel videoRefs={videoRefs} palette={palette} />,
       { activeListId: null },
     );
+    return view;
+  };
+
+  /**
+   * The carousel measures itself before rendering anything: it holds
+   * `containerWidth` at 0 until `onLayout` fires, and the list is only mounted
+   * once that is non-zero. Nothing lays out under jest, so a test has to
+   * supply the measurement itself.
+   */
+  const layout = (width = 320) =>
+    fireEvent(screen.UNSAFE_getAllByType(View)[0], "layout", {
+      nativeEvent: { layout: { width, height: 200 } },
+    });
+
+  /**
+   * Drive the visibility callback the way a real scroll would. Called through
+   * the prop rather than fireEvent, because onViewableItemsChanged is not a
+   * touch event — so the resulting state update needs its own `act`.
+   */
+  const reportVisible = (viewableItems: { index: number | null }[]) =>
+    act(() => {
+      screen
+        .UNSAFE_getByType(FlatList)
+        .props.onViewableItemsChanged({ viewableItems });
+    });
+
+  const scrollTo = (index: number) => reportVisible([{ index }]);
+
+  it("renders nothing until it has been measured", () => {
+    renderCarousel([
+      urlVideo("https://example.com/a.mp4"),
+      urlVideo("https://example.com/b.mp4"),
+    ]);
+
+    expect(screen.UNSAFE_queryByType(FlatList)).toBeNull();
+  });
+
+  it("mounts the list once it has a width", () => {
+    renderCarousel([urlVideo("https://example.com/a.mp4")]);
+
+    layout();
+
+    expect(screen.UNSAFE_getByType(FlatList)).toBeTruthy();
+  });
 
   it("shows no pager for a single video", () => {
     renderCarousel([urlVideo("https://example.com/a.mp4")]);
+    layout();
 
     expect(screen.queryByText("1 / 1")).toBeNull();
   });
@@ -191,12 +239,59 @@ describe("VideoCarousel", () => {
       urlVideo("https://example.com/a.mp4"),
       urlVideo("https://example.com/b.mp4"),
     ]);
+    layout();
 
     expect(screen.getByText("1 / 2")).toBeOnTheScreen();
   });
 
+  it("follows the scroll position", () => {
+    renderCarousel([
+      urlVideo("https://example.com/a.mp4"),
+      urlVideo("https://example.com/b.mp4"),
+      urlVideo("https://example.com/c.mp4"),
+    ]);
+    layout();
+
+    scrollTo(2);
+
+    expect(screen.getByText("3 / 3")).toBeOnTheScreen();
+  });
+
+  it("ignores a visibility change that reports nothing visible", () => {
+    renderCarousel([
+      urlVideo("https://example.com/a.mp4"),
+      urlVideo("https://example.com/b.mp4"),
+    ]);
+    layout();
+
+    scrollTo(1);
+    reportVisible([]);
+
+    expect(screen.getByText("2 / 2")).toBeOnTheScreen();
+  });
+
+  it("falls back to the first page when the index is missing", () => {
+    renderCarousel([
+      urlVideo("https://example.com/a.mp4"),
+      urlVideo("https://example.com/b.mp4"),
+    ]);
+    layout();
+
+    reportVisible([{ index: null }]);
+
+    expect(screen.getByText("1 / 2")).toBeOnTheScreen();
+  });
+
+  it("sizes each page to the measured width", () => {
+    renderCarousel([urlVideo("https://example.com/a.mp4")]);
+    layout(500);
+
+    expect(screen.UNSAFE_getByType(FlatList).props.snapToInterval).toBe(500);
+  });
+
   it("copes with no videos at all", () => {
     renderCarousel([]);
+    layout();
 
     expect(screen.queryByText(/\//)).toBeNull();
   });

@@ -1095,21 +1095,43 @@ distinguishable).
 | ✅ | **Shared components covered** (19 cases): `AppDialog` and `BottomSheet` both to **100%**, `PatternDetails` to 97% including variant-scoped video switching, `VideoCarousel` paging. |
 | ✅ | 398 → **450 tests**; global thresholds 41/32/40/43. |
 
+#### Landed since (7) — the remaining gaps
+
+| | Was | Now |
+|---|---|---|
+| `VideoCarousel` | 60% | **100%** |
+| `SortBottomSheet` | 76% | **100%** |
+| `TagPickerBottomSheet` | 61% | **98%** |
+| `PatternListManager` | 60% | **100% statements** |
+| `PatternFilterBottomSheet` | 58% | **93%** |
+| `PatternTags` | 57% | **95%** |
+
+497 → **511 tests**. No new defects, as expected for presentational code.
+
+Three notes for anyone extending these:
+
+- **`VideoCarousel` renders nothing until it has been measured.** It holds `containerWidth` at 0
+  and only mounts its list once `onLayout` fires, which nothing does under jest — so a test has to
+  supply the measurement itself. That single missing step was the whole reason the file sat at
+  60%, not any hard-to-reach logic.
+- **`onViewableItemsChanged` is not a touch event**, so it is called through the prop and needs
+  its own `act()` for the resulting state update to land.
+- **The Android hardware back button is testable**: each `Modal` handles it via `onRequestClose`,
+  and `fireEvent(modal, "requestClose")` exercises that path. It was the last uncovered branch in
+  `PatternListManager`, and it is a real user action rather than a formality.
+
+I was wrong about `onViewableItemsChanged` being impractical to simulate — it needed the layout
+step, not a real scroll.
+
 #### Still outstanding
 
-F1 has reached the point of diminishing returns. What is left is genuinely low-risk presentational
-code, and the bug record supports stopping here: **eight defects across fourteen suites, every one
-of them in code that writes data, in layout, or in an event handler — none in read-only rendering.**
+Nothing worth chasing. What remains uncovered is the graph rendering (`GraphSvg`, `PatternNode`,
+`TimelineView`, `NetworkGraphView`) — SVG drawing whose *logic* already lives in the graph utils
+and is covered there, and whose output a component test cannot meaningfully assert on. That is
+[F2](#f2--graph-domain-layer)'s territory, and L1/L2 will rewrite it.
 
-If more is wanted, the remaining gaps in rough order of value:
-
-1. `PatternListManager` at 60% — the uncovered half is its modal wiring, which the child suites
-   already exercise from the inside.
-2. The filter sub-panels (`TagPickerBottomSheet` 61%, `PatternFilterBottomSheet` 58%,
-   `SortBottomSheet` 76%) — the sheets are covered through the hooks; what is untested is their
-   chip-toggling UI.
-3. `VideoCarousel` at 60% — the untested part is `onViewableItemsChanged`, which needs a real
-   scroll and is not worth simulating.
+**Final record: eight defects across seventeen suites — every one in code that writes data, in
+layout, or in an event handler; none in read-only rendering.**
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
    components that rely on the automatic runtime; it printed to stderr without failing the run, so

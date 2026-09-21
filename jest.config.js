@@ -85,11 +85,14 @@ module.exports = {
     // otherwise identical runs, because files imported by both projects are
     // instrumented twice and the merge depends on which worker saw them first.
     // Set a floor under the lowest of several runs, not under the best one.
+    // Down from 41/32/40/43 not because coverage fell, but because six more
+    // well-covered files moved out of this pool and into their own entries
+    // below. The leftovers are the graph views and their SVG rendering.
     global: {
-      statements: 41,
-      branches: 32,
-      functions: 40,
-      lines: 43,
+      statements: 34,
+      branches: 23,
+      functions: 38,
+      lines: 36,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -269,6 +272,43 @@ module.exports = {
     "src/pattern/graph/PatternDetails.tsx": {
       statements: 92,
       branches: 72,
+      functions: 94,
+      lines: 94,
+    },
+    // The screen's modal wiring, the filter/sort sheets and the carousel.
+    "src/pattern/list/PatternListManager.tsx": {
+      statements: 94,
+      branches: 84,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/filter/components/PatternFilterBottomSheet.tsx": {
+      statements: 86,
+      branches: 50,
+      functions: 78,
+      lines: 86,
+    },
+    "src/pattern/list/SortBottomSheet.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/list/TagPickerBottomSheet.tsx": {
+      statements: 92,
+      branches: 82,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/list/PatternTags.tsx": {
+      statements: 90,
+      branches: 68,
+      functions: 84,
+      lines: 90,
+    },
+    "src/common/components/VideoCarousel.tsx": {
+      statements: 94,
+      branches: 94,
       functions: 94,
       lines: 94,
     },
