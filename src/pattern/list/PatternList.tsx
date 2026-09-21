@@ -1,5 +1,11 @@
-import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import {
+  FlatList,
+  ListRenderItemInfo,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
@@ -56,6 +62,39 @@ const PatternList: React.FC<PatternListProps> = (props) => {
   );
   const { sortedPatterns } = usePatternSort(filteredPatterns, sortConfig);
 
+  const keyExtractor = useCallback(
+    (pattern: IPattern) => String(pattern.id),
+    [],
+  );
+
+  // Rebuilt whenever the row's inputs change; PatternListItem is memoised, so
+  // only the rows whose props actually differ re-render.
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<IPattern>) => (
+      <PatternListItem
+        pattern={item}
+        allPatterns={props.patterns}
+        patternTypes={props.patternTypes}
+        modifiers={props.modifiers}
+        isReadonly={isReadonly}
+        isSelected={props.selectedPattern?.id === item.id}
+        onSelect={props.onSelect}
+        onEdit={props.onEdit}
+        onDelete={props.onDelete}
+      />
+    ),
+    [
+      props.patterns,
+      props.patternTypes,
+      props.modifiers,
+      props.selectedPattern?.id,
+      props.onSelect,
+      props.onEdit,
+      props.onDelete,
+      isReadonly,
+    ],
+  );
+
   return (
     <>
       <PatternListHeader
@@ -66,29 +105,19 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         onAdd={props.onAdd}
       />
 
-      <ScrollView style={styles.scrollView}>
-        {sortedPatterns.map((pattern) => (
-          <PatternListItem
-            key={pattern.id}
-            pattern={pattern}
-            allPatterns={props.patterns}
-            patternTypes={props.patternTypes}
-            modifiers={props.modifiers}
-            isReadonly={isReadonly}
-            isSelected={props.selectedPattern?.id === pattern.id}
-            onSelect={props.onSelect}
-            onEdit={props.onEdit}
-            onDelete={props.onDelete}
-          />
-        ))}
-        {sortedPatterns.length === 0 && (
+      <FlatList
+        style={styles.scrollView}
+        data={sortedPatterns}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
               {hasActiveFilter ? t("noMatchingPatterns") : t("noPatterns")}
             </Text>
           </View>
-        )}
-      </ScrollView>
+        }
+      />
 
       <PatternFilterBottomSheet
         visible={isFilterVisible}

@@ -6,12 +6,13 @@ import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import TimelineView from "./TimelineView";
 import NetworkGraphView from "./NetworkGraphView";
 import Legend from "./Legend";
-
-type ViewMode = "timeline" | "graph";
+import CycleWarning from "./CycleWarning";
+import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
+import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 
 interface GraphViewContainerProps {
   viewMode: ViewMode;
-  patterns: IPattern[];
+  model: GraphModel;
   patternTypes: PatternType[];
   palette: Record<PaletteColor, string>;
   resetKey: number;
@@ -20,7 +21,7 @@ interface GraphViewContainerProps {
 
 const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   viewMode,
-  patterns,
+  model,
   patternTypes,
   palette,
   resetKey,
@@ -30,11 +31,13 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
 
   return (
     <>
+      <CycleWarning cycles={model.cycles} palette={palette} />
+
       <View style={styles.viewContainer}>
         {viewMode === "timeline" ? (
           <TimelineView
             key={`timeline-${resetKey}`}
-            patterns={patterns}
+            model={model}
             patternTypes={patternTypes}
             palette={palette}
             onNodeTap={onNodeTap}
@@ -42,8 +45,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
         ) : (
           <NetworkGraphView
             key={`graph-${resetKey}`}
-            patterns={patterns}
-            patternTypes={patternTypes}
+            model={model}
             palette={palette}
             onNodeTap={onNodeTap}
           />

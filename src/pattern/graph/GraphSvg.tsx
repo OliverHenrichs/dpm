@@ -1,117 +1,31 @@
 import React from "react";
-import Svg, { Defs, Marker, Path, Polygon } from "react-native-svg";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
-import PatternNode from "./PatternNode";
-import {
-  IGraphPosition,
-  IGraphSvgProps,
-} from "@/src/pattern/graph/types/IGraphSvgProps";
-import {
-  generateEdges,
-  generateOrthogonalPath,
-  LayoutPosition,
-} from "@/src/pattern/graph/utils/GraphUtils";
+import Svg from "react-native-svg";
+import { IGraphSvgProps } from "@/src/pattern/graph/types/IGraphSvgProps";
 import { rasterizeLargeGraph } from "@/src/pattern/graph/utils/RasterizeProps";
+import {
+  ArrowheadMarker,
+  drawEdges,
+  drawNodes,
+} from "@/src/pattern/graph/render/GraphPrimitives";
 
-export const ArrowheadMarker: React.FC<{
-  palette: Record<PaletteColor, string>;
-}> = ({ palette }) => (
-  <Defs>
-    <Marker
-      id="arrowhead-graph"
-      markerWidth="5"
-      markerHeight="5"
-      refX="0"
-      refY="3"
-      orient="auto"
-    >
-      <Polygon points="0 0, 10 3, 0 6" fill={palette[PaletteColor.Primary]} />
-    </Marker>
-  </Defs>
-);
-
-export function drawEdges(
-  edges: { from: number; to: number }[],
-  positions: IGraphPosition,
-  palette: Record<PaletteColor, string>,
-) {
-  return (
-    <>
-      {edges.map((edge, index) => {
-        const fromPos = positions.get(edge.from);
-        const toPos = positions.get(edge.to);
-        if (!fromPos || !toPos) return null;
-        return (
-          <Path
-            key={`edge-${index}`}
-            d={generateOrthogonalPath(fromPos, toPos)}
-            stroke={palette[PaletteColor.Primary]}
-            strokeWidth={2}
-            fill="none"
-            markerEnd="url(#arrowhead-graph)"
-            opacity={0.6}
-          />
-        );
-      })}
-    </>
-  );
-}
-
-export function drawNodes<
-  T extends {
-    id: number;
-    name: string;
-    counts: number;
-    prerequisites: number[];
-    typeId?: string;
-    type?: any;
-  },
->(
-  patterns: T[],
-  positions: Map<number, LayoutPosition>,
-  palette: Record<PaletteColor, string>,
-  onNodeTap: (pattern: T) => void,
-  typeColorMap: Map<string, string>,
-) {
-  return patterns.map((pattern) => {
-    const pos = positions.get(pattern.id);
-    if (!pos) return null;
-
-    return (
-      <PatternNode
-        key={pattern.id}
-        pattern={pattern}
-        x={pos.x}
-        y={pos.y}
-        palette={palette}
-        onPress={onNodeTap}
-        typeColorMap={typeColorMap}
-      />
-    );
-  });
-}
-
+/** The network view's SVG. Timeline builds its own, from the same primitives. */
 const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
   svgWidth,
   svgHeight,
-  patterns,
+  model,
   positions,
   palette,
   onNodeTap,
-  typeColorMap,
-}) => {
-  const edges = generateEdges(patterns);
-  return (
-    <Svg
-      width={svgWidth}
-      height={svgHeight}
-      {...rasterizeLargeGraph(patterns.length)}
-    >
-      <ArrowheadMarker palette={palette} />
-      {drawEdges(edges, positions, palette)}
-      {drawNodes(patterns, positions, palette, onNodeTap, typeColorMap)}
-    </Svg>
-  );
-};
+}) => (
+  <Svg
+    width={svgWidth}
+    height={svgHeight}
+    {...rasterizeLargeGraph(model.nodes.length)}
+  >
+    <ArrowheadMarker palette={palette} />
+    {drawEdges(model.edges, positions, palette)}
+    {drawNodes(model.nodes, positions, palette, onNodeTap)}
+  </Svg>
+);
 
 export default NetworkGraphSvg;

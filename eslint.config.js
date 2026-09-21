@@ -8,14 +8,29 @@ module.exports = defineConfig([
   eslintPluginPrettierRecommended,
   {
     // Jest runs these in a node environment with its own globals
-    files: ["__tests__/**/*.{ts,tsx,js}", "jest.setup.js", "jest.config.js"],
+    files: [
+      "__tests__/**/*.{ts,tsx,js}",
+      "__mocks__/**/*.{ts,tsx,js}",
+      "utils/**/*.{ts,tsx}",
+      "jest.setup.*.ts",
+      "jest.config.js",
+    ],
     languageOptions: {
       globals: { ...globals.node, ...globals.jest },
     },
   },
   {
-    // Build output and Expo-generated files (all gitignored) — linting them
-    // just churns, since `expo start` rewrites them.
-    ignores: ["dist/*", ".expo/**", "expo-env.d.ts"],
+    // Build output and generated native/Expo files (all gitignored) — linting
+    // them just churns, since the tooling rewrites them.
+    ignores: [
+      "dist/*",
+      "dist-web/**",
+      "dist-android/**",
+      ".expo/**",
+      "expo-env.d.ts",
+      "android/**",
+      "ios/**",
+      "coverage/**",
+    ],
   },
 ]);

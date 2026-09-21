@@ -117,6 +117,11 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
                 style={styles.detachButton}
                 onPress={() => onDetachModifier(mod.id)}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                accessibilityRole="button"
+                // Names the modifier, so the control is distinguishable both
+                // from the other pills' detach buttons and from the identical
+                // "×" that removes a video.
+                accessibilityLabel={`${t("detachModifier")}: ${mod.name}`}
               >
                 <Text style={styles.detachButtonText}>×</Text>
               </TouchableOpacity>

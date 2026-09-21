@@ -5,6 +5,8 @@ import {
   IPatternListExportData,
   PatternListWithPatterns,
 } from "@/src/pattern/data/types/IExportData";
+import { generateUUID } from "@/src/pattern/types/PatternType";
+import { validateExportData } from "@/src/pattern/data/validation/validateExportData";
 
 interface IImportPatternListResult {
   success: boolean;
@@ -25,12 +27,19 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
     if (typeof fileUri !== "string") {
       return fileUri;
     }
-    const data = await importData(fileUri);
-    if (!data.version || !data.patternLists) {
-      return createResult(false, "Invalid import file format");
-    }
+    const parsed = await importData(fileUri);
 
-    const warnings: string[] = [];
+    // Everything after this point writes to storage and then to the screen,
+    // and the file came from a document picker — i.e. from anywhere. Validate
+    // before trusting any of it. `data` comes back normalised: optional fields
+    // filled in, references resolvable, malformed entries already dropped.
+    const validation = validateExportData(parsed);
+    if (!validation.valid || !validation.data) {
+      return createResult(false, validation.errors.join("\n"));
+    }
+    const data = validation.data;
+
+    const warnings: string[] = [...validation.warnings];
     const updatedLists: PatternListWithPatterns[] = [];
 
     for (const list of data.patternLists) {
@@ -100,11 +109,11 @@ async function getImportDocument() {
   return result.assets[0].uri;
 }
 
-async function importData(fileUri: string) {
+/** Read and parse the picked file. Shape checking happens separately. */
+async function importData(fileUri: string): Promise<unknown> {
   const file = new File(fileUri);
   const content = await file.text();
-  const importData: IPatternListExportData = JSON.parse(content);
-  return importData;
+  return JSON.parse(content);
 }
 
 async function tryAddLocalVideoRef(
@@ -152,10 +161,23 @@ async function addVideoRefs(
   return updatedVideoRefs;
 }
 
+/**
+ * Build the on-device path for a restored video.
+ *
+ * The suffix must be unique **per video**, not per context: `contextId` is the
+ * same string for every video of a pattern, so anything derived only from it —
+ * `Date.now()`, as this used to use — collides. The restore loop is tight and
+ * the writes are synchronous, so two videos of one pattern reliably landed in
+ * the same millisecond, the second overwriting the first and both refs ending
+ * up on one file. Pattern ids are also only unique within a list, so two lists
+ * in one import file collided the same way.
+ *
+ * `contextId` is kept in the name purely so the files stay identifiable on
+ * disk; uniqueness comes from the UUID alone.
+ */
 function generateVideoUri(contextId: string) {
-  const timestamp = Date.now();
   const safeId = contextId.replace(/[^a-zA-Z0-9]/g, "_");
-  return `${Paths.document.uri}imported-${safeId}-${timestamp}.mp4`;
+  return `${Paths.document.uri}imported-${safeId}-${generateUUID()}.mp4`;
 }
 
 function createSuccessMessage(

@@ -89,6 +89,9 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
               style={styles.removeButton}
               onPress={() => onRemoveVideo(idx)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              // A bare "×" tells a screen reader nothing about what it removes.
+              accessibilityLabel={t("removeVideo")}
             >
               <Text style={styles.removeButtonText}>×</Text>
             </TouchableOpacity>

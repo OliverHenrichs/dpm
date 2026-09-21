@@ -1,9 +1,8 @@
 import { useMemo } from "react";
 import { useWindowDimensions } from "react-native";
-import { IPattern } from "@/src/pattern/types/IPatternList";
 import { LayoutPosition } from "../utils/GraphUtils";
-import { detectCircularDependencies as detectCircularDepsGeneric } from "../utils/GenericGraphUtils";
 import { calculateGraphLayout } from "@/src/pattern/graph/utils/NetworkGraphUtils";
+import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 
 const INITIAL_WIDTH_MULTIPLIER = 3;
 const INITIAL_HEIGHT_MULTIPLIER = 2;
@@ -30,23 +29,18 @@ interface ContentBounds {
  * Handles circular dependency detection, position calculations,
  * and SVG canvas sizing based on window dimensions.
  */
-export function useGraphLayout<T extends IPattern>(
-  patterns: T[],
-): GraphLayoutResult {
+export function useGraphLayout(model: GraphModel): GraphLayoutResult {
   const { width, height } = useWindowDimensions();
+  const patterns = model.patterns;
 
-  // Use generic circular dependency detection
-  detectCircularDepsGeneric(patterns);
-
+  // Cycle detection lives in the model now. It used to run here on *every*
+  // render — outside this memo — and the detector it called enumerated every
+  // distinct path through the graph just to emit a console warning.
   return useMemo(() => {
     const initialWidth = width * INITIAL_WIDTH_MULTIPLIER;
     const initialHeight = height * INITIAL_HEIGHT_MULTIPLIER;
 
-    const layout = calculateGraphLayout(
-      patterns as any,
-      initialWidth,
-      initialHeight,
-    );
+    const layout = calculateGraphLayout(patterns, initialWidth, initialHeight);
     const { positions } = layout;
 
     if (positions.size === 0) {

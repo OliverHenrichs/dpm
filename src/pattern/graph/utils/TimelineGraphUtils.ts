@@ -1,7 +1,10 @@
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
-import { calculatePrerequisiteDepthMap as calculateDepthMapGeneric } from "@/src/pattern/graph/utils/GenericGraphUtils";
+import {
+  buildAdjacency,
+  buildDepthMap,
+} from "@/src/pattern/graph/model/adjacency";
 import {
   HORIZONTAL_SPACING,
   LEFT_MARGIN,
@@ -46,7 +49,7 @@ export function calculateDynamicTimelineLayout(
   skipLevelEdgeInfos: SkipLevelEdgeInfo[];
   typeColorMap: Map<string, string>;
 } {
-  const depthMap = calculateDepthMapGeneric(patterns);
+  const depthMap = buildDepthMap(buildAdjacency(patterns));
   const grouped = groupPatternsByTypeId(patterns, patternTypes);
   const maxStackPerType = calculateMaxStackPerTypeDynamic(grouped, depthMap);
 

@@ -162,7 +162,7 @@
   "unpublishConfirmMessage": "Die Liste wird aus der Cloud entfernt. Andere können sie dann nicht mehr abonnieren.",
   "unpublishSuccessTitle": "Teilen beendet",
   "unpublishSuccessMessage": "Die Liste wird nicht mehr geteilt.",
-  "deletePatternConfirm": "Bist du sicher, dass du die Figur löschen willst?",
+  "deletePatternConfirm": "Bist du sicher, dass du '{{name}}' löschen willst?",
   "addVideo": "Video hinzufügen",
   "addFromLibrary": "Aus der Bibliothek",
   "addFromUrl": "Online-Video-URL",
@@ -195,5 +195,9 @@
   "saveModifier": "Speichern",
   "variant": "Variante",
   "appliedToPatterns": "Angewendet auf",
-  "notAppliedToAnyPattern": "Noch auf keine Figur angewendet"
+  "notAppliedToAnyPattern": "Noch auf keine Figur angewendet",
+  "prerequisiteWouldCycle": "Ausgegraute Figuren würden eine Voraussetzungs-Schleife erzeugen.",
+  "removeVideo": "Video entfernen",
+  "detachModifier": "Modifikator lösen",
+  "prerequisiteCycleWarning": "{{count}} Figuren bilden eine Voraussetzungsschleife; ihre Reihenfolge kann nicht dargestellt werden."
 }

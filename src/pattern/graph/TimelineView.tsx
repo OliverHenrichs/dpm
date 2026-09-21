@@ -11,12 +11,14 @@ import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import {
-  generateEdges,
   generateOrthogonalPath,
   generateSkipLevelPath,
   LayoutPosition,
 } from "./utils/GraphUtils";
-import { ArrowheadMarker, drawNodes } from "./GraphSvg";
+import {
+  ArrowheadMarker,
+  drawNodes,
+} from "@/src/pattern/graph/render/GraphPrimitives";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import { useTranslation } from "react-i18next";
 import {
@@ -28,61 +30,54 @@ import {
   SkipLevelEdgeInfo,
   SwimlaneInfo,
 } from "./utils/TimelineGraphUtils";
-import { detectCircularDependencies } from "@/src/pattern/graph/utils/GenericGraphUtils";
+import { GraphEdge, GraphModel } from "@/src/pattern/graph/model/GraphModel";
 
 interface TimelineViewProps {
-  patterns: IPattern[];
+  model: GraphModel;
   patternTypes: PatternType[];
   palette: Record<PaletteColor, string>;
   onNodeTap: (pattern: IPattern) => void;
 }
 
 const TimelineView: React.FC<TimelineViewProps> = ({
-  patterns,
+  model,
   patternTypes,
   palette,
   onNodeTap,
 }) => {
+  const patterns = model.patterns;
   const { t } = useTranslation();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const styles = getStyles(palette);
 
-  const {
-    positions,
-    svgWidth,
-    svgHeight,
-    swimlanes,
-    skipLevelEdges,
-    typeColorMap,
-  } = useMemo(() => {
-    detectCircularDependencies(patterns);
+  const { positions, svgWidth, svgHeight, swimlanes, skipLevelEdges } =
+    useMemo(() => {
+      // No cycle detection here: the model already has `cycles`, computed once
+      // for both views rather than on every render of this one.
+      const minBaseHeight = MIN_PATTERN_HEIGHT * MIN_PATTERNS_VISIBLE;
+      const baseHeight = Math.max(screenHeight, minBaseHeight);
 
-    const minBaseHeight = MIN_PATTERN_HEIGHT * MIN_PATTERNS_VISIBLE;
-    const baseHeight = Math.max(screenHeight, minBaseHeight);
+      const {
+        positions,
+        minHeight,
+        actualWidth,
+        swimlanes: dynamicSwimlanes,
+        skipLevelEdgeInfos,
+      } = calculateDynamicTimelineLayout(
+        patterns,
+        patternTypes,
+        screenWidth,
+        baseHeight,
+      );
 
-    const {
-      positions,
-      minHeight,
-      actualWidth,
-      swimlanes: dynamicSwimlanes,
-      skipLevelEdgeInfos,
-      typeColorMap,
-    } = calculateDynamicTimelineLayout(
-      patterns as IPattern[],
-      patternTypes,
-      screenWidth,
-      baseHeight,
-    );
-
-    return {
-      positions,
-      svgWidth: actualWidth,
-      svgHeight: minHeight,
-      swimlanes: dynamicSwimlanes,
-      skipLevelEdges: skipLevelEdgeInfos,
-      typeColorMap,
-    };
-  }, [patterns, patternTypes, screenHeight, screenWidth]);
+      return {
+        positions,
+        svgWidth: actualWidth,
+        svgHeight: minHeight,
+        swimlanes: dynamicSwimlanes,
+        skipLevelEdges: skipLevelEdgeInfos,
+      };
+    }, [patterns, patternTypes, screenHeight, screenWidth]);
 
   if (patterns.length === 0) {
     return (
@@ -91,8 +86,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
       </View>
     );
   }
-
-  const edges = generateEdges(patterns);
 
   return (
     <ScrollView style={styles.container}>
@@ -104,8 +97,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         >
           <ArrowheadMarker palette={palette} />
           {drawSwimlanes(swimlanes, svgWidth)}
-          {drawTimelineEdges(edges, positions, skipLevelEdges, palette)}
-          {drawNodes(patterns, positions, palette, onNodeTap, typeColorMap)}
+          {drawTimelineEdges(model.edges, positions, skipLevelEdges, palette)}
+          {drawNodes(model.nodes, positions, palette, onNodeTap)}
         </Svg>
       </ScrollView>
     </ScrollView>
@@ -117,7 +110,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
  * Skip-level edges route through the cleared space below shifted nodes.
  */
 function drawTimelineEdges(
-  edges: { from: number; to: number }[],
+  edges: GraphEdge[],
   positions: Map<number, LayoutPosition>,
   skipLevelEdges: SkipLevelEdgeInfo[],
   palette: Record<PaletteColor, string>,

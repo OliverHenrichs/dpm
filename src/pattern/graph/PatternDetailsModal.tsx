@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { IPattern } from "@/src/pattern/types/IPatternList";
+import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
@@ -19,6 +19,7 @@ interface PatternDetailsModalProps {
   pattern?: IPattern;
   allPatterns: IPattern[];
   patternTypes?: PatternType[];
+  modifiers?: IModifier[];
   onClose: () => void;
 }
 
@@ -27,6 +28,7 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
   pattern,
   allPatterns,
   patternTypes,
+  modifiers,
   onClose,
 }) => {
   const { colorScheme } = useThemeContext();
@@ -58,6 +60,7 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
                 selectedPattern={pattern}
                 patterns={allPatterns}
                 patternTypes={patternTypes}
+                modifiers={modifiers}
                 palette={palette}
               />
             )}

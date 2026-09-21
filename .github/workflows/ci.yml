@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Metro and tsc are memory-hungry on the default runner.
+  NODE_OPTIONS: --max-old-space-size=4096
+
+jobs:
+  verify:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npx prettier --check "src/**/*.{ts,tsx}" "app/**/*.{ts,tsx}" "__tests__/**/*.{ts,tsx}" "utils/**/*.{ts,tsx}"
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npx jest --coverage --ci --maxWorkers=2
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+  bundle:
+    name: Bundle web and Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Both targets are built because Metro resolves `.web.tsx` in preference
+      # to `.tsx`, so a bad import can break exactly one platform. Web also
+      # builds an SSR bundle (static rendering is on), surfacing such a fault
+      # twice. See AGENTS.md, "Platform-specific code".
+      - name: Export web bundle
+        run: npx expo export --platform web --output-dir dist-web
+
+      - name: Export Android bundle
+        run: npx expo export --platform android --output-dir dist-android
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # AGENTS.md documents the expected state: exactly three moderate findings,
+      # all from expo-router -> query-string@7 -> decode-uri-component, which
+      # cannot be patched until expo-router moves off query-string@7. Anything
+      # else, and anything of higher severity, should fail.
+      - name: Fail on new or high-severity vulnerabilities
+        run: |
+          npm audit --json > audit.json || true
+          node -e '
+            const audit = require("./audit.json");
+            const counts = audit.metadata.vulnerabilities;
+            const expected = { info: 0, low: 0, moderate: 3, high: 0, critical: 0 };
+            const drift = Object.entries(expected).filter(
+              ([level, n]) => counts[level] > n
+            );
+            if (drift.length > 0) {
+              console.error("npm audit drifted from the documented baseline.");
+              console.error("expected:", expected);
+              console.error("actual:  ", counts);
+              console.error("Update AGENTS.md and this baseline if the change is intentional.");
+              process.exit(1);
+            }
+            console.log("npm audit matches the documented baseline:", counts);
+          '

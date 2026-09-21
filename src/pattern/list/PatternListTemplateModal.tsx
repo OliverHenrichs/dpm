@@ -342,9 +342,12 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           style={styles.input}
           value={draftName}
           onChangeText={setDraftName}
+          // The placeholder is the template's name, so it cannot double as the
+          // field's label — a screen reader would announce the suggestion and
+          // never say what the field is for.
+          accessibilityLabel={t("listName")}
           placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
           placeholderTextColor={palette[PaletteColor.SecondaryText]}
-          autoFocus
         />
 
         {/* ── Pattern Types ─────────────────────────────────────────────── */}
@@ -358,7 +361,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
               {/* Color dot → popover */}
               <TouchableOpacity
                 onPress={(e) => {
-                  e.stopPropagation();
+                  e?.stopPropagation?.();
                   setColorPopoverId((prev) => (prev === dt.id ? null : dt.id));
                 }}
                 style={[styles.typeColorDot, { backgroundColor: dt.color }]}

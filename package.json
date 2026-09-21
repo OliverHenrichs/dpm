@@ -11,7 +11,12 @@
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --selectProjects unit",
+    "test:components": "jest --selectProjects components",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\" \"__tests__/**/*.{ts,tsx}\" \"utils/**/*.{ts,tsx}\""
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -41,7 +46,6 @@
     "firebase": "^12.19.0",
     "i18next": "^26.4.2",
     "lodash": "^4.18.1",
-    "lucide-react": "^1.47.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-i18next": "^17.0.14",
@@ -59,7 +63,6 @@
     "react-native-youtube-iframe": "^2.4.1"
   },
   "devDependencies": {
-    "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "30.0.0",
     "@types/react": "~19.2.16",
@@ -71,6 +74,7 @@
     "eslint-plugin-prettier": "^5.5.6",
     "globals": "^16.5.0",
     "jest": "~30.5.2",
+    "jest-expo": "~57.0.5",
     "prettier": "^3.9.8",
     "react-test-renderer": "19.2.7",
     "ts-jest": "^29.4.12",

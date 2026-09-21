@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import {
+  collectOrphanedPatternKeys,
   getActiveList,
   hasPatternLists,
   loadPatterns,
@@ -16,6 +17,7 @@ import {
 } from "@/src/pattern/data/PatternListStorage";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { useSharedList } from "@/src/pattern/data/hooks/useSharedList";
+import { runMigrations } from "@/src/pattern/data/migrations";
 import { useTranslation } from "react-i18next";
 import AppDialog from "@/src/common/components/AppDialog";
 
@@ -85,7 +87,16 @@ export const ActivePatternListProvider: React.FC<{
 
   useEffect(() => {
     (async () => {
+      // Migrations run *before* the first read, not alongside it: everything
+      // below assumes data in the current shape, and `isLoading` already
+      // starts true so the screen shows its loading state meanwhile. A failed
+      // migration is logged and does not block startup — the read-time repairs
+      // still cope, and the migration retries next launch.
+      await runMigrations().catch(() => undefined);
       await loadActiveListAndPatterns();
+      // Reclaim pattern keys left behind by deleted lists. Deliberately after
+      // the load and unawaited: it must never delay or fail the first paint.
+      collectOrphanedPatternKeys().catch(() => {});
     })();
   }, [loadActiveListAndPatterns]);
 

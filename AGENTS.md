@@ -24,6 +24,8 @@ Each route file is a one-line re-export; the screens live in `src/`. `src/common
 
 Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop. In `AppHeader` the app icon is a home button that navigates to `HOME_ROUTE` (also exported from `DrawerRoutes.ts` — the first drawer entry, `/`), and the hamburger opens the drawer via `useNavigation<{ openDrawer: () => void }>()`; `DrawerContent` must take `navigation` from the `drawerContent` render prop instead, since it sits beside the screens and `useNavigation()` there does not resolve to the drawer navigator.
 
+Pattern and modifier **mutations** go through `usePatternCrud` (`src/pattern/list/hooks/usePatternCrud.ts`), not through the context directly. It owns the read-only guard, id allocation, the prerequisite scrub on delete and the opportunistic Firestore push, and every mutation returns whether it was applied so a caller can keep a form open on rejection. `PatternListManager` is left holding only which modal is open. Add a mutation there, not inline in a screen.
+
 All screens share state through `ActivePatternListContext` (`src/pattern/data/components/ActivePatternListContext.tsx`). Every screen reads `activeList`, `patterns`, `isLoading`, and `hasLists` from `useActivePatternList()` and mutates via `setActiveList`, `updatePatterns`, `updateActiveList(list, patternsOverride?)`, `refreshActiveList` — never loads storage directly. The provider also maintains a live Firestore subscription via `useSharedList` when the active list has a `shareCode`.
 
 ## Core data model
@@ -59,7 +61,66 @@ Storage keys in `src/pattern/data/PatternListStorage.ts`:
 - `@patterns_{listId}` — serialised `IPattern[]` for a given list
 - `@activeListId` — UUID of the currently active list
 
-Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`) — never call `AsyncStorage` directly from UI code.
+**Writes to the same key are serialised.** `savePatternList` and `deletePatternList` are
+read-modify-write over the whole list array, so two overlapping calls used to both read the
+pre-change array and the second silently discarded the first's change — reachable in the app,
+since `PatternListSelector.handleSaveList` and the context's `updateActiveList` can be in flight
+together. `withWriteLock` queues the **entire operation**, not just its final `setItem`; the read
+has to be inside the critical section too. Reads are not queued, so a locked operation can read
+freely without deadlocking against itself.
+
+Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`, `collectOrphanedPatternKeys`) — never call `AsyncStorage` directly from UI code.
+
+**`@patternLists` holds lists without patterns.** The import and cloud-subscribe paths both hand over a `PatternListWithPatterns`, whose extra `patterns` array TypeScript cannot see because `IPatternList` has no such field — so `savePatternList` strips it rather than trusting callers, and `loadAllPatternLists` strips it again to clean up records an older build already bloated. Do not "simplify" that away: it writes a second copy of every pattern that nothing reads and nothing keeps in step.
+
+`clearAllData` removes the per-list `@patterns_*` keys as well as the two top-level ones. `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list no longer exists and is called once, unawaited, from `ActivePatternListProvider` after the initial load — it must never delay or fail first paint.
+
+## Header layout
+
+`AppHeader` lays its three children out in flow — a fixed-width button slot, the title at `flex: 1`,
+another slot of the same width. Because both sides are equal the title lands on the centre of the
+screen without being positioned over anything.
+
+**Do not make the title absolute again.** It used to be `position: "absolute"` across the full
+header width, relying on `pointerEvents: "none"` to stay out of the way — but that is a View style
+prop and React Native's `Text` does not implement it, so the title sat on top of the home button
+and swallowed most presses. A component test cannot catch that (RNTL has no layout engine and
+cannot tell that one view covers another), so the guard in
+`__tests__/components/AppHeader.test.tsx` pins the structure instead, and the real check is tapping
+the icon on a device.
+
+## Prerequisite integrity
+
+`IPattern.prerequisites` is the data model — both graph views are built from it — and two ways of
+corrupting it used to make patterns disappear from the network view while the list and timeline
+still showed them. Three rules keep that shut, and all three live in
+`src/pattern/graph/utils/GenericGraphUtils.ts`:
+
+- **Never remove a pattern without scrubbing references to it.** `deletePattern` composes deletion
+  as `repairDanglingPrerequisites(patterns.filter(...))` rather than filtering alone. The helper
+  returns the same array reference when there is nothing to repair, so the healthy path is free.
+- **`loadPatterns` repairs on read**, so lists corrupted by older builds heal themselves as they
+  load. Do not remove this in favour of a one-off migration — there is no migration runner yet
+  ([F3](AGENT_TASKS.md)).
+- **The prerequisite picker refuses cycles.** `findIneligiblePrerequisiteIds(patterns, id)` returns
+  the pattern plus everything that already depends on it; `EditPatternForm` disables those chips.
+  Note the direction: `P.prerequisites = [Q]` means Q comes *before* P, so the edge runs Q → P and
+  "would cycle" means Q already depends on P. Use `collectDependents` from `model/adjacency.ts` to
+  walk forwards — a BFS over the index, not a path enumeration.
+
+Belt and braces, and the part that actually protects the user: **`calculateGraphLayout` must place
+every node it is given.** Its DFS only places a node once all prerequisites are positioned, so a
+dangling id or a cycle leaves one unplaceable — and `drawNodes` renders nothing for a node with no
+position, losing it and its whole subtree silently.
+
+Since the model landed, most degenerate input never reaches that hazard: `buildAdjacency` drops
+prerequisite ids matching no pattern, so a pattern whose prerequisites are all missing has none as
+far as the layout is concerned, scores depth 0, and is laid out as a root on the foundational
+ellipse. The fallback pass — position whatever is left over from its known prerequisites, else on
+a ring outside the ellipse — is retained as the deeper net for what the model cannot resolve
+(nodes inside a genuine cycle). Keep it, and keep
+`__tests__/unit/GraphLayoutInvariants.test.ts` asserting `positions.size === patterns.length` for
+degenerate input: imports, shared lists and old devices still supply both kinds of bad data.
 
 ## Theming
 
@@ -77,11 +138,25 @@ All user-facing strings use `const { t } = useTranslation()`. Translation keys m
 
 ## Graph views
 
-`src/pattern/graph/` contains two switchable views (`ViewMode = "timeline" | "graph"`, selected in `PatternGraphScreen`, rendered by `GraphViewContainer` alongside `Legend`) driven by `IPattern.prerequisites[]`:
-- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by depth (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
-- **Network** (`NetworkGraphView.tsx`) — force-free hierarchical layout (`calculateGraphLayout` in `NetworkGraphUtils.ts`); layout logic extracted into the `useGraphLayout` hook (`src/pattern/graph/hooks/useGraphLayout.ts`)
+`src/pattern/graph/` contains two switchable views (`ViewMode = "timeline" | "graph"`, declared once in `src/pattern/graph/types/ViewMode.ts`, selected in `PatternGraphScreen`, rendered by `GraphViewContainer` alongside `Legend`), both driven by `IPattern.prerequisites[]`.
 
-Shared graph utilities: `GenericGraphUtils.ts` (`generateEdges`, `detectCircularDependencies`, `calculatePrerequisiteDepthMap` — generic over `PatternLike`), `GraphUtils.ts` (`LayoutPosition`, edge generation, `generateOrthogonalPath` / `generateSkipLevelPath`). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `src/pattern/graph/types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `src/pattern/graph/types/IGraphSvgProps.ts` (rendered by `GraphSvg.tsx` / `PatternNode.tsx`). Tapping a node opens `PatternDetailsModal` → `PatternDetails`.
+### The graph model
+
+**Both views render from one `GraphModel`, built once.** `buildGraphModel(patterns, patternTypes)` (`model/GraphModel.ts`) returns nodes, edges, the adjacency index, the depth map, the cycles and the type-colour map; `useGraphModel(patterns, patternTypes)` memoises it on the screen and hands it down. This is the contract every view, layout function and renderer agrees on — nothing derives depth, edges or colour for itself any more.
+
+- `model/adjacency.ts` is the whole graph maths: `buildAdjacency` (indexes both directions and **drops prerequisite ids that match no pattern**, so no consumer guards against a dangling id), `collectDependents` / `collectPrerequisites` (BFS, cycle-safe), `findCycles` (iterative Tarjan, O(V + E)) and `buildDepthMap` (iterative longest-path DFS with memoisation). All iterative on purpose: a 5000-long chain must not blow the stack, and the detector this replaced enumerated every distinct path.
+- A `GraphNode` carries `{ pattern, depth, foundational, color, inCycle }`. `foundational` is judged on *resolvable* prerequisites, so a pattern pointing only at missing ids is a root.
+- Keep the model pure and cheap. It is rebuilt on every change to the pattern set, and `PatternNode` takes a `GraphNode` rather than a bare pattern plus a colour map — that is what removed the `as any` casts at each call site.
+- `model.cycles` is not just diagnostics: `CycleWarning.tsx` renders a banner above the graph when it is non-empty. Cycle detection used to run on every render and emit only a `console.warn`.
+
+### The views
+
+- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
+- **Network** (`NetworkGraphView.tsx`) — force-free hierarchical layout (`calculateGraphLayout` in `NetworkGraphUtils.ts`), driven by the `useGraphLayout` hook (`hooks/useGraphLayout.ts`)
+
+Both draw through the shared primitives in `render/GraphPrimitives.tsx` (`ArrowheadMarker`, `drawEdges`, `drawNodes`) rather than one view importing from its sibling. `GraphSvg.tsx` is now just the network view's `<Svg>` around those primitives.
+
+`utils/GenericGraphUtils.ts` keeps only what is needed *outside* the views — `findIneligiblePrerequisiteIds` (the editor's cycle guard) and `repairDanglingPrerequisites` (storage's repair-on-read) — and both delegate to `model/adjacency.ts`. `GraphUtils.ts` holds `LayoutPosition` and the path geometry (`generateOrthogonalPath` / `generateSkipLevelPath`). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `types/IGraphSvgProps.ts`. Tapping a node opens `PatternDetailsModal` → `PatternDetails`.
 
 ## Filtering & sorting
 
@@ -93,6 +168,60 @@ Both panels are rendered through the shared `BottomSheet` component (`src/common
 ## Default list templates
 
 `src/pattern/data/DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames. Picking a template happens in `PatternListTemplateModal`.
+
+## Schema versioning and migrations
+
+Stored data carries a version under `@schemaVersion`, and `runMigrations()`
+(`src/pattern/data/migrations/`) brings it up to `SCHEMA_VERSION` **before anything reads pattern
+data** — it is awaited first in `ActivePatternListProvider`'s mount effect, behind the loading
+state that was already there.
+
+Rules for adding one: bump `SCHEMA_VERSION`, add the migration to `MIGRATIONS`, and make it
+**idempotent** — a crash part-way through leaves the version marker unchanged, so it runs again
+next launch. Migrations never run backwards: if the stored version is *ahead* of the build (the
+user installed an older APK over a newer one), nothing runs and the marker is left alone, because
+downgrading the data would discard whatever the newer build added. A failed migration is logged
+and does not block startup; the read-time repairs still cope.
+
+The read-time normalisation in `PatternListStorage` stays even though migration 001 materialises
+it — data still arrives from imports and cloud syncs after migrations have run.
+
+## Import validation
+
+**Never trust an import file.** It comes from a document picker, so it comes from anywhere, and
+everything downstream writes it to storage and then to the screen.
+`validateExportData` (`src/pattern/data/validation/`) is the only gate, and `ImportPatterns` calls
+it before touching anything. It splits problems in two:
+
+- **Fatal** — not an object, an unsupported version, `patternLists` not an array, a list with no
+  id, a pattern whose id is not an integer, duplicate ids. The whole file is refused, because a
+  half-import leaves the user unable to tell what landed.
+- **Repairable** — a pattern pointing at a type that is not in its list, a prerequisite matching
+  no pattern, a malformed video reference. Cleaned, reported through the existing `warnings`
+  channel, and the import proceeds.
+
+What it returns is normalised: optional fields filled in, references resolvable. Nothing
+downstream re-checks it.
+
+`canImport` (`types/ExportVersion.ts`) owns compatibility, separate from `exportDataVersion` which
+is what we *write*. A newer **minor** is refused rather than parsed best-effort: the writer added
+a field this build cannot carry, and saving over it would silently drop the user's data. Bumping
+the format means bumping `SUPPORTED_MINOR` here too.
+
+## Import conflict resolution
+
+`useImportDecisions` derives each list's default from its props on every read — `skip` when the id
+already exists locally, `replace` when it does not — and keeps only the user's explicit choices in
+state. It must stay that way. The defaults used to be snapshotted by a lazy `useState`
+initialiser, which never saw real data: `SettingsScreen` mounts `PatternListImportModal`
+permanently and only toggles `visible`, so the hook first ran with an empty list and the real one
+arrived as a prop change. Every conflicting list then fell through to `replace` and was silently
+overwritten.
+
+The same shape applies to any hook behind one of these always-mounted modals: derive from props,
+or remount so the snapshot is retaken. `PatternListTemplateModal` takes the second route — it keys
+its body on what the modal is open on, so opening it re-mounts with drafts seeded fresh — and that
+is equally correct. What is not correct is snapshotting once and leaving it.
 
 ## Export / Import format
 
@@ -131,6 +260,16 @@ FIREBASE_MESSAGING_SENDER_ID, FIREBASE_APP_ID, FIREBASE_MEASUREMENT_ID, FIREBASE
 
 Expo loads `.env` automatically for `expo start` / `eas build`; for EAS builds the same names must exist as EAS Secrets. Without them the app runs local-only.
 
+### Config plugins
+
+**Config plugins are applied only when listed in `app.config.ts` → `plugins`; autolinking does not apply them.** `expo-camera` and `expo-image-picker` are listed there purely so their iOS usage strings (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`) reach the generated `Info.plist` — iOS terminates an app that touches those APIs without them, and Android's permission arrives via manifest merging regardless, so the omission is invisible until an iOS device runs it. Both pass `microphonePermission: false` (and camera `recordAudioAndroid: false`) because nothing in the app records audio; that also blocks `RECORD_AUDIO` from being merged in by a transitive dependency.
+
+`expo-document-picker` is deliberately **not** listed: its plugin only sets iCloud entitlements, and only when `ios.usesIcloudStorage` is set, which this app does not use.
+
+`ios.bundleIdentifier` must stay in `app.config.ts`. There is no `app.json`, so the CLI cannot write it for you — without it `expo prebuild --platform ios` and EAS iOS builds both refuse to run.
+
+Verify a change here by running `npx expo prebuild --platform ios --no-install --clean` and grepping the generated `ios/*/Info.plist`; `npx expo config --type prebuild` will *not* show these, because the plugins apply through mods that only run during prebuild. Prebuild also rewrites the `android` / `ios` npm scripts to `expo run:*` — revert that, the project uses the `--dev-client` workflow.
+
 ## Read-only lists
 
 `IPatternList.readonly` is set on imported read-only exports and on subscribed cloud lists. Every mutating path must guard on it (`const isReadonly = !!activeList?.readonly`) — pattern and modifier CRUD in `PatternListManager` already does.
@@ -154,7 +293,7 @@ Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, a
 - The three expected ones are one root cause: `expo-router` → `query-string@7` → `decode-uri-component@0.2.2`. The patched `decode-uri-component@0.5.0` is ESM-only, so it cannot be forced under the CJS `query-string@7`; this has to wait for expo-router upstream. Impact is a DoS in query-string decoding, reachable only through a URL the user opens.
 - `overrides` in `package.json` carries the rest. Each entry exists because a parent pins a range that sits below the fix — keep the comment-worthy ones in mind before removing any:
   `shell-quote` (react-devtools-core), `brace-expansion@1` / `@5` (eslint and @typescript-eslint minimatch), `@humanfs/node` (eslint), `@babel/core`, `flatted` (eslint flat-cache), and `xcode` → `uuid@^11` (xcode only calls `uuid.v4()`, unchanged across those majors; it runs during iOS prebuild).
-- `react-test-renderer` is pinned to the exact `react` version and must be bumped with it.
+- `react-test-renderer` is pinned to the exact `react` version and must be bumped with it. `jest-expo` must track the SDK major.
 - Do **not** run `npx expo install --fix`. Several packages are deliberately ahead of the versions SDK 57 bundles — `@react-native-async-storage/async-storage@3`, `react-native-gesture-handler@3`, `jest@30`, `react@19.2.7`, `react-native-safe-area-context`, `react-native-svg` — and `--fix` would downgrade them, two across a major. `npx expo install --check` listing them is expected.
 - `react-native-web` 0.21 warns that `shadow*` and `textShadow*` style props are deprecated. `shadow*` is migrated to the `boxShadow` shorthand; `textShadow` is not, because react-native 0.86 still types only `textShadowColor` / `textShadowOffset` / `textShadowRadius` (see `QrCodeScanner.tsx`).
 
@@ -165,17 +304,58 @@ npm install              # install deps
 npm start                # expo start --lan (or: npx expo start)
 npm run android          # expo start --android
 npm run ios              # expo start --ios
-npm test                 # Jest (node env, no device needed)
+npm test                 # Jest, both projects (no device needed)
+npm run test:unit        # pure-logic project only — sub-second feedback loop
+npm run test:components  # rendering project only (jest-expo)
 npm run test:watch       # watch mode
-npm run test:coverage    # coverage for src/pattern/data/** + src/pattern/graph/utils/**
+npm run test:coverage    # coverage over all of src/, with thresholds enforced
 npm run lint             # ESLint via expo lint
+npm run format:check     # Prettier, same glob CI uses
+npm run format           # Prettier, write
+npm run typecheck        # tsc --noEmit
 ```
 
 Stack: Expo SDK ~57 / React Native 0.86 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`).
 
 ## Testing conventions
 
-- All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Test environment is `node`; transform is `ts-jest`.
-- Coverage is scoped to `src/pattern/data/**` and `src/pattern/graph/utils/**`.
+All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs **two projects** (`jest.config.js`), and a test must go in the directory matching its project:
+
+| Project | Directory | Environment | Use it for |
+|---|---|---|---|
+| `unit` | `__tests__/unit/` | `node` + `ts-jest` | Pure logic — storage, graph maths, hooks-free helpers. Fast; this is where most tests belong. |
+| `components` | `__tests__/components/` | `jest-expo` preset | Anything that renders. |
+
+`npm test` runs both; `npm run test:unit` / `npm run test:components` run one. A test placed in the wrong directory is silently never run.
+
+- **AsyncStorage is mocked globally and behaviourally.** `__mocks__/@react-native-async-storage/async-storage.ts` is a real in-memory store implementing the v3 surface, applied automatically (a `__mocks__` directory beside `node_modules` needs no `jest.mock()` call). Both setup files reset it per test. Assert on observable state (`await loadPatterns(id)`) rather than on mock bookkeeping (`setItem.mock.calls[0][1]`), so tests survive refactors of the storage internals. `seedAsyncStorage` / `peekAsyncStorage` are there for setup and assertions.
+- **The filesystem is mocked globally too.** `__mocks__/expo-file-system.ts` is an in-memory `File` / `Paths` implementation that stores real bytes and does real base64, so no test can touch the real disk and an export→import round trip has to preserve bytes exactly. `seedFile` / `seedBinaryFile` set fixtures up, `readFileBytes` / `readFileText` / `listFileUris` assert on the result. It implements only the surface the app uses and throws on anything else, so a new call site surfaces here rather than silently no-oping.
+- **Export and import are tested as a round trip**, not separately (`__tests__/unit/ExportImportRoundTrip.test.ts`): the two modules only agree through the on-disk format, so exercising them apart proves very little. Add a case there when changing either side or the format version.
+- **Component tests render through `renderWithProviders`** (`utils/renderWithProviders.tsx`), which supplies the real provider stack — i18n, `ThemeProvider`, `ActivePatternListProvider` — and seeds storage before mounting. It re-exports everything from `@testing-library/react-native`, so import `screen`, `fireEvent`, `within` from it rather than from the library directly.
+- **Native modules are mocked in `jest.setup.components.ts`** (expo-video, expo-camera, the pickers, haptics, sharing, the YouTube player, QR codes). The firebase SDK is mocked there too: it ships untranspiled ESM that jest cannot parse, and mocking matches how the app behaves without credentials (`firebaseAvailable === false`). Tests that need sharing should mock `@/src/firebase/FirebaseListService` directly.
 - Use factory helpers from `utils/testFactories.ts` (`createTestPattern`, `createTestPatternList`, `createTestPatternType`) — do not inline raw object literals in tests. They already supply `modifiers: []` / `modifierRefs: []`, so new required fields belong there too.
 - `IPattern.id` in tests should be a plain integer; `PatternType.id` / `IPatternList.id` / `IModifier.id` should use `generateUUID()`.
+- **`tsconfig.jest.json` must not override `jsx`.** Expo's base sets `react-jsx` (the automatic runtime), and several components rely on it by importing only `FC`/`ReactNode` rather than `React`. An override to the classic `"react"` transform makes those files fail to compile under ts-jest with `TS2686: 'React' refers to a UMD global` — which surfaces only as `Failed to collect coverage from …` on stderr, does **not** fail the run, and quietly drops those files from the coverage report.
+- **Timeouts are sized for a cold CI runner, not for a warm laptop.** `npm ci` wipes the Babel cache, so the first component test in a run transforms the whole React Native + Expo tree before it can render: a test that takes ~300ms warm takes ~3.5s with caches cleared, and more on a slower runner. Hence `testTimeout` of 60s for components, 30s for unit, and `asyncUtilTimeout` of 10s for RNTL's `waitFor` (whose 1s default would fail as a confusing assertion error instead of a timeout). Reproduce the cold path with `npx jest --clearCache && rm -rf node_modules/.cache` before assuming a CI-only failure is a fluke.
+- **Coverage thresholds are a ratchet**, set just under measured reality so CI is green on arrival (`jest.config.js` → `coverageThreshold`). Raise them as suites land; never lower them. Three mechanics to know before touching them. A file with its own entry is **removed from the `global` pool**, so pinning well-covered files pushes the global number *down* — it measures the leftovers, not the project. A file imported by both projects is instrumented by two transforms, so its percentages drift between run modes; set a floor under the lowest of `npx jest --coverage`, `--ci --maxWorkers=2` and `--maxWorkers=1`. And the **global figure itself varies by several points between otherwise identical runs**, because that merge depends on which worker saw a shared file first — so measure it a few times and floor it under the worst, never under the best. The numbers jest prints when a threshold is *missed* are the ones to key off, not the summary table's — they use different denominators.
+- **Both projects set `clearMocks: true`**, which resets call history *and* factory implementations before each test. A mock whose return value matters must (re)establish it in `beforeEach`, not only in the `jest.mock` factory — otherwise it returns `undefined` and code that calls `.catch()` on it fails in a way React reports as `window.dispatchEvent is not a function`.
+- **`renderHookWithProviders`** (`utils/renderWithProviders.tsx`) mounts a hook in the same provider stack. Wait for `activeList` to be non-null before acting: the provider loads storage on mount, and an assertion like "zero patterns" is already true on the first render, before anything has loaded.
+- **Mocking `FirebaseListService` means mocking `subscribeToSharedList` too**, not just `syncPublishedList` — a list with a `shareCode` activates the provider's live-subscription hook.
+- **`firebaseAvailable` is `false` under jest**, always: it derives from `Constants.expoConfig.extra.firebase`, which jest-expo does not populate. That is at least consistent between a dev machine (which has a `.env`) and CI (which does not), but it means the sharing screens render their "not configured" branch by default. A suite that tests the *available* path mocks `@/src/firebase/firebaseConfig` with a getter it can flip, rather than depending on the environment — see `ShareListModal.test.tsx`.
+- **`VideoCarousel` renders nothing until it is measured.** It keeps `containerWidth` at 0 and mounts its list only once `onLayout` fires, which nothing does under jest — fire it yourself (`fireEvent(view, "layout", { nativeEvent: { layout: { width: 320 } } })`) or the component looks empty and untestable.
+- **A callback that is not a touch event** — `onViewableItemsChanged`, say — is invoked through the prop rather than `fireEvent`, so wrap it in `act()` or its state update never lands.
+- **Never poll for a node's *absence* with `waitFor`.** `waitFor(() => expect(screen.queryByX(...)).toBeNull())` is unreliable on a loaded CI runner: it re-runs its check inside `act`, and under contention it can still be observing the pre-update tree when its budget expires — even though the state itself settled in tens of milliseconds. Wait on something positive instead — a node appearing, a mock being called, storage reaching its expected value — and then assert the absence synchronously. This cost a red CI run; it reproduces locally with `for i in $(seq 8); do (while :; do :; done) & done` to saturate the CPU.
+
+- **A render helper must wait on something the _data_ produced, not on chrome.** `renderSelector` used to wait for the "Pattern Lists" header, which renders synchronously and therefore says nothing about whether the read from storage has landed; under CPU contention a run lost a list row between that wait and the assertion. Anchor on a value only the loaded data can produce (`await screen.findByText(lists[0].name)`). Where a screen loads from more than one key — `PatternListManager` reads `@patternLists` and `@patterns_<id>` separately — anchor on each, or the rows can still be missing while the chrome for the list is already up.
+- **The Android back button is testable.** Each `Modal` handles it through `onRequestClose`; `fireEvent(modal, "requestClose")` exercises that path, and it is a real user action worth covering rather than a formality.
+- **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. `__tests__/unit/GraphLayoutInvariants.test.ts` uses it to pin the dangling-prerequisite and cycle defects (AGENT_TASKS.md B1/B2). Prefer it over deleting or skipping a test that documents real broken behaviour.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `master` and every PR, in three jobs:
+
+- **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`.
+- **bundle** — `npx expo export` for **both** `web` and `android`. Metro resolves `.web.tsx` over `.tsx`, so a bad import can break exactly one platform; web additionally builds an SSR bundle (static rendering is on) and surfaces such a fault twice. This is the gate that catches the class of problem described under "Platform-specific code".
+- **audit** — fails if `npm audit` drifts from the documented baseline of exactly three moderate findings (see "Dependencies & security"). If a change to that baseline is intentional, update both the workflow's `expected` map and this file.
+
+Run the same checks locally before pushing; every one of them passes on `master`.
