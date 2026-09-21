@@ -358,6 +358,22 @@ module.exports = {
       functions: 70,
       lines: 74,
     },
+    // L2: the pan/pinch canvas that replaced the PanResponder-based zoomable
+    // view. Its gestures cannot be dispatched under jest, but the arithmetic
+    // they drive can: the mock records each registered handler and the tests
+    // call them, which is where the focal-point and clamping bugs live.
+    "src/pattern/graph/components/ZoomableCanvas.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/components/CanvasTransformContext.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
     // L1: the filtering layer. `filterGraphModel` is what stops a narrowed
     // graph losing nodes, so it is held near-total on statements and lines;
     // its branch floor is lower because the same double-instrumentation swing

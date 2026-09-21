@@ -4,7 +4,7 @@ import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
 import { useGraphLayout } from "./hooks/useGraphLayout";
 import NetworkGraphSvg from "./GraphSvg";
-import { ReactNativeZoomableView } from "@openspacelabs/react-native-zoomable-view";
+import ZoomableCanvas from "@/src/pattern/graph/components/ZoomableCanvas";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 
@@ -49,21 +49,19 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
     );
   }
 
-  // The zoomable view centers the SVG mid-point in the viewport by default.
-  // Shift by the difference to the content's center instead, scaled by zoom.
+  // The canvas centers the SVG mid-point in the viewport. Shift by the
+  // difference to the content's center instead, scaled by zoom.
   const initialOffsetX = (svgWidth / 2 - contentCenterX) * initialZoom;
   const initialOffsetY = (svgHeight / 2 - contentCenterY) * initialZoom;
 
   return (
     <View style={styles.container}>
-      <ReactNativeZoomableView
-        maxZoom={4.5}
-        minZoom={0.15}
-        zoomStep={0.5}
+      <ZoomableCanvas
+        contentWidth={svgWidth}
+        contentHeight={svgHeight}
         initialZoom={initialZoom}
         initialOffsetX={initialOffsetX}
         initialOffsetY={initialOffsetY}
-        bindToBorders={false}
       >
         <NetworkGraphSvg
           svgWidth={svgWidth}
@@ -73,7 +71,7 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
           palette={palette}
           onNodeTap={onNodeTap}
         />
-      </ReactNativeZoomableView>
+      </ZoomableCanvas>
     </View>
   );
 };

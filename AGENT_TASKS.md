@@ -623,7 +623,7 @@ same split the rest of the graph already used; it is now a deliberate one.
 
 ---
 
-### L2 — Moveable patterns in the network graph
+### L2 — Moveable patterns in the network graph — IN PROGRESS
 
 > *"Moveable patterns in network graph"*
 
@@ -649,9 +649,12 @@ have it survive restarts, list edits and app updates.
 - `react-native-reanimated@4.5.1`, `react-native-worklets@0.10.1` and
   `react-native-gesture-handler@3.3.0` are all dependencies but **are not imported anywhere in
   `src/` or `app/`** (verified by grep). They are present as peer requirements of the drawer.
-- **[verify]** No `GestureHandlerRootView` is mounted: `app/_layout.tsx` does not render one, and
-  neither `expo-router`'s layouts nor `@react-navigation/drawer` mount one (grepped). Gesture
-  Handler requires it. Confirm on device before assuming any `Gesture.*` API will fire.
+- ~~**[verify]** No `GestureHandlerRootView` is mounted.~~ **Wrong — checked and corrected.** The
+  drawer mounts a real one on native: `expo-router` vendors `@react-navigation/drawer`, whose
+  native view is `react-native-drawer-layout`, and `Drawer.native.js:297` renders
+  `GestureHandlerRootView` around its children — which is every screen. On web RNGH's root view is
+  a plain `View` plus a context flag, so gestures work there without one either. Nothing needs
+  mounting, and nesting one around the graph would take it out of the drawer's gesture tree.
 
 #### The three problems
 
@@ -792,6 +795,42 @@ Manual, on device — name these in the PR description because they cannot be au
 
 **8–12 days.** ~4 for the container replacement, ~3 for the drag interaction including the edge
 worklets, ~2 for persistence and reconciliation, ~2 for tests, web verification and polish.
+
+#### Landed so far — step 1 of 3: the container
+
+Done as its own commit with no behaviour change, per the risk note above.
+`components/ZoomableCanvas.tsx` replaces `@openspacelabs/react-native-zoomable-view`, which is
+now removed from `package.json`. **696 tests** (was 676).
+
+- `Gesture.Race(doubleTap, Gesture.Simultaneous(pan, pinch))` driving shared values, with the
+  transform published through `CanvasTransformContext` so a node drag can read the live `scale`
+  from a worklet — without which a dragged node lags the finger above 1:1 and outruns it below.
+- Pinch reports cumulative scale; converting it to a per-frame factor is what lets pinch and pan
+  both write `translate` without fighting. There is a test for exactly that.
+- Double-tap-to-zoom is preserved, including the wrap back to the initial zoom at maximum, which
+  is what the old container did.
+
+**A test-infrastructure problem had to be solved first.** Importing Reanimated under jest fails
+the whole suite: its entry point initialises the worklets runtime, which reaches a native module
+that does not exist (`Cannot read properties of undefined (reading 'loadUnpackers')`). Its own
+shipped mock re-imports that entry point, so it does not help. Resolving `react-native-worklets`
+to its web build via a custom jest resolver fixes that but then breaks Gesture Handler, whose
+native build installs bindings into a *UI* runtime the web worklets build refuses to provide —
+and RNGH's web implementation lives in `.web.ts` files jest is not looking for on an ios run, so
+the same trick does not work twice. Both are now hand-written mocks in `__mocks__/`, matching the
+convention already used for AsyncStorage and expo-file-system.
+
+The gesture mock is more than a stub: it records every handler a component registers, so a test
+can call them with synthetic events. That is what makes the pan/pinch/zoom *arithmetic* — focal
+points, clamping, cumulative-versus-incremental scale — testable at 100% coverage without a
+device. Reverting the focal-point maths fails three tests.
+
+**Still to do:** step 2, persistence and reconciliation (`resolveLayout`, `GraphLayoutStorage`),
+which is pure and needs no gestures; then step 3, the drag interaction itself.
+
+**Not yet verified on device.** Nothing in this step can be: whether a tap still reaches a node
+under the canvas pan, whether the drawer's edge swipe and the canvas pan arbitrate sensibly, and
+how the pinch feels are all hardware questions. See the manual list above.
 
 ---
 

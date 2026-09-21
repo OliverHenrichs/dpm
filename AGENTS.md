@@ -161,6 +161,17 @@ The graph screen filters through the same `PatternFilter` and `PatternFilterBott
 - The network view's initial zoom is fitted to the drawn content (`useGraphLayout`). It was a fixed 0.35, which leaves a filtered graph as a mostly empty canvas.
 - Filter state is **not persisted**, deliberately: a filter that survives a navigation away is invisible on return and reads as "my patterns disappeared". It resets when the active list changes, adjusted during render rather than in an effect.
 
+### Pan and zoom
+
+The network view's canvas is `components/ZoomableCanvas.tsx` — Gesture Handler gestures driving Reanimated shared values, with the live transform published to descendants through `CanvasTransformContext`.
+
+It replaced `@openspacelabs/react-native-zoomable-view`, which is implemented with `PanResponder`. **Do not reintroduce a `PanResponder`-based gesture here.** A node drag has to live in Gesture Handler's touch system, and the two systems do not negotiate — there is no `simultaneousHandlers` across that boundary, so whichever claimed a touch first won, non-deterministically from the user's point of view.
+
+- Everything is on the UI thread: shared values and `useAnimatedStyle`, never `setState` from a handler. Use `.get()` / `.set()`, not `.value` — the React Compiler is on and cannot see through bare `.value` access.
+- The transform array is `[{ translateX }, { translateY }, { scale }]`. Translate before scale, so offsets stay in screen pixels and a drag tracks the finger 1:1 at any zoom.
+- Pinch reports *cumulative* scale; the canvas converts it to a per-frame factor so pinch and pan can both write `translate` without fighting.
+- **No `GestureHandlerRootView` is mounted in `src/`, deliberately.** On native the drawer supplies a real one (`react-native-drawer-layout`'s `Drawer.native` renders one around its children, so every screen is inside it). On web RNGH's root view is a plain `View` plus a context flag, so gestures work without one. Nesting another around the graph would take that area out of the drawer's own gesture tree.
+
 ### The views
 
 - **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
@@ -359,6 +370,8 @@ All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs
 - **Never poll for a node's *absence* with `waitFor`.** `waitFor(() => expect(screen.queryByX(...)).toBeNull())` is unreliable on a loaded CI runner: it re-runs its check inside `act`, and under contention it can still be observing the pre-update tree when its budget expires — even though the state itself settled in tens of milliseconds. Wait on something positive instead — a node appearing, a mock being called, storage reaching its expected value — and then assert the absence synchronously. This cost a red CI run; it reproduces locally with `for i in $(seq 8); do (while :; do :; done) & done` to saturate the CPU.
 
 - **A render helper must wait on something the _data_ produced, not on chrome.** `renderSelector` used to wait for the "Pattern Lists" header, which renders synchronously and therefore says nothing about whether the read from storage has landed; under CPU contention a run lost a list row between that wait and the assertion. Anchor on a value only the loaded data can produce (`await screen.findByText(lists[0].name)`). Where a screen loads from more than one key — `PatternListManager` reads `@patternLists` and `@patterns_<id>` separately — anchor on each, or the rows can still be missing while the chrome for the list is already up.
+
+- **Reanimated and Gesture Handler are mocked by hand** (`__mocks__/react-native-reanimated.tsx`, `__mocks__/react-native-gesture-handler.tsx`), picked up automatically because they are node modules. Reanimated's real entry point initialises the worklets runtime on import, which under jest reaches a native module that does not exist and fails the suite before a test runs; its own shipped mock re-imports that entry point, so it does not help, and resolving worklets to its web build only moves the problem to Gesture Handler. The mocks are behavioural where it is useful — shared values really hold and update, and the gesture mock records every handler a component registers, so `peekGestures()` / `findGesture()` let a test call those handlers with synthetic events. That is how `ZoomableCanvas.test.tsx` covers the pan/pinch/zoom arithmetic. What no test here can cover: whether gestures arbitrate correctly, how motion feels, and whether a tap still reaches a node under a pan. Those are device checks.
 - **The Android back button is testable.** Each `Modal` handles it through `onRequestClose`; `fireEvent(modal, "requestClose")` exercises that path, and it is a real user action worth covering rather than a formality.
 - **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. `__tests__/unit/GraphLayoutInvariants.test.ts` uses it to pin the dangling-prerequisite and cycle defects (AGENT_TASKS.md B1/B2). Prefer it over deleting or skipping a test that documents real broken behaviour.
 
