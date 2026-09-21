@@ -60,6 +60,7 @@ evidence.
 | [B9](#b9--the-skip-on-conflict-import-default-never-applied) | Skip-on-conflict import default never applied | **S** | ✅ done | Importing a list you already had silently replaced it. Found by covering the decision hook. |
 | [B10](#b10--imported-and-subscribed-lists-duplicated-every-pattern-into-the-list-record) | Import and subscribe duplicated every pattern into the list record | **S** | ✅ done | A second copy of the data that nothing read and nothing kept in step. |
 | [B11](#b11--the-header-title-covered-the-home-button) | Header title covered the home button | **S** | ✅ done | Reported from the device: the button worked ~1 press in 10, even at 56pt. |
+| [B12](#b12--a-refused-save-wiped-the-edit-form) | A refused save wiped the edit form | **S** | ✅ done | Clearing the name and saving destroyed the edit and wedged the form. |
 
 ### Suggested sequencing
 
@@ -1074,12 +1075,23 @@ needed to query the element, and each was a real gap.
 
 No bugs in any of these four — worth recording alongside the six that earlier suites found, because it says something about where the risk actually sits: every bug so far has been in code that *writes* data or in layout, none in the read-only view logic.
 
+#### Landed since (5)
+
+| | What |
+|---|---|
+| ✅ | **`EditPatternForm` covered** (28 more cases), 45% → **85%**: adding videos by URL and from the library, the cancelled picker, the three-video cap and the selection limit it passes to the picker, removal, attaching and detaching modifiers, and videos being scoped to the selected variant rather than pooled. Found [B12](#b12--a-refused-save-wiped-the-edit-form). |
+| ✅ | `ModifierPillStrip` 96%, `PatternVideos` 100%, `AddVideoModal` 84% as a side effect. 376 → **398 tests**; global thresholds 40/30/38/42. |
+
+Two more controls gained accessible names, both bare `×` buttons that announced nothing: removing
+a video, and detaching a modifier (which names the modifier, so several on screen stay
+distinguishable).
+
 #### Still outstanding
 
-1. **`EditPatternForm`** sits at ~45% — the largest form in the app. The video attach/remove and
-   modifier-attachment paths are the untested parts.
-2. **Smaller shared components** — `VideoCarousel`, `BottomSheet`, `AppDialog`, `PatternDetails`,
+1. **Smaller shared components** — `VideoCarousel`, `BottomSheet`, `AppDialog`, `PatternDetails`,
    the filter sub-panels.
+2. **`PatternListManager` is at 60%** — the modifier-tab half of the screen (`ModifierList`,
+   `EditModifierForm`, `ModifierDetails`) has no coverage at all.
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
    components that rely on the automatic runtime; it printed to stderr without failing the run, so
@@ -1501,6 +1513,43 @@ hamburger gained the `button` role and hit slop it was missing.
 assertion there can tell that one view covers another; the suite pins the *structural* decision
 ("the title is laid out in flow, not absolutely") as the closest available guard, and reverting the
 fix does make it fail. The real check is tapping the icon on a device.
+
+---
+
+### B12 — A refused save wiped the edit form
+
+**Severity was: medium — loses an in-progress edit and wedges the form.**
+
+**Found by** covering `EditPatternForm`'s video handling; noticed while reading `handleFinish`,
+then confirmed by a probe before being fixed.
+
+The form cleared itself after every save attempt:
+
+```ts
+const handleFinish = () => {
+  onAccepted(newPattern);
+  setNewPattern(createDefaultPattern());   // unconditional
+};
+```
+
+But `onAccepted` can refuse. `usePatternCrud.editPattern` returns `false` for a blank name, and
+`PatternListManager` then deliberately leaves the modal open so the user can correct it — except
+the form had already reset to a blank *new* pattern. Everything went: type, counts, level,
+description, tags, prerequisites, videos, attached modifiers.
+
+And the pattern's `id` went with them. So a second save attempt hit
+`editPattern`'s `"Cannot edit pattern without id"` branch, returned `false` again, and the modal
+stayed open forever. The only way out was Cancel, discarding the edit.
+
+**Fixed** by making rejection expressible and only clearing on acceptance. `onAccepted` may now
+return `void | boolean | Promise<void | boolean>`; `handleFinish` awaits it and resets unless the
+answer was exactly `false`. A caller that returns nothing still counts as acceptance, so the
+existing behaviour is unchanged for everyone else. `PatternListManager`'s two wrappers now return
+the outcome they were already computing.
+
+**Still worth doing:** the form gives no feedback at all when a save is refused — it just sits
+there. Now that the user's input survives, an inline "name is required" message is the obvious
+next step, and is a UI addition rather than a bug fix.
 
 ---
 

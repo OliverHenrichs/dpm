@@ -42,7 +42,14 @@ type EditPatternFormProps = {
   patterns: IPattern[];
   patternTypes: PatternType[];
   modifiers: IModifier[];
-  onAccepted: (pattern: NewPattern | IPattern) => void;
+  /**
+   * Returning `false` (or a promise of it) means the save was refused and the
+   * form should keep what the user has entered. `usePatternCrud` already
+   * reports rejection that way.
+   */
+  onAccepted: (
+    pattern: NewPattern | IPattern,
+  ) => void | boolean | Promise<void | boolean>;
   onCancel: () => void;
   existing?: IPattern | null;
 };
@@ -124,9 +131,16 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModifierId, newPattern.videoRefs, newPattern.modifierRefs]);
 
-  const handleFinish = () => {
-    onAccepted(newPattern);
-    setNewPattern(createDefaultPattern());
+  const handleFinish = async () => {
+    // Only clear the form once the caller has taken the pattern. It used to
+    // reset unconditionally, which quietly destroyed an edit the caller had
+    // refused: a blank name leaves the modal open, so the user was left
+    // looking at an empty "Edit Pattern" form with the pattern's type, counts,
+    // videos and — fatally — its id all gone. Saving again then failed with
+    // "Cannot edit pattern without id", so the form could not be escaped
+    // except by cancelling.
+    const accepted = await onAccepted(newPattern);
+    if (accepted !== false) setNewPattern(createDefaultPattern());
   };
 
   const openAddVideoModal = () => {

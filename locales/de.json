@@ -196,5 +196,7 @@
   "variant": "Variante",
   "appliedToPatterns": "Angewendet auf",
   "notAppliedToAnyPattern": "Noch auf keine Figur angewendet",
-  "prerequisiteWouldCycle": "Ausgegraute Figuren würden eine Voraussetzungs-Schleife erzeugen."
+  "prerequisiteWouldCycle": "Ausgegraute Figuren würden eine Voraussetzungs-Schleife erzeugen.",
+  "removeVideo": "Video entfernen",
+  "detachModifier": "Modifikator lösen"
 }

@@ -196,5 +196,7 @@
   "variant": "Variant",
   "appliedToPatterns": "Applied to",
   "notAppliedToAnyPattern": "Not applied to any pattern yet",
-  "prerequisiteWouldCycle": "Greyed-out patterns would create a prerequisite loop."
+  "prerequisiteWouldCycle": "Greyed-out patterns would create a prerequisite loop.",
+  "removeVideo": "Remove video",
+  "detachModifier": "Detach modifier"
 }

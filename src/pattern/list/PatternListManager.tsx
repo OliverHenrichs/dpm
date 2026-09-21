@@ -62,12 +62,18 @@ const PatternListManager = () => {
   // open. Each returns whether it was applied, so a rejected edit — a blank
   // name, a read-only list — leaves the form open instead of silently
   // discarding what the user typed.
+  // These return the outcome as well as acting on it: EditPatternForm keeps
+  // what the user typed when the answer is `false`.
   const handleAddPattern = async (pattern: NewPattern) => {
-    if (await addPattern(pattern)) setIsAddingNew(false);
+    const accepted = await addPattern(pattern);
+    if (accepted) setIsAddingNew(false);
+    return accepted;
   };
 
   const handleSavePattern = async (pattern: NewPattern | IPattern) => {
-    if (await editPattern(pattern)) setIsEditing(false);
+    const accepted = await editPattern(pattern);
+    if (accepted) setIsEditing(false);
+    return accepted;
   };
 
   const handleDeletePattern = async (id?: number) => {

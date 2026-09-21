@@ -86,10 +86,10 @@ module.exports = {
     // instrumented twice and the merge depends on which worker saw them first.
     // Set a floor under the lowest of several runs, not under the best one.
     global: {
-      statements: 35,
-      branches: 22,
-      functions: 32,
-      lines: 38,
+      statements: 40,
+      branches: 30,
+      functions: 38,
+      lines: 42,
     },
     // The data layer handles user data that cannot be recreated if lost, so it
     // is held to a much higher bar than the UI.
@@ -203,6 +203,31 @@ module.exports = {
       branches: 84,
       functions: 95,
       lines: 95,
+    },
+    // Pattern editing: the form, its video handling and the variant strip.
+    "src/pattern/list/EditPatternForm.tsx": {
+      statements: 78,
+      branches: 64,
+      functions: 72,
+      lines: 81,
+    },
+    "src/pattern/list/ModifierPillStrip.tsx": {
+      statements: 90,
+      branches: 84,
+      functions: 86,
+      lines: 90,
+    },
+    "src/pattern/list/PatternVideos.tsx": {
+      statements: 94,
+      branches: 74,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/list/AddVideoModal.tsx": {
+      statements: 78,
+      branches: 62,
+      functions: 94,
+      lines: 85,
     },
     "src/pattern/list/PatternList.tsx": {
       statements: 82,
