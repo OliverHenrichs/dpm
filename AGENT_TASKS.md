@@ -28,7 +28,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 1 | Don't focus the pattern-list name right after picking a starting point — the keyboard hides too much | **S** | ✅ done | [S1](#s1--stop-auto-focusing-the-list-name-field--done) |
 | 2 | App's swipe-left gesture fights the OS back gesture | **M** | open | [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture) |
 | 2b | Searchable/filterable pattern graph (only show direct chains of filtered figures) | **L** | ✅ done | [L1](#l1--searchable--filterable-pattern-graph) |
-| 3 | Moveable patterns in network graph | **L** | open | [L2](#l2--moveable-patterns-in-the-network-graph) |
+| 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ◐ details half done ([B7](#b7--the-graphs-detail-modal-can-never-show-modifiers--done)) | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | open | [L3](#l3--ai-anonymised-comic-style-videos) |
@@ -69,7 +69,7 @@ evidence.
 Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1  M2                       F2✅        (defects + the graph model)
-Phase 3  L1✅ ─────────────► L2                             (L1 done — L2 ready)
+Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
 ```
 
@@ -623,7 +623,7 @@ same split the rest of the graph already used; it is now a deliberate one.
 
 ---
 
-### L2 — Moveable patterns in the network graph — IN PROGRESS
+### L2 — Moveable patterns in the network graph — DONE
 
 > *"Moveable patterns in network graph"*
 
@@ -859,7 +859,45 @@ patterns terminates instead of looping.
 started outliving individual patterns. Mitigated here by pruning stale entries; the real fix is a
 per-list high-water mark and is written up separately rather than smuggled into L2.
 
-**Still to do:** step 3, the drag interaction itself.
+#### Landed — step 3 of 3: the drag
+
+**803 tests** (was 744).
+
+- **`hooks/useNodeDrag.ts` + `model/graphCoordinates.ts`** — one pan on the canvas that hit-tests,
+  rather than a gesture per node. Nodes are SVG elements, so a `GestureDetector` per node means a
+  detector inside an `<Svg>`: fragile on native and colliding with the web build's hand-bound
+  click listeners. This is not the rejected option B — arbitration is still Gesture Handler's,
+  because the drag is *raced* against the canvas's gestures rather than made exclusive, so a plain
+  drag pans immediately instead of waiting for a long press to fail.
+- **The scale bug the writeup warns about is tested directly.** Screen deltas are divided by the
+  live zoom; there are tests asserting the node lands where the finger did at 0.5×, 1× and 2×.
+- **`render/DraggedNode.tsx` / `render/DraggedEdge.tsx`** — only the dragged node and the edges
+  touching it follow a shared value. `draggingId` is React state, set once per drag, so nothing
+  re-renders per frame and the per-frame cost is a handful of worklets whatever the graph size.
+  This is option 1 from the writeup, not the "snap on release" fallback.
+- **Persistence, reset and cleanup** — positions save on release; a reset action appears in the
+  header once there is something to reset, behind an `AppDialog` confirmation; dragging is allowed
+  on read-only lists, as a local view preference rather than a content edit.
+- A long press on empty canvas pans, rather than doing nothing — the drag has already won the race
+  by then, so the canvas pan will not fire.
+
+**A real bug found by the test suite, which would have shipped.** Marking `generateOrthogonalPath`
+and its helpers as worklets broke every edge with `getConnectionPoint is not a function`. The
+worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a
+factory that closes over its helpers **by value at the point the declaration appears** — so a
+worklet declared above its helpers captures `undefined`, and function hoisting cannot save it
+because there is no declaration left to hoist. This would have failed on device exactly as it did
+under test. Fixed by ordering, with the reason written at the call site and in `AGENTS.md`.
+
+**Not verified on device, and not verifiable here** — the manual list above still stands in full.
+Most important: whether a tap still opens the detail modal under the canvas pan, whether the
+drawer's edge swipe and the drag arbitrate sensibly, whether the 200 ms activation feels right,
+and a release build on the slowest supported Android with a 100+ pattern list. The haptics fire at
+pickup and release and cannot be judged from code at all.
+
+**Deliberately not done:** the web verification pass the writeup asks for (point 8). Both bundles
+export, but mouse-drag and touch-drag on a real browser are a separate check that has not
+happened.
 
 **Not yet verified on device.** Nothing in this step can be: whether a tap still reaches a node
 under the canvas pan, whether the drawer's edge swipe and the canvas pan arbitrate sensibly, and

@@ -11,6 +11,7 @@ import {
   CanvasTransform,
   CanvasTransformProvider,
 } from "@/src/pattern/graph/components/CanvasTransformContext";
+import type { GestureType } from "react-native-gesture-handler";
 
 export const MIN_ZOOM = 0.15;
 export const MAX_ZOOM = 4.5;
@@ -28,6 +29,17 @@ interface ZoomableCanvasProps {
   /** Screen-pixel offsets applied after the content is centred. */
   initialOffsetX: number;
   initialOffsetY: number;
+  /** The shared values to drive, from `useCanvasTransformValues`. */
+  transform: CanvasTransform;
+  /**
+   * Raced ahead of the canvas's own gestures.
+   *
+   * The node drag goes here. Racing rather than `Exclusive` on purpose: the
+   * drag activates on a long press and the canvas pan on movement, so
+   * whichever the user actually did wins immediately — `Exclusive` would make
+   * every pan wait for the long press to fail first.
+   */
+  extraGesture?: GestureType;
   children: ReactNode;
 }
 
@@ -63,23 +75,16 @@ const ZoomableCanvas: React.FC<ZoomableCanvasProps> = ({
   contentWidth,
   contentHeight,
   initialZoom,
-  initialOffsetX,
-  initialOffsetY,
+  transform,
+  extraGesture,
   children,
 }) => {
-  const scale = useSharedValue(initialZoom);
-  const translateX = useSharedValue(initialOffsetX);
-  const translateY = useSharedValue(initialOffsetY);
+  const { scale, translateX, translateY, viewportWidth, viewportHeight } =
+    transform;
 
-  // Viewport size, for converting a gesture's focal point into an offset from
-  // the centre — which is where the content is anchored.
-  const viewportWidth = useSharedValue(0);
-  const viewportHeight = useSharedValue(0);
   // Pinch reports cumulative scale; this turns it into a per-frame factor so
   // it composes with pan instead of the two fighting over `translate`.
   const lastPinchScale = useSharedValue(1);
-
-  const transform: CanvasTransform = { scale, translateX, translateY };
 
   const onLayout = useCallback(
     (event: LayoutChangeEvent) => {

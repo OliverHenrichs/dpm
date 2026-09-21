@@ -130,6 +130,14 @@ describe("filtering the graph", () => {
     });
   });
 
+  describe("resetting the layout", () => {
+    it("is not offered until something has been moved", async () => {
+      await renderGraph();
+
+      expect(screen.queryByLabelText("Reset layout")).toBeNull();
+    });
+  });
+
   describe("empty states", () => {
     it("distinguishes an empty list from a filter that matched nothing", async () => {
       await renderGraph();

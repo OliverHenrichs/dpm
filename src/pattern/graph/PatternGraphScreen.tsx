@@ -4,6 +4,7 @@ import { IPattern } from "@/src/pattern/types/IPatternList";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
+import { useTranslation } from "react-i18next";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
 import PatternGraphHeader from "./PatternGraphHeader";
@@ -15,8 +16,12 @@ import { useGraphFilter } from "@/src/pattern/graph/hooks/useGraphFilter";
 import PatternFilterBottomSheet from "@/src/pattern/filter/components/PatternFilterBottomSheet";
 import ChainModeFilter from "@/src/pattern/graph/components/ChainModeFilter";
 import GraphFilterSummary from "@/src/pattern/graph/components/GraphFilterSummary";
+import AppDialog from "@/src/common/components/AppDialog";
+import { useGraphPositions } from "@/src/pattern/graph/hooks/useGraphPositions";
+import { useGraphLayout } from "@/src/pattern/graph/hooks/useGraphLayout";
 
 const PatternGraphScreen: React.FC = () => {
+  const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const styles = getStyles(palette);
@@ -28,6 +33,7 @@ const PatternGraphScreen: React.FC = () => {
   );
   const [resetKey, setResetKey] = useState(0);
   const [filterVisible, setFilterVisible] = useState(false);
+  const [resetLayoutVisible, setResetLayoutVisible] = useState(false);
 
   const handleToggleView = () => {
     setViewMode((prev) => (prev === "timeline" ? "graph" : "timeline"));
@@ -66,6 +72,20 @@ const PatternGraphScreen: React.FC = () => {
   // at the zoom the whole graph needed and reads as an empty canvas.
   const contentKey = `${resetKey}-${model.nodes.length}-${chainMode}`;
 
+  // The automatic layout of whatever is currently drawn, and the manual one
+  // laid over it. Reconciliation is against the *unfiltered* patterns: a
+  // filter hides patterns rather than deleting them, and pruning against the
+  // filtered set would discard the user's arrangement the moment they search.
+  const { positions: autoPositions } = useGraphLayout(model);
+  const { positions, hasManualLayout, moveNode, resetLayout } =
+    useGraphPositions(activeList?.id, patterns, autoPositions);
+
+  const handleResetLayout = async () => {
+    setResetLayoutVisible(false);
+    await resetLayout();
+    setResetKey((prev) => prev + 1);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <PageContainer
@@ -79,6 +99,8 @@ const PatternGraphScreen: React.FC = () => {
             onToggleView={handleToggleView}
             hasActiveFilter={hasActiveFilter}
             onFilter={() => setFilterVisible(true)}
+            canResetLayout={hasManualLayout}
+            onResetLayout={() => setResetLayoutVisible(true)}
           />
 
           <GraphFilterSummary
@@ -97,6 +119,8 @@ const PatternGraphScreen: React.FC = () => {
             palette={palette}
             resetKey={contentKey}
             hasActiveFilter={hasActiveFilter}
+            positions={positions}
+            onMoveNode={moveNode}
             onNodeTap={handleNodeTap}
           />
         </View>
@@ -115,6 +139,16 @@ const PatternGraphScreen: React.FC = () => {
               palette={palette}
             />
           }
+        />
+
+        <AppDialog
+          visible={resetLayoutVisible}
+          title={t("resetLayout")}
+          message={t("resetLayoutConfirm")}
+          closeLabel={t("cancel")}
+          confirmLabel={t("reset")}
+          onConfirm={handleResetLayout}
+          onClose={() => setResetLayoutVisible(false)}
         />
 
         <PatternDetailsModal

@@ -9,6 +9,7 @@ import Legend from "./Legend";
 import CycleWarning from "./CycleWarning";
 import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
+import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 
 interface GraphViewContainerProps {
   viewMode: ViewMode;
@@ -23,6 +24,9 @@ interface GraphViewContainerProps {
   resetKey: string;
   /** Distinguishes "nothing matched" from "this list is empty". */
   hasActiveFilter: boolean;
+  /** The network view's positions: a manual layout where one exists. */
+  positions: Map<number, LayoutPosition>;
+  onMoveNode: (id: number, position: LayoutPosition) => void;
   onNodeTap: (pattern: IPattern) => void;
 }
 
@@ -33,6 +37,8 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   palette,
   resetKey,
   hasActiveFilter,
+  positions,
+  onMoveNode,
   onNodeTap,
 }) => {
   const styles = getStyles(palette);
@@ -57,6 +63,8 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
             model={model}
             palette={palette}
             hasActiveFilter={hasActiveFilter}
+            positions={positions}
+            onMoveNode={onMoveNode}
             onNodeTap={onNodeTap}
           />
         )}

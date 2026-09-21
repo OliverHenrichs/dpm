@@ -206,5 +206,7 @@
   "chainModeFullChain": "Everything connected",
   "graphFilterSummary": "{{matched}} matched · {{shown}} shown of {{total}}",
   "clearFilter": "Clear filter",
-  "noPatternsMatchFilter": "No patterns match this filter"
+  "noPatternsMatchFilter": "No patterns match this filter",
+  "resetLayout": "Reset layout",
+  "resetLayoutConfirm": "Put every pattern back where the app placed it? Your arrangement will be lost."
 }

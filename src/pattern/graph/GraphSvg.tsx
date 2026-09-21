@@ -15,6 +15,9 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
   model,
   positions,
   palette,
+  draggingId,
+  dragX,
+  dragY,
   onNodeTap,
 }) => (
   <Svg
@@ -23,8 +26,12 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
     {...rasterizeLargeGraph(model.nodes.length)}
   >
     <ArrowheadMarker palette={palette} />
-    {drawEdges(model.edges, positions, palette)}
-    {drawNodes(model.nodes, positions, palette, onNodeTap)}
+    {drawEdges(model.edges, positions, palette, { draggingId, dragX, dragY })}
+    {drawNodes(model.nodes, positions, palette, onNodeTap, {
+      draggingId,
+      dragX,
+      dragY,
+    })}
   </Svg>
 );
 

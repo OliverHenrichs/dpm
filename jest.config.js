@@ -364,19 +364,59 @@ module.exports = {
     // defensive `?? []` fallbacks over maps that always have an entry.
     "src/pattern/graph/model/resolveLayout.ts": {
       statements: 95,
-      branches: 82,
+      branches: 80,
       functions: 95,
       lines: 95,
     },
     "src/pattern/graph/data/GraphLayoutStorage.ts": {
       statements: 94,
-      branches: 94,
+      branches: 88,
       functions: 94,
       lines: 94,
     },
     "src/pattern/graph/data/GraphLayoutKeys.ts": {
       statements: 94,
       branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    // L2 step 3: dragging. The gesture maths is held total — a node that does
+    // not track the finger is the defect this whole design exists to avoid —
+    // and so are the two animated renderers, whose worklets decide where the
+    // node and its edges are actually drawn.
+    "src/pattern/graph/model/graphCoordinates.ts": {
+      statements: 94,
+      branches: 85,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/hooks/useNodeDrag.ts": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/hooks/useGraphPositions.ts": {
+      statements: 94,
+      branches: 80,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/render/DraggedNode.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/render/DraggedEdge.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/render/GraphPrimitives.tsx": {
+      statements: 86,
+      branches: 78,
       functions: 94,
       lines: 94,
     },

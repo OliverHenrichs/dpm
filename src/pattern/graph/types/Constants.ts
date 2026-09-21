@@ -23,3 +23,12 @@ export const MAX_GRAPH_COORDINATE = 4000;
 
 /** Distance the radial layout puts between a node and its prerequisite. */
 export const DEPTH_SPACING = 220;
+
+/**
+ * Dash pattern for an edge that spans nodes a filter is hiding.
+ *
+ * Here rather than beside the renderer that uses it: both `GraphPrimitives`
+ * and `DraggedEdge` need it, and `DraggedEdge` is imported *by*
+ * `GraphPrimitives` — importing it back the other way is a cycle.
+ */
+export const ELIDED_DASH = "6 4";

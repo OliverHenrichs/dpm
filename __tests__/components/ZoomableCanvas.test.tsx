@@ -7,6 +7,7 @@ import ZoomableCanvas, {
 import {
   CanvasTransform,
   useCanvasTransform,
+  useCanvasTransformValues,
 } from "@/src/pattern/graph/components/CanvasTransformContext";
 import {
   findGesture,
@@ -37,19 +38,32 @@ const TransformProbe: React.FC = () => {
   return <Text>probe</Text>;
 };
 
+/** Owns the shared values, as the network view does. */
+const Harness: React.FC<{
+  initialZoom: number;
+  offsetX: number;
+  offsetY: number;
+}> = ({ initialZoom, offsetX, offsetY }) => {
+  const transform = useCanvasTransformValues(initialZoom, offsetX, offsetY);
+  return (
+    <ZoomableCanvas
+      contentWidth={CONTENT.width}
+      contentHeight={CONTENT.height}
+      initialZoom={initialZoom}
+      initialOffsetX={offsetX}
+      initialOffsetY={offsetY}
+      transform={transform}
+    >
+      <TransformProbe />
+    </ZoomableCanvas>
+  );
+};
+
 function renderCanvas(initialZoom = 1, offsetX = 0, offsetY = 0) {
   captured = null;
   render(
     <View testID="host">
-      <ZoomableCanvas
-        contentWidth={CONTENT.width}
-        contentHeight={CONTENT.height}
-        initialZoom={initialZoom}
-        initialOffsetX={offsetX}
-        initialOffsetY={offsetY}
-      >
-        <TransformProbe />
-      </ZoomableCanvas>
+      <Harness initialZoom={initialZoom} offsetX={offsetX} offsetY={offsetY} />
     </View>,
   );
   // The focal-point maths needs the viewport size, which arrives on layout.
