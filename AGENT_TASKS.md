@@ -1123,6 +1123,16 @@ Three notes for anyone extending these:
 I was wrong about `onViewableItemsChanged` being impractical to simulate — it needed the layout
 step, not a real scroll.
 
+**One of these tests went red on CI**, and the cause is worth recording because it will recur:
+`waitFor(() => expect(screen.queryByText(...)).toBeNull())` — polling for a node to *disappear* —
+is unreliable on a loaded runner. Instrumenting the failure showed the state settling in **51 ms**
+while `waitFor` still timed out: it re-runs its check inside `act`, and under contention it can
+keep observing the pre-update tree until its budget expires. The fix is to wait on something
+positive (a node appearing, storage reaching its expected value) and assert the absence
+synchronously afterwards. A second test had the same shape and was corrected too. The failure
+reproduces locally by saturating the CPU — `for i in $(seq 8); do (while :; do :; done) & done` —
+which turns it from a once-in-a-while CI mystery into a deterministic local repro.
+
 #### Still outstanding
 
 Nothing worth chasing. What remains uncovered is the graph rendering (`GraphSvg`, `PatternNode`,

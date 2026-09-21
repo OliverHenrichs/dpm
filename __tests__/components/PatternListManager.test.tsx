@@ -231,7 +231,7 @@ describe("PatternListManager", () => {
 
   describe("selection", () => {
     it("forgets a selected pattern once it is deleted", async () => {
-      await renderManager([
+      const { list } = await renderManager([
         pattern(1, "Sugar Push", { description: "The basic" }),
       ]);
 
@@ -242,7 +242,17 @@ describe("PatternListManager", () => {
       fireEvent.press(screen.getByLabelText("Delete Pattern"));
       fireEvent.press(screen.getByText("Delete"));
 
-      await waitFor(() => expect(screen.queryByText("The basic")).toBeNull());
+      // Wait on the authoritative outcome — the write — then assert the UI
+      // synchronously. Polling the *absence* of a node instead was flaky on a
+      // loaded runner: the state settles in about 50ms, but `waitFor` re-runs
+      // its check inside `act`, and under contention it could still be seeing
+      // the pre-delete tree when its budget ran out.
+      await waitFor(async () =>
+        expect(await storedPatterns(list.id)).toEqual([]),
+      );
+
+      expect(screen.queryByText("Sugar Push")).toBeNull();
+      expect(screen.queryByText("The basic")).toBeNull();
     });
   });
 
