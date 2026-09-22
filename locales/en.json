@@ -213,5 +213,7 @@
   "dismissHint": "Dismiss hint",
   "dragToMove": "Hold and drag to move",
   "closeDetails": "Close",
-  "dismissDetails": "Dismiss details"
+  "dismissDetails": "Dismiss details",
+  "legendHasVideo": "Has video",
+  "legendModifiers": "Modifiers attached"
 }

@@ -29,7 +29,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 2 | App's swipe-left gesture fights the OS back gesture | **M** | ✅ done | [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture) |
 | 2b | Searchable/filterable pattern graph (only show direct chains of filtered figures) | **L** | ✅ done | [L1](#l1--searchable--filterable-pattern-graph) |
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
-| 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ◐ details half done ([B7](#b7--the-graphs-detail-modal-can-never-show-modifiers--done)) | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
+| 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | open | [L3](#l3--ai-anonymised-comic-style-videos) |
 
@@ -68,12 +68,12 @@ evidence.
 ```
 Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
-Phase 2  B1✅ B2✅ M1✅ M2                      F2✅        (defects + the graph model)
+Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
 ```
 
-**Phases 1 and 2 are complete**, bar M2. Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
+**Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
 landed and what is still outstanding. **L1 has landed**, so L2 — moveable nodes — is next, with
 the node set it has to reconcile against now well defined.
 
@@ -333,7 +333,7 @@ its own 3-day item for Android 10+ only.
 
 ---
 
-### M2 — Surface video and modifier availability in the graph
+### M2 — Surface video and modifier availability in the graph — DONE
 
 **Two parts.** The details half is [B7](#b7--the-graphs-detail-modal-can-never-show-modifiers--done) —
 one line. This entry covers the node badges.
@@ -377,6 +377,32 @@ environment F1 asked for exists now, so the rendered badge is testable too.
 
 **Effort:** ~1 day. F2 has landed, so the type cleanup that made up most of the original estimate
 is already done.
+
+#### Landed
+
+**890 tests** (was 860). All six design points, with two decisions worth recording.
+
+- **`model/nodeBadges.ts`** — `nodeBadges(pattern)` returns `{ hasVideo, modifierCount }`. Video
+  counts if it hangs off the pattern *or* off one of its modifier combinations, because "Whip
+  with a tuck turn, filmed" is still something to watch here. `modifierRefs` holds only
+  non-universal attachments by definition, which is what makes the count worth drawing — a
+  universal modifier applies to every pattern, so badging it would mark every node and say
+  nothing.
+- **`render/NodeBadges.tsx`** — a play triangle and up to three dots in the bottom-right corner,
+  **inside** the existing 100×60 box. `NODE_WIDTH`/`NODE_HEIGHT` feed the timeline's swimlane
+  sizing and its collision-avoidance pass, so node size is not a free variable; tests assert every
+  glyph stays within the box, and fail if the inset is moved outside it.
+- **Drawn as shapes, not glyphs from a font.** A triangle and circles render identically
+  everywhere; an emoji or a box-drawing character depends on what the device has installed. The
+  legend draws the same shapes for the same reason, so it always matches the graph.
+- **Coloured with the node's type colour**, not a secondary-text grey. Point 6 of the design was
+  right to flag this: the fill opacity already varies by level (0.3 / 0.5 / 0.7) and a grey washes
+  out on an advanced pattern. There is a test pinning the colour on an advanced node.
+- **The dot count is capped at three.** Beyond that the dots would not fit or read, and the exact
+  number is in the details view. `nodeBadges` still returns the true count; only the renderer caps.
+- **`Legend` went from no tests to 100%.** It is the only place that says what the badges mean,
+  since they carry no words of their own, so leaving it uncovered while adding to it was not an
+  option.
 
 ---
 

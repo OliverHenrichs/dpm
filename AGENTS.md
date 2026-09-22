@@ -221,6 +221,19 @@ Because the node tap is a Gesture Handler tap now, **the canvas has no double-ta
 
 **`generateOrthogonalPath` and the helpers it calls are worklets, and their position in `GraphUtils.ts` is load-bearing.** The worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a factory that closes over its helpers *by value at the point the declaration appears*. Declared above its helpers, such a function captures `undefined` and throws `getConnectionPoint is not a function` the first time an edge is drawn — on device as well as under test, and function hoisting does not save it because there is no longer a declaration to hoist. If you add a helper there, mark it `"worklet"` and define it above its callers.
 
+### Node badges
+
+A node marks what it has: a play triangle when the pattern (or one of its modifier combinations) has video, and up to three dots for attached modifiers. `model/nodeBadges.ts` decides; `render/NodeBadges.tsx` draws.
+
+- **They live inside the existing 100×60 box.** `NODE_WIDTH`/`NODE_HEIGHT` feed the timeline's swimlane sizing and its collision-avoidance pass, so node size is not a free variable — growing a node moves the timeline layout everywhere.
+- **Shapes, not glyphs from a font.** A triangle and circles render identically on every device; an emoji or a box-drawing character depends on what is installed. `Legend` draws the same shapes so it always matches the graph.
+- **Coloured with the node's type colour**, never a secondary-text grey: the fill opacity already varies by level (0.3 / 0.5 / 0.7) and grey washes out on an advanced pattern.
+- **Every shape is positioned by its bounding box, on both axes.** Taking the right edge of one and the centre line of another looks correct in code and is visibly lopsided on a device — it happened twice, once to each badge. The shapes are written symmetrically about their own centre lines so the insets are a testable property rather than true by construction.
+- The dots take the corner themselves when there is no video mark, and share the triangle's centre line when there is. Always sharing it would hang them the triangle's height above the bottom edge with nothing underneath.
+- **A foundational node's badges step in further**, because its inner double border is itself at inset 3 and the badges would otherwise rest on that line.
+- **Dot spacing is set by what survives being zoomed out**, not by what looks right at 1:1. At 1.5px apart the dots merged into one blob at the zoom the graph actually opens at; they now have a full dot's width of clear space. Anything drawn here has the same constraint — the network view fits a whole list on screen by default.
+- Only *attached* modifiers are counted. A universal modifier applies to every pattern in the list, so badging one would mark every node and say nothing.
+
 ### The views
 
 - **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`

@@ -6,6 +6,8 @@ import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
 import { GraphNode } from "@/src/pattern/graph/model/GraphModel";
+import { nodeBadges } from "@/src/pattern/graph/model/nodeBadges";
+import NodeBadges from "@/src/pattern/graph/render/NodeBadges";
 
 interface PatternNodeProps {
   node: GraphNode;
@@ -55,6 +57,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
   const { pattern, color, foundational, isContext } = node;
   const borderColor = color ?? palette[PaletteColor.Primary];
   const bgOpacity = backgroundOpacity(pattern.level);
+  const badges = nodeBadges(pattern);
 
   const displayName =
     pattern.name.length > 12
@@ -92,6 +95,14 @@ const PatternNode: React.FC<PatternNodeProps> = ({
           rx={2}
         />
       )}
+
+      <NodeBadges
+        badges={badges}
+        x={x}
+        y={y}
+        color={borderColor}
+        foundational={foundational}
+      />
 
       {/* Pattern name */}
       <SvgText

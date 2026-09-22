@@ -393,6 +393,27 @@ module.exports = {
       functions: 94,
       lines: 94,
     },
+    // M2: what a node advertises about itself beyond its name and counts.
+    "src/pattern/graph/model/nodeBadges.ts": {
+      statements: 94,
+      branches: 80,
+      functions: 94,
+      lines: 94,
+    },
+    "src/pattern/graph/render/NodeBadges.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
+    // The only place that says what the badges mean, since they carry no
+    // words of their own.
+    "src/pattern/graph/Legend.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
     // L2 step 3: dragging. The gesture maths is held total — a node that does
     // not track the finger is the defect this whole design exists to avoid —
     // and so are the two animated renderers, whose worklets decide where the
