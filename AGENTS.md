@@ -228,6 +228,7 @@ A node marks what it has: a play triangle when the pattern (or one of its modifi
 - **They live inside the existing 100×60 box.** `NODE_WIDTH`/`NODE_HEIGHT` feed the timeline's swimlane sizing and its collision-avoidance pass, so node size is not a free variable — growing a node moves the timeline layout everywhere.
 - **Shapes, not glyphs from a font.** A triangle and circles render identically on every device; an emoji or a box-drawing character depends on what is installed. `Legend` draws the same shapes so it always matches the graph.
 - **Coloured with the node's type colour**, never a secondary-text grey: the fill opacity already varies by level (0.3 / 0.5 / 0.7) and grey washes out on an advanced pattern.
+- **Insets are measured to the outside of each shape on both axes.** Taking the right edge of one and the centre line of another looks correct in code and is visibly lopsided on a device. The shapes are written symmetrically about a shared centre line so the property is testable rather than true by construction.
 - Only *attached* modifiers are counted. A universal modifier applies to every pattern in the list, so badging one would mark every node and say nothing.
 
 ### The views

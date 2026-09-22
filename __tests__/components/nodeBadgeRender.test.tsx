@@ -52,6 +52,18 @@ function renderNode(overrides: Partial<IPattern> = {}) {
 const videoBadge = () => screen.UNSAFE_queryAllByType(Path);
 const modifierDots = () => screen.UNSAFE_queryAllByType(Circle);
 
+/** The triangle's corners, pulled back out of its path string. */
+function trianglePoints(): { xs: number[]; ys: number[] } {
+  const numbers = String(videoBadge()[0].props.d)
+    .split(/[MLZ ]+/)
+    .filter(Boolean)
+    .map(Number);
+  return {
+    xs: numbers.filter((_, index) => index % 2 === 0),
+    ys: numbers.filter((_, index) => index % 2 === 1),
+  };
+}
+
 describe("node badges", () => {
   describe("what gets drawn", () => {
     it("draws nothing on a bare pattern", () => {
@@ -123,15 +135,28 @@ describe("node badges", () => {
 
     it("keeps the video mark inside the node box", () => {
       renderNode({ videoRefs: [video()] });
+      const { xs, ys } = trianglePoints();
 
-      const coordinates = String(videoBadge()[0].props.d)
-        .split(/[ML ]+/)
-        .filter(Boolean)
-        .map(Number)
-        .filter((value) => !Number.isNaN(value));
-      for (let i = 0; i < coordinates.length; i += 2) {
-        expect(withinNode(coordinates[i], coordinates[i + 1])).toBe(true);
+      for (let i = 0; i < xs.length; i++) {
+        expect(withinNode(xs[i], ys[i])).toBe(true);
       }
+    });
+
+    /**
+     * The gaps have to be measured the same way on both axes — the outside of
+     * the shape, not the centre on one and the edge on the other. Getting
+     * that wrong is invisible in a "is it inside the box" assertion and very
+     * visible on a device: the mark sat 7px from the right and 3px from the
+     * bottom.
+     */
+    it("sits the same distance from the right edge as from the bottom", () => {
+      renderNode({ videoRefs: [video()] });
+      const { xs, ys } = trianglePoints();
+
+      const gapRight = CENTRE.x + NODE_WIDTH / 2 - Math.max(...xs);
+      const gapBottom = CENTRE.y + NODE_HEIGHT / 2 - Math.max(...ys);
+
+      expect(gapRight).toBe(gapBottom);
     });
 
     it("puts the dots clear of the video mark", () => {
@@ -141,14 +166,8 @@ describe("node badges", () => {
       });
 
       const dot = modifierDots()[0];
-      const rightmostX = Math.max(
-        ...String(videoBadge()[0].props.d)
-          .split(/[ML ]+/)
-          .filter(Boolean)
-          .map(Number)
-          .filter((value, index) => !Number.isNaN(value) && index % 2 === 0),
-      );
-      expect(dot.props.cx).toBeLessThan(rightmostX);
+
+      expect(dot.props.cx).toBeLessThan(Math.max(...trianglePoints().xs));
     });
   });
 

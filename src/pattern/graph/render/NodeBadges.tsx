@@ -9,9 +9,8 @@ import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
  * timeline's swimlane sizing and its collision-avoidance pass, so node size is
  * not a free variable — growing it would move the timeline layout everywhere.
  */
-const INSET_X = 7;
-const INSET_Y = 7;
-/** Half-width of the play triangle. */
+const INSET = 7;
+/** Half the play triangle's height, and half its width. */
 const PLAY_SIZE = 4;
 const DOT_RADIUS = 1.6;
 const DOT_GAP = 5;
@@ -42,17 +41,29 @@ const NodeBadges: React.FC<NodeBadgesProps> = ({ badges, x, y, color }) => {
   const { hasVideo, modifierCount } = badges;
   if (!hasVideo && modifierCount === 0) return null;
 
-  const right = x + NODE_WIDTH / 2 - INSET_X;
-  const bottom = y + NODE_HEIGHT / 2 - INSET_Y;
+  // Both edges of the badge row, measured the same way: the *outside* of the
+  // shapes, not the centre of one and the edge of the other. Mixing the two
+  // is what left the video mark further from the right edge than the bottom.
+  const edgeRight = x + NODE_WIDTH / 2 - INSET;
+  const edgeBottom = y + NODE_HEIGHT / 2 - INSET;
+  // The triangle is the tallest thing in the row, so the row's centre line
+  // sits half its height above the bottom edge. The dots share that line,
+  // which is what makes them read as aligned with it.
+  const centerY = edgeBottom - PLAY_SIZE;
+
   const dots = Math.min(modifierCount, MAX_DOTS);
   // Dots sit to the left of the triangle when both are shown.
-  const dotsRight = hasVideo ? right - PLAY_SIZE * 2 - 3 : right;
+  const dotsRight = hasVideo ? edgeRight - PLAY_SIZE * 2 - 3 : edgeRight;
 
   return (
     <G>
       {hasVideo && (
         <Path
-          d={`M ${right - PLAY_SIZE * 2} ${bottom - PLAY_SIZE} L ${right} ${bottom} L ${right - PLAY_SIZE * 2} ${bottom + PLAY_SIZE} Z`}
+          // Symmetric about `centerY` on purpose. Pinning the lower corner to
+          // `edgeBottom` instead would put the shape's bottom at the right
+          // inset whatever the centre line was, which is true but says
+          // nothing — and makes the alignment untestable.
+          d={`M ${edgeRight - PLAY_SIZE * 2} ${centerY - PLAY_SIZE} L ${edgeRight} ${centerY} L ${edgeRight - PLAY_SIZE * 2} ${centerY + PLAY_SIZE} Z`}
           fill={color}
         />
       )}
@@ -60,7 +71,7 @@ const NodeBadges: React.FC<NodeBadgesProps> = ({ badges, x, y, color }) => {
         <Circle
           key={index}
           cx={dotsRight - index * DOT_GAP}
-          cy={bottom}
+          cy={centerY}
           r={DOT_RADIUS}
           fill={color}
         />
