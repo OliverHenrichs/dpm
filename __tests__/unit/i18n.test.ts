@@ -1,8 +1,15 @@
 import fs from "fs";
 import path from "path";
-import en from "@/locales/en.json";
+import ar from "@/locales/ar.json";
+import bn from "@/locales/bn.json";
 import de from "@/locales/de.json";
-import { LANGUAGES } from "@/src/settings/types/Languages";
+import en from "@/locales/en.json";
+import es from "@/locales/es.json";
+import fr from "@/locales/fr.json";
+import hi from "@/locales/hi.json";
+import pt from "@/locales/pt.json";
+import zh from "@/locales/zh.json";
+import { findLanguage, LANGUAGES } from "@/src/settings/types/Languages";
 
 const SRC_DIR = path.join(__dirname, "..", "..", "src");
 
@@ -35,13 +42,56 @@ function usedKeys(): Map<string, string[]> {
   return found;
 }
 
-const locales: Record<string, Record<string, string>> = { en, de };
+const locales: Record<string, Record<string, string>> = {
+  en,
+  zh,
+  hi,
+  es,
+  fr,
+  ar,
+  bn,
+  pt,
+  de,
+};
 
 describe("i18n", () => {
   it("ships a locale file for every selectable language", () => {
     for (const language of LANGUAGES) {
       expect(Object.keys(locales)).toContain(language.code);
     }
+  });
+
+  it("ships a selectable language for every locale file", () => {
+    const codes = LANGUAGES.map((language) => language.code);
+    expect(
+      Object.keys(locales).filter((code) => !codes.includes(code)),
+    ).toEqual([]);
+  });
+
+  it("gives every language a distinct code, endonym and English name", () => {
+    const unique = (values: string[]) => new Set(values).size === values.length;
+
+    expect(unique(LANGUAGES.map((l) => l.code))).toBe(true);
+    expect(unique(LANGUAGES.map((l) => l.label))).toBe(true);
+    expect(unique(LANGUAGES.map((l) => l.englishName))).toBe(true);
+    expect(
+      LANGUAGES.filter((l) => !l.label.trim() || !l.englishName.trim()),
+    ).toEqual([]);
+  });
+
+  describe("findLanguage", () => {
+    it("finds an exact code", () => {
+      expect(findLanguage("bn").englishName).toBe("Bengali");
+    });
+
+    it("falls back to the base language of a regional code", () => {
+      // i18next hands back what the device reports, which can be "pt-BR".
+      expect(findLanguage("pt-BR").englishName).toBe("Portuguese");
+    });
+
+    it("falls back to English for a language we do not ship", () => {
+      expect(findLanguage("xx").code).toBe("en");
+    });
   });
 
   describe("key parity", () => {

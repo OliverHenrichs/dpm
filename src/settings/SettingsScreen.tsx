@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Button,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -19,7 +20,8 @@ import {
   useThemeContext,
 } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { LANGUAGES } from "@/src/settings/types/Languages";
+import { findLanguage } from "@/src/settings/types/Languages";
+import LanguagePickerBottomSheet from "@/src/settings/components/LanguagePickerBottomSheet";
 import PatternListExportModal from "@/src/pattern/data/components/PatternListExportModal";
 import PatternListImportModal from "@/src/pattern/data/components/PatternListImportModal";
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
@@ -29,6 +31,8 @@ const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   const { theme, setTheme, colorScheme } = useThemeContext();
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const selectedLanguage = findLanguage(currentLang);
   const commonStyles = getCommonStyles(colorScheme);
   const palette = getPalette(colorScheme);
 
@@ -72,27 +76,22 @@ const SettingsScreen: React.FC = () => {
         <View style={commonStyles.sectionHeaderRow}>
           <Text style={commonStyles.sectionTitle}>{t("language")}</Text>
         </View>
-        <View style={styles.languageRow}>
-          {LANGUAGES.map((lang) => (
-            <View
-              key={lang.code}
-              style={[
-                styles.langButton,
-                currentLang === lang.code && styles.langButtonSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.langButtonText,
-                  currentLang === lang.code && styles.langButtonTextSelected,
-                ]}
-                onPress={() => i18n.changeLanguage(lang.code)}
-              >
-                {lang.label}
-              </Text>
-            </View>
-          ))}
-        </View>
+        {/* One row that opens the full list — a button per language stopped
+            fitting across a phone once there were more than a few. */}
+        <TouchableOpacity
+          style={styles.languageRow}
+          onPress={() => setShowLanguagePicker(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`${t("language")}: ${selectedLanguage.label}`}
+        >
+          <Text style={styles.languageValue}>{selectedLanguage.label}</Text>
+          <Text style={styles.languageEnglishName}>
+            {selectedLanguage.englishName === selectedLanguage.label
+              ? ""
+              : selectedLanguage.englishName}
+          </Text>
+          <Text style={styles.languageChevron}>›</Text>
+        </TouchableOpacity>
 
         {/* Theme Section */}
         <View style={commonStyles.sectionHeaderRow}>
@@ -147,6 +146,13 @@ const SettingsScreen: React.FC = () => {
         )}
       </ScrollView>
 
+      <LanguagePickerBottomSheet
+        visible={showLanguagePicker}
+        onClose={() => setShowLanguagePicker(false)}
+        currentLanguage={currentLang}
+        onSelect={(code) => i18n.changeLanguage(code)}
+      />
+
       <PatternListExportModal
         visible={showExportModal}
         patternLists={patternLists}
@@ -183,27 +189,29 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     languageRow: {
       flexDirection: "row",
-      gap: 12,
-      marginBottom: 24,
-    },
-    langButton: {
-      paddingVertical: 8,
+      alignItems: "center",
+      gap: 8,
+      paddingVertical: 12,
       paddingHorizontal: 16,
       borderRadius: 8,
       backgroundColor: palette[PaletteColor.Surface],
       borderWidth: 1,
       borderColor: palette[PaletteColor.Border],
+      marginBottom: 24,
     },
-    langButtonSelected: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderColor: palette[PaletteColor.Primary],
-    },
-    langButtonText: {
-      color: palette[PaletteColor.PrimaryText],
+    languageValue: {
+      fontSize: 16,
       fontWeight: "bold",
+      color: palette[PaletteColor.PrimaryText],
     },
-    langButtonTextSelected: {
-      color: palette[PaletteColor.Surface],
+    languageEnglishName: {
+      flex: 1,
+      fontSize: 13,
+      color: palette[PaletteColor.SecondaryText],
+    },
+    languageChevron: {
+      fontSize: 20,
+      color: palette[PaletteColor.SecondaryText],
     },
     themeRow: {
       flexDirection: "row",

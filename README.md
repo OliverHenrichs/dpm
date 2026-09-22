@@ -74,7 +74,7 @@ Both views render from a single graph model, so they cannot disagree about depth
 
 ### Settings
 - **Theme**: Light, Dark, or System default
-- **Language**: English 🇬🇧 and German 🇩🇪
+- **Language**: nine locales — English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Deutsch. A fresh install follows the device language; your pick is remembered from then on
 - **Data transfer**: export and import pattern lists
 
 ---
@@ -105,7 +105,7 @@ The new architecture, typed routes and the React Compiler are enabled in `app.co
 
 ```
 app/                     Expo Router routes: _layout (drawer) + one file per screen
-locales/                 en.json / de.json translation resources
+locales/                 one <code>.json translation resource per language
 src/common/              Theme, palette, drawer menu, shared components (dialogs, bottom sheet, video)
 src/i18n.ts              i18next bootstrap, imported by the root layout
 src/pattern/types/       IPatternList, IPattern, IModifier, PatternType, PatternLevel

@@ -3,6 +3,7 @@
 import { configure } from "@testing-library/react-native";
 import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/async-storage";
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
+import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";
 import { resetGestureMock } from "./__mocks__/react-native-gesture-handler";
 
 // `waitFor` defaults to 1s, which is not enough for the first mount of the
@@ -13,6 +14,7 @@ configure({ asyncUtilTimeout: 10000 });
 beforeEach(() => {
   resetAsyncStorageMock();
   resetFileSystemMock();
+  resetDeviceLocalesMock();
   resetGestureMock();
 });
 
