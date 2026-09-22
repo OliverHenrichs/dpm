@@ -32,6 +32,8 @@ All screens share state through `ActivePatternListContext` (`src/pattern/data/co
 
 ## Core data model
 
+**Pattern ids are never reused.** `IPatternList.nextPatternId` is a high-water mark and `nextPatternId(list, patterns)` in `src/pattern/data/patternIds.ts` is the only way to mint one; `usePatternCrud` keeps the mark ahead of every id the list has ever used, measured over the patterns before *and* after each write so a delete cannot lower it. They used to be `max(id) + 1` over the patterns present, which is unique at any instant but not over time — the manual graph layout, which outlives individual patterns, then attached a stored position to whichever pattern later inherited the id. The allocator also takes `max(id) + 1` into account, so a missing or corrupt mark can never produce a collision; that is why there is no migration.
+
 Everything lives in `src/pattern/types/IPatternList.ts` (plus `PatternType.ts`, `PatternLevel.ts`).
 
 | Type | Id type | Key detail |

@@ -10,6 +10,7 @@ import { generateUUID, PatternType } from "@/src/pattern/types/PatternType";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
+import { nextPatternId } from "@/src/pattern/data/patternIds";
 
 /**
  * Every mutation returns whether it was applied, so callers can keep a form
@@ -29,11 +30,6 @@ export interface PatternCrud {
   addModifier: (modifier: NewModifier | IModifier) => Promise<boolean>;
   editModifier: (modifier: NewModifier | IModifier) => Promise<boolean>;
   deleteModifier: (modifierId: string) => Promise<boolean>;
-}
-
-/** Next free pattern id. Ids are unique within a list, not across lists. */
-export function createNewId(patterns: IPattern[]): number {
-  return patterns.length > 0 ? Math.max(...patterns.map((p) => p.id)) + 1 : 1;
 }
 
 /**
@@ -76,18 +72,36 @@ export function usePatternCrud(): PatternCrud {
     async (updatedPatterns: IPattern[]) => {
       await updatePatterns(updatedPatterns);
       syncIfPublished(updatedPatterns);
+
+      // Keep the high-water mark ahead of every id this list has ever used.
+      // Measured over the patterns *before* the change as well as after, or a
+      // delete would lower it and hand the departed pattern's id straight back
+      // out. Written second, and only when it actually moves: losing the mark
+      // is recoverable — `nextPatternId` falls back to the patterns present —
+      // whereas losing the patterns is not.
+      if (!activeList) return;
+      const mark = Math.max(
+        nextPatternId(activeList, patterns),
+        nextPatternId(activeList, updatedPatterns),
+      );
+      if (mark !== activeList.nextPatternId) {
+        await updateActiveList({ ...activeList, nextPatternId: mark });
+      }
     },
-    [updatePatterns, syncIfPublished],
+    [updatePatterns, syncIfPublished, activeList, patterns, updateActiveList],
   );
 
   const addPattern = useCallback(
     async (pattern: NewPattern) => {
       if (isReadonly || !pattern.name.trim()) return false;
-      const newPattern: IPattern = { ...pattern, id: createNewId(patterns) };
+      const newPattern: IPattern = {
+        ...pattern,
+        id: nextPatternId(activeList, patterns),
+      };
       await commitPatterns([...patterns, newPattern]);
       return true;
     },
-    [isReadonly, patterns, commitPatterns],
+    [isReadonly, patterns, commitPatterns, activeList],
   );
 
   const editPattern = useCallback(

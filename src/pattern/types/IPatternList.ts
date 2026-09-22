@@ -43,6 +43,15 @@ export interface IPatternList {
   updatedAt: number; // Timestamp
   readonly?: boolean; // When true, the list was exported as read-only and cannot be edited by the importer
   shareCode?: string; // Firestore document ID when this list is published to the cloud
+  /**
+   * High-water mark for pattern ids: the next one to hand out, never one that
+   * has been used before.
+   *
+   * Optional because lists written before it existed do not have it, and
+   * `nextPatternId()` falls back to the patterns present. See that function
+   * for why there is no migration.
+   */
+  nextPatternId?: number;
 }
 
 /**

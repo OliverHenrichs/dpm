@@ -122,6 +122,13 @@ module.exports = {
       functions: 95,
       lines: 95,
     },
+    // Pattern ids: once handed out, never handed out again (B14).
+    "src/pattern/data/patternIds.ts": {
+      statements: 94,
+      branches: 80,
+      functions: 94,
+      lines: 94,
+    },
     // The mutations behind every pattern and modifier edit.
     "src/pattern/list/hooks/usePatternCrud.ts": {
       statements: 90,
