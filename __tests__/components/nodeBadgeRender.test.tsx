@@ -18,6 +18,9 @@ import {
 const TYPE = createTestPatternType({ slug: "push", color: "#FF0000" });
 const palette = getPalette("light");
 const CENTRE = { x: 200, y: 150 };
+/** Mirrors the renderer; the point of the tests below is that it is uniform. */
+const BADGE_INSET = 3;
+const DOT_RADIUS = 2;
 
 const video = (): IVideoReference => ({
   type: "url",
@@ -157,6 +160,45 @@ describe("node badges", () => {
       const gapBottom = CENTRE.y + NODE_HEIGHT / 2 - Math.max(...ys);
 
       expect(gapRight).toBe(gapBottom);
+    });
+
+    it("sits the video mark close to the corner, not floating in it", () => {
+      renderNode({ videoRefs: [video()] });
+      const { xs, ys } = trianglePoints();
+
+      expect(CENTRE.x + NODE_WIDTH / 2 - Math.max(...xs)).toBe(BADGE_INSET);
+      expect(CENTRE.y + NODE_HEIGHT / 2 - Math.max(...ys)).toBe(BADGE_INSET);
+    });
+
+    /**
+     * Alone, the dots take the corner themselves. Sharing the triangle's
+     * centre line when there is no triangle would hang them its height above
+     * the bottom edge with nothing beneath — the same lopsidedness the video
+     * mark had, from the other side.
+     */
+    it("sits a lone dot row the same distance from both edges", () => {
+      renderNode({ modifierRefs: [modifierRef("a")] });
+      const dot = modifierDots()[0];
+
+      const gapRight = CENTRE.x + NODE_WIDTH / 2 - (dot.props.cx + DOT_RADIUS);
+      const gapBottom =
+        CENTRE.y + NODE_HEIGHT / 2 - (dot.props.cy + DOT_RADIUS);
+
+      expect(gapRight).toBe(gapBottom);
+      expect(gapRight).toBe(BADGE_INSET);
+    });
+
+    it("lines the dots up with the video mark when both are drawn", () => {
+      renderNode({
+        videoRefs: [video()],
+        modifierRefs: [modifierRef("a"), modifierRef("b")],
+      });
+      const { ys } = trianglePoints();
+      const playCenterY = (Math.min(...ys) + Math.max(...ys)) / 2;
+
+      for (const dot of modifierDots()) {
+        expect(dot.props.cy).toBe(playCenterY);
+      }
     });
 
     it("puts the dots clear of the video mark", () => {
