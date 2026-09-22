@@ -4,6 +4,7 @@ import { exportPatternLists } from "@/src/pattern/data/exportPatterns";
 import { importPatternLists } from "@/src/pattern/data/ImportPatterns";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
 import SettingsScreen from "@/src/settings/SettingsScreen";
+import { LANGUAGES } from "@/src/settings/types/Languages";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { createTestPatternList } from "@/utils/testFactories";
 import {
@@ -66,11 +67,12 @@ describe("SettingsScreen", () => {
       expect(screen.getByText("Data Transfer")).toBeOnTheScreen();
     });
 
-    it("offers every configured language", async () => {
+    it("shows the current language on a single row", async () => {
       await renderSettings();
 
+      // The row, not a button per language — nine of those do not fit.
       expect(screen.getByText("English")).toBeOnTheScreen();
-      expect(screen.getByText("Deutsch")).toBeOnTheScreen();
+      expect(screen.queryByText("Deutsch")).toBeNull();
     });
 
     it("offers all three theme choices", async () => {
@@ -83,14 +85,79 @@ describe("SettingsScreen", () => {
   });
 
   describe("language", () => {
+    const openPicker = async () => {
+      fireEvent.press(screen.getByLabelText("Language: English"));
+      await waitFor(() =>
+        expect(screen.getByText("Select Language")).toBeOnTheScreen(),
+      );
+    };
+
+    it("opens the picker with every configured language", async () => {
+      await renderSettings();
+
+      await openPicker();
+
+      // Via the accessibility label, because the row behind the sheet still
+      // carries the current language's own name.
+      for (const language of LANGUAGES) {
+        const label =
+          language.englishName === language.label
+            ? language.label
+            : `${language.label} (${language.englishName})`;
+        expect(screen.getByLabelText(label)).toBeOnTheScreen();
+      }
+    });
+
+    it("labels a language in another script with its English name too", async () => {
+      // The way back for someone who picked a script they cannot read.
+      await renderSettings();
+
+      await openPicker();
+
+      expect(screen.getByLabelText("বাংলা (Bengali)")).toBeOnTheScreen();
+      expect(screen.getByLabelText("中文 (Chinese)")).toBeOnTheScreen();
+    });
+
+    it("does not gloss English with its own name", async () => {
+      await renderSettings();
+
+      await openPicker();
+
+      expect(screen.queryByLabelText("English (English)")).toBeNull();
+    });
+
+    it("marks the current language as selected", async () => {
+      await renderSettings();
+
+      await openPicker();
+
+      expect(
+        screen.getByLabelText("English").props.accessibilityState?.selected,
+      ).toBe(true);
+      expect(
+        screen.getByLabelText("Deutsch (German)").props.accessibilityState
+          ?.selected,
+      ).toBe(false);
+    });
+
     it("switches the whole screen when another is picked", async () => {
       await renderSettings();
 
+      await openPicker();
       fireEvent.press(screen.getByText("Deutsch"));
 
       await waitFor(() =>
         expect(screen.getByText("Sprache")).toBeOnTheScreen(),
       );
+    });
+
+    it("switches into a non-Latin script too", async () => {
+      await renderSettings();
+
+      await openPicker();
+      fireEvent.press(screen.getByText("العربية"));
+
+      await waitFor(() => expect(screen.getByText("اللغة")).toBeOnTheScreen());
     });
   });
 

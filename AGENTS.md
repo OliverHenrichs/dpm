@@ -150,7 +150,15 @@ Styles are created inline per-render (no shared static stylesheets). `PaletteCol
 
 ## Internationalisation
 
-All user-facing strings use `const { t } = useTranslation()`. Translation keys must be added to **both** `locales/en.json` and `locales/de.json` (flat key/value, no nesting). i18n is initialised once in `src/i18n.ts` (imported by `app/_layout.tsx`; it lives outside `app/` because every file in there becomes a route); available languages are listed in `src/settings/types/Languages.ts`.
+All user-facing strings use `const { t } = useTranslation()`. The app ships **nine** locales — `en`, `zh`, `hi`, `es`, `fr`, `ar`, `bn`, `pt`, `de` — and a translation key must be added to **every** `locales/*.json` (flat key/value, no nesting). `__tests__/unit/i18n.test.ts` enforces that: it fails on a key missing from any locale, an empty value, a mismatched `{{placeholder}}` set, or a `t("…")` call with no key behind it. i18n is initialised once in `src/i18n.ts` (imported by `app/_layout.tsx`; it lives outside `app/` because every file in there becomes a route); available languages are listed in `src/settings/types/Languages.ts`, each with its endonym (`label`) and its `englishName`.
+
+`en` is the source of truth: add a key there first, then translate it everywhere else. The four West Coast Swing type names (`push`, `pass`, `whip`, `tuck`) are deliberately left in English in every locale — they are the international technical vocabulary of the dance, and the same goes for the `Swing-Out` / `Cross-body` terms inside the template descriptions.
+
+The picker is `src/settings/components/LanguagePickerBottomSheet.tsx`, opened from a single row in `SettingsScreen`. Every row shows the endonym plus the English name — that gloss is the way back for someone who lands in a script they cannot read — except where the two are the same word. A row of one button per language does **not** scale past about four and was replaced for that reason.
+
+Two known gaps, both pre-existing in kind and deliberately out of scope so far:
+- **The choice is not persisted.** `src/i18n.ts` hard-codes `lng: "en"`, so a relaunch is back in English and the device locale is never consulted. Fixing it means reading a stored code (and `expo-localization` for a first-run default) before the first render.
+- **`ar` renders right-to-left text in a left-to-right layout.** The OS handles the bidi text itself, so the strings read correctly, but nothing is mirrored. Real RTL needs `I18nManager.forceRTL` plus the reload it requires, logical `start`/`end` styles throughout, and flipped directional affordances (the `›` chevron, the drawer edge, the graph canvas).
 
 ## Graph views
 
