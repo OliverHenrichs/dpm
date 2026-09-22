@@ -24,7 +24,14 @@ export interface NodeDrag {
   /** The dragged node's live position, in graph coordinates. */
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
-  gesture: ReturnType<typeof Gesture.Pan>;
+  /**
+   * Tap and drag together; race this ahead of the canvas's own gestures.
+   *
+   * Typed by inference: `react-native-gesture-handler` exports two distinct
+   * `ComposedGesture` types and naming one of them here picks a fight with
+   * whichever the other module resolved.
+   */
+  gesture: ReturnType<typeof Gesture.Race>;
 }
 
 /** Keep the node inside the drawable canvas, in both directions. */
@@ -54,6 +61,7 @@ export function useNodeDrag(
   contentWidth: number,
   contentHeight: number,
   onMove: (id: number, position: LayoutPosition) => void,
+  onTap: (id: number) => void,
   enabled: boolean,
 ): NodeDrag {
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -77,11 +85,12 @@ export function useNodeDrag(
   );
 
   const cancel = useCallback(() => setDraggingId(null), []);
+  const tapped = useCallback((id: number) => onTap(id), [onTap]);
   // `scheduleOnRN` is typed to pass every argument through, so a zero-argument
   // callback needs a wrapper rather than a spare `undefined`.
   const cancelDrag = useCallback((_ignored: number) => cancel(), [cancel]);
 
-  const gesture = Gesture.Pan()
+  const pan = Gesture.Pan()
     .enabled(enabled)
     .activateAfterLongPress(DRAG_ACTIVATION_MS)
     .onStart((event) => {
@@ -140,5 +149,29 @@ export function useNodeDrag(
       if (!success) scheduleOnRN(cancelDrag, 0);
     });
 
-  return { draggingId, dragX, dragY, gesture };
+  // Tapping is handled here rather than by the node's own `onPress`, for the
+  // reason spelled out on `PatternNodeGroup`: an SVG press handler claims the
+  // touch outright, which stopped the drag above from ever activating.
+  const tap = Gesture.Tap()
+    .enabled(enabled)
+    .onEnd((event) => {
+      const point = screenToContent(
+        event.x,
+        event.y,
+        {
+          width: transform.viewportWidth.get(),
+          height: transform.viewportHeight.get(),
+        },
+        {
+          scale: transform.scale.get(),
+          translateX: transform.translateX.get(),
+          translateY: transform.translateY.get(),
+        },
+        { width: contentWidth, height: contentHeight },
+      );
+      const id = findNodeAt(point, positions);
+      if (id !== null) scheduleOnRN(tapped, id);
+    });
+
+  return { draggingId, dragX, dragY, gesture: Gesture.Race(pan, tap) };
 }

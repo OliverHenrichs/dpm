@@ -19,7 +19,7 @@ interface DraggedNodeProps {
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
   palette: Record<PaletteColor, string>;
-  onPress: (pattern: IPattern) => void;
+  onPress?: (pattern: IPattern) => void;
 }
 
 /**

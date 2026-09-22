@@ -12,7 +12,10 @@ import {
   MAX_GRAPH_COORDINATE,
   MIN_GRAPH_COORDINATE,
 } from "@/src/pattern/graph/types/Constants";
-import { MockGesture } from "@/__mocks__/react-native-gesture-handler";
+import {
+  findGesture,
+  MockGesture,
+} from "@/__mocks__/react-native-gesture-handler";
 
 const VIEWPORT = { width: 400, height: 800 };
 const CONTENT = { width: 2000, height: 1600 };
@@ -30,7 +33,10 @@ const POSITIONS = new Map<number, LayoutPosition>([
  */
 interface Harness {
   gesture: MockGesture;
+  pan: MockGesture;
+  tap: MockGesture;
   moved: jest.Mock;
+  tapped: jest.Mock;
   draggingId: () => number | null;
   transform: ReturnType<typeof useCanvasTransformValues>;
 }
@@ -40,6 +46,7 @@ function renderDrag(
   positions = POSITIONS,
 ): Harness {
   const moved = jest.fn();
+  const tapped = jest.fn();
   const Probe: React.FC = () => {
     const transform = useCanvasTransformValues(zoom, 0, 0);
     transform.viewportWidth.set(VIEWPORT.width);
@@ -50,13 +57,18 @@ function renderDrag(
       CONTENT.width,
       CONTENT.height,
       moved,
+      tapped,
       enabled,
     );
     // Read during render on purpose: the harness needs the current value, and
     // an effect would lag a synchronous handler call by a tick.
+    const composed = drag.gesture as unknown as MockGesture;
     harness = {
-      gesture: drag.gesture as unknown as MockGesture,
+      gesture: composed,
+      pan: findGesture(composed, "pan")!,
+      tap: findGesture(composed, "tap")!,
       moved,
+      tapped,
       draggingId: () => drag.draggingId,
       transform,
     };
@@ -75,14 +87,14 @@ const screenAt = (position: LayoutPosition) => ({
 });
 
 const startOn = (h: Harness, id: number) =>
-  h.gesture.handlers.onStart(screenAt(POSITIONS.get(id)!));
+  h.pan.handlers.onStart(screenAt(POSITIONS.get(id)!));
 
 const move = (h: Harness, changeX: number, changeY: number) =>
-  h.gesture.handlers.onChange({ changeX, changeY });
+  h.pan.handlers.onChange({ changeX, changeY });
 
 const release = (h: Harness) => {
-  h.gesture.handlers.onEnd({});
-  h.gesture.handlers.onFinalize({}, true);
+  h.pan.handlers.onEnd({});
+  h.pan.handlers.onFinalize({}, true);
 };
 
 describe("useNodeDrag", () => {
@@ -90,13 +102,13 @@ describe("useNodeDrag", () => {
     it("waits for a long press, so an ordinary drag still pans", () => {
       const h = renderDrag();
 
-      expect(h.gesture.config.activateAfterLongPress).toBe(DRAG_ACTIVATION_MS);
+      expect(h.pan.config.activateAfterLongPress).toBe(DRAG_ACTIVATION_MS);
     });
 
     it("is disabled when there is nothing to drag", () => {
       const h = renderDrag({ enabled: false });
 
-      expect(h.gesture.config.enabled).toBe(false);
+      expect(h.pan.config.enabled).toBe(false);
     });
   });
 
@@ -122,7 +134,7 @@ describe("useNodeDrag", () => {
     it("moves nothing when the touch misses every node", () => {
       const h = renderDrag();
 
-      h.gesture.handlers.onStart({ x: 5, y: 5 });
+      h.pan.handlers.onStart({ x: 5, y: 5 });
       move(h, 40, 0);
       release(h);
 
@@ -134,7 +146,7 @@ describe("useNodeDrag", () => {
       // Doing nothing at all would look like the app had frozen.
       const h = renderDrag();
 
-      h.gesture.handlers.onStart({ x: 5, y: 5 });
+      h.pan.handlers.onStart({ x: 5, y: 5 });
       move(h, 40, -20);
 
       expect([
@@ -159,7 +171,7 @@ describe("useNodeDrag", () => {
       // Without dividing by the zoom the node lags the finger.
       const h = renderDrag({ zoom: 2 });
 
-      h.gesture.handlers.onStart({
+      h.pan.handlers.onStart({
         x: (1000 - CONTENT.width / 2) * 2 + VIEWPORT.width / 2,
         y: (800 - CONTENT.height / 2) * 2 + VIEWPORT.height / 2,
       });
@@ -172,7 +184,7 @@ describe("useNodeDrag", () => {
     it("does not outrun it when the canvas is zoomed out", () => {
       const h = renderDrag({ zoom: 0.5 });
 
-      h.gesture.handlers.onStart({
+      h.pan.handlers.onStart({
         x: (1000 - CONTENT.width / 2) * 0.5 + VIEWPORT.width / 2,
         y: (800 - CONTENT.height / 2) * 0.5 + VIEWPORT.height / 2,
       });
@@ -251,7 +263,7 @@ describe("useNodeDrag", () => {
 
       startOn(h, 1);
       move(h, 10, 0);
-      h.gesture.handlers.onFinalize({}, false);
+      h.pan.handlers.onFinalize({}, false);
 
       expect(h.moved).not.toHaveBeenCalled();
     });
@@ -263,9 +275,44 @@ describe("useNodeDrag", () => {
       release(h);
       h.moved.mockClear();
 
-      h.gesture.handlers.onStart({ x: 5, y: 5 });
+      h.pan.handlers.onStart({ x: 5, y: 5 });
       move(h, 10, 0);
       release(h);
+
+      expect(h.moved).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("tapping", () => {
+    it("opens the node under the touch", () => {
+      // Taps come through the gesture system, not each node's own SVG press
+      // handler — that handler claims the touch and stopped the drag above
+      // from ever activating.
+      const h = renderDrag();
+
+      h.tap.handlers.onEnd(screenAt(POSITIONS.get(2)!));
+
+      expect(h.tapped).toHaveBeenCalledWith(2);
+    });
+
+    it("does nothing when the tap misses every node", () => {
+      const h = renderDrag();
+
+      h.tap.handlers.onEnd({ x: 5, y: 5 });
+
+      expect(h.tapped).not.toHaveBeenCalled();
+    });
+
+    it("is disabled along with the drag when there is nothing to tap", () => {
+      const h = renderDrag({ enabled: false });
+
+      expect(h.tap.config.enabled).toBe(false);
+    });
+
+    it("does not move anything", () => {
+      const h = renderDrag();
+
+      h.tap.handlers.onEnd(screenAt(POSITIONS.get(1)!));
 
       expect(h.moved).not.toHaveBeenCalled();
     });

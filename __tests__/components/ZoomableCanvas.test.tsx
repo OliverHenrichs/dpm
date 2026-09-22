@@ -11,6 +11,7 @@ import {
 } from "@/src/pattern/graph/components/CanvasTransformContext";
 import {
   findGesture,
+  Gesture,
   MockGesture,
   peekGestures,
 } from "@/__mocks__/react-native-gesture-handler";
@@ -43,7 +44,10 @@ const Harness: React.FC<{
   initialZoom: number;
   offsetX: number;
   offsetY: number;
-}> = ({ initialZoom, offsetX, offsetY }) => {
+  // The mock's gesture shape, cast at the boundary: the real prop type comes
+  // from react-native-gesture-handler, which this environment replaces.
+  extraGesture?: MockGesture;
+}> = ({ initialZoom, offsetX, offsetY, extraGesture }) => {
   const transform = useCanvasTransformValues(initialZoom, offsetX, offsetY);
   return (
     <ZoomableCanvas
@@ -53,6 +57,11 @@ const Harness: React.FC<{
       initialOffsetX={offsetX}
       initialOffsetY={offsetY}
       transform={transform}
+      extraGesture={
+        extraGesture as unknown as React.ComponentProps<
+          typeof ZoomableCanvas
+        >["extraGesture"]
+      }
     >
       <TransformProbe />
     </ZoomableCanvas>
@@ -241,54 +250,6 @@ describe("ZoomableCanvas", () => {
     });
   });
 
-  describe("double tap", () => {
-    const doubleTapAt = (x: number, y: number) =>
-      gestureOf("tap").handlers.onEnd({ x, y });
-
-    it("steps the zoom up", () => {
-      renderCanvas(1);
-      layoutViewport();
-
-      doubleTapAt(VIEWPORT.width / 2, VIEWPORT.height / 2);
-
-      expect(transform().scale).toBe(1.5);
-    });
-
-    it("wraps back to the initial zoom once it can go no further", () => {
-      // A double tap always does something; dead-ending at max would make it
-      // look broken.
-      renderCanvas(0.4);
-      layoutViewport();
-      const tap = gestureOf("tap");
-      const tapOnce = () =>
-        tap.handlers.onEnd({ x: VIEWPORT.width / 2, y: VIEWPORT.height / 2 });
-
-      // Step up until it can go no further, which is the maximum zoom.
-      let guard = 0;
-      while (transform().scale < MAX_ZOOM && guard++ < 20) tapOnce();
-      expect(transform().scale).toBe(MAX_ZOOM);
-
-      tapOnce();
-
-      expect(transform().scale).toBe(0.4);
-    });
-
-    it("zooms about the tapped point", () => {
-      renderCanvas(1);
-      layoutViewport();
-
-      doubleTapAt(VIEWPORT.width / 2 + 100, VIEWPORT.height / 2);
-
-      expect(transform().x).toBe(-50);
-    });
-
-    it("waits for two taps, so a single tap still reaches a node", () => {
-      renderCanvas();
-
-      expect(gestureOf("tap").config.numberOfTaps).toBe(2);
-    });
-  });
-
   describe("gesture composition", () => {
     it("lets pan and pinch run together", () => {
       renderCanvas();
@@ -296,10 +257,40 @@ describe("ZoomableCanvas", () => {
       expect(findGesture(rootGesture(), "simultaneous")).toBeDefined();
     });
 
-    it("races the double tap against them rather than blocking it", () => {
+    it("offers no double-tap-to-zoom", () => {
+      // The graph's node tap lives in this gesture system now, and the two
+      // cannot both be fast: a single tap would have to wait for a double tap
+      // to fail before it could open a pattern.
       renderCanvas();
 
+      expect(findGesture(rootGesture(), "tap")).toBeUndefined();
+    });
+
+    it("is just pan and pinch when nothing else is raced with it", () => {
+      renderCanvas();
+
+      expect(rootGesture().type).toBe("simultaneous");
+    });
+
+    it("races a caller's gesture ahead of its own", () => {
+      // The node drag goes here. Racing rather than Exclusive: the drag
+      // activates on a long press and the canvas pan on movement, so whichever
+      // the user actually did wins immediately.
+      captured = null;
+      const extra = Gesture.LongPress();
+      render(
+        <View testID="host">
+          <Harness
+            initialZoom={1}
+            offsetX={0}
+            offsetY={0}
+            extraGesture={extra}
+          />
+        </View>,
+      );
+
       expect(rootGesture().type).toBe("race");
+      expect(findGesture(rootGesture(), "longPress")).toBeDefined();
     });
   });
 });

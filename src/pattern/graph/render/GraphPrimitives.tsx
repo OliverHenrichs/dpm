@@ -117,7 +117,7 @@ export function drawNodes(
   nodes: GraphNode[],
   positions: Map<number, LayoutPosition>,
   palette: Record<PaletteColor, string>,
-  onNodeTap: (pattern: IPattern) => void,
+  onNodeTap: ((pattern: IPattern) => void) | undefined,
   drag?: DragRender,
 ) {
   return nodes.map((node) => {

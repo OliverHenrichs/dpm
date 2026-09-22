@@ -203,6 +203,10 @@ a node outside that box could not be dragged back, because it would never be on 
 
 Long-press a node in the network view and drag it; the position is persisted on release.
 
+**Nodes in the network view have no `onPress`, and must not get one.** `onPress` on an SVG element installs React Native's full Touchable responder set — `onStartShouldSetResponder` claims the touch, and `onResponderTerminationRequest` refuses to yield it — so a touch landing on a node never reaches Gesture Handler. That is why long-press-to-drag did nothing on a node while panning from empty canvas worked, and it was only found on a device. The network view draws inert nodes and handles **both** tap and drag in the gesture system; the timeline, which has no canvas gesture to compete with, still uses `onPress`.
+
+Because the node tap is a Gesture Handler tap now, **the canvas has no double-tap-to-zoom**. The two cannot both be fast: a single tap would have to wait for a double tap to fail before it could open a pattern, which is the screen's most common interaction. Pinch remains, and the initial zoom is fitted to the content.
+
 **One pan gesture on the canvas hit-tests, rather than a gesture per node** (`hooks/useNodeDrag.ts`, `model/graphCoordinates.ts`). Nodes are SVG elements, so a `GestureDetector` per node means a detector inside an `<Svg>` — fragile on native, and colliding with the web build's hand-bound click listeners. Hit testing against positions we already have is pure and testable, and arbitration is still Gesture Handler's job: the drag is *raced* against the canvas's own gestures, not made exclusive, so a plain drag pans immediately instead of waiting for a long press to fail.
 
 - **Screen deltas are divided by the live zoom.** Without that a dragged node lags the finger above 1:1 and outruns it below. The zoom is read from the shared value each frame rather than captured at gesture start.

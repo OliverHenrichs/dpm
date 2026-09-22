@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
@@ -54,12 +54,28 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
     initialOffsetX,
     initialOffsetY,
   );
+  // Taps go through the gesture system too, not through each node's own SVG
+  // press handler — that handler claims the touch outright and stopped the
+  // drag from ever activating. See `PatternNodeGroup`.
+  const patternById = useMemo(
+    () => new Map(model.nodes.map((node) => [node.pattern.id, node.pattern])),
+    [model.nodes],
+  );
+  const handleTap = useCallback(
+    (id: number) => {
+      const pattern = patternById.get(id);
+      if (pattern) onNodeTap(pattern);
+    },
+    [patternById, onNodeTap],
+  );
+
   const { draggingId, dragX, dragY, gesture } = useNodeDrag(
     transform,
     positions,
     svgWidth,
     svgHeight,
     onMoveNode,
+    handleTap,
     model.nodes.length > 0,
   );
 

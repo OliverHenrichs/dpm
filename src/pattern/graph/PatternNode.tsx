@@ -12,7 +12,8 @@ interface PatternNodeProps {
   x: number;
   y: number;
   palette: Record<PaletteColor, string>;
-  onPress: (pattern: IPattern) => void;
+  /** Omit to make the node inert; see `PatternNodeGroup`. */
+  onPress?: (pattern: IPattern) => void;
 }
 
 /**
@@ -62,7 +63,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
 
   return (
     <PatternNodeGroup
-      onPress={() => onPress(pattern)}
+      onPress={onPress ? () => onPress(pattern) : undefined}
       opacity={isContext ? CONTEXT_OPACITY : undefined}
     >
       {/* Main background */}

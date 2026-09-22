@@ -5,6 +5,7 @@ import {
   drawNodes,
 } from "@/src/pattern/graph/render/GraphPrimitives";
 import DraggedEdge from "@/src/pattern/graph/render/DraggedEdge";
+import NetworkGraphSvg from "@/src/pattern/graph/GraphSvg";
 import DraggedNode from "@/src/pattern/graph/render/DraggedNode";
 import { buildGraphModel } from "@/src/pattern/graph/model/GraphModel";
 import { getPalette } from "@/src/common/utils/ColorPalette";
@@ -130,6 +131,52 @@ describe("drawing during a drag", () => {
 
       expect(rendered).toHaveLength(MODEL.edges.length);
     });
+  });
+});
+
+describe("whether a node claims touches", () => {
+  /**
+   * The crux of why long-press-to-drag did nothing on a node: `onPress` on an
+   * SVG element installs React Native's Touchable responder set, whose
+   * `onResponderTerminationRequest` refuses to yield, so the node took the
+   * touch before Gesture Handler saw it. The network view must therefore draw
+   * inert nodes and handle taps in the gesture system.
+   */
+  const groupProps = () => screen.UNSAFE_getAllByType(G).map((g) => g.props);
+
+  it("claims nothing when no press handler is given", () => {
+    render(<Svg>{drawNodes(MODEL.nodes, POSITIONS, palette, undefined)}</Svg>);
+
+    expect(groupProps().every((props) => props.onPress === undefined)).toBe(
+      true,
+    );
+  });
+
+  it("draws the network view's nodes inert", () => {
+    // The call site that matters: GraphSvg must not pass a press handler
+    // down, whatever `onNodeTap` it was given for other purposes.
+    render(
+      <NetworkGraphSvg
+        svgWidth={1000}
+        svgHeight={1000}
+        model={MODEL}
+        positions={POSITIONS}
+        palette={palette}
+        onNodeTap={jest.fn()}
+      />,
+    );
+
+    expect(groupProps().every((props) => props.onPress === undefined)).toBe(
+      true,
+    );
+  });
+
+  it("still claims touches when one is, for the timeline", () => {
+    render(<Svg>{drawNodes(MODEL.nodes, POSITIONS, palette, jest.fn())}</Svg>);
+
+    expect(groupProps().some((props) => props.onPress !== undefined)).toBe(
+      true,
+    );
   });
 });
 

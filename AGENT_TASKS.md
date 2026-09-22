@@ -940,6 +940,31 @@ serialize `Map` closures (`serializable.native.ts` routes them through `createSe
 so the hit-test's positions map is fine; and `activateAfterLongPress` does not let a pan activate
 on movement, so the drag was never competing with the canvas pan for ordinary drags.
 
+#### After the second device test — the actual bug
+
+The hint made the gesture findable, and it still did nothing: no haptic, no movement, while
+tapping kept working. That last detail is the whole diagnosis. **`onPress` on an SVG element
+installs React Native's Touchable responder set** (`react-native-svg/src/lib/extract/extractResponder.ts`):
+`onStartShouldSetResponder` claims the touch on contact and `onResponderTerminationRequest`
+refuses to hand it over. A touch landing on a node therefore never reached Gesture Handler at
+all — which is exactly why panning from empty canvas worked and pressing a node did nothing.
+
+The fix is one input system for the view: the network view now draws **inert** nodes
+(`PatternNodeGroup` takes `onPress?`) and handles tap *and* drag in the gesture system, hit-testing
+for both. The timeline is unchanged — it has no canvas gesture to compete with, so its nodes keep
+`onPress`.
+
+**Cost, and it is a real one: double-tap-to-zoom is gone.** With the node tap in the gesture
+system the two cannot both be fast — a single tap would have to wait for a double tap to fail
+before opening a pattern, and that is the most common interaction on the screen. Pinch remains,
+and the fitted initial zoom from L1 already frames the content. If double-tap is wanted back, it
+needs a different home, not a longer delay on tap.
+
+**The lesson for the plan, not just the code.** The writeup's own [L2](#l2--moveable-patterns-in-the-network-graph)
+notes said nodes are SVG elements and that `PatternNodeGroup` has a platform split because SVG
+press handling is awkward — the signal was there and I read it as "do not nest a GestureDetector"
+rather than "an SVG press handler will eat the touch". Two device round-trips for one cause.
+
 **Not yet verified on device.** Nothing in this step can be: whether a tap still reaches a node
 under the canvas pan, whether the drawer's edge swipe and the canvas pan arbitrate sensibly, and
 how the pinch feels are all hardware questions. See the manual list above.
