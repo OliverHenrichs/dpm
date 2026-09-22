@@ -960,6 +960,21 @@ before opening a pattern, and that is the most common interaction on the screen.
 and the fitted initial zoom from L1 already frames the content. If double-tap is wanted back, it
 needs a different home, not a longer delay on tap.
 
+#### After the third device test
+
+Dragging worked. Two things still wrong, and only one was cosmetic.
+
+- **The dragged node vanished for the duration of the drag** and reappeared, correctly placed, on
+  release — while its edges followed the finger the whole time. Animating an SVG group's
+  transform props is what did it. Replaced by `render/DragOverlay.tsx`: the node is drawn in a
+  small SVG of its own inside an `Animated.View` above the graph, and the *view* is transformed.
+  `drawNodes` skips the dragged node meanwhile so it cannot ghost at its old position.
+- **No haptic.** `android.permission.VIBRATE` is present, so this is most likely the phone's own
+  touch-vibration setting — but the right fix was not to chase that. Pickup is now `Medium`
+  rather than `Light`, which is barely perceptible on much Android hardware, and more importantly
+  **the node now visibly lifts** (scale 1.12). Haptics are off system-wide for many people; a
+  vibration must never be the only sign that something happened, and it was.
+
 **The lesson for the plan, not just the code.** The writeup's own [L2](#l2--moveable-patterns-in-the-network-graph)
 notes said nodes are SVG elements and that `PatternNodeGroup` has a platform split because SVG
 press handling is awkward — the signal was there and I read it as "do not nest a GestureDetector"

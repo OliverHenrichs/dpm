@@ -72,7 +72,11 @@ export function useNodeDrag(
 
   const begin = useCallback((id: number) => {
     setDraggingId(id);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Medium, not Light: picking something up is the heavier of the two
+    // events, and Light is barely perceptible on a lot of Android hardware.
+    // This is never the only feedback — the node visibly lifts — because
+    // haptics are off system-wide for many people.
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
   const finish = useCallback(

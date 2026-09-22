@@ -10,6 +10,7 @@ import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { useCanvasTransformValues } from "@/src/pattern/graph/components/CanvasTransformContext";
 import { useNodeDrag } from "@/src/pattern/graph/hooks/useNodeDrag";
+import DragOverlay from "@/src/pattern/graph/render/DragOverlay";
 
 interface NetworkGraphViewProps {
   model: GraphModel;
@@ -95,6 +96,11 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
     );
   }
 
+  const draggedNode =
+    draggingId === null
+      ? undefined
+      : model.nodes.find((node) => node.pattern.id === draggingId);
+
   return (
     <View style={styles.container}>
       <ZoomableCanvas
@@ -117,6 +123,16 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
           dragY={dragY}
           onNodeTap={onNodeTap}
         />
+
+        {draggedNode && (
+          <DragOverlay
+            node={draggedNode}
+            origin={positions.get(draggedNode.pattern.id)!}
+            dragX={dragX}
+            dragY={dragY}
+            palette={palette}
+          />
+        )}
       </ZoomableCanvas>
     </View>
   );

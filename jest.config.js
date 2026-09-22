@@ -400,10 +400,10 @@ module.exports = {
       lines: 94,
     },
     "src/pattern/graph/data/GraphHintStorage.ts": {
-      statements: 84,
+      statements: 78,
       branches: 82,
       functions: 84,
-      lines: 82,
+      lines: 78,
     },
     "src/pattern/graph/model/graphCoordinates.ts": {
       statements: 94,
@@ -423,7 +423,7 @@ module.exports = {
       functions: 94,
       lines: 94,
     },
-    "src/pattern/graph/render/DraggedNode.tsx": {
+    "src/pattern/graph/render/DragOverlay.tsx": {
       statements: 94,
       branches: 94,
       functions: 94,

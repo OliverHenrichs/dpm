@@ -6,10 +6,11 @@ import {
 } from "@/src/pattern/graph/render/GraphPrimitives";
 import DraggedEdge from "@/src/pattern/graph/render/DraggedEdge";
 import NetworkGraphSvg from "@/src/pattern/graph/GraphSvg";
-import DraggedNode from "@/src/pattern/graph/render/DraggedNode";
+import DragOverlay from "@/src/pattern/graph/render/DragOverlay";
 import { buildGraphModel } from "@/src/pattern/graph/model/GraphModel";
 import { getPalette } from "@/src/common/utils/ColorPalette";
 import { render, screen } from "@testing-library/react-native";
+import Animated from "react-native-reanimated";
 import Svg, { G, Path } from "react-native-svg";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -56,7 +57,9 @@ const typesOf = (elements: React.ReactElement) =>
  */
 describe("drawing during a drag", () => {
   describe("nodes", () => {
-    it("animates only the node under the finger", () => {
+    it("leaves the dragged node out, for the overlay to draw", () => {
+      // Drawn twice it would ghost at its old position; drawn as an animated
+      // SVG group it vanished outright on device.
       const rendered = drawNodes(
         MODEL.nodes,
         POSITIONS,
@@ -65,33 +68,20 @@ describe("drawing during a drag", () => {
         drag(2),
       );
 
-      const animated = rendered.filter((n) => n?.type === DraggedNode);
-      expect(animated).toHaveLength(1);
+      expect(rendered.filter(Boolean)).toHaveLength(2);
     });
 
-    it("animates nothing when no drag is in flight", () => {
+    it("draws every node when no drag is in flight", () => {
       const rendered = drawNodes(MODEL.nodes, POSITIONS, palette, jest.fn(), {
         draggingId: null,
       });
 
-      expect(rendered.some((n) => n?.type === DraggedNode)).toBe(false);
+      expect(rendered.filter(Boolean)).toHaveLength(3);
     });
 
-    it("animates nothing when no drag state was passed at all", () => {
+    it("draws every node when no drag state was passed at all", () => {
       // The timeline draws the same nodes and has no drag.
       const rendered = drawNodes(MODEL.nodes, POSITIONS, palette, jest.fn());
-
-      expect(rendered.some((n) => n?.type === DraggedNode)).toBe(false);
-    });
-
-    it("still draws every node", () => {
-      const rendered = drawNodes(
-        MODEL.nodes,
-        POSITIONS,
-        palette,
-        jest.fn(),
-        drag(2),
-      );
 
       expect(rendered.filter(Boolean)).toHaveLength(3);
     });
@@ -184,50 +174,82 @@ describe("what the animated elements compute", () => {
   const renderInSvg = (element: React.ReactElement) =>
     render(<Svg>{element}</Svg>);
 
-  /** The node renders nested groups; only the outer one is animated. */
-  const animatedGroupProps = () =>
-    screen.UNSAFE_getAllByType(G).find((g) => g.props.animatedProps)?.props
-      .animatedProps;
-
-  describe("DraggedNode", () => {
-    it("translates by how far the node has moved from where it started", () => {
-      const dragX = makeMutable(250);
-      const dragY = makeMutable(-40);
-
-      renderInSvg(
-        <DraggedNode
+  describe("DragOverlay", () => {
+    const renderOverlay = (
+      origin: { x: number; y: number },
+      at: { x: number; y: number },
+    ) => {
+      render(
+        <DragOverlay
           node={MODEL.nodes[0]}
-          origin={{ x: 100, y: 10 }}
-          dragX={dragX}
-          dragY={dragY}
+          origin={origin}
+          dragX={makeMutable(at.x)}
+          dragY={makeMutable(at.y)}
           palette={palette}
-          onPress={jest.fn()}
         />,
       );
+      const view = screen
+        .UNSAFE_getAllByType(Animated.View as never)
+        .find((node) => Array.isArray(node.props.style))!;
+      return view.props.style.flat().reduce(
+        (merged: Record<string, unknown>, part: Record<string, unknown>) => ({
+          ...merged,
+          ...part,
+        }),
+        {},
+      );
+    };
 
-      // Drawn at its original position inside a translating group, because
-      // translate is the one thing that costs nothing per frame.
-      expect(animatedGroupProps()).toEqual({
-        translateX: 150,
-        translateY: -50,
-      });
+    it("translates by how far the node has moved from where it started", () => {
+      const style = renderOverlay({ x: 100, y: 10 }, { x: 250, y: -40 });
+
+      expect(style.transform).toEqual([
+        { translateX: 150 },
+        { translateY: -50 },
+        { scale: expect.any(Number) },
+      ]);
     });
 
     it("does not move at all before the finger does", () => {
-      const origin = { x: 100, y: 10 };
+      const style = renderOverlay({ x: 100, y: 10 }, { x: 100, y: 10 });
 
-      renderInSvg(
-        <DraggedNode
+      expect(style.transform.slice(0, 2)).toEqual([
+        { translateX: 0 },
+        { translateY: 0 },
+      ]);
+    });
+
+    it("lifts the node, so pickup is visible without a haptic", () => {
+      // Haptics are off system-wide for many people and silent on plenty of
+      // Android hardware, so they cannot be the only sign of a pickup.
+      const style = renderOverlay({ x: 100, y: 10 }, { x: 100, y: 10 });
+      const scale = style.transform[2] as { scale: number };
+
+      expect(scale.scale).toBeGreaterThan(1);
+    });
+
+    it("is anchored on the node it replaces", () => {
+      const style = renderOverlay({ x: 400, y: 300 }, { x: 400, y: 300 });
+
+      expect(style.left).toBeLessThan(400);
+      expect(style.top).toBeLessThan(300);
+    });
+
+    it("does not take touches from the gesture underneath it", () => {
+      render(
+        <DragOverlay
           node={MODEL.nodes[0]}
-          origin={origin}
-          dragX={makeMutable(origin.x)}
-          dragY={makeMutable(origin.y)}
+          origin={{ x: 100, y: 100 }}
+          dragX={makeMutable(100)}
+          dragY={makeMutable(100)}
           palette={palette}
-          onPress={jest.fn()}
         />,
       );
 
-      expect(animatedGroupProps()).toEqual({ translateX: 0, translateY: 0 });
+      const view = screen
+        .UNSAFE_getAllByType(Animated.View as never)
+        .find((node) => Array.isArray(node.props.style))!;
+      expect(view.props.pointerEvents).toBe("none");
     });
   });
 

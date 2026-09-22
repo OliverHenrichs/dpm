@@ -11,7 +11,6 @@ import { ELIDED_DASH } from "@/src/pattern/graph/types/Constants";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { SharedValue } from "react-native-reanimated";
 import DraggedEdge from "@/src/pattern/graph/render/DraggedEdge";
-import DraggedNode from "@/src/pattern/graph/render/DraggedNode";
 
 /**
  * The in-flight drag, if any.
@@ -126,19 +125,9 @@ export function drawNodes(
     // GraphLayoutInvariants. This guard is the last line of defence.
     if (!pos) return null;
 
-    if (isDragging(node.pattern.id, drag)) {
-      return (
-        <DraggedNode
-          key={node.pattern.id}
-          node={node}
-          origin={pos}
-          dragX={drag.dragX}
-          dragY={drag.dragY}
-          palette={palette}
-          onPress={onNodeTap}
-        />
-      );
-    }
+    // The dragged node is drawn by `DragOverlay`, in its own view above the
+    // graph — animating an SVG group's transform made it vanish on device.
+    if (isDragging(node.pattern.id, drag)) return null;
 
     return (
       <PatternNode
