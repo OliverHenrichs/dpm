@@ -2013,6 +2013,29 @@ safety net: an entry for a pattern that is gone is dead weight either way.
 
 ---
 
+### S-RTL — `ar` renders right-to-left text in a left-to-right layout
+
+**Known gap, deliberately out of scope so far.** Recorded here rather than in `AGENTS.md`,
+which describes rules to follow rather than work not yet done.
+
+The OS handles the bidi text itself, so Arabic strings read correctly, but nothing is mirrored.
+Real RTL needs `I18nManager.forceRTL` plus the reload it requires, logical `start`/`end` styles
+throughout, and flipped directional affordances (the `›` chevron, the drawer edge, the graph
+canvas). Size: **M** at least, and closer to **L** if the graph canvas is included.
+
+---
+
+### S-THEME — The chosen theme is forgotten on relaunch
+
+**Known gap.** Every other app-wide setting has its own single-purpose storage key that survives
+deleting every list — `@language` (`src/settings/data/LanguageStorage.ts`) and
+`@graphDragHintDismissed` (`src/pattern/graph/data/GraphHintStorage.ts`). The theme is the odd one
+out: `ThemeContext` keeps it in `useState` only.
+
+**Change:** give it a `@theme` key alongside the others, following `LanguageStorage.ts`. Size: **S**.
+
+---
+
 ### Other defects
 
 Covered above as small changes: [B3](#b3--pattern-delete-confirmation-is-hardcoded-english--done-was-misdiagnosed),
