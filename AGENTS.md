@@ -65,6 +65,8 @@ Storage keys in `src/pattern/data/PatternListStorage.ts`:
 - `@patterns_{listId}` — serialised `IPattern[]` for a given list
 - `@activeListId` — UUID of the currently active list
 
+App-wide settings live under their own single-purpose keys, outside any list, so they survive deleting every list: `@language` (`src/settings/data/LanguageStorage.ts`) and `@graphDragHintDismissed` (`src/pattern/graph/data/GraphHintStorage.ts`). The theme is the odd one out — `ThemeContext` keeps it in `useState` only, so it is still forgotten on relaunch.
+
 **Writes to the same key are serialised.** `savePatternList` and `deletePatternList` are
 read-modify-write over the whole list array, so two overlapping calls used to both read the
 pre-change array and the second silently discarded the first's change — reachable in the app,
@@ -156,8 +158,16 @@ All user-facing strings use `const { t } = useTranslation()`. The app ships **ni
 
 The picker is `src/settings/components/LanguagePickerBottomSheet.tsx`, opened from a single row in `SettingsScreen`. Every row shows the endonym plus the English name — that gloss is the way back for someone who lands in a script they cannot read — except where the two are the same word. A row of one button per language does **not** scale past about four and was replaced for that reason.
 
-Two known gaps, both pre-existing in kind and deliberately out of scope so far:
-- **The choice is not persisted.** `src/i18n.ts` hard-codes `lng: "en"`, so a relaunch is back in English and the device locale is never consulted. Fixing it means reading a stored code (and `expo-localization` for a first-run default) before the first render.
+The choice is persisted under `@language` (`src/settings/data/LanguageStorage.ts`), and `restoreStoredLanguage()` in `src/i18n.ts` applies it. Three things about that are load-bearing:
+
+- **Saving hangs off i18next's `languageChanged` event, not off the picker.** Any call site that changes the language is persisted without having to remember to, including ones that do not exist yet.
+- **That subscription is made only *after* the stored value is applied.** `init` emits `languageChanged` too, so subscribing earlier would write the hard-coded `"en"` on first launch and record a choice the user never made — which is precisely what a device-locale default would then have to fight.
+- **A stored code is honoured only while that locale still ships.** Dropping a language otherwise strands whoever picked it on a resource bundle that is gone, with no way back but a reinstall. Read failures fall back to English for the same reason: a broken store must not stop the app starting.
+
+`app/_layout.tsx` holds the splash screen (`preventAutoHideAsync`, then `hideAsync` once the restore settles) so the English-to-stored-language swap happens behind it. It does **not** gate rendering on the restore: returning `null` until then hides the swap just as well on a device, but static rendering is on for web, and it silently turns every pre-rendered route into an empty shell — the exported `/settings` route drops from 29 KB to 18 KB. The `expo export` bundle job is what catches that.
+
+Two known gaps, deliberately out of scope so far:
+- **The device locale is never consulted.** A first launch is English everywhere, even for a phone set to Portuguese. Adding that means an `expo-localization` dependency and a first-run default resolved against `LANGUAGES` — the persistence layer above is already shaped for it, since it never writes a code the user did not pick.
 - **`ar` renders right-to-left text in a left-to-right layout.** The OS handles the bidi text itself, so the strings read correctly, but nothing is mirrored. Real RTL needs `I18nManager.forceRTL` plus the reload it requires, logical `start`/`end` styles throughout, and flipped directional affordances (the `›` chevron, the drawer edge, the graph canvas).
 
 ## Graph views

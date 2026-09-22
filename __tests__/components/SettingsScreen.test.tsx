@@ -1,5 +1,5 @@
 import React from "react";
-import i18n from "@/src/i18n";
+import i18n, { restoreStoredLanguage } from "@/src/i18n";
 import { exportPatternLists } from "@/src/pattern/data/exportPatterns";
 import { importPatternLists } from "@/src/pattern/data/ImportPatterns";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
@@ -13,6 +13,7 @@ import {
   screen,
   waitFor,
 } from "@/utils/renderWithProviders";
+import { peekAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
 
 jest.mock("@/src/pattern/data/exportPatterns", () => ({
   exportPatternLists: jest.fn(),
@@ -149,6 +150,18 @@ describe("SettingsScreen", () => {
       await waitFor(() =>
         expect(screen.getByText("Sprache")).toBeOnTheScreen(),
       );
+    });
+
+    it("remembers the language that was picked", async () => {
+      // What the root layout does on startup; without it nothing is watching
+      // for the change, which is the bug this covers.
+      await restoreStoredLanguage();
+      await renderSettings();
+
+      await openPicker();
+      fireEvent.press(screen.getByText("Deutsch"));
+
+      await waitFor(() => expect(peekAsyncStorage()["@language"]).toBe("de"));
     });
 
     it("switches into a non-Latin script too", async () => {

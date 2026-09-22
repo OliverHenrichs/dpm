@@ -1,6 +1,7 @@
-import "@/src/i18n";
-import React from "react";
+import { restoreStoredLanguage } from "@/src/i18n";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import { Drawer } from "expo-router/drawer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -13,7 +14,31 @@ import { ActivePatternListProvider } from "@/src/pattern/data/components/ActiveP
 import DrawerContent from "@/src/common/components/DrawerContent";
 import { DRAWER_ROUTES } from "@/src/common/components/DrawerRoutes";
 
+// Reading the stored language is a round trip to AsyncStorage, and i18next
+// has already come up in English by then. Holding the splash over that gap
+// keeps someone who chose Bengali from seeing a frame of English first.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Already hidden, or unavailable on this platform: the app still works,
+  // it just starts a beat earlier.
+});
+
 export default function RootLayout() {
+  useEffect(() => {
+    restoreStoredLanguage()
+      .catch((error) => {
+        console.log("Could not restore the stored language:", error);
+      })
+      // The splash comes down either way. A store we cannot read is a reason
+      // to start in English, never a reason not to start.
+      .finally(() => {
+        void SplashScreen.hideAsync();
+      });
+  }, []);
+
+  // The tree stays mounted throughout, rendering in English until the stored
+  // language lands. Returning null here instead would hide the swap just as
+  // well on a device, but static rendering is on for web, and it would leave
+  // every pre-rendered route an empty shell.
   return (
     <ThemeProvider>
       <AppDrawer />
