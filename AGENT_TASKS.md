@@ -26,9 +26,9 @@ familiar with the codebase, including tests and review — they are estimates, n
 | # | Idea (as written) | Size | Status | Where it goes |
 |---|---|---|---|---|
 | 1 | Don't focus the pattern-list name right after picking a starting point — the keyboard hides too much | **S** | ✅ done | [S1](#s1--stop-auto-focusing-the-list-name-field--done) |
-| 2 | App's swipe-left gesture fights the OS back gesture | **M** | open | [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture) |
+| 2 | App's swipe-left gesture fights the OS back gesture | **M** | ✅ done | [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture) |
 | 2b | Searchable/filterable pattern graph (only show direct chains of filtered figures) | **L** | ✅ done | [L1](#l1--searchable--filterable-pattern-graph) |
-| 3 | Moveable patterns in network graph | **L** | open | [L2](#l2--moveable-patterns-in-the-network-graph) |
+| 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ◐ details half done ([B7](#b7--the-graphs-detail-modal-can-never-show-modifiers--done)) | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | open | [L3](#l3--ai-anonymised-comic-style-videos) |
@@ -68,12 +68,12 @@ evidence.
 ```
 Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
-Phase 2  B1✅ B2✅ M1  M2                       F2✅        (defects + the graph model)
-Phase 3  L1✅ ─────────────► L2                             (L1 done — L2 ready)
+Phase 2  B1✅ B2✅ M1✅ M2                      F2✅        (defects + the graph model)
+Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
 ```
 
-**Phases 1 and 2 are complete**, bar the two Mediums (M1, M2). Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
+**Phases 1 and 2 are complete**, bar M2. Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
 landed and what is still outstanding. **L1 has landed**, so L2 — moveable nodes — is next, with
 the node set it has to reconcile against now well defined.
 
@@ -270,7 +270,7 @@ plus a prop declaration. This is the "modifiers in details when clicked" half of
 
 ## 3. Medium changes
 
-### M1 — Stop the app's horizontal gestures fighting the OS back gesture
+### M1 — Stop the app's horizontal gestures fighting the OS back gesture — DONE (option 1)
 
 The original note — *"app's swipe-left screen () fights vs native/OS's 'back' aka go-back left
 swipe gesture"* — has an empty parenthesis where a screen name was meant to go, so it is
@@ -318,6 +318,18 @@ curved edges, and on an iPhone with the home indicator. Check specifically: grap
 within 40 px of the right edge; video carousel paging near either edge; drawer open/close.
 
 **Effort:** 0.5 days for option 1 + padding. 3–4 days if the native module is wanted.
+
+#### Landed
+
+**Option 1, prompted by a device report.** Dragging in the network graph was "sometimes instead
+opening the side menu" — reading A, confirmed on hardware rather than inferred.
+`swipeEnabled: Platform.OS !== "android"` in `app/_layout.tsx`. Every screen renders `AppHeader`
+with an always-visible menu button, so nothing is lost; iOS keeps the swipe, where the
+interactive pop gesture is left-edge only and the drawer is on the right.
+
+**Not done:** the container padding for reading B (horizontal scrollers near the edge), and the
+`setSystemGestureExclusionRects` native module. Reading B has not been reported and the module is
+its own 3-day item for Android 10+ only.
 
 ---
 
@@ -623,7 +635,7 @@ same split the rest of the graph already used; it is now a deliberate one.
 
 ---
 
-### L2 — Moveable patterns in the network graph
+### L2 — Moveable patterns in the network graph — DONE
 
 > *"Moveable patterns in network graph"*
 
@@ -649,9 +661,12 @@ have it survive restarts, list edits and app updates.
 - `react-native-reanimated@4.5.1`, `react-native-worklets@0.10.1` and
   `react-native-gesture-handler@3.3.0` are all dependencies but **are not imported anywhere in
   `src/` or `app/`** (verified by grep). They are present as peer requirements of the drawer.
-- **[verify]** No `GestureHandlerRootView` is mounted: `app/_layout.tsx` does not render one, and
-  neither `expo-router`'s layouts nor `@react-navigation/drawer` mount one (grepped). Gesture
-  Handler requires it. Confirm on device before assuming any `Gesture.*` API will fire.
+- ~~**[verify]** No `GestureHandlerRootView` is mounted.~~ **Wrong — checked and corrected.** The
+  drawer mounts a real one on native: `expo-router` vendors `@react-navigation/drawer`, whose
+  native view is `react-native-drawer-layout`, and `Drawer.native.js:297` renders
+  `GestureHandlerRootView` around its children — which is every screen. On web RNGH's root view is
+  a plain `View` plus a context flag, so gestures work there without one either. Nothing needs
+  mounting, and nesting one around the graph would take it out of the drawer's gesture tree.
 
 #### The three problems
 
@@ -792,6 +807,182 @@ Manual, on device — name these in the PR description because they cannot be au
 
 **8–12 days.** ~4 for the container replacement, ~3 for the drag interaction including the edge
 worklets, ~2 for persistence and reconciliation, ~2 for tests, web verification and polish.
+
+#### Landed so far — step 1 of 3: the container
+
+Done as its own commit with no behaviour change, per the risk note above.
+`components/ZoomableCanvas.tsx` replaces `@openspacelabs/react-native-zoomable-view`, which is
+now removed from `package.json`. **696 tests** (was 676).
+
+- `Gesture.Race(doubleTap, Gesture.Simultaneous(pan, pinch))` driving shared values, with the
+  transform published through `CanvasTransformContext` so a node drag can read the live `scale`
+  from a worklet — without which a dragged node lags the finger above 1:1 and outruns it below.
+- Pinch reports cumulative scale; converting it to a per-frame factor is what lets pinch and pan
+  both write `translate` without fighting. There is a test for exactly that.
+- Double-tap-to-zoom is preserved, including the wrap back to the initial zoom at maximum, which
+  is what the old container did.
+
+**A test-infrastructure problem had to be solved first.** Importing Reanimated under jest fails
+the whole suite: its entry point initialises the worklets runtime, which reaches a native module
+that does not exist (`Cannot read properties of undefined (reading 'loadUnpackers')`). Its own
+shipped mock re-imports that entry point, so it does not help. Resolving `react-native-worklets`
+to its web build via a custom jest resolver fixes that but then breaks Gesture Handler, whose
+native build installs bindings into a *UI* runtime the web worklets build refuses to provide —
+and RNGH's web implementation lives in `.web.ts` files jest is not looking for on an ios run, so
+the same trick does not work twice. Both are now hand-written mocks in `__mocks__/`, matching the
+convention already used for AsyncStorage and expo-file-system.
+
+The gesture mock is more than a stub: it records every handler a component registers, so a test
+can call them with synthetic events. That is what makes the pan/pinch/zoom *arithmetic* — focal
+points, clamping, cumulative-versus-incremental scale — testable at 100% coverage without a
+device. Reverting the focal-point maths fails three tests.
+
+#### Landed so far — step 2 of 3: persistence and reconciliation
+
+Pure and gesture-free, so all of it is unit-tested. **744 tests** (was 696).
+
+- **`model/resolveLayout.ts`** — merges a stored layout with the patterns that exist now. A
+  stored pattern keeps its position (clamped to the same box the automatic layout uses, because a
+  node outside it could never be dragged back); a pattern added since is **seeded near its
+  prerequisites**, never by re-running the global layout; a stored entry whose pattern is gone is
+  reported stale for pruning. A list with nothing stored behaves exactly as it did before manual
+  layouts existed.
+- **`data/GraphLayoutStorage.ts`** — `@graphLayout_{listId}`, following the existing helpers-only
+  convention: reads degrade to null on any failure, writes propagate, and there is an orphan
+  collector matching `collectOrphanedPatternKeys`. No write lock, unlike `savePatternList`: this
+  is a whole-value write of a key only the graph touches, not a read-modify-write over a shared
+  array, so the later of two overlapping saves simply wins — which is what the user just did.
+- **`deletePatternList` and `clearAllData` now remove layout keys**, or they would leak exactly
+  as [B5](#b5--clearalldata-orphans-every-pattern-key--done) did.
+- **`data/GraphLayoutKeys.ts`** — the key alone, in a module with no imports. `PatternListStorage`
+  needs it to clean up, and importing `GraphLayoutStorage` for it dragged the whole
+  reconciliation layer into every bundle touching list storage. That showed up as a coverage
+  swing: `resolveLayout` reported 69% or 89% depending on which instrumented copy won the merge.
+  Splitting the key fixed the cause; it now reports 100% on every run.
+
+**Seeding is the behaviour that matters**, and it is tested as such: a new pattern lands one
+level from its prerequisite, between two of them when it has two, off its *dependents* when it
+has no prerequisites, and on a ring outside everything when it is unconnected. Chains of new
+patterns hang off each other rather than all stacking on the same anchor, and a cycle among new
+patterns terminates instead of looping.
+
+**Found while doing this: [B14](#b14--pattern-ids-are-recycled).** `createNewId` is
+`max(id) + 1`, so ids are reused after a delete. Nothing depended on that until a stored layout
+started outliving individual patterns. Mitigated here by pruning stale entries; the real fix is a
+per-list high-water mark and is written up separately rather than smuggled into L2.
+
+#### Landed — step 3 of 3: the drag
+
+**803 tests** (was 744).
+
+- **`hooks/useNodeDrag.ts` + `model/graphCoordinates.ts`** — one pan on the canvas that hit-tests,
+  rather than a gesture per node. Nodes are SVG elements, so a `GestureDetector` per node means a
+  detector inside an `<Svg>`: fragile on native and colliding with the web build's hand-bound
+  click listeners. This is not the rejected option B — arbitration is still Gesture Handler's,
+  because the drag is *raced* against the canvas's gestures rather than made exclusive, so a plain
+  drag pans immediately instead of waiting for a long press to fail.
+- **The scale bug the writeup warns about is tested directly.** Screen deltas are divided by the
+  live zoom; there are tests asserting the node lands where the finger did at 0.5×, 1× and 2×.
+- **`render/DraggedNode.tsx` / `render/DraggedEdge.tsx`** — only the dragged node and the edges
+  touching it follow a shared value. `draggingId` is React state, set once per drag, so nothing
+  re-renders per frame and the per-frame cost is a handful of worklets whatever the graph size.
+  This is option 1 from the writeup, not the "snap on release" fallback.
+- **Persistence, reset and cleanup** — positions save on release; a reset action appears in the
+  header once there is something to reset, behind an `AppDialog` confirmation; dragging is allowed
+  on read-only lists, as a local view preference rather than a content edit.
+- A long press on empty canvas pans, rather than doing nothing — the drag has already won the race
+  by then, so the canvas pan will not fire.
+
+**A real bug found by the test suite, which would have shipped.** Marking `generateOrthogonalPath`
+and its helpers as worklets broke every edge with `getConnectionPoint is not a function`. The
+worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a
+factory that closes over its helpers **by value at the point the declaration appears** — so a
+worklet declared above its helpers captures `undefined`, and function hoisting cannot save it
+because there is no declaration left to hoist. This would have failed on device exactly as it did
+under test. Fixed by ordering, with the reason written at the call site and in `AGENTS.md`.
+
+**Not verified on device, and not verifiable here** — the manual list above still stands in full.
+Most important: whether a tap still opens the detail modal under the canvas pan, whether the
+drawer's edge swipe and the drag arbitrate sensibly, whether the 200 ms activation feels right,
+and a release build on the slowest supported Android with a 100+ pattern list. The haptics fire at
+pickup and release and cannot be judged from code at all.
+
+**Deliberately not done:** the web verification pass the writeup asks for (point 8). Both bundles
+export, but mouse-drag and touch-drag on a real browser are a separate check that has not
+happened.
+
+#### After the first device test
+
+Three problems, of which only one was a bug in the drag itself.
+
+1. **Nobody could find the gesture.** The report was "how would I now move the network graph
+   items?" — long-press-then-drag has no affordance, since a node looks identical whether or not
+   it can be picked up. Shipping a feature nobody can discover is not shipping it. Fixed with a
+   dismissible hint bar above the graph (`components/GraphDragHint.tsx`, dismissal persisted in
+   its own key so it survives a layout reset) and a line in the `Legend` for anyone who dismissed
+   it. **The gesture itself was correct**: `activateAfterLongPress` makes the pan *fail* if the
+   finger moves before the timer, so it cannot be stolen by ordinary movement, and `Race` against
+   the canvas pan is right — `Exclusive` would delay every pan until the long press failed.
+2. **The drawer stole drags.** That is [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture),
+   now fixed.
+3. **A clipping bug found while re-reading, not reported.** `NetworkGraphView` sized the SVG from
+   the *automatic* layout while drawing the *manual* one, so a node dragged beyond the automatic
+   bounds fell outside the canvas and stopped being drawn — with no way to drag it back. The
+   canvas is now measured from the positions actually drawn (`model/canvasMetrics.ts`, moved out
+   of the hook so the fast unit project can test it), deliberately *without* re-normalising them:
+   re-normalising would shift every node whenever one was dragged past an edge, which reads as the
+   whole graph jumping. Drags and stored positions are now clamped at the near edge too
+   (`MIN_GRAPH_COORDINATE`), because a negative coordinate is the same disappearing-node failure
+   from the other side.
+
+**Two false leads worth recording**, both checked rather than assumed: worklets 0.10.1 *does*
+serialize `Map` closures (`serializable.native.ts` routes them through `createSerializableMap`),
+so the hit-test's positions map is fine; and `activateAfterLongPress` does not let a pan activate
+on movement, so the drag was never competing with the canvas pan for ordinary drags.
+
+#### After the second device test — the actual bug
+
+The hint made the gesture findable, and it still did nothing: no haptic, no movement, while
+tapping kept working. That last detail is the whole diagnosis. **`onPress` on an SVG element
+installs React Native's Touchable responder set** (`react-native-svg/src/lib/extract/extractResponder.ts`):
+`onStartShouldSetResponder` claims the touch on contact and `onResponderTerminationRequest`
+refuses to hand it over. A touch landing on a node therefore never reached Gesture Handler at
+all — which is exactly why panning from empty canvas worked and pressing a node did nothing.
+
+The fix is one input system for the view: the network view now draws **inert** nodes
+(`PatternNodeGroup` takes `onPress?`) and handles tap *and* drag in the gesture system, hit-testing
+for both. The timeline is unchanged — it has no canvas gesture to compete with, so its nodes keep
+`onPress`.
+
+**Cost, and it is a real one: double-tap-to-zoom is gone.** With the node tap in the gesture
+system the two cannot both be fast — a single tap would have to wait for a double tap to fail
+before opening a pattern, and that is the most common interaction on the screen. Pinch remains,
+and the fitted initial zoom from L1 already frames the content. If double-tap is wanted back, it
+needs a different home, not a longer delay on tap.
+
+#### After the third device test
+
+Dragging worked. Two things still wrong, and only one was cosmetic.
+
+- **The dragged node vanished for the duration of the drag** and reappeared, correctly placed, on
+  release — while its edges followed the finger the whole time. Animating an SVG group's
+  transform props is what did it. Replaced by `render/DragOverlay.tsx`: the node is drawn in a
+  small SVG of its own inside an `Animated.View` above the graph, and the *view* is transformed.
+  `drawNodes` skips the dragged node meanwhile so it cannot ghost at its old position.
+- **No haptic.** `android.permission.VIBRATE` is present, so this is most likely the phone's own
+  touch-vibration setting — but the right fix was not to chase that. Pickup is now `Medium`
+  rather than `Light`, which is barely perceptible on much Android hardware, and more importantly
+  **the node now visibly lifts** (scale 1.12). Haptics are off system-wide for many people; a
+  vibration must never be the only sign that something happened, and it was.
+
+**The lesson for the plan, not just the code.** The writeup's own [L2](#l2--moveable-patterns-in-the-network-graph)
+notes said nodes are SVG elements and that `PatternNodeGroup` has a platform split because SVG
+press handling is awkward — the signal was there and I read it as "do not nest a GestureDetector"
+rather than "an SVG press handler will eat the touch". Two device round-trips for one cause.
+
+**Not yet verified on device.** Nothing in this step can be: whether a tap still reaches a node
+under the canvas pan, whether the drawer's edge swipe and the canvas pan arbitrate sensibly, and
+how the pinch feels are all hardware questions. See the manual list above.
 
 ---
 
@@ -1729,6 +1920,34 @@ the pattern quietly makes those controls untestable.
 
 **Fixed** by guarding the event too — `e?.stopPropagation?.()` — at all four sites. A grep for
 `e.stopPropagation` now returns nothing unguarded.
+
+---
+
+### B14 — Pattern ids are recycled
+
+**Found during [L2](#l2--moveable-patterns-in-the-network-graph) step 2. Not fixed; mitigated.**
+
+`createNewId` is `Math.max(...ids) + 1` (`src/pattern/list/hooks/usePatternCrud.ts:36`), so
+deleting the highest-id pattern and adding another gives the new one the id the deleted one had.
+Ids are unique *at any instant*, never unique *over time*.
+
+Nothing depended on that until now. `prerequisites` are repaired when a pattern is deleted
+([B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done)), so a recycled id cannot
+resurrect an edge. But the manual graph layout is keyed by pattern id and outlives any single
+pattern, so a stored position can attach to a pattern that merely inherited the id — the new
+pattern appears where the deleted one sat, instead of being seeded near its prerequisites.
+
+**Mitigation in place:** `resolveLayout` reports stale entries and the caller prunes them, so the
+window is only "a pattern was deleted and another added before the graph screen next resolved a
+layout". The consequence inside that window is a node in the wrong place, which the user can drag
+— nothing is lost or corrupted.
+
+**The real fix** is a per-list high-water mark (`nextPatternId` on `IPatternList`) so ids are
+never reused, with a migration seeding it from `max(id) + 1`. The migration runner from
+[F3](#f3--storage-schema-versioning-and-import-validation--done) makes that cheap. It was left
+out of L2 deliberately: it changes the data model, it touches the export format question, and it
+is not what makes dragging work. **Do it before anything else starts keying long-lived data by
+pattern id.**
 
 ---
 

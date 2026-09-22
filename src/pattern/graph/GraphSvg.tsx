@@ -15,6 +15,9 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
   model,
   positions,
   palette,
+  draggingId,
+  dragX,
+  dragY,
   onNodeTap,
 }) => (
   <Svg
@@ -23,8 +26,15 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
     {...rasterizeLargeGraph(model.nodes.length)}
   >
     <ArrowheadMarker palette={palette} />
-    {drawEdges(model.edges, positions, palette)}
-    {drawNodes(model.nodes, positions, palette, onNodeTap)}
+    {drawEdges(model.edges, positions, palette, { draggingId, dragX, dragY })}
+    {/* No per-node press handler: the network view's taps come from the
+        canvas gesture, because an SVG press handler claims the touch and
+        stops the drag activating. See `PatternNodeGroup`. */}
+    {drawNodes(model.nodes, positions, palette, undefined, {
+      draggingId,
+      dragX,
+      dragY,
+    })}
   </Svg>
 );
 

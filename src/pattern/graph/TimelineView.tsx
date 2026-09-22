@@ -18,11 +18,11 @@ import {
 import {
   ArrowheadMarker,
   drawNodes,
-  ELIDED_DASH,
 } from "@/src/pattern/graph/render/GraphPrimitives";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import { useTranslation } from "react-i18next";
 import {
+  ELIDED_DASH,
   MIN_PATTERN_HEIGHT,
   MIN_PATTERNS_VISIBLE,
 } from "@/src/pattern/graph/types/Constants";

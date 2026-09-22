@@ -206,5 +206,12 @@
   "chainModeFullChain": "Alles Verbundene",
   "graphFilterSummary": "{{matched}} Treffer · {{shown}} von {{total}} gezeigt",
   "clearFilter": "Filter zurücksetzen",
-  "noPatternsMatchFilter": "Keine Figuren passen zu diesem Filter"
+  "noPatternsMatchFilter": "Keine Figuren passen zu diesem Filter",
+  "resetLayout": "Anordnung zurücksetzen",
+  "resetLayoutConfirm": "Alle Figuren wieder dort platzieren, wo die App sie hingesetzt hat? Deine Anordnung geht verloren.",
+  "graphDragHint": "Figur kurz gedrückt halten, dann ziehen zum Verschieben.",
+  "dismissHint": "Hinweis ausblenden",
+  "dragToMove": "Halten und ziehen zum Verschieben",
+  "closeDetails": "Schließen",
+  "dismissDetails": "Details schließen"
 }

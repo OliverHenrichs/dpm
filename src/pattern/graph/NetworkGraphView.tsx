@@ -1,18 +1,26 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useMemo } from "react";
+import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
-import { useGraphLayout } from "./hooks/useGraphLayout";
+import { measureCanvas } from "@/src/pattern/graph/model/canvasMetrics";
 import NetworkGraphSvg from "./GraphSvg";
-import { ReactNativeZoomableView } from "@openspacelabs/react-native-zoomable-view";
+import ZoomableCanvas from "@/src/pattern/graph/components/ZoomableCanvas";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
+import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
+import { useCanvasTransformValues } from "@/src/pattern/graph/components/CanvasTransformContext";
+import { useNodeDrag } from "@/src/pattern/graph/hooks/useNodeDrag";
+import DragOverlay from "@/src/pattern/graph/render/DragOverlay";
 
 interface NetworkGraphViewProps {
   model: GraphModel;
   palette: Record<PaletteColor, string>;
   /** Distinguishes "nothing matched" from "this list is empty". */
   hasActiveFilter: boolean;
+  /** The positions to draw: the manual layout where one exists. */
+  positions: Map<number, LayoutPosition>;
+  /** Persist a node's new position. */
+  onMoveNode: (id: number, position: LayoutPosition) => void;
   onNodeTap: (pattern: IPattern) => void;
 }
 
@@ -20,18 +28,57 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   model,
   palette,
   hasActiveFilter,
+  positions,
+  onMoveNode,
   onNodeTap,
 }) => {
   const { t } = useTranslation();
-  const {
+  const { width, height } = useWindowDimensions();
+  const styles = getStyles(palette);
+
+  // Measured from the positions actually being drawn, not from the automatic
+  // layout: a manual layout replaces those, and a node dragged past the
+  // automatic bounds would fall outside the SVG and never be drawn at all.
+  const { svgWidth, svgHeight, contentCenterX, contentCenterY, initialZoom } =
+    useMemo(
+      () => measureCanvas(positions, width, height),
+      [positions, width, height],
+    );
+
+  // The canvas centers the SVG mid-point in the viewport. Shift by the
+  // difference to the content's center instead, scaled by zoom.
+  const initialOffsetX = (svgWidth / 2 - contentCenterX) * initialZoom;
+  const initialOffsetY = (svgHeight / 2 - contentCenterY) * initialZoom;
+
+  const transform = useCanvasTransformValues(
+    initialZoom,
+    initialOffsetX,
+    initialOffsetY,
+  );
+  // Taps go through the gesture system too, not through each node's own SVG
+  // press handler — that handler claims the touch outright and stopped the
+  // drag from ever activating. See `PatternNodeGroup`.
+  const patternById = useMemo(
+    () => new Map(model.nodes.map((node) => [node.pattern.id, node.pattern])),
+    [model.nodes],
+  );
+  const handleTap = useCallback(
+    (id: number) => {
+      const pattern = patternById.get(id);
+      if (pattern) onNodeTap(pattern);
+    },
+    [patternById, onNodeTap],
+  );
+
+  const { draggingId, dragX, dragY, gesture } = useNodeDrag(
+    transform,
     positions,
     svgWidth,
     svgHeight,
-    contentCenterX,
-    contentCenterY,
-    initialZoom,
-  } = useGraphLayout(model);
-  const styles = getStyles(palette);
+    onMoveNode,
+    handleTap,
+    model.nodes.length > 0,
+  );
 
   // Hooks first, then the empty case. This used to be a plain function that
   // called useTranslation and was invoked conditionally, with a
@@ -49,21 +96,21 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
     );
   }
 
-  // The zoomable view centers the SVG mid-point in the viewport by default.
-  // Shift by the difference to the content's center instead, scaled by zoom.
-  const initialOffsetX = (svgWidth / 2 - contentCenterX) * initialZoom;
-  const initialOffsetY = (svgHeight / 2 - contentCenterY) * initialZoom;
+  const draggedNode =
+    draggingId === null
+      ? undefined
+      : model.nodes.find((node) => node.pattern.id === draggingId);
 
   return (
     <View style={styles.container}>
-      <ReactNativeZoomableView
-        maxZoom={4.5}
-        minZoom={0.15}
-        zoomStep={0.5}
+      <ZoomableCanvas
+        contentWidth={svgWidth}
+        contentHeight={svgHeight}
         initialZoom={initialZoom}
         initialOffsetX={initialOffsetX}
         initialOffsetY={initialOffsetY}
-        bindToBorders={false}
+        transform={transform}
+        extraGesture={gesture}
       >
         <NetworkGraphSvg
           svgWidth={svgWidth}
@@ -71,9 +118,22 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
           model={model}
           positions={positions}
           palette={palette}
+          draggingId={draggingId}
+          dragX={dragX}
+          dragY={dragY}
           onNodeTap={onNodeTap}
         />
-      </ReactNativeZoomableView>
+
+        {draggedNode && (
+          <DragOverlay
+            node={draggedNode}
+            origin={positions.get(draggedNode.pattern.id)!}
+            dragX={dragX}
+            dragY={dragY}
+            palette={palette}
+          />
+        )}
+      </ZoomableCanvas>
     </View>
   );
 };

@@ -12,6 +12,9 @@ interface PatternGraphHeaderProps {
   onToggleView: () => void;
   hasActiveFilter: boolean;
   onFilter: () => void;
+  /** Only offered once there is a manual layout to discard. */
+  canResetLayout: boolean;
+  onResetLayout: () => void;
 }
 
 const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
@@ -19,6 +22,8 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
   onToggleView,
   hasActiveFilter,
   onFilter,
+  canResetLayout,
+  onResetLayout,
 }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
@@ -27,6 +32,21 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
 
   const rightActions = (
     <>
+      {/* Only shown once the user has actually moved something: an always-on
+          reset for a layout nobody arranged is a button that does nothing. */}
+      {canResetLayout && viewMode === "graph" && (
+        <TouchableOpacity
+          onPress={onResetLayout}
+          style={styles.iconButton}
+          accessibilityLabel={t("resetLayout")}
+        >
+          <Icon
+            name="backup-restore"
+            size={24}
+            color={palette[PaletteColor.Primary]}
+          />
+        </TouchableOpacity>
+      )}
       {/* Same icon/colour convention as PatternListHeader, so an active
           filter reads the same on both screens. */}
       <TouchableOpacity

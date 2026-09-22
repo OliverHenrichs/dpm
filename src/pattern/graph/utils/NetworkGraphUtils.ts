@@ -4,6 +4,10 @@ import {
   buildAdjacency,
   buildDepthMap,
 } from "@/src/pattern/graph/model/adjacency";
+import {
+  DEPTH_SPACING,
+  MAX_GRAPH_COORDINATE,
+} from "@/src/pattern/graph/types/Constants";
 
 /**
  * ~137.5°. Stepping by it spreads successive points evenly around a circle
@@ -62,8 +66,6 @@ export function calculateGraphLayout(
   // This handles multi-parent nodes: only the first (shortest DFS path) placement sticks.
   const positioned = new Set<number>(foundationalPatterns.map((p) => p.id));
 
-  // Fixed step between parent and child — independent of depth so all rings are even.
-  const DEPTH_SPACING = 220;
   // Angular spread per child: inversely proportional to child count so that
   // fewer children fan out wider and more children pack tighter.
   // Clamped between MIN (avoid total collapse) and MAX (avoid full-circle wrap).
@@ -265,7 +267,7 @@ function getFoundationalPatterns(
 function addSizeSafeguards(positions: Map<number, LayoutPosition>) {
   // Clamp all positions to reasonable bounds to prevent excessive canvas size.
   // This prevents "Canvas: trying to draw too large bitmap" errors.
-  const MAX_COORDINATE = 4000;
+  const MAX_COORDINATE = MAX_GRAPH_COORDINATE;
   positions.forEach((pos) => {
     pos.x = Math.max(-MAX_COORDINATE, Math.min(MAX_COORDINATE, pos.x));
     pos.y = Math.max(-MAX_COORDINATE, Math.min(MAX_COORDINATE, pos.y));

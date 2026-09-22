@@ -1,4 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  loadGraphLayout,
+  saveGraphLayout,
+} from "@/src/pattern/graph/data/GraphLayoutStorage";
 import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
 import {
   clearAllData,
@@ -267,6 +271,39 @@ describe("PatternListStorage", () => {
       await expect(getActiveListId()).resolves.toBeNull();
     });
 
+    it("removes the list's manual graph layout too", async () => {
+      // Same leak as an orphaned pattern key: nothing would ever read or
+      // delete it again.
+      const doomed = createTestPatternList();
+      await savePatternList(doomed);
+      await saveGraphLayout(doomed.id, {
+        version: 1,
+        positions: { "1": { x: 0, y: 0 } },
+        updatedAt: 1,
+      });
+
+      await deletePatternList(doomed.id);
+
+      await expect(loadGraphLayout(doomed.id)).resolves.toBeNull();
+    });
+
+    it("leaves another list's graph layout alone", async () => {
+      const doomed = createTestPatternList();
+      const survivor = createTestPatternList();
+      await savePatternList(doomed);
+      await savePatternList(survivor);
+      const layout = {
+        version: 1,
+        positions: { "1": { x: 5, y: 5 } },
+        updatedAt: 1,
+      };
+      await saveGraphLayout(survivor.id, layout);
+
+      await deletePatternList(doomed.id);
+
+      await expect(loadGraphLayout(survivor.id)).resolves.toEqual(layout);
+    });
+
     it("leaves the active list pointer alone when a different list is deleted", async () => {
       const active = createTestPatternList();
       const other = createTestPatternList();
@@ -392,6 +429,11 @@ describe("PatternListStorage", () => {
       await savePatternList(b);
       await savePatterns(a.id, [createTestPattern("type1", { id: 1 })]);
       await savePatterns(b.id, [createTestPattern("type1", { id: 1 })]);
+      await saveGraphLayout(a.id, {
+        version: 1,
+        positions: { "1": { x: 0, y: 0 } },
+        updatedAt: 1,
+      });
       await setActiveListId(a.id);
 
       await clearAllData();

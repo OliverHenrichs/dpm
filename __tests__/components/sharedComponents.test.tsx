@@ -1,5 +1,5 @@
 import React from "react";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 import AppDialog from "@/src/common/components/AppDialog";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import VideoCarousel from "@/src/common/components/VideoCarousel";
@@ -324,6 +324,35 @@ describe("PatternDetails", () => {
       />,
       { activeListId: null },
     );
+
+  /** Flatten a style prop, which may be an array, into one object. */
+  const flattenStyle = (style: unknown): Record<string, unknown> =>
+    (Array.isArray(style) ? style.flat(Infinity) : [style])
+      .filter(Boolean)
+      .reduce<Record<string, unknown>>(
+        (merged, part) => ({ ...merged, ...(part as object) }),
+        {},
+      );
+
+  const hasTopRule = () =>
+    screen
+      .UNSAFE_getAllByType(View)
+      .some((node) => flattenStyle(node.props.style).borderTopWidth === 1);
+
+  it("rules itself off from what is above it by default", () => {
+    // It expands directly under a row in PatternListItem, where the rule is
+    // what separates the two. Only the details modal turns it off, because
+    // its header already has one.
+    renderDetails();
+
+    expect(hasTopRule()).toBe(true);
+  });
+
+  it("drops the rule when asked", () => {
+    renderDetails({ showTopSeparator: false });
+
+    expect(hasTopRule()).toBe(false);
+  });
 
   it("shows counts, type and level", () => {
     renderDetails();

@@ -16,38 +16,6 @@ enum NodeSide {
 }
 
 /**
- * Generate SVG path string for an orthogonal edge between two nodes.
- * The path starts perpendicular to the source side and ends perpendicular to the target side.
- * @param fromPos Layout position of the source node.
- * @param toPos Layout position of the target node.
- * @param forceDirection - If true, always use RIGHT->LEFT for timeline view. If false, use closest sides.
- */
-export function generateOrthogonalPath(
-  fromPos: LayoutPosition,
-  toPos: LayoutPosition,
-  forceDirection: boolean = false,
-): string {
-  // Determine which sides to connect
-  const fromSide = forceDirection
-    ? NodeSide.RIGHT
-    : getClosestSide(fromPos, toPos);
-  const toSide = forceDirection
-    ? NodeSide.LEFT
-    : getClosestSide(toPos, fromPos);
-
-  const startPoint = getConnectionPoint(fromPos, fromSide);
-  const endPoint = getConnectionPoint(toPos, toSide);
-  const adjustedEndPoint = adjustEndpointForArrow(toSide, endPoint);
-  const orthogonalOffset = getOrthogonalOffset(adjustedEndPoint, startPoint);
-  let cp1 = getControlPoint(fromSide, startPoint, orthogonalOffset);
-  let cp2 = getControlPoint(toSide, adjustedEndPoint, orthogonalOffset);
-
-  // Use cubic Bézier curve (C command) for smooth, continuous curve
-  // This creates a smooth curve from start to end with orthogonal tangents at both ends
-  return `M ${startPoint.x} ${startPoint.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${adjustedEndPoint.x} ${adjustedEndPoint.y}`;
-}
-
-/**
  * Generate optimized SVG path for skip-level edges that routes through cleared space.
  * The path takes advantage of vertically shifted intermediate nodes by routing below them.
  * Curves complete at the first intermediate column and start at the last intermediate column.
@@ -109,6 +77,7 @@ function getClosestSide(
   nodePos: LayoutPosition,
   targetPos: LayoutPosition,
 ): NodeSide {
+  "worklet";
   const dx = targetPos.x - nodePos.x;
   const dy = targetPos.y - nodePos.y;
 
@@ -127,6 +96,7 @@ function getConnectionPoint(
   nodePos: LayoutPosition,
   side: NodeSide,
 ): LayoutPosition {
+  "worklet";
   switch (side) {
     case NodeSide.TOP:
       return { x: nodePos.x, y: nodePos.y - NODE_HEIGHT / 2 };
@@ -147,6 +117,7 @@ function adjustEndpointForArrow(
   toSide: NodeSide,
   endPoint: LayoutPosition,
 ): LayoutPosition {
+  "worklet";
   // Arrow size - move endpoint away from box so arrow can extend to touch box surface
   const arrowSize = 20;
 
@@ -178,6 +149,7 @@ function getOrthogonalOffset(
   adjustedEndPoint: LayoutPosition,
   startPoint: LayoutPosition,
 ): number {
+  "worklet";
   const dx = adjustedEndPoint.x - startPoint.x;
   const dy = adjustedEndPoint.y - startPoint.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
@@ -191,6 +163,7 @@ function getControlPoint(
   position: LayoutPosition,
   offset: number,
 ) {
+  "worklet";
   switch (toSide) {
     case NodeSide.TOP:
       return {
@@ -213,4 +186,55 @@ function getControlPoint(
         y: position.y,
       };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Worklet-safe path building
+//
+// Defined *after* the helpers it calls, and that ordering is load-bearing. The
+// worklets Babel plugin rewrites a `"worklet"` function declaration into a
+// `var` assigned from a factory, and that factory closes over its helpers by
+// value at the point the declaration appears. Declared above them, this
+// function captures `undefined` and throws "getConnectionPoint is not a
+// function" the first time an edge is drawn — on device as well as under test.
+// Function hoisting does not save it, because there is no longer a function
+// declaration to hoist.
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate SVG path string for an orthogonal edge between two nodes.
+ * The path starts perpendicular to the source side and ends perpendicular to the target side.
+ * @param fromPos Layout position of the source node.
+ * @param toPos Layout position of the target node.
+ * @param forceDirection - If true, always use RIGHT->LEFT for timeline view. If false, use closest sides.
+ *
+ * A worklet, along with every helper it calls: a dragged edge rebuilds its
+ * path on the UI thread each frame. An unmarked function called from a worklet
+ * throws on device while working fine under a debugger, so if you add a helper
+ * here, mark it too.
+ */
+export function generateOrthogonalPath(
+  fromPos: LayoutPosition,
+  toPos: LayoutPosition,
+  forceDirection: boolean = false,
+): string {
+  "worklet";
+  // Determine which sides to connect
+  const fromSide = forceDirection
+    ? NodeSide.RIGHT
+    : getClosestSide(fromPos, toPos);
+  const toSide = forceDirection
+    ? NodeSide.LEFT
+    : getClosestSide(toPos, fromPos);
+
+  const startPoint = getConnectionPoint(fromPos, fromSide);
+  const endPoint = getConnectionPoint(toPos, toSide);
+  const adjustedEndPoint = adjustEndpointForArrow(toSide, endPoint);
+  const orthogonalOffset = getOrthogonalOffset(adjustedEndPoint, startPoint);
+  let cp1 = getControlPoint(fromSide, startPoint, orthogonalOffset);
+  let cp2 = getControlPoint(toSide, adjustedEndPoint, orthogonalOffset);
+
+  // Use cubic Bézier curve (C command) for smooth, continuous curve
+  // This creates a smooth curve from start to end with orthogonal tangents at both ends
+  return `M ${startPoint.x} ${startPoint.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${adjustedEndPoint.x} ${adjustedEndPoint.y}`;
 }

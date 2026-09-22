@@ -3,6 +3,7 @@
 import { configure } from "@testing-library/react-native";
 import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/async-storage";
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
+import { resetGestureMock } from "./__mocks__/react-native-gesture-handler";
 
 // `waitFor` defaults to 1s, which is not enough for the first mount of the
 // full provider stack on a cold CI runner — and it would surface as a
@@ -12,6 +13,7 @@ configure({ asyncUtilTimeout: 10000 });
 beforeEach(() => {
   resetAsyncStorageMock();
   resetFileSystemMock();
+  resetGestureMock();
 });
 
 // ---------------------------------------------------------------------------

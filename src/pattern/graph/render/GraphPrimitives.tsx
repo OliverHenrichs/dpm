@@ -7,7 +7,34 @@ import {
   LayoutPosition,
 } from "@/src/pattern/graph/utils/GraphUtils";
 import { GraphEdge, GraphNode } from "@/src/pattern/graph/model/GraphModel";
+import { ELIDED_DASH } from "@/src/pattern/graph/types/Constants";
 import { IPattern } from "@/src/pattern/types/IPatternList";
+import { SharedValue } from "react-native-reanimated";
+import DraggedEdge from "@/src/pattern/graph/render/DraggedEdge";
+
+/**
+ * The in-flight drag, if any.
+ *
+ * Passed down rather than read from context so the timeline — which draws the
+ * same nodes and has no drag — simply omits it.
+ */
+export interface DragRender {
+  draggingId?: number | null;
+  dragX?: SharedValue<number>;
+  dragY?: SharedValue<number>;
+}
+
+/** Is this the node under the finger, with somewhere to read its position? */
+function isDragging(
+  id: number,
+  drag: DragRender | undefined,
+): drag is Required<DragRender> {
+  return (
+    drag?.draggingId === id &&
+    drag.dragX !== undefined &&
+    drag.dragY !== undefined
+  );
+}
 
 /**
  * Drawing primitives shared by both graph views.
@@ -34,19 +61,12 @@ export const ArrowheadMarker: React.FC<{
   </Defs>
 );
 
-/**
- * Dash pattern for an edge that spans nodes a filter is hiding.
- *
- * Without it a chain A → B → C with B filtered out would draw as a solid
- * A → C, telling the user those two are adjacent when they are not.
- */
-export const ELIDED_DASH = "6 4";
-
 /** Edges whose endpoints are both laid out; the rest are skipped silently. */
 export function drawEdges(
   edges: GraphEdge[],
   positions: Map<number, LayoutPosition>,
   palette: Record<PaletteColor, string>,
+  drag?: DragRender,
 ) {
   return (
     <>
@@ -55,6 +75,26 @@ export function drawEdges(
         const toPos = positions.get(edge.to);
         if (!fromPos || !toPos) return null;
         const elided = edge.kind === "elided";
+
+        // One end is moving: follow it on the UI thread rather than
+        // re-rendering. Only the dragged node's own edges take this path, so
+        // the per-frame work is a handful of worklets whatever the graph size.
+        const movingFrom = isDragging(edge.from, drag);
+        const movingTo = isDragging(edge.to, drag);
+        if ((movingFrom || movingTo) && drag?.dragX && drag.dragY) {
+          return (
+            <DraggedEdge
+              key={`edge-${index}`}
+              anchor={movingFrom ? toPos : fromPos}
+              dragX={drag.dragX}
+              dragY={drag.dragY}
+              draggingFrom={movingFrom}
+              elided={elided}
+              palette={palette}
+            />
+          );
+        }
+
         return (
           <Path
             key={`edge-${index}`}
@@ -76,13 +116,18 @@ export function drawNodes(
   nodes: GraphNode[],
   positions: Map<number, LayoutPosition>,
   palette: Record<PaletteColor, string>,
-  onNodeTap: (pattern: IPattern) => void,
+  onNodeTap: ((pattern: IPattern) => void) | undefined,
+  drag?: DragRender,
 ) {
   return nodes.map((node) => {
     const pos = positions.get(node.pattern.id);
     // The layout is expected to place every node it is given; see
     // GraphLayoutInvariants. This guard is the last line of defence.
     if (!pos) return null;
+
+    // The dragged node is drawn by `DragOverlay`, in its own view above the
+    // graph — animating an SVG group's transform made it vanish on device.
+    if (isDragging(node.pattern.id, drag)) return null;
 
     return (
       <PatternNode

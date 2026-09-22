@@ -10,3 +10,34 @@ export const MIN_PATTERN_HEIGHT = VERTICAL_STACK_SPACING * 2;
 export const MIN_PATTERNS_VISIBLE = 2;
 // Edge spacing - multiple edges can fit in the vertical space of one node
 export const EDGE_VERTICAL_SPACING = 15; // Vertical space required per edge
+
+/**
+ * How far from the origin a node may be placed, in either axis.
+ *
+ * A safeguard against a degenerate layout producing coordinates large enough
+ * to make the SVG canvas unusable. Shared with the stored manual layout, which
+ * must be clamped to the same box — a position outside it would be
+ * unreachable, and there would be no way to drag the node back.
+ */
+export const MAX_GRAPH_COORDINATE = 4000;
+
+/**
+ * How close to the canvas origin a node may be dragged.
+ *
+ * Far enough in that the whole node box stays inside the SVG. A node dragged
+ * to a negative coordinate is simply not drawn, and there would then be no
+ * way to drag it back.
+ */
+export const MIN_GRAPH_COORDINATE = NODE_WIDTH;
+
+/** Distance the radial layout puts between a node and its prerequisite. */
+export const DEPTH_SPACING = 220;
+
+/**
+ * Dash pattern for an edge that spans nodes a filter is hiding.
+ *
+ * Here rather than beside the renderer that uses it: both `GraphPrimitives`
+ * and `DraggedEdge` need it, and `DraggedEdge` is imported *by*
+ * `GraphPrimitives` — importing it back the other way is a cycle.
+ */
+export const ELIDED_DASH = "6 4";

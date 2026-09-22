@@ -1,6 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
+import {
+  getGraphLayoutKey,
+  GRAPH_LAYOUT_KEY_PREFIX,
+} from "@/src/pattern/graph/data/GraphLayoutKeys";
 
 // ---------------------------------------------------------------------------
 // Migration helpers — ensure old data without the modifiers fields still works
@@ -124,8 +128,13 @@ export async function deletePatternList(listId: string): Promise<void> {
       const filtered = lists.filter((l) => l.id !== listId);
       await AsyncStorage.setItem(PATTERN_LISTS_KEY, JSON.stringify(filtered));
 
-      // Also delete the patterns for this list
-      await AsyncStorage.removeItem(getPatternsKey(listId));
+      // Also delete the patterns and the manual graph layout for this list.
+      // A layout key left behind is the same leak as an orphaned pattern key:
+      // nothing would ever read or delete it again.
+      await AsyncStorage.removeMany([
+        getPatternsKey(listId),
+        getGraphLayoutKey(listId),
+      ]);
 
       // If this was the active list, clear active list
       const activeId = await getActiveListId();
@@ -242,13 +251,15 @@ export async function hasPatternLists(): Promise<boolean> {
 export async function clearAllData(): Promise<void> {
   try {
     const allKeys = await AsyncStorage.getAllKeys();
-    const patternKeys = allKeys.filter((key) =>
-      key.startsWith(PATTERNS_KEY_PREFIX),
+    const ownedKeys = allKeys.filter(
+      (key) =>
+        key.startsWith(PATTERNS_KEY_PREFIX) ||
+        key.startsWith(GRAPH_LAYOUT_KEY_PREFIX),
     );
     await AsyncStorage.removeMany([
       PATTERN_LISTS_KEY,
       ACTIVE_LIST_ID_KEY,
-      ...patternKeys,
+      ...ownedKeys,
     ]);
   } catch (error) {
     console.error("Error clearing all data:", error);

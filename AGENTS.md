@@ -11,6 +11,8 @@ app/_layout.tsx        ← root layout (imports @/src/i18n)
       Drawer           ← expo-router/drawer, 4 file-based routes
 ```
 
+**The drawer does not open by swipe on Android** (`swipeEnabled: Platform.OS !== "android"`). Android 10+ binds the system back gesture to both screen edges and consumes the outermost band, so a right-edge swipe was simultaneously "go back" and "open the drawer" — and it stole pans from the network graph. Every screen renders `AppHeader`, which has an always-visible menu button. iOS keeps the swipe: its interactive pop gesture is left-edge only and the drawer is on the right.
+
 Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (SDK 56 forbids importing those from app code — Metro fails the bundle). Import `Drawer` from `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from `expo-router`.
 
 | File | Path | Screen component |
@@ -161,6 +163,62 @@ The graph screen filters through the same `PatternFilter` and `PatternFilterBott
 - The network view's initial zoom is fitted to the drawn content (`useGraphLayout`). It was a fixed 0.35, which leaves a filtered graph as a mostly empty canvas.
 - Filter state is **not persisted**, deliberately: a filter that survives a navigation away is invisible on return and reads as "my patterns disappeared". It resets when the active list changes, adjusted during render rather than in an effect.
 
+### Pan and zoom
+
+The network view's canvas is `components/ZoomableCanvas.tsx` — Gesture Handler gestures driving Reanimated shared values, with the live transform published to descendants through `CanvasTransformContext`.
+
+It replaced `@openspacelabs/react-native-zoomable-view`, which is implemented with `PanResponder`. **Do not reintroduce a `PanResponder`-based gesture here.** A node drag has to live in Gesture Handler's touch system, and the two systems do not negotiate — there is no `simultaneousHandlers` across that boundary, so whichever claimed a touch first won, non-deterministically from the user's point of view.
+
+- Everything is on the UI thread: shared values and `useAnimatedStyle`, never `setState` from a handler. Use `.get()` / `.set()`, not `.value` — the React Compiler is on and cannot see through bare `.value` access.
+- The transform array is `[{ translateX }, { translateY }, { scale }]`. Translate before scale, so offsets stay in screen pixels and a drag tracks the finger 1:1 at any zoom.
+- Pinch reports *cumulative* scale; the canvas converts it to a per-frame factor so pinch and pan can both write `translate` without fighting.
+- **No `GestureHandlerRootView` is mounted in `src/`, deliberately.** On native the drawer supplies a real one (`react-native-drawer-layout`'s `Drawer.native` renders one around its children, so every screen is inside it). On web RNGH's root view is a plain `View` plus a context flag, so gestures work without one. Nesting another around the graph would take that area out of the drawer's own gesture tree.
+
+### Manual layout
+
+A user-arranged network layout is stored per list, per device, at `@graphLayout_{listId}`
+(`data/GraphLayoutStorage.ts`, with the key itself in the import-free `data/GraphLayoutKeys.ts`
+so `PatternListStorage` can clean it up without pulling in the reconciliation layer).
+
+`model/resolveLayout.ts` merges what is stored with the patterns that exist now, and the rule that
+matters is: **a pattern added since must be seeded near its prerequisites, never by re-running the
+global layout.** Re-laying-out would be correct and would also throw away everything the user
+arranged, every time they add a pattern. Stored positions are clamped to `MAX_GRAPH_COORDINATE` —
+a node outside that box could not be dragged back, because it would never be on screen.
+
+- A stored entry whose pattern no longer exists is reported as stale and pruned on save. That is
+  also the mitigation for [B14](AGENT_TASKS.md) — pattern ids are recycled (`createNewId` is
+  `max(id) + 1`), so a stored position can in principle attach to a pattern that merely inherited
+  the id. Do not key any other long-lived data by pattern id until that is fixed properly.
+- **Filtering must not prune.** Filtering hides patterns, it does not delete them; `resolveLayout`
+  reports them stale because it only sees the patterns it was handed, so the caller passes the
+  *unfiltered* set when deciding what to persist.
+- A manual layout is **never written to the Firestore shared document**. A subscriber's
+  arrangement is theirs, and `syncPublishedList` runs after every pattern CRUD — a layout in there
+  would fire a network write on every drag.
+- Dragging is allowed on read-only lists. It is a local view preference, not a content edit, so it
+  is a deliberate exception to the `isReadonly` guard every mutating path has.
+
+### Dragging a node
+
+Long-press a node in the network view and drag it; the position is persisted on release.
+
+**Nodes in the network view have no `onPress`, and must not get one.** `onPress` on an SVG element installs React Native's full Touchable responder set — `onStartShouldSetResponder` claims the touch, and `onResponderTerminationRequest` refuses to yield it — so a touch landing on a node never reaches Gesture Handler. That is why long-press-to-drag did nothing on a node while panning from empty canvas worked, and it was only found on a device. The network view draws inert nodes and handles **both** tap and drag in the gesture system; the timeline, which has no canvas gesture to compete with, still uses `onPress`.
+
+Because the node tap is a Gesture Handler tap now, **the canvas has no double-tap-to-zoom**. The two cannot both be fast: a single tap would have to wait for a double tap to fail before it could open a pattern, which is the screen's most common interaction. Pinch remains, and the initial zoom is fitted to the content.
+
+**One pan gesture on the canvas hit-tests, rather than a gesture per node** (`hooks/useNodeDrag.ts`, `model/graphCoordinates.ts`). Nodes are SVG elements, so a `GestureDetector` per node means a detector inside an `<Svg>` — fragile on native, and colliding with the web build's hand-bound click listeners. Hit testing against positions we already have is pure and testable, and arbitration is still Gesture Handler's job: the drag is *raced* against the canvas's own gestures, not made exclusive, so a plain drag pans immediately instead of waiting for a long press to fail.
+
+- **Screen deltas are divided by the live zoom.** Without that a dragged node lags the finger above 1:1 and outruns it below. The zoom is read from the shared value each frame rather than captured at gesture start.
+- `draggingId` is React state, set once at the start of a drag and cleared at the end. **Nothing re-renders per frame**: only the dragged node and the edges touching it follow a shared value, so the per-frame cost is a handful of worklets whatever the size of the graph (`render/DragOverlay.tsx`, `render/DraggedEdge.tsx`).
+- **The dragged node is drawn in its own `Animated.View` above the graph, not as an animated `<G>` inside the main `<Svg>`.** Animating an SVG group's transform props made the node disappear for the duration of the drag on device, while its edges followed correctly. A `View` transform is reliable everywhere, so the node is lifted into a small SVG of its own and the view moves; `drawNodes` skips it meanwhile so it does not ghost at its old position.
+- **The lift is not decoration.** Haptics are off system-wide for many people and silent on plenty of Android hardware, so the scale-up is what actually tells the user a node has been picked up. Never make a haptic the only feedback.
+- A long press on empty canvas pans instead of doing nothing — the drag has already won the race by then, so the canvas pan will not fire.
+- **The gesture has no affordance**, so `components/GraphDragHint.tsx` says so in words. It was reported as "how would I move the graph items?" the first time it reached a device. Do not remove it without replacing the cue with something else.
+- **The canvas is measured from the positions actually drawn** (`model/canvasMetrics.ts`), not from the automatic layout — a node dragged beyond the automatic bounds would fall outside the SVG and stop being drawn. Those positions are deliberately *not* re-normalised: that would shift every node whenever one was dragged past an edge. Positions are clamped at both ends (`MIN_GRAPH_COORDINATE`/`MAX_GRAPH_COORDINATE`) for the same reason.
+
+**`generateOrthogonalPath` and the helpers it calls are worklets, and their position in `GraphUtils.ts` is load-bearing.** The worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a factory that closes over its helpers *by value at the point the declaration appears*. Declared above its helpers, such a function captures `undefined` and throws `getConnectionPoint is not a function` the first time an edge is drawn — on device as well as under test, and function hoisting does not save it because there is no longer a declaration to hoist. If you add a helper there, mark it `"worklet"` and define it above its callers.
+
 ### The views
 
 - **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `TimelineGraphUtils.ts`); skip-level edge routing handled by `CollisionAvoidanceUtils.ts`
@@ -169,6 +227,14 @@ The graph screen filters through the same `PatternFilter` and `PatternFilterBott
 Both draw through the shared primitives in `render/GraphPrimitives.tsx` (`ArrowheadMarker`, `drawEdges`, `drawNodes`) rather than one view importing from its sibling. `GraphSvg.tsx` is now just the network view's `<Svg>` around those primitives.
 
 `utils/GenericGraphUtils.ts` keeps only what is needed *outside* the views — `findIneligiblePrerequisiteIds` (the editor's cycle guard) and `repairDanglingPrerequisites` (storage's repair-on-read) — and both delegate to `model/adjacency.ts`. `GraphUtils.ts` holds `LayoutPosition` and the path geometry (`generateOrthogonalPath` / `generateSkipLevelPath`). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `types/IGraphSvgProps.ts`. Tapping a node opens `PatternDetailsModal` → `PatternDetails`.
+
+## The pattern details view
+
+`PatternDetails` is shared by two hosts: `PatternListItem`, where it expands directly under a row, and `PatternDetailsModal`, which the graph opens on a node tap. That is why the top rule is a prop (`showTopSeparator`) — it separates the row from its detail in the list, and duplicates the modal header's rule in the modal.
+
+- **The modal's card is sized to its content**, capped at 80% of the screen rather than fixed at it. React Native puts `flexGrow: 1` on a ScrollView's content container, so both the ScrollView's own style *and* its `contentContainerStyle` need `flexGrow: 0` or the card fills its whole allowance however little is in it.
+- **Empty sections are not all alike.** Prerequisites and "builds into" say so explicitly when empty — "nothing comes before this" answers a question someone opened a *graph* detail view to ask. Tags render nothing at all, because an absent tag list carries no information and a bare label is just height.
+- **Backdrop tap dismisses via a sibling `Pressable` behind the card, never a wrapper around it.** A press handler wrapping content claims the touch, and native children never receive it — the video player's controls stopped responding inside this modal while the same details rendered in a list row were fine. A sibling only receives touches where it is the topmost view, which is exactly outside the card. `BottomSheet` still uses the nested-`Pressable` form; that works for ordinary touchables, which win the responder over an ancestor, but do not put a native player inside it without changing it to this shape.
 
 ## Filtering & sorting
 
@@ -359,6 +425,8 @@ All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs
 - **Never poll for a node's *absence* with `waitFor`.** `waitFor(() => expect(screen.queryByX(...)).toBeNull())` is unreliable on a loaded CI runner: it re-runs its check inside `act`, and under contention it can still be observing the pre-update tree when its budget expires — even though the state itself settled in tens of milliseconds. Wait on something positive instead — a node appearing, a mock being called, storage reaching its expected value — and then assert the absence synchronously. This cost a red CI run; it reproduces locally with `for i in $(seq 8); do (while :; do :; done) & done` to saturate the CPU.
 
 - **A render helper must wait on something the _data_ produced, not on chrome.** `renderSelector` used to wait for the "Pattern Lists" header, which renders synchronously and therefore says nothing about whether the read from storage has landed; under CPU contention a run lost a list row between that wait and the assertion. Anchor on a value only the loaded data can produce (`await screen.findByText(lists[0].name)`). Where a screen loads from more than one key — `PatternListManager` reads `@patternLists` and `@patterns_<id>` separately — anchor on each, or the rows can still be missing while the chrome for the list is already up.
+
+- **Reanimated and Gesture Handler are mocked by hand** (`__mocks__/react-native-reanimated.tsx`, `__mocks__/react-native-gesture-handler.tsx`), picked up automatically because they are node modules. Reanimated's real entry point initialises the worklets runtime on import, which under jest reaches a native module that does not exist and fails the suite before a test runs; its own shipped mock re-imports that entry point, so it does not help, and resolving worklets to its web build only moves the problem to Gesture Handler. The mocks are behavioural where it is useful — shared values really hold and update, and the gesture mock records every handler a component registers, so `peekGestures()` / `findGesture()` let a test call those handlers with synthetic events. That is how `ZoomableCanvas.test.tsx` covers the pan/pinch/zoom arithmetic. The same trick covers the node drag (`useNodeDrag.test.tsx`), including that it tracks the finger at every zoom. What no test here can cover: whether gestures arbitrate correctly, how motion feels, and whether a tap still reaches a node under a pan. Those are device checks.
 - **The Android back button is testable.** Each `Modal` handles it through `onRequestClose`; `fireEvent(modal, "requestClose")` exercises that path, and it is a real user action worth covering rather than a formality.
 - **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. `__tests__/unit/GraphLayoutInvariants.test.ts` uses it to pin the dangling-prerequisite and cycle defects (AGENT_TASKS.md B1/B2). Prefer it over deleting or skipping a test that documents real broken behaviour.
 

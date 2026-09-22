@@ -1,6 +1,6 @@
 import "@/src/i18n";
 import React from "react";
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { Drawer } from "expo-router/drawer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -34,6 +34,15 @@ function AppDrawer() {
           screenOptions={{
             drawerPosition: "right",
             headerShown: false,
+            // No swipe-to-open on Android. Android 10+ binds the system back
+            // gesture to *both* screen edges and consumes the outermost band,
+            // so a right-edge swipe is simultaneously "go back" and "open the
+            // drawer" and which one you get depends on how many pixels in you
+            // started. It also stole pans from the network graph. Every screen
+            // renders AppHeader, which has an always-visible menu button, so
+            // nothing is lost. iOS keeps it: the interactive pop gesture there
+            // is left-edge only, and the drawer is on the right.
+            swipeEnabled: Platform.OS !== "android",
             swipeEdgeWidth: 40,
             drawerStyle: styles.drawerStyle,
             drawerActiveTintColor: palette[PaletteColor.Primary],

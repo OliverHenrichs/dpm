@@ -104,6 +104,12 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
           <Text style={styles.arrowText}>→</Text>
           <Text style={styles.legendText}>Prerequisite direction</Text>
         </View>
+        {/* Repeated here because the hint bar above the graph is dismissible,
+            and nothing about a node says it can be picked up. */}
+        <View style={styles.legendItem}>
+          <Text style={styles.arrowText}>✋</Text>
+          <Text style={styles.legendText}>{t("dragToMove")}</Text>
+        </View>
       </View>
     </View>
   );

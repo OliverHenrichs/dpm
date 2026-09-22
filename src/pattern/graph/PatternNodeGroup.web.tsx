@@ -2,7 +2,8 @@ import { FC, ReactNode, useCallback, useEffect, useRef } from "react";
 import { G, GProps } from "react-native-svg";
 
 export type PatternNodeGroupProps = {
-  onPress: () => void;
+  /** See the native file: omitted, the node claims no touches at all. */
+  onPress?: () => void;
   /** See the native file: dims a context node without touching its fill. */
   opacity?: number;
   children: ReactNode;
@@ -45,7 +46,7 @@ const PatternNodeGroup: FC<PatternNodeGroupProps> = ({
     unbind.current?.();
     unbind.current = null;
     if (!element) return;
-    const listener = () => handler.current();
+    const listener = () => handler.current?.();
     element.addEventListener("click", listener);
     unbind.current = () => element.removeEventListener("click", listener);
   }, []);
