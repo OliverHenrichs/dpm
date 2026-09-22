@@ -234,7 +234,7 @@ Both draw through the shared primitives in `render/GraphPrimitives.tsx` (`Arrowh
 
 - **The modal's card is sized to its content**, capped at 80% of the screen rather than fixed at it. React Native puts `flexGrow: 1` on a ScrollView's content container, so both the ScrollView's own style *and* its `contentContainerStyle` need `flexGrow: 0` or the card fills its whole allowance however little is in it.
 - **Empty sections are not all alike.** Prerequisites and "builds into" say so explicitly when empty — "nothing comes before this" answers a question someone opened a *graph* detail view to ask. Tags render nothing at all, because an absent tag list carries no information and a bare label is just height.
-- Backdrop tap dismisses, using the same nested-`Pressable` pattern as `BottomSheet`.
+- **Backdrop tap dismisses via a sibling `Pressable` behind the card, never a wrapper around it.** A press handler wrapping content claims the touch, and native children never receive it — the video player's controls stopped responding inside this modal while the same details rendered in a list row were fine. A sibling only receives touches where it is the topmost view, which is exactly outside the card. `BottomSheet` still uses the nested-`Pressable` form; that works for ordinary touchables, which win the responder over an ancestor, but do not put a native player inside it without changing it to this shape.
 
 ## Filtering & sorting
 

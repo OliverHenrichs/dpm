@@ -155,5 +155,24 @@ describe("PatternDetailsModal", () => {
 
       expect(onClose).not.toHaveBeenCalled();
     });
+
+    /**
+     * The backdrop is a sibling behind the card, never a wrapper around it.
+     * A wrapping press handler — even one that only swallows the event —
+     * claims the touch, and native children never receive it: the video
+     * player's controls stopped responding inside this modal while the same
+     * details rendered in a list row were fine.
+     */
+    it("puts no press handler between the card and its content", () => {
+      renderModal();
+
+      const handlers: unknown[] = [];
+      for (let node = screen.getByText("Sugar Push").parent; node;) {
+        handlers.push(node.props.onPress);
+        node = node.parent;
+      }
+
+      expect(handlers.every((handler) => handler === undefined)).toBe(true);
+    });
   });
 });

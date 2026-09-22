@@ -45,19 +45,19 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      {/* Backdrop dismissal, matching `BottomSheet`: the outer Pressable
-          closes, the inner one swallows presses so a tap on the card itself
-          does not. */}
-      <Pressable
-        style={styles.modalOverlay}
-        onPress={onClose}
-        accessibilityRole="button"
-        accessibilityLabel={t("dismissDetails")}
-      >
+      <View style={styles.modalOverlay}>
+        {/* The backdrop sits *behind* the card rather than wrapping it.
+            Wrapping it in a press handler — even one that only swallows the
+            event — makes that handler claim the touch, and native children
+            never get it: the video player's controls stopped responding,
+            while the same details rendered in a list row were fine. */}
         <Pressable
-          style={styles.modalContent}
-          onPress={(e) => e?.stopPropagation?.()}
-        >
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={t("dismissDetails")}
+        />
+        <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{pattern?.name || ""}</Text>
             <TouchableOpacity
@@ -88,8 +88,8 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
               />
             )}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 };
