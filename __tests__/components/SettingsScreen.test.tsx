@@ -182,6 +182,14 @@ describe("SettingsScreen", () => {
 
       expect(screen.getByText("Theme")).toBeOnTheScreen();
     });
+
+    it("remembers the choice across launches", async () => {
+      await renderSettings();
+
+      fireEvent.press(screen.getByText("Dark"));
+
+      await waitFor(() => expect(peekAsyncStorage()["@theme"]).toBe("dark"));
+    });
   });
 
   describe("export", () => {
