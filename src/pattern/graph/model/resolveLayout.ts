@@ -114,10 +114,9 @@ function seedPosition(
  * `autoLayout` is the fallback for a list with nothing stored at all, which
  * must behave exactly as it did before manual layouts existed.
  *
- * Pattern ids are recycled (`createNewId` is `max(id) + 1`), so a stored entry
- * can in principle attach to a different pattern that later took the same id.
- * Pruning stale entries whenever a layout is resolved closes most of that
- * window; see AGENT_TASKS.md B14 for the real fix.
+ * Stale entries are reported rather than silently kept. That used to be the
+ * mitigation for recycled pattern ids (B14); ids no longer repeat, so it is
+ * now just housekeeping — an entry for a pattern that is gone is dead weight.
  */
 export function resolveLayout(
   patterns: IPattern[],

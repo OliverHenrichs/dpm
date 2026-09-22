@@ -125,6 +125,77 @@ describe("usePatternCrud", () => {
       expect(stored.find((p) => p.name === "New")!.id).toBe(8);
     });
 
+    it("records the next id on the list, not just in memory", async () => {
+      const { result, list } = await mountCrud([pattern(1), pattern(7)]);
+
+      await act(async () => {
+        await result.current.addPattern(pattern(0, { name: "New" }));
+      });
+
+      expect((await storedList(list.id)).nextPatternId).toBe(9);
+    });
+
+    /**
+     * The defect this guards (B14): ids were `max(id) + 1` over the patterns
+     * present, so deleting the highest-numbered pattern handed its id to the
+     * next one created. Anything keyed by pattern id and outliving a single
+     * pattern — the manual graph layout — then attached to the wrong one.
+     */
+    it("does not reuse the id of a deleted pattern", async () => {
+      // Consecutive ids on purpose: deleting the *highest* is what made
+      // `max(id) + 1` hand the same number straight back out.
+      const { result, list } = await mountCrud([
+        pattern(1),
+        pattern(2),
+        pattern(3),
+      ]);
+
+      await act(async () => {
+        await result.current.deletePattern(3);
+      });
+      await act(async () => {
+        await result.current.addPattern(pattern(0, { name: "New" }));
+      });
+
+      const stored = await storedPatterns(list.id);
+      expect(stored.find((p) => p.name === "New")!.id).toBe(4);
+    });
+
+    it("keeps handing out fresh ids across repeated add-and-delete", async () => {
+      const { result, list } = await mountCrud([]);
+      const ids: number[] = [];
+
+      for (let round = 0; round < 4; round++) {
+        await act(async () => {
+          await result.current.addPattern(pattern(0, { name: `P${round}` }));
+        });
+        const stored = await storedPatterns(list.id);
+        const added = stored.find((p) => p.name === `P${round}`)!;
+        ids.push(added.id);
+        await act(async () => {
+          await result.current.deletePattern(added.id);
+        });
+      }
+
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("starts past the highest id when a list has no mark yet", async () => {
+      // Lists written before the field existed keep working, and gain a mark
+      // the first time a pattern is added to them.
+      const { result, list } = await mountCrud([pattern(4)], {
+        nextPatternId: undefined,
+      });
+
+      await act(async () => {
+        await result.current.addPattern(pattern(0, { name: "New" }));
+      });
+
+      const stored = await storedPatterns(list.id);
+      expect(stored.find((p) => p.name === "New")!.id).toBe(5);
+      expect((await storedList(list.id)).nextPatternId).toBe(6);
+    });
+
     it("refuses a blank name and leaves storage alone", async () => {
       const { result, list } = await mountCrud([]);
 

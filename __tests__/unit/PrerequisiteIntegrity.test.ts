@@ -140,10 +140,10 @@ describe("repairDanglingPrerequisites", () => {
       }
     });
 
-    it("keeps the id free to be reused without inheriting stale links", () => {
-      // createNewId hands out max(id) + 1, so deleting the highest id and
-      // adding a pattern recycles it. That is only safe because nothing still
-      // references the deleted id.
+    it("leaves no link behind for a pattern that later takes the id", () => {
+      // Ids are no longer recycled (B14), but a file written by an older
+      // build can still contain one that was. Deleting must not leave a
+      // reference the newcomer would inherit.
       const patterns = [pattern(1), pattern(2, [1]), pattern(3, [2])];
 
       const remaining = deletePattern(patterns, 3);

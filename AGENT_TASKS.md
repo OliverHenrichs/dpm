@@ -1923,9 +1923,9 @@ the pattern quietly makes those controls untestable.
 
 ---
 
-### B14 — Pattern ids are recycled
+### B14 — Pattern ids are recycled — DONE
 
-**Found during [L2](#l2--moveable-patterns-in-the-network-graph) step 2. Not fixed; mitigated.**
+**Found during [L2](#l2--moveable-patterns-in-the-network-graph) step 2, fixed separately.**
 
 `createNewId` is `Math.max(...ids) + 1` (`src/pattern/list/hooks/usePatternCrud.ts:36`), so
 deleting the highest-id pattern and adding another gives the new one the id the deleted one had.
@@ -1942,12 +1942,32 @@ window is only "a pattern was deleted and another added before the graph screen 
 layout". The consequence inside that window is a node in the wrong place, which the user can drag
 — nothing is lost or corrupted.
 
-**The real fix** is a per-list high-water mark (`nextPatternId` on `IPatternList`) so ids are
-never reused, with a migration seeding it from `max(id) + 1`. The migration runner from
-[F3](#f3--storage-schema-versioning-and-import-validation--done) makes that cheap. It was left
-out of L2 deliberately: it changes the data model, it touches the export format question, and it
-is not what makes dragging work. **Do it before anything else starts keying long-lived data by
-pattern id.**
+#### Landed
+
+A per-list high-water mark, `nextPatternId` on `IPatternList`, allocated through
+`src/pattern/data/patternIds.ts`. **860 tests** (was 844).
+
+**No migration, and that is the point.** `nextPatternId(list, patterns)` returns
+`max(storedMark, highestIdInUse + 1, 1)`. Taking the maximum of both matters as much as the mark
+itself: a list written before the field existed has no mark and behaves exactly as it did, gaining
+one on its next write; and a mark lost or corrupted anywhere — an old export, a hand-edited file
+— can never hand out an id already in use, because the patterns present are always consulted. The
+invariant therefore holds from the next write onwards whatever state the stored data is in, which
+is a stronger guarantee than a migration would have given and carries none of its risk. The
+planned migration was not written.
+
+**The mark is maintained on every pattern write, not just on add** — and that was not the first
+attempt. Advancing it only in `addPattern` left a hole the tests caught: a list seeded with
+patterns 1–3 and no mark, with 3 deleted before anything was added, forgot that 3 had ever
+existed and handed it straight back out. `commitPatterns` now measures over the patterns *before*
+the change as well as after, so a delete cannot lower it. Reverting either half fails a test.
+
+**Export and import needed no changes.** Both pass the list object through whole (`{...list}`),
+and the validator pushes the parsed list rather than rebuilding it, so the mark survives a round
+trip on its own.
+
+The `resolveLayout` pruning that mitigated this stays, now as ordinary housekeeping rather than a
+safety net: an entry for a pattern that is gone is dead weight either way.
 
 ---
 
