@@ -104,8 +104,8 @@ still showed them. Three rules keep that shut, and all three live in
   as `repairDanglingPrerequisites(patterns.filter(...))` rather than filtering alone. The helper
   returns the same array reference when there is nothing to repair, so the healthy path is free.
 - **`loadPatterns` repairs on read**, so lists corrupted by older builds heal themselves as they
-  load. Do not remove this in favour of a one-off migration — there is no migration runner yet
-  ([F3](AGENT_TASKS.md)).
+  load. Keep it even though there is a migration runner now: a migration runs once, and this also
+  catches data arriving from an import or a cloud subscription, which never passes through one.
 - **The prerequisite picker refuses cycles.** `findIneligiblePrerequisiteIds(patterns, id)` returns
   the pattern plus everything that already depends on it; `EditPatternForm` disables those chips.
   Note the direction: `P.prerequisites = [Q]` means Q comes *before* P, so the edge runs Q → P and
@@ -125,6 +125,18 @@ a ring outside the ellipse — is retained as the deeper net for what the model 
 (nodes inside a genuine cycle). Keep it, and keep
 `__tests__/unit/GraphLayoutInvariants.test.ts` asserting `positions.size === patterns.length` for
 degenerate input: imports, shared lists and old devices still supply both kinds of bad data.
+
+## Screen edge insets
+
+Android 10+ binds the system back gesture to both screen edges and consumes roughly the outer
+20 dp of each. Anything horizontally scrollable reaching into that band competes with it — the
+timeline's scroller, the network view's pan, the video carousel.
+
+`SCREEN_EDGE_INSET` (`src/common/utils/EdgeInsets.ts`) is applied once, as `PageContainer`'s
+horizontal padding, so every screen inherits it. **Keep it there rather than padding individual
+scrollers**: there are several, they are in different features, and each one that forgets is a
+bug nobody will reproduce on an iPhone. The drawer no longer opens by swipe on Android either
+(see above), so between the two there is nothing of the app's own left in the band.
 
 ## Theming
 
@@ -188,10 +200,9 @@ global layout.** Re-laying-out would be correct and would also throw away everyt
 arranged, every time they add a pattern. Stored positions are clamped to `MAX_GRAPH_COORDINATE` —
 a node outside that box could not be dragged back, because it would never be on screen.
 
-- A stored entry whose pattern no longer exists is reported as stale and pruned on save. That is
-  also the mitigation for [B14](AGENT_TASKS.md) — pattern ids are recycled (`createNewId` is
-  `max(id) + 1`), so a stored position can in principle attach to a pattern that merely inherited
-  the id. Do not key any other long-lived data by pattern id until that is fixed properly.
+- A stored entry whose pattern no longer exists is reported as stale and pruned on save. Ordinary
+  housekeeping now that ids are never reused — it used to be what stopped a stored position
+  attaching to whichever pattern later inherited the id.
 - **Filtering must not prune.** Filtering hides patterns, it does not delete them; `resolveLayout`
   reports them stale because it only sees the patterns it was handed, so the caller passes the
   *unfiltered* set when deciding what to persist.
@@ -429,7 +440,7 @@ All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs
 - Use factory helpers from `utils/testFactories.ts` (`createTestPattern`, `createTestPatternList`, `createTestPatternType`) — do not inline raw object literals in tests. They already supply `modifiers: []` / `modifierRefs: []`, so new required fields belong there too.
 - `IPattern.id` in tests should be a plain integer; `PatternType.id` / `IPatternList.id` / `IModifier.id` should use `generateUUID()`.
 - **`tsconfig.jest.json` must not override `jsx`.** Expo's base sets `react-jsx` (the automatic runtime), and several components rely on it by importing only `FC`/`ReactNode` rather than `React`. An override to the classic `"react"` transform makes those files fail to compile under ts-jest with `TS2686: 'React' refers to a UMD global` — which surfaces only as `Failed to collect coverage from …` on stderr, does **not** fail the run, and quietly drops those files from the coverage report.
-- **Timeouts are sized for a cold CI runner, not for a warm laptop.** `npm ci` wipes the Babel cache, so the first component test in a run transforms the whole React Native + Expo tree before it can render: a test that takes ~300ms warm takes ~3.5s with caches cleared, and more on a slower runner. Hence `testTimeout` of 60s for components, 30s for unit, and `asyncUtilTimeout` of 10s for RNTL's `waitFor` (whose 1s default would fail as a confusing assertion error instead of a timeout). Reproduce the cold path with `npx jest --clearCache && rm -rf node_modules/.cache` before assuming a CI-only failure is a fluke.
+- **Timeouts are sized for a cold CI runner, not for a warm laptop.** `npm ci` wipes the Babel cache, so the first component test in a run transforms the whole React Native + Expo tree before it can render: a test that takes ~300ms warm takes ~3.5s with caches cleared, and more on a slower runner. Hence a single `testTimeout` of 60s and an `asyncUtilTimeout` of 10s for RNTL's `waitFor` (whose 1s default would fail as a confusing assertion error instead of a timeout). **`testTimeout` works only at the config root**: Jest accepts it inside a project entry, ignores it, and says so only as an "Unknown option" warning. Reproduce the cold path with `npx jest --clearCache && rm -rf node_modules/.cache` before assuming a CI-only failure is a fluke.
 - **Coverage thresholds are a ratchet**, set just under measured reality so CI is green on arrival (`jest.config.js` → `coverageThreshold`). Raise them as suites land; never lower them. Three mechanics to know before touching them. A file with its own entry is **removed from the `global` pool**, so pinning well-covered files pushes the global number *down* — it measures the leftovers, not the project. A file imported by both projects is instrumented by two transforms, so its percentages drift between run modes; set a floor under the lowest of `npx jest --coverage`, `--ci --maxWorkers=2` and `--maxWorkers=1`. And the **global figure itself varies by several points between otherwise identical runs**, because that merge depends on which worker saw a shared file first — so measure it a few times and floor it under the worst, never under the best. The numbers jest prints when a threshold is *missed* are the ones to key off, not the summary table's — they use different denominators.
 - **Both projects set `clearMocks: true`**, which resets call history *and* factory implementations before each test. A mock whose return value matters must (re)establish it in `beforeEach`, not only in the `jest.mock` factory — otherwise it returns `undefined` and code that calls `.catch()` on it fails in a way React reports as `window.dispatchEvent is not a function`.
 - **`renderHookWithProviders`** (`utils/renderWithProviders.tsx`) mounts a hook in the same provider stack. Wait for `activeList` to be non-null before acting: the provider loads storage on mount, and an assertion like "zero patterns" is already true on the first render, before anything has loaded.
@@ -443,7 +454,7 @@ All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs
 
 - **Reanimated and Gesture Handler are mocked by hand** (`__mocks__/react-native-reanimated.tsx`, `__mocks__/react-native-gesture-handler.tsx`), picked up automatically because they are node modules. Reanimated's real entry point initialises the worklets runtime on import, which under jest reaches a native module that does not exist and fails the suite before a test runs; its own shipped mock re-imports that entry point, so it does not help, and resolving worklets to its web build only moves the problem to Gesture Handler. The mocks are behavioural where it is useful — shared values really hold and update, and the gesture mock records every handler a component registers, so `peekGestures()` / `findGesture()` let a test call those handlers with synthetic events. That is how `ZoomableCanvas.test.tsx` covers the pan/pinch/zoom arithmetic. The same trick covers the node drag (`useNodeDrag.test.tsx`), including that it tracks the finger at every zoom. What no test here can cover: whether gestures arbitrate correctly, how motion feels, and whether a tap still reaches a node under a pan. Those are device checks.
 - **The Android back button is testable.** Each `Modal` handles it through `onRequestClose`; `fireEvent(modal, "requestClose")` exercises that path, and it is a real user action worth covering rather than a formality.
-- **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. `__tests__/unit/GraphLayoutInvariants.test.ts` uses it to pin the dangling-prerequisite and cycle defects (AGENT_TASKS.md B1/B2). Prefer it over deleting or skipping a test that documents real broken behaviour.
+- **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. Prefer it over deleting or skipping a test that documents real broken behaviour. Nothing uses it at present — every defect it pinned has since been fixed — which is the outcome it exists for.
 
 ## Continuous integration
 
