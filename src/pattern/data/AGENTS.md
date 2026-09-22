@@ -14,7 +14,7 @@ Storage keys in `PatternListStorage.ts`:
 - `@patterns_{listId}` — serialised `IPattern[]` for a given list
 - `@activeListId` — UUID of the currently active list
 
-App-wide settings live under their own single-purpose keys, outside any list, so they survive deleting every list: `@language` (`src/settings/data/LanguageStorage.ts`) and `@graphDragHintDismissed` (`src/pattern/graph/data/GraphHintStorage.ts`). (The theme is the odd one out and is not persisted at all — see `AGENT_TASKS.md` → S-THEME.)
+App-wide settings live under their own single-purpose keys, outside any list, so they survive deleting every list: `@language` (`src/settings/data/LanguageStorage.ts`), `@theme` (`src/settings/data/ThemeStorage.ts`) and `@graphDragHintDismissed` (`src/pattern/graph/data/GraphHintStorage.ts`).
 
 **Writes to the same key are serialised.** `savePatternList` and `deletePatternList` are
 read-modify-write over the whole list array, so two overlapping calls used to both read the

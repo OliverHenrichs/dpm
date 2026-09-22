@@ -2025,9 +2025,17 @@ canvas). Size: **M** at least, and closer to **L** if the graph canvas is includ
 
 ---
 
-### S-THEME — The chosen theme is forgotten on relaunch
+### S-THEME — The chosen theme is forgotten on relaunch — DONE
 
-**Known gap.** Every other app-wide setting has its own single-purpose storage key that survives
+**Done:** `src/settings/data/ThemeStorage.ts` stores the choice under `@theme`, following
+`LanguageStorage.ts` — an unknown value or a failed read answers `null` and the app follows the
+system. `ThemeProvider` restores it on mount and saves on every `setTheme`; a choice made while the
+read is still in flight wins over what the read returns. The root layout now holds the splash until
+both the language *and* the theme have settled, so a dark-theme user does not see a light frame
+first. Covered by `__tests__/unit/ThemeStorage.test.ts` and
+`__tests__/components/ThemeContext.test.tsx`.
+
+**Was:** Every other app-wide setting has its own single-purpose storage key that survives
 deleting every list — `@language` (`src/settings/data/LanguageStorage.ts`) and
 `@graphDragHintDismissed` (`src/pattern/graph/data/GraphHintStorage.ts`). The theme is the odd one
 out: `ThemeContext` keeps it in `useState` only.
