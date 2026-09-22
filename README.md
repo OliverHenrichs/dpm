@@ -74,7 +74,7 @@ Both views render from a single graph model, so they cannot disagree about depth
 
 ### Settings
 - **Theme**: Light, Dark, or System default
-- **Language**: nine locales — English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Deutsch
+- **Language**: nine locales — English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Deutsch. A fresh install follows the device language; your pick is remembered from then on
 - **Data transfer**: export and import pattern lists
 
 ---

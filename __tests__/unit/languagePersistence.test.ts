@@ -4,6 +4,7 @@ import {
   peekAsyncStorage,
   seedAsyncStorage,
 } from "@/__mocks__/@react-native-async-storage/async-storage";
+import { setDeviceLocales } from "@/__mocks__/expo-localization";
 
 /** Let the un-awaited save behind the `languageChanged` event land. */
 const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -27,6 +28,67 @@ describe("language persistence", () => {
     await restoreStoredLanguage();
 
     expect(i18n.language).toBe("en");
+  });
+
+  it("follows the device on a first launch", async () => {
+    setDeviceLocales(["pt-BR", "en-US"]);
+
+    await restoreStoredLanguage();
+
+    expect(i18n.language).toBe("pt");
+  });
+
+  it("lets an explicit choice outrank the device", async () => {
+    // Someone whose phone is in Portuguese but who picked English meant it.
+    setDeviceLocales(["pt-BR"]);
+    seedAsyncStorage({ "@language": "en" });
+
+    await restoreStoredLanguage();
+
+    expect(i18n.language).toBe("en");
+  });
+
+  it("stays on English for a device language we do not ship", async () => {
+    setDeviceLocales(["is-IS"]);
+
+    await restoreStoredLanguage();
+
+    expect(i18n.language).toBe("en");
+  });
+
+  it("does not record the device language as a choice", async () => {
+    // Writing it would freeze the app on today's device language; leaving
+    // storage empty is what lets a phone switched to Spanish be followed.
+    setDeviceLocales(["hi-IN"]);
+
+    await restoreStoredLanguage();
+    await flush();
+
+    expect(i18n.language).toBe("hi");
+    expect(peekAsyncStorage()["@language"]).toBeUndefined();
+  });
+
+  it("keeps following the device after it changes", async () => {
+    setDeviceLocales(["hi-IN"]);
+    await restoreStoredLanguage();
+    await flush();
+
+    setDeviceLocales(["fr-FR"]);
+    await restoreStoredLanguage();
+
+    expect(i18n.language).toBe("fr");
+  });
+
+  it("records the device's language once it is picked deliberately", async () => {
+    // i18next emits `languageChanged` even for the already-active code, so
+    // confirming what the device supplied still counts as a choice.
+    setDeviceLocales(["de-DE"]);
+    await restoreStoredLanguage();
+
+    await i18n.changeLanguage("de");
+    await flush();
+
+    expect(peekAsyncStorage()["@language"]).toBe("de");
   });
 
   it("does not pin the default on a first launch", async () => {

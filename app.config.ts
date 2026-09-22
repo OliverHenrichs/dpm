@@ -81,6 +81,7 @@ export default (): ExpoConfig => ({
       },
     ],
     "expo-video",
+    "expo-localization",
   ],
   experiments: {
     typedRoutes: true,

@@ -1,11 +1,13 @@
 import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/async-storage";
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
+import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";
 
 // Every unit test starts from an empty store. Without this, storage state
 // leaks between tests and failures depend on execution order.
 beforeEach(() => {
   resetAsyncStorageMock();
   resetFileSystemMock();
+  resetDeviceLocalesMock();
 });
 
 // The production code logs expected, handled conditions (a missing video on
