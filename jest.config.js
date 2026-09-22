@@ -179,6 +179,13 @@ module.exports = {
       functions: 68,
       lines: 82,
     },
+    // The one place the system-gesture edge inset is set, for every screen.
+    "src/common/components/PageContainer.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
     // The other path that creates lists, and the header whose title used to
     // sit on top of the home button.
     "src/pattern/list/PatternListTemplateModal.tsx": {

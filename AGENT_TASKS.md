@@ -270,7 +270,7 @@ plus a prop declaration. This is the "modifiers in details when clicked" half of
 
 ## 3. Medium changes
 
-### M1 — Stop the app's horizontal gestures fighting the OS back gesture — DONE (option 1)
+### M1 — Stop the app's horizontal gestures fighting the OS back gesture — DONE
 
 The original note — *"app's swipe-left screen () fights vs native/OS's 'back' aka go-back left
 swipe gesture"* — has an empty parenthesis where a screen name was meant to go, so it is
@@ -327,9 +327,25 @@ opening the side menu" — reading A, confirmed on hardware rather than inferred
 with an always-visible menu button, so nothing is lost; iOS keeps the swipe, where the
 interactive pop gesture is left-edge only and the drawer is on the right.
 
-**Not done:** the container padding for reading B (horizontal scrollers near the edge), and the
-`setSystemGestureExclusionRects` native module. Reading B has not been reported and the module is
-its own 3-day item for Android 10+ only.
+#### Landed — the leftovers
+
+**Reading B: done, with padding.** `SCREEN_EDGE_INSET` (`src/common/utils/EdgeInsets.ts`) applied
+once on `PageContainer`, which wraps all four screens. Content was already 16 dp in — 8 from the
+page container, 8 from the list container — and the band to clear is about 20 dp, so the page
+container's horizontal padding went to 16, putting content at 24 dp. Setting it in one place is
+the point: the alternative is every horizontal scroller remembering to pad itself, and the
+timeline's scroller, the graph's pan and the video carousel are all separate components.
+
+**The native module: not built, and its precondition is gone.** The writeup offers it under
+"**if the swipe must stay**" — and option 1 removed the swipe. For reading B it is offered as one
+of two alternatives ("the same exclusion-rect mechanism, *or* ... container padding"), and the
+padding is now in. So there is no remaining branch of M1 that asks for it.
+
+Building it anyway would mean three to four days of Kotlin, an Expo Modules build, a config
+plugin and a prebuild, **none of which can be verified from here** — `expo export` does not
+compile native code, so it would reach users unexercised. It only helps Android 10+, and the
+symptom it addresses has never been reported. Written up here rather than done; the writeup above
+still describes the approach if it is ever wanted.
 
 ---
 
