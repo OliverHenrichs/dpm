@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { PatternType } from "@/src/pattern/types/PatternType";
+import Svg, { Circle, Path } from "react-native-svg";
 
 interface LegendProps {
   palette: Record<PaletteColor, string>;
@@ -104,6 +105,32 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
           <Text style={styles.arrowText}>→</Text>
           <Text style={styles.legendText}>Prerequisite direction</Text>
         </View>
+        {/* The badges a node draws in its bottom-right corner. Rendered here
+            with the same shapes, not emoji, so the legend matches the graph
+            whatever fonts the device has. */}
+        <View style={styles.legendItem}>
+          <Svg width={20} height={20} style={styles.glyph}>
+            <Path
+              d="M 6 6 L 14 10 L 6 14 Z"
+              fill={palette[PaletteColor.Primary]}
+            />
+          </Svg>
+          <Text style={styles.legendText}>{t("legendHasVideo")}</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <Svg width={20} height={20} style={styles.glyph}>
+            {[0, 1, 2].map((index) => (
+              <Circle
+                key={index}
+                cx={5 + index * 5}
+                cy={10}
+                r={1.6}
+                fill={palette[PaletteColor.Primary]}
+              />
+            ))}
+          </Svg>
+          <Text style={styles.legendText}>{t("legendModifiers")}</Text>
+        </View>
         {/* Repeated here because the hint bar above the graph is dismissible,
             and nothing about a node says it can be picked up. */}
         <View style={styles.legendItem}>
@@ -189,6 +216,9 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     legendText: {
       fontSize: 11,
       color: palette[PaletteColor.SecondaryText],
+    },
+    glyph: {
+      marginRight: 8,
     },
     arrowText: {
       fontSize: 18,

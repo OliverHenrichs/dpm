@@ -213,5 +213,7 @@
   "dismissHint": "Hinweis ausblenden",
   "dragToMove": "Halten und ziehen zum Verschieben",
   "closeDetails": "Schließen",
-  "dismissDetails": "Details schließen"
+  "dismissDetails": "Details schließen",
+  "legendHasVideo": "Hat Video",
+  "legendModifiers": "Modifikatoren angehängt"
 }
