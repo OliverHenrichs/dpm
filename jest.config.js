@@ -273,6 +273,12 @@ module.exports = {
       functions: 94,
       lines: 94,
     },
+    "src/pattern/graph/PatternDetailsModal.tsx": {
+      statements: 94,
+      branches: 94,
+      functions: 94,
+      lines: 94,
+    },
     "src/pattern/graph/PatternDetails.tsx": {
       statements: 92,
       branches: 72,

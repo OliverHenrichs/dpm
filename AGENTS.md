@@ -228,6 +228,14 @@ Both draw through the shared primitives in `render/GraphPrimitives.tsx` (`Arrowh
 
 `utils/GenericGraphUtils.ts` keeps only what is needed *outside* the views — `findIneligiblePrerequisiteIds` (the editor's cycle guard) and `repairDanglingPrerequisites` (storage's repair-on-read) — and both delegate to `model/adjacency.ts`. `GraphUtils.ts` holds `LayoutPosition` and the path geometry (`generateOrthogonalPath` / `generateSkipLevelPath`). Layout constants (`NODE_HEIGHT`, `HORIZONTAL_SPACING`, …) are centralised in `types/Constants.ts`; the shared SVG props contract is `IGraphSvgProps` in `types/IGraphSvgProps.ts`. Tapping a node opens `PatternDetailsModal` → `PatternDetails`.
 
+## The pattern details view
+
+`PatternDetails` is shared by two hosts: `PatternListItem`, where it expands directly under a row, and `PatternDetailsModal`, which the graph opens on a node tap. That is why the top rule is a prop (`showTopSeparator`) — it separates the row from its detail in the list, and duplicates the modal header's rule in the modal.
+
+- **The modal's card is sized to its content**, capped at 80% of the screen rather than fixed at it. React Native puts `flexGrow: 1` on a ScrollView's content container, so both the ScrollView's own style *and* its `contentContainerStyle` need `flexGrow: 0` or the card fills its whole allowance however little is in it.
+- **Empty sections are not all alike.** Prerequisites and "builds into" say so explicitly when empty — "nothing comes before this" answers a question someone opened a *graph* detail view to ask. Tags render nothing at all, because an absent tag list carries no information and a bare label is just height.
+- Backdrop tap dismisses, using the same nested-`Pressable` pattern as `BottomSheet`.
+
 ## Filtering & sorting
 
 - `PatternFilter` (`src/pattern/filter/components/PatternFilterBottomSheet.tsx`): `{ name, types, levels, counts?, tags }`, applied by `usePatternFilter` (`src/pattern/list/hooks/usePatternFilter.ts`). Sub-panels: `NameFilter`, `TypeFilter`, `LevelFilter`, `CountsFilter`, `TagFilter`.

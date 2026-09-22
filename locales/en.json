@@ -211,5 +211,7 @@
   "resetLayoutConfirm": "Put every pattern back where the app placed it? Your arrangement will be lost.",
   "graphDragHint": "Hold a pattern for a moment, then drag to move it.",
   "dismissHint": "Dismiss hint",
-  "dragToMove": "Hold and drag to move"
+  "dragToMove": "Hold and drag to move",
+  "closeDetails": "Close",
+  "dismissDetails": "Dismiss details"
 }

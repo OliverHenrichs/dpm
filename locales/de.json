@@ -211,5 +211,7 @@
   "resetLayoutConfirm": "Alle Figuren wieder dort platzieren, wo die App sie hingesetzt hat? Deine Anordnung geht verloren.",
   "graphDragHint": "Figur kurz gedrückt halten, dann ziehen zum Verschieben.",
   "dismissHint": "Hinweis ausblenden",
-  "dragToMove": "Halten und ziehen zum Verschieben"
+  "dragToMove": "Halten und ziehen zum Verschieben",
+  "closeDetails": "Schließen",
+  "dismissDetails": "Details schließen"
 }

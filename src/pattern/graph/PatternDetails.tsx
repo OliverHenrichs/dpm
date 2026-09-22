@@ -22,6 +22,14 @@ type PatternDetailsProps = {
   patternTypes?: PatternType[]; // Optional for type name lookup
   modifiers?: IModifier[];
   palette: Record<PaletteColor, string>;
+  /**
+   * Rule above the content, separating it from whatever sits on top.
+   *
+   * Earns its keep in `PatternListItem`, where the details expand directly
+   * under the row. In the details modal the header already has a rule, and
+   * two stacked separators is one too many — so that passes `false`.
+   */
+  showTopSeparator?: boolean;
 };
 
 const PatternDetails: React.FC<PatternDetailsProps> = ({
@@ -30,6 +38,7 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   patternTypes,
   modifiers = [],
   palette,
+  showTopSeparator = true,
 }) => {
   const { t } = useTranslation();
   const styles = getStyles(palette);
@@ -59,7 +68,9 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   })();
 
   return (
-    <View style={styles.detailsContainer}>
+    <View
+      style={[styles.detailsContainer, !showTopSeparator && styles.unseparated]}
+    >
       {!!selectedPattern.description && (
         <Text style={styles.patternDetailsDesc}>
           {selectedPattern.description}
@@ -142,11 +153,21 @@ function getPrerequisites(
   );
 }
 
+/**
+ * Tags, or nothing at all when there are none.
+ *
+ * Unlike prerequisites and "builds into" — which say so explicitly, because
+ * "nothing comes before this" answers a question someone opened a *graph*
+ * detail view to ask — an absent tag list carries no information. A bare
+ * "Tags:" with a blank after it is just height.
+ */
 function getTagView(
   selectedPattern: IPattern,
   t: any,
   styles: ReturnType<typeof getStyles>,
 ) {
+  if (selectedPattern.tags.length === 0) return null;
+
   return (
     <View style={styles.tagsRow}>
       <Text style={styles.label}>{t("tags")}: </Text>
@@ -222,6 +243,11 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       borderTopColor: palette[PaletteColor.Border],
       paddingTop: 8,
       marginTop: 6,
+    },
+    unseparated: {
+      borderTopWidth: 0,
+      paddingTop: 0,
+      marginTop: 0,
     },
     patternName: {
       fontSize: 20,

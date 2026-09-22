@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +13,7 @@ import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
+import { useTranslation } from "react-i18next";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
 
 interface PatternDetailsModalProps {
@@ -31,6 +33,7 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
   modifiers,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const styles = getStyles(palette);
@@ -42,11 +45,27 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      {/* Backdrop dismissal, matching `BottomSheet`: the outer Pressable
+          closes, the inner one swallows presses so a tap on the card itself
+          does not. */}
+      <Pressable
+        style={styles.modalOverlay}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel={t("dismissDetails")}
+      >
+        <Pressable
+          style={styles.modalContent}
+          onPress={(e) => e?.stopPropagation?.()}
+        >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{pattern?.name || ""}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeButton}
+              accessibilityRole="button"
+              accessibilityLabel={t("closeDetails")}
+            >
               <Icon
                 name="close"
                 size={24}
@@ -54,7 +73,10 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
               />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.modalScroll}>
+          <ScrollView
+            style={styles.modalScroll}
+            contentContainerStyle={styles.modalScrollContent}
+          >
             {pattern && (
               <PatternDetails
                 selectedPattern={pattern}
@@ -62,11 +84,12 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
                 patternTypes={patternTypes}
                 modifiers={modifiers}
                 palette={palette}
+                showTopSeparator={false}
               />
             )}
           </ScrollView>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };
@@ -84,6 +107,9 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderRadius: 12,
       padding: 0,
       minWidth: "85%",
+      // A ceiling, not a height. The card is as tall as its content until the
+      // content would not fit, and only then does the ScrollView start
+      // scrolling — a short pattern gets a short card.
       maxHeight: "80%",
       elevation: 5,
       boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
@@ -107,6 +133,14 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       padding: 4,
     },
     modalScroll: {
+      // React Native's ScrollView puts `flexGrow: 1` on its content container,
+      // which makes it fill the parent's whole allowance — here, the full 80%
+      // — whatever the content's height. Both of these have to be zero for the
+      // card to size itself to what is in it.
+      flexGrow: 0,
+    },
+    modalScrollContent: {
+      flexGrow: 0,
       padding: 20,
     },
   });
