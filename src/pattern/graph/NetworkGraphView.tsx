@@ -1,8 +1,8 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useMemo } from "react";
+import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
-import { useGraphLayout } from "./hooks/useGraphLayout";
+import { measureCanvas } from "@/src/pattern/graph/model/canvasMetrics";
 import NetworkGraphSvg from "./GraphSvg";
 import ZoomableCanvas from "@/src/pattern/graph/components/ZoomableCanvas";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -32,9 +32,17 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   onNodeTap,
 }) => {
   const { t } = useTranslation();
-  const { svgWidth, svgHeight, contentCenterX, contentCenterY, initialZoom } =
-    useGraphLayout(model);
+  const { width, height } = useWindowDimensions();
   const styles = getStyles(palette);
+
+  // Measured from the positions actually being drawn, not from the automatic
+  // layout: a manual layout replaces those, and a node dragged past the
+  // automatic bounds would fall outside the SVG and never be drawn at all.
+  const { svgWidth, svgHeight, contentCenterX, contentCenterY, initialZoom } =
+    useMemo(
+      () => measureCanvas(positions, width, height),
+      [positions, width, height],
+    );
 
   // The canvas centers the SVG mid-point in the viewport. Shift by the
   // difference to the content's center instead, scaled by zoom.

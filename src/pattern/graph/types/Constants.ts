@@ -21,6 +21,15 @@ export const EDGE_VERTICAL_SPACING = 15; // Vertical space required per edge
  */
 export const MAX_GRAPH_COORDINATE = 4000;
 
+/**
+ * How close to the canvas origin a node may be dragged.
+ *
+ * Far enough in that the whole node box stays inside the SVG. A node dragged
+ * to a negative coordinate is simply not drawn, and there would then be no
+ * way to drag it back.
+ */
+export const MIN_GRAPH_COORDINATE = NODE_WIDTH;
+
 /** Distance the radial layout puts between a node and its prerequisite. */
 export const DEPTH_SPACING = 220;
 

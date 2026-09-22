@@ -26,7 +26,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | # | Idea (as written) | Size | Status | Where it goes |
 |---|---|---|---|---|
 | 1 | Don't focus the pattern-list name right after picking a starting point — the keyboard hides too much | **S** | ✅ done | [S1](#s1--stop-auto-focusing-the-list-name-field--done) |
-| 2 | App's swipe-left gesture fights the OS back gesture | **M** | open | [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture) |
+| 2 | App's swipe-left gesture fights the OS back gesture | **M** | ✅ done | [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture) |
 | 2b | Searchable/filterable pattern graph (only show direct chains of filtered figures) | **L** | ✅ done | [L1](#l1--searchable--filterable-pattern-graph) |
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ◐ details half done ([B7](#b7--the-graphs-detail-modal-can-never-show-modifiers--done)) | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
@@ -68,12 +68,12 @@ evidence.
 ```
 Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
-Phase 2  B1✅ B2✅ M1  M2                       F2✅        (defects + the graph model)
+Phase 2  B1✅ B2✅ M1✅ M2                      F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
 ```
 
-**Phases 1 and 2 are complete**, bar the two Mediums (M1, M2). Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
+**Phases 1 and 2 are complete**, bar M2. Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
 landed and what is still outstanding. **L1 has landed**, so L2 — moveable nodes — is next, with
 the node set it has to reconcile against now well defined.
 
@@ -270,7 +270,7 @@ plus a prop declaration. This is the "modifiers in details when clicked" half of
 
 ## 3. Medium changes
 
-### M1 — Stop the app's horizontal gestures fighting the OS back gesture
+### M1 — Stop the app's horizontal gestures fighting the OS back gesture — DONE (option 1)
 
 The original note — *"app's swipe-left screen () fights vs native/OS's 'back' aka go-back left
 swipe gesture"* — has an empty parenthesis where a screen name was meant to go, so it is
@@ -318,6 +318,18 @@ curved edges, and on an iPhone with the home indicator. Check specifically: grap
 within 40 px of the right edge; video carousel paging near either edge; drawer open/close.
 
 **Effort:** 0.5 days for option 1 + padding. 3–4 days if the native module is wanted.
+
+#### Landed
+
+**Option 1, prompted by a device report.** Dragging in the network graph was "sometimes instead
+opening the side menu" — reading A, confirmed on hardware rather than inferred.
+`swipeEnabled: Platform.OS !== "android"` in `app/_layout.tsx`. Every screen renders `AppHeader`
+with an always-visible menu button, so nothing is lost; iOS keeps the swipe, where the
+interactive pop gesture is left-edge only and the drawer is on the right.
+
+**Not done:** the container padding for reading B (horizontal scrollers near the edge), and the
+`setSystemGestureExclusionRects` native module. Reading B has not been reported and the module is
+its own 3-day item for Android 10+ only.
 
 ---
 
@@ -898,6 +910,35 @@ pickup and release and cannot be judged from code at all.
 **Deliberately not done:** the web verification pass the writeup asks for (point 8). Both bundles
 export, but mouse-drag and touch-drag on a real browser are a separate check that has not
 happened.
+
+#### After the first device test
+
+Three problems, of which only one was a bug in the drag itself.
+
+1. **Nobody could find the gesture.** The report was "how would I now move the network graph
+   items?" — long-press-then-drag has no affordance, since a node looks identical whether or not
+   it can be picked up. Shipping a feature nobody can discover is not shipping it. Fixed with a
+   dismissible hint bar above the graph (`components/GraphDragHint.tsx`, dismissal persisted in
+   its own key so it survives a layout reset) and a line in the `Legend` for anyone who dismissed
+   it. **The gesture itself was correct**: `activateAfterLongPress` makes the pan *fail* if the
+   finger moves before the timer, so it cannot be stolen by ordinary movement, and `Race` against
+   the canvas pan is right — `Exclusive` would delay every pan until the long press failed.
+2. **The drawer stole drags.** That is [M1](#m1--stop-the-apps-horizontal-gestures-fighting-the-os-back-gesture),
+   now fixed.
+3. **A clipping bug found while re-reading, not reported.** `NetworkGraphView` sized the SVG from
+   the *automatic* layout while drawing the *manual* one, so a node dragged beyond the automatic
+   bounds fell outside the canvas and stopped being drawn — with no way to drag it back. The
+   canvas is now measured from the positions actually drawn (`model/canvasMetrics.ts`, moved out
+   of the hook so the fast unit project can test it), deliberately *without* re-normalising them:
+   re-normalising would shift every node whenever one was dragged past an edge, which reads as the
+   whole graph jumping. Drags and stored positions are now clamped at the near edge too
+   (`MIN_GRAPH_COORDINATE`), because a negative coordinate is the same disappearing-node failure
+   from the other side.
+
+**Two false leads worth recording**, both checked rather than assumed: worklets 0.10.1 *does*
+serialize `Map` closures (`serializable.native.ts` routes them through `createSerializableMap`),
+so the hit-test's positions map is fine; and `activateAfterLongPress` does not let a pan activate
+on movement, so the drag was never competing with the canvas pan for ordinary drags.
 
 **Not yet verified on device.** Nothing in this step can be: whether a tap still reaches a node
 under the canvas pan, whether the drawer's edge swipe and the canvas pan arbitrate sensibly, and

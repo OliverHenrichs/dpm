@@ -6,7 +6,10 @@ import {
 } from "@/src/pattern/graph/model/resolveLayout";
 import { calculateGraphLayout } from "@/src/pattern/graph/utils/NetworkGraphUtils";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
-import { MAX_GRAPH_COORDINATE } from "@/src/pattern/graph/types/Constants";
+import {
+  MAX_GRAPH_COORDINATE,
+  MIN_GRAPH_COORDINATE,
+} from "@/src/pattern/graph/types/Constants";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
   createTestPattern,
@@ -70,24 +73,24 @@ describe("resolveLayout", () => {
   describe("with a full stored layout", () => {
     it("uses every stored position", () => {
       const patterns = [pattern(1), pattern(2, [1])];
-      const layout = stored({ 1: { x: 100, y: 0 }, 2: { x: 200, y: 0 } });
+      const layout = stored({ 1: { x: 300, y: 300 }, 2: { x: 600, y: 300 } });
 
       const { positions } = resolveLayout(patterns, layout, auto({}));
 
-      expect(positions.get(1)).toEqual({ x: 100, y: 0 });
-      expect(positions.get(2)).toEqual({ x: 200, y: 0 });
+      expect(positions.get(1)).toEqual({ x: 300, y: 300 });
+      expect(positions.get(2)).toEqual({ x: 600, y: 300 });
     });
 
     it("ignores the automatic layout entirely", () => {
-      const layout = stored({ 1: { x: 100, y: 0 } });
+      const layout = stored({ 1: { x: 300, y: 300 } });
 
       const { positions } = resolveLayout(
         [pattern(1)],
         layout,
-        auto({ 1: { x: -999, y: -999 } }),
+        auto({ 1: { x: 999, y: 999 } }),
       );
 
-      expect(positions.get(1)).toEqual({ x: 100, y: 0 });
+      expect(positions.get(1)).toEqual({ x: 300, y: 300 });
     });
 
     it("places every pattern it is given", () => {
@@ -122,12 +125,12 @@ describe("resolveLayout", () => {
 
     it("seeds it between two prerequisites", () => {
       const patterns = [pattern(1), pattern(2), pattern(3, [1, 2])];
-      const layout = stored({ 1: { x: 0, y: 0 }, 2: { x: 400, y: 0 } });
+      const layout = stored({ 1: { x: 200, y: 300 }, 2: { x: 600, y: 300 } });
 
       const { positions } = resolveLayout(patterns, layout, auto({}));
 
       // Offset by one level from the midpoint, so it does not sit on the line.
-      expect(distance(positions.get(3)!, { x: 200, y: 0 })).toBeCloseTo(220);
+      expect(distance(positions.get(3)!, { x: 400, y: 300 })).toBeCloseTo(220);
     });
 
     it("hangs a chain of new patterns off each other", () => {
@@ -155,20 +158,20 @@ describe("resolveLayout", () => {
 
     it("falls back to its dependents when it has no prerequisites", () => {
       const patterns = [pattern(1), pattern(2, [1])];
-      const layout = stored({ 2: { x: 800, y: 0 } });
+      const layout = stored({ 2: { x: 800, y: 300 } });
 
       const { positions } = resolveLayout(patterns, layout, auto({}));
 
-      expect(distance(positions.get(1)!, { x: 800, y: 0 })).toBeCloseTo(220);
+      expect(distance(positions.get(1)!, { x: 800, y: 300 })).toBeCloseTo(220);
     });
 
     it("rings an unconnected new pattern outside what is already placed", () => {
       const patterns = [pattern(1), pattern(2)];
-      const layout = stored({ 1: { x: 0, y: 0 } });
+      const layout = stored({ 1: { x: 400, y: 400 } });
 
       const { positions } = resolveLayout(patterns, layout, auto({}));
 
-      expect(distance(positions.get(2)!, { x: 0, y: 0 })).toBeCloseTo(220);
+      expect(distance(positions.get(2)!, { x: 400, y: 400 })).toBeCloseTo(220);
     });
 
     it("terminates when new patterns form a cycle among themselves", () => {
@@ -214,7 +217,7 @@ describe("resolveLayout", () => {
     it("ignores a stored key that is not a pattern id", () => {
       const layout: StoredGraphLayout = {
         version: GRAPH_LAYOUT_VERSION,
-        positions: { abc: { x: 1, y: 2 }, "1": { x: 3, y: 4 } },
+        positions: { abc: { x: 200, y: 200 }, "1": { x: 300, y: 400 } },
         updatedAt: 1,
       };
 
@@ -225,7 +228,7 @@ describe("resolveLayout", () => {
       );
 
       expect(staleIds).toEqual([]);
-      expect(positions.get(1)).toEqual({ x: 3, y: 4 });
+      expect(positions.get(1)).toEqual({ x: 300, y: 400 });
     });
   });
 
@@ -234,7 +237,7 @@ describe("resolveLayout", () => {
       const layout: StoredGraphLayout = {
         version: GRAPH_LAYOUT_VERSION,
         positions: {
-          "1": { x: 0, y: 0 },
+          "1": { x: 300, y: 300 },
           "2": { x: "left" } as unknown as { x: number; y: number },
         },
         updatedAt: 1,
@@ -247,29 +250,45 @@ describe("resolveLayout", () => {
       );
 
       // One bad coordinate costs one node's position, not the whole layout.
-      expect(positions.get(1)).toEqual({ x: 0, y: 0 });
+      expect(positions.get(1)).toEqual({ x: 300, y: 300 });
       expect(seededIds).toEqual([2]);
     });
 
-    it("clamps a position outside the drawable box", () => {
-      // A node placed beyond the clamp could never be dragged back, because it
-      // would not be on screen.
-      const layout = stored({ 1: { x: 999999, y: -999999 } });
+    it("clamps a position past the far edge of the canvas", () => {
+      // A node beyond the clamp could never be dragged back, because it would
+      // not be on screen.
+      const layout = stored({ 1: { x: 999999, y: 999999 } });
 
       const { positions } = resolveLayout([pattern(1)], layout, auto({}));
 
       expect(positions.get(1)).toEqual({
         x: MAX_GRAPH_COORDINATE,
-        y: -MAX_GRAPH_COORDINATE,
+        y: MAX_GRAPH_COORDINATE,
       });
     });
 
-    it("replaces a non-finite coordinate with the origin", () => {
+    it("pulls a negative position back onto the canvas", () => {
+      // The SVG starts at the origin, so a negative coordinate is simply not
+      // drawn — the same disappearing-node failure, from the other side.
+      const layout = stored({ 1: { x: -500, y: -500 } });
+
+      const { positions } = resolveLayout([pattern(1)], layout, auto({}));
+
+      expect(positions.get(1)).toEqual({
+        x: MIN_GRAPH_COORDINATE,
+        y: MIN_GRAPH_COORDINATE,
+      });
+    });
+
+    it("replaces a non-finite coordinate with a drawable one", () => {
       const layout = stored({ 1: { x: NaN, y: Infinity } });
 
       const { positions } = resolveLayout([pattern(1)], layout, auto({}));
 
-      expect(positions.get(1)).toEqual({ x: 0, y: 0 });
+      expect(positions.get(1)).toEqual({
+        x: MIN_GRAPH_COORDINATE,
+        y: MIN_GRAPH_COORDINATE,
+      });
     });
 
     it("keeps a seeded position inside the box", () => {
@@ -295,16 +314,16 @@ describe("resolveLayout", () => {
       // applied and removed must leave the arrangement exactly as it was.
       const all = [pattern(1), pattern(2, [1]), pattern(3, [2])];
       const layout = stored({
-        1: { x: 0, y: 0 },
-        2: { x: 300, y: 0 },
-        3: { x: 600, y: 0 },
+        1: { x: 200, y: 300 },
+        2: { x: 500, y: 300 },
+        3: { x: 800, y: 300 },
       });
 
       const narrowed = resolveLayout([all[0], all[2]], layout, auto({}));
       const widened = resolveLayout(all, layout, auto({}));
 
-      expect(narrowed.positions.get(3)).toEqual({ x: 600, y: 0 });
-      expect(widened.positions.get(3)).toEqual({ x: 600, y: 0 });
+      expect(narrowed.positions.get(3)).toEqual({ x: 800, y: 300 });
+      expect(widened.positions.get(3)).toEqual({ x: 800, y: 300 });
       expect(widened.seededIds).toEqual([]);
     });
 
@@ -324,8 +343,8 @@ describe("toStoredLayout", () => {
   it("round-trips through resolveLayout", () => {
     const patterns = [pattern(1), pattern(2, [1])];
     const positions = new Map<number, LayoutPosition>([
-      [1, { x: 12, y: 34 }],
-      [2, { x: 56, y: 78 }],
+      [1, { x: 312, y: 334 }],
+      [2, { x: 556, y: 578 }],
     ]);
 
     const { positions: resolved } = resolveLayout(
@@ -334,8 +353,8 @@ describe("toStoredLayout", () => {
       auto({}),
     );
 
-    expect(resolved.get(1)).toEqual({ x: 12, y: 34 });
-    expect(resolved.get(2)).toEqual({ x: 56, y: 78 });
+    expect(resolved.get(1)).toEqual({ x: 312, y: 334 });
+    expect(resolved.get(2)).toEqual({ x: 556, y: 578 });
   });
 
   it("stamps the current version", () => {

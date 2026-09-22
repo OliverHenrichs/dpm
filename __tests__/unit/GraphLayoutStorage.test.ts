@@ -11,6 +11,10 @@ import {
   StoredGraphLayout,
 } from "@/src/pattern/graph/model/resolveLayout";
 import {
+  dismissDragHint,
+  isDragHintDismissed,
+} from "@/src/pattern/graph/data/GraphHintStorage";
+import {
   peekAsyncStorage,
   resetAsyncStorageMock,
   seedAsyncStorage,
@@ -191,5 +195,39 @@ describe("collectOrphanedLayoutKeys", () => {
     jest.spyOn(console, "error").mockImplementation(() => {});
 
     expect(await collectOrphanedLayoutKeys([])).toBe(0);
+  });
+});
+
+describe("the drag hint", () => {
+  beforeEach(() => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("starts undismissed", async () => {
+    expect(await isDragHintDismissed()).toBe(false);
+  });
+
+  it("remembers being dismissed", async () => {
+    await dismissDragHint();
+
+    expect(await isDragHintDismissed()).toBe(true);
+  });
+
+  it("shows the hint again rather than throwing when storage fails", async () => {
+    // Showing it twice costs the user a glance; never showing it is what left
+    // the gesture undiscoverable in the first place.
+    jest
+      .spyOn(AsyncStorage, "getItem")
+      .mockRejectedValueOnce(new Error("disk full"));
+
+    expect(await isDragHintDismissed()).toBe(false);
+  });
+
+  it("swallows a failed write", async () => {
+    jest
+      .spyOn(AsyncStorage, "setItem")
+      .mockRejectedValueOnce(new Error("disk full"));
+
+    await expect(dismissDragHint()).resolves.toBeUndefined();
   });
 });

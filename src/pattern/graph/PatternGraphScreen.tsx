@@ -16,6 +16,7 @@ import { useGraphFilter } from "@/src/pattern/graph/hooks/useGraphFilter";
 import PatternFilterBottomSheet from "@/src/pattern/filter/components/PatternFilterBottomSheet";
 import ChainModeFilter from "@/src/pattern/graph/components/ChainModeFilter";
 import GraphFilterSummary from "@/src/pattern/graph/components/GraphFilterSummary";
+import GraphDragHint from "@/src/pattern/graph/components/GraphDragHint";
 import AppDialog from "@/src/common/components/AppDialog";
 import { useGraphPositions } from "@/src/pattern/graph/hooks/useGraphPositions";
 import { useGraphLayout } from "@/src/pattern/graph/hooks/useGraphLayout";
@@ -101,6 +102,11 @@ const PatternGraphScreen: React.FC = () => {
             onFilter={() => setFilterVisible(true)}
             canResetLayout={hasManualLayout}
             onResetLayout={() => setResetLayoutVisible(true)}
+          />
+
+          <GraphDragHint
+            visible={viewMode === "graph" && model.nodes.length > 0}
+            palette={palette}
           />
 
           <GraphFilterSummary

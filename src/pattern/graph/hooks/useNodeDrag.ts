@@ -10,7 +10,10 @@ import {
   screenDeltaToContent,
   screenToContent,
 } from "@/src/pattern/graph/model/graphCoordinates";
-import { MAX_GRAPH_COORDINATE } from "@/src/pattern/graph/types/Constants";
+import {
+  MAX_GRAPH_COORDINATE,
+  MIN_GRAPH_COORDINATE,
+} from "@/src/pattern/graph/types/Constants";
 
 /** Hold this long before a touch becomes a drag rather than a canvas pan. */
 export const DRAG_ACTIVATION_MS = 200;
@@ -24,9 +27,10 @@ export interface NodeDrag {
   gesture: ReturnType<typeof Gesture.Pan>;
 }
 
+/** Keep the node inside the drawable canvas, in both directions. */
 function clamp(value: number): number {
   "worklet";
-  return Math.max(-MAX_GRAPH_COORDINATE, Math.min(MAX_GRAPH_COORDINATE, value));
+  return Math.max(MIN_GRAPH_COORDINATE, Math.min(MAX_GRAPH_COORDINATE, value));
 }
 
 /**

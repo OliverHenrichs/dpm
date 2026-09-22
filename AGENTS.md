@@ -11,6 +11,8 @@ app/_layout.tsx        ← root layout (imports @/src/i18n)
       Drawer           ← expo-router/drawer, 4 file-based routes
 ```
 
+**The drawer does not open by swipe on Android** (`swipeEnabled: Platform.OS !== "android"`). Android 10+ binds the system back gesture to both screen edges and consumes the outermost band, so a right-edge swipe was simultaneously "go back" and "open the drawer" — and it stole pans from the network graph. Every screen renders `AppHeader`, which has an always-visible menu button. iOS keeps the swipe: its interactive pop gesture is left-edge only and the drawer is on the right.
+
 Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (SDK 56 forbids importing those from app code — Metro fails the bundle). Import `Drawer` from `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from `expo-router`.
 
 | File | Path | Screen component |
@@ -206,6 +208,8 @@ Long-press a node in the network view and drag it; the position is persisted on 
 - **Screen deltas are divided by the live zoom.** Without that a dragged node lags the finger above 1:1 and outruns it below. The zoom is read from the shared value each frame rather than captured at gesture start.
 - `draggingId` is React state, set once at the start of a drag and cleared at the end. **Nothing re-renders per frame**: only the dragged node and the edges touching it follow a shared value, so the per-frame cost is a handful of worklets whatever the size of the graph (`render/DraggedNode.tsx`, `render/DraggedEdge.tsx`).
 - A long press on empty canvas pans instead of doing nothing — the drag has already won the race by then, so the canvas pan will not fire.
+- **The gesture has no affordance**, so `components/GraphDragHint.tsx` says so in words. It was reported as "how would I move the graph items?" the first time it reached a device. Do not remove it without replacing the cue with something else.
+- **The canvas is measured from the positions actually drawn** (`model/canvasMetrics.ts`), not from the automatic layout — a node dragged beyond the automatic bounds would fall outside the SVG and stop being drawn. Those positions are deliberately *not* re-normalised: that would shift every node whenever one was dragged past an edge. Positions are clamped at both ends (`MIN_GRAPH_COORDINATE`/`MAX_GRAPH_COORDINATE`) for the same reason.
 
 **`generateOrthogonalPath` and the helpers it calls are worklets, and their position in `GraphUtils.ts` is load-bearing.** The worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a factory that closes over its helpers *by value at the point the declaration appears*. Declared above its helpers, such a function captures `undefined` and throws `getConnectionPoint is not a function` the first time an edge is drawn — on device as well as under test, and function hoisting does not save it because there is no longer a declaration to hoist. If you add a helper there, mark it `"worklet"` and define it above its callers.
 

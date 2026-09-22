@@ -52,7 +52,7 @@ describe("useGraphPositions", () => {
     beforeEach(async () => {
       await saveGraphLayout(LIST, {
         version: 1,
-        positions: { "1": { x: 500, y: 0 }, "2": { x: 900, y: 0 } },
+        positions: { "1": { x: 500, y: 300 }, "2": { x: 900, y: 300 } },
         updatedAt: 1,
       });
     });
@@ -61,7 +61,7 @@ describe("useGraphPositions", () => {
       const { result } = renderPositions(LIST);
 
       await waitFor(() =>
-        expect(result.current.positions.get(1)).toEqual({ x: 500, y: 0 }),
+        expect(result.current.positions.get(1)).toEqual({ x: 500, y: 300 }),
       );
     });
 
@@ -124,15 +124,15 @@ describe("useGraphPositions", () => {
       // The mitigation for recycled pattern ids: prune on every save.
       await saveGraphLayout(LIST, {
         version: 1,
-        positions: { "1": { x: 1, y: 1 }, "99": { x: 9, y: 9 } },
+        positions: { "1": { x: 300, y: 300 }, "99": { x: 900, y: 900 } },
         updatedAt: 1,
       });
       const { result } = renderPositions(LIST);
       await waitFor(() =>
-        expect(result.current.positions.get(1)).toEqual({ x: 1, y: 1 }),
+        expect(result.current.positions.get(1)).toEqual({ x: 300, y: 300 }),
       );
 
-      act(() => result.current.moveNode(1, { x: 2, y: 2 }));
+      act(() => result.current.moveNode(1, { x: 400, y: 400 }));
 
       await waitFor(async () =>
         expect((await loadGraphLayout(LIST))?.positions["99"]).toBeUndefined(),
@@ -161,7 +161,7 @@ describe("useGraphPositions", () => {
     it("does not show one list's arrangement on another", async () => {
       await saveGraphLayout(LIST, {
         version: 1,
-        positions: { "1": { x: 500, y: 0 } },
+        positions: { "1": { x: 500, y: 300 } },
         updatedAt: 1,
       });
       const { result, rerender } = renderHookWithProviders(
@@ -170,7 +170,7 @@ describe("useGraphPositions", () => {
         { initialProps: { listId: LIST } },
       );
       await waitFor(() =>
-        expect(result.current.positions.get(1)).toEqual({ x: 500, y: 0 }),
+        expect(result.current.positions.get(1)).toEqual({ x: 500, y: 300 }),
       );
 
       rerender({ listId: "other-list" });

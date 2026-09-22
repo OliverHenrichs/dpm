@@ -8,7 +8,10 @@ import {
 } from "@/src/pattern/graph/hooks/useNodeDrag";
 import { useCanvasTransformValues } from "@/src/pattern/graph/components/CanvasTransformContext";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
-import { MAX_GRAPH_COORDINATE } from "@/src/pattern/graph/types/Constants";
+import {
+  MAX_GRAPH_COORDINATE,
+  MIN_GRAPH_COORDINATE,
+} from "@/src/pattern/graph/types/Constants";
 import { MockGesture } from "@/__mocks__/react-native-gesture-handler";
 
 const VIEWPORT = { width: 400, height: 800 };
@@ -188,6 +191,21 @@ describe("useNodeDrag", () => {
       release(h);
 
       expect(h.moved).toHaveBeenCalledWith(1, { x: 1020, y: 820 });
+    });
+
+    it("cannot be dragged off the near edge of the canvas", () => {
+      // A node at a negative coordinate is outside the SVG and simply not
+      // drawn, so there would be no way to drag it back.
+      const h = renderDrag();
+
+      startOn(h, 1);
+      move(h, -1e9, -1e9);
+      release(h);
+
+      expect(h.moved).toHaveBeenCalledWith(1, {
+        x: MIN_GRAPH_COORDINATE,
+        y: MIN_GRAPH_COORDINATE,
+      });
     });
 
     it("cannot be dragged outside the drawable box", () => {

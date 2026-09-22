@@ -3,6 +3,7 @@ import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import {
   DEPTH_SPACING,
   MAX_GRAPH_COORDINATE,
+  MIN_GRAPH_COORDINATE,
 } from "@/src/pattern/graph/types/Constants";
 import { buildAdjacency } from "./adjacency";
 
@@ -27,9 +28,16 @@ export interface ResolvedLayout {
 /** ~137.5°: successive multiples never land close together. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
+/**
+ * Keep a position inside the drawable canvas.
+ *
+ * Both ends matter. Past the far edge a node is outside the SVG; past the near
+ * edge it is at a negative coordinate. Either way it is not drawn, and there
+ * is then no way to drag it back.
+ */
 function clampCoordinate(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(-MAX_GRAPH_COORDINATE, Math.min(MAX_GRAPH_COORDINATE, value));
+  if (!Number.isFinite(value)) return MIN_GRAPH_COORDINATE;
+  return Math.max(MIN_GRAPH_COORDINATE, Math.min(MAX_GRAPH_COORDINATE, value));
 }
 
 function isPoint(value: unknown): value is { x: number; y: number } {
