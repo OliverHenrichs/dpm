@@ -20,6 +20,8 @@ const palette = getPalette("light");
 const CENTRE = { x: 200, y: 150 };
 /** Mirrors the renderer; the point of the tests below is that it is uniform. */
 const BADGE_INSET = 3;
+/** A foundational node's inner border is itself at 3, so the badges clear it. */
+const FOUNDATIONAL_BADGE_INSET = 6;
 const DOT_RADIUS = 2;
 
 const video = (): IVideoReference => ({
@@ -32,21 +34,33 @@ const modifierRef = (
   videoRefs: IVideoReference[] = [],
 ): IPatternModifierRef => ({ modifierId, videoRefs });
 
-function renderNode(overrides: Partial<IPattern> = {}) {
-  const pattern = createTestPattern(TYPE.id, {
+/**
+ * Renders one node, *not* foundational unless asked.
+ *
+ * A pattern with no prerequisites is foundational, which draws a second,
+ * inner border that the badges have to stay clear of — so the default here
+ * gives the subject a prerequisite. Leaving that implicit meant every test
+ * below was silently measuring the foundational case.
+ */
+function renderNode(
+  overrides: Partial<IPattern> = {},
+  { foundational = false } = {},
+) {
+  const before = createTestPattern(TYPE.id, { id: 9, name: "Before" });
+  const subject = createTestPattern(TYPE.id, {
     id: 1,
     name: "Whip",
+    prerequisites: foundational ? [] : [before.id],
     ...overrides,
   });
-  const model = buildGraphModel([pattern], [TYPE]);
+  const model = buildGraphModel(foundational ? [subject] : [before, subject], [
+    TYPE,
+  ]);
+  const node = model.nodes.find((n) => n.pattern.id === subject.id)!;
+  expect(node.foundational).toBe(foundational);
   render(
     <Svg>
-      <PatternNode
-        node={model.nodes[0]}
-        x={CENTRE.x}
-        y={CENTRE.y}
-        palette={palette}
-      />
+      <PatternNode node={node} x={CENTRE.x} y={CENTRE.y} palette={palette} />
     </Svg>,
   );
 }
@@ -199,6 +213,46 @@ describe("node badges", () => {
       for (const dot of modifierDots()) {
         expect(dot.props.cy).toBe(playCenterY);
       }
+    });
+
+    /**
+     * A foundational node draws a second border inset 3, which the badges sat
+     * exactly on. They step in far enough to clear it rather than resting on
+     * the line.
+     */
+    it("steps in on a foundational node, to clear its inner border", () => {
+      renderNode({ videoRefs: [video()] }, { foundational: true });
+      const { xs, ys } = trianglePoints();
+
+      expect(CENTRE.x + NODE_WIDTH / 2 - Math.max(...xs)).toBe(
+        FOUNDATIONAL_BADGE_INSET,
+      );
+      expect(CENTRE.y + NODE_HEIGHT / 2 - Math.max(...ys)).toBe(
+        FOUNDATIONAL_BADGE_INSET,
+      );
+    });
+
+    it("keeps the same inset on both axes when it steps in", () => {
+      renderNode({ modifierRefs: [modifierRef("a")] }, { foundational: true });
+      const dot = modifierDots()[0];
+
+      expect(CENTRE.x + NODE_WIDTH / 2 - (dot.props.cx + DOT_RADIUS)).toBe(
+        CENTRE.y + NODE_HEIGHT / 2 - (dot.props.cy + DOT_RADIUS),
+      );
+    });
+
+    /**
+     * At the old spacing the dots were 1.5px apart, which is well under a
+     * pixel once the graph is zoomed out to fit — two dots rendered as one
+     * blob, which is how this was reported.
+     */
+    it("leaves a dot's width of clear space between dots", () => {
+      renderNode({ modifierRefs: [modifierRef("a"), modifierRef("b")] });
+      const [first, second] = modifierDots();
+
+      const clearSpace =
+        Math.abs(first.props.cx - second.props.cx) - DOT_RADIUS * 2;
+      expect(clearSpace).toBeGreaterThanOrEqual(DOT_RADIUS * 1.5);
     });
 
     it("puts the dots clear of the video mark", () => {

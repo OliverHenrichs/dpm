@@ -96,7 +96,13 @@ const PatternNode: React.FC<PatternNodeProps> = ({
         />
       )}
 
-      <NodeBadges badges={badges} x={x} y={y} color={borderColor} />
+      <NodeBadges
+        badges={badges}
+        x={x}
+        y={y}
+        color={borderColor}
+        foundational={foundational}
+      />
 
       {/* Pattern name */}
       <SvgText

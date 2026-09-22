@@ -10,11 +10,21 @@ import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
  * not a free variable — growing it would move the timeline layout everywhere.
  */
 const INSET = 3;
+/**
+ * Extra inset on a foundational pattern, whose double border is itself drawn
+ * at inset 3. Without this the badges rest exactly on that frame line.
+ */
+const FOUNDATIONAL_INSET = 3;
 /** Half the play triangle's height, and half its width. */
 const PLAY_SIZE = 5.5;
 const DOT_RADIUS = 2;
-/** Between dot centres. */
-const DOT_GAP = 5.5;
+/**
+ * Between dot centres — a full dot's width of clear space between them.
+ *
+ * At the old 5.5 the dots were 1.5px apart, which is well under a pixel once
+ * the graph is zoomed out to fit, so two dots rendered as one blob.
+ */
+const DOT_GAP = 7;
 /** Between the last dot and the triangle, when both are drawn. */
 const DOT_TO_PLAY_GAP = 3;
 /** Beyond this, more dots would not fit or read; the details view has the number. */
@@ -27,6 +37,8 @@ interface NodeBadgesProps {
   y: number;
   /** The type colour, which is already the node's border. */
   color: string;
+  /** Foundational nodes carry a second, inner border to stay clear of. */
+  foundational: boolean;
 }
 
 /**
@@ -40,15 +52,23 @@ interface NodeBadgesProps {
  * node's fill opacity already varies by level (0.3 / 0.5 / 0.7), so a
  * secondary-text grey would wash out on an advanced pattern.
  */
-const NodeBadges: React.FC<NodeBadgesProps> = ({ badges, x, y, color }) => {
+const NodeBadges: React.FC<NodeBadgesProps> = ({
+  badges,
+  x,
+  y,
+  color,
+  foundational,
+}) => {
   const { hasVideo, modifierCount } = badges;
   if (!hasVideo && modifierCount === 0) return null;
+
+  const inset = INSET + (foundational ? FOUNDATIONAL_INSET : 0);
 
   // Where the badges stop. Every shape below is positioned by its *bounding
   // box*, never by a centre line on one axis and an edge on the other —
   // mixing the two is what left each mark lopsided in its corner.
-  const edgeRight = x + NODE_WIDTH / 2 - INSET;
-  const edgeBottom = y + NODE_HEIGHT / 2 - INSET;
+  const edgeRight = x + NODE_WIDTH / 2 - inset;
+  const edgeBottom = y + NODE_HEIGHT / 2 - inset;
 
   // The triangle takes the corner: its box sits hard against both edges.
   const playCenterY = edgeBottom - PLAY_SIZE;

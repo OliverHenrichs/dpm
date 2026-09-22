@@ -230,7 +230,8 @@ A node marks what it has: a play triangle when the pattern (or one of its modifi
 - **Coloured with the node's type colour**, never a secondary-text grey: the fill opacity already varies by level (0.3 / 0.5 / 0.7) and grey washes out on an advanced pattern.
 - **Every shape is positioned by its bounding box, on both axes.** Taking the right edge of one and the centre line of another looks correct in code and is visibly lopsided on a device — it happened twice, once to each badge. The shapes are written symmetrically about their own centre lines so the insets are a testable property rather than true by construction.
 - The dots take the corner themselves when there is no video mark, and share the triangle's centre line when there is. Always sharing it would hang them the triangle's height above the bottom edge with nothing underneath.
-- At the current 3px inset the badges meet a foundational pattern's inner double border, which is also inset 3. That is deliberate, not an oversight.
+- **A foundational node's badges step in further**, because its inner double border is itself at inset 3 and the badges would otherwise rest on that line.
+- **Dot spacing is set by what survives being zoomed out**, not by what looks right at 1:1. At 1.5px apart the dots merged into one blob at the zoom the graph actually opens at; they now have a full dot's width of clear space. Anything drawn here has the same constraint — the network view fits a whole list on screen by default.
 - Only *attached* modifiers are counted. A universal modifier applies to every pattern in the list, so badging one would mark every node and say nothing.
 
 ### The views
