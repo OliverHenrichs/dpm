@@ -356,9 +356,13 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         </Text>
         {draftTypes.map((dt) => {
           const isInUse = usedTypeIds?.has(dt.id) ?? false;
+          const isPickingColor = colorPopoverId === dt.id;
           return (
-            <View key={dt.id} style={styles.typeRow}>
-              {/* Color dot → popover */}
+            <View
+              key={dt.id}
+              style={[styles.typeRow, isPickingColor && styles.typeRowRaised]}
+            >
+              {/* Color dot → popover, which is rendered last inside the row */}
               <TouchableOpacity
                 onPress={(e) => {
                   e?.stopPropagation?.();
@@ -366,7 +370,6 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                 }}
                 style={[styles.typeColorDot, { backgroundColor: dt.color }]}
               />
-              {colorPopoverId === dt.id && renderColorPopover(dt.id, dt.color)}
 
               <TextInput
                 style={[
@@ -399,6 +402,9 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                   ✕
                 </Text>
               </TouchableOpacity>
+              {/* Last child on purpose: it overlays the row's own slug input,
+                  and paint order is what decides that where zIndex does not. */}
+              {isPickingColor && renderColorPopover(dt.id, dt.color)}
             </View>
           );
         })}
@@ -588,6 +594,16 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       marginBottom: 8,
       gap: 8,
       zIndex: 10,
+    },
+    // The open swatch grid hangs down over the rows beneath it. Those rows are
+    // later siblings with the same zIndex, so they would paint over it: the row
+    // holding the popover has to be lifted above them for the whole time it is
+    // open. zIndex does that on iOS and web; on Android sibling draw order
+    // follows elevation, hence both. The popover's own zIndex only orders it
+    // against the other children of its row, never against another row.
+    typeRowRaised: {
+      zIndex: 100,
+      elevation: 8,
     },
     typeColorDot: {
       width: 28,

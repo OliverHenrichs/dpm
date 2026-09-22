@@ -1,4 +1,6 @@
 import React from "react";
+import { StyleSheet } from "react-native";
+import type { ReactTestInstance } from "react-test-renderer";
 import PatternListTemplateModal from "@/src/pattern/list/PatternListTemplateModal";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
 import { createTestPatternList } from "@/utils/testFactories";
@@ -45,6 +47,46 @@ function pickTemplate(name: string) {
 const nameInput = () => screen.getByLabelText("List Name");
 /** Uses queryAll: a blank list legitimately starts with no types at all. */
 const typeInputs = () => screen.queryAllByPlaceholderText("Type name");
+
+/**
+ * The row <View> a type is edited in. Nothing on it is queryable by text or
+ * label, so walk up from its slug input: the row is the first ancestor with a
+ * zIndex, which is exactly the property that orders it against the rows below.
+ */
+function typeRow(index: number): ReactTestInstance {
+  let node: ReactTestInstance | null = typeInputs()[index];
+  while (node && StyleSheet.flatten(node.props.style)?.zIndex === undefined) {
+    node = node.parent;
+  }
+  if (!node) throw new Error(`no type row above slug input ${index}`);
+  return node;
+}
+
+/** The colour dot is the first child of its row, the open swatch grid the last. */
+const colorDot = (row: ReactTestInstance) =>
+  row.children[0] as ReactTestInstance;
+
+/** The swatch buttons of the open grid, in palette order. */
+function swatches(row: ReactTestInstance): ReactTestInstance[] {
+  // Breadth-first to the grid itself: every View shows up twice in the tree,
+  // as the component and as the host element, and only the host one holds the
+  // swatches as its children.
+  const queue: (ReactTestInstance | string)[] = [row];
+  while (queue.length) {
+    const node = queue.shift()!;
+    if (typeof node === "string") continue;
+    if (
+      typeof node.type === "string" &&
+      StyleSheet.flatten(node.props.style)?.flexWrap === "wrap"
+    ) {
+      return node.children.filter(
+        (child): child is ReactTestInstance => typeof child !== "string",
+      );
+    }
+    queue.push(...node.children);
+  }
+  throw new Error("the swatch grid is not open");
+}
 
 describe("PatternListTemplateModal", () => {
   describe("choosing a starting point", () => {
@@ -319,6 +361,79 @@ describe("PatternListTemplateModal", () => {
       for (const pattern of created().patterns) {
         expect(typeIds.has(pattern.typeId)).toBe(true);
       }
+    });
+  });
+
+  describe("picking a type colour", () => {
+    it("opens the swatches on the dot and closes them again", () => {
+      renderModal();
+
+      pickTemplate("West Coast Swing");
+      const closed = typeRow(0).children.length;
+      fireEvent.press(colorDot(typeRow(0)));
+
+      expect(typeRow(0).children.length).toBe(closed + 1);
+
+      fireEvent.press(colorDot(typeRow(0)));
+
+      expect(typeRow(0).children.length).toBe(closed);
+    });
+
+    it("lifts its row above the rows underneath while they are open", () => {
+      // The swatch grid hangs down over the next rows. They are later siblings
+      // of the same zIndex, so without this they paint over it and the grid
+      // disappears behind their type name inputs.
+      renderModal();
+
+      pickTemplate("West Coast Swing");
+      const resting = StyleSheet.flatten(typeRow(1).props.style).zIndex;
+      expect(StyleSheet.flatten(typeRow(0).props.style).zIndex).toBe(resting);
+
+      fireEvent.press(colorDot(typeRow(0)));
+
+      const open = StyleSheet.flatten(typeRow(0).props.style);
+      expect(open.zIndex).toBeGreaterThan(resting);
+      // Android orders siblings by elevation, not by zIndex.
+      expect(open.elevation).toBeGreaterThan(0);
+    });
+
+    it("puts the swatches in front of its own slug input too", () => {
+      renderModal();
+
+      pickTemplate("West Coast Swing");
+      fireEvent.press(colorDot(typeRow(0)));
+
+      const row = typeRow(0);
+      const grid = row.children.at(-1) as ReactTestInstance;
+      const inputIndex = row.children.findIndex(
+        (child) =>
+          typeof child !== "string" && child.props.placeholder === "Type name",
+      );
+      expect(StyleSheet.flatten(grid.props.style).zIndex).toBeGreaterThan(
+        StyleSheet.flatten(typeInputs()[0].props.style).zIndex ?? 0,
+      );
+      // ...and it comes after the input, so paint order agrees with the zIndex
+      // on any platform that ignores it.
+      expect(row.children.length - 1).toBeGreaterThan(inputIndex);
+    });
+
+    it("applies the picked colour to the type", () => {
+      const { created } = renderModal();
+
+      pickTemplate("West Coast Swing");
+      const before = StyleSheet.flatten(
+        colorDot(typeRow(0)).props.style,
+      ).backgroundColor;
+      fireEvent.press(colorDot(typeRow(0)));
+      const swatch = swatches(typeRow(0)).at(-1)!;
+      const picked = StyleSheet.flatten(swatch.props.style).backgroundColor;
+      fireEvent.press(swatch);
+      fireEvent.press(screen.getByText("Create"));
+
+      expect(picked).not.toBe(before);
+      expect(created().list.patternTypes[0].color).toBe(picked);
+      // Choosing closes the grid again.
+      expect(typeRow(0).children).toHaveLength(3);
     });
   });
 
