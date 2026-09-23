@@ -1,0 +1,3 @@
+android/src/main/assets/*.task
+android/src/main/assets/*.tflite
+android/build/

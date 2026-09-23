@@ -31,7 +31,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
-| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | open | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | spike done — no-go as scoped | [L3](#l3--ai-anonymised-comic-style-videos) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -70,7 +70,7 @@ Phase 0  F1 ◐ ─────────────────────�
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
-Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
+Phase 4  L3 spike ✅ → no-go on current models; see "Spike result" in L3
 ```
 
 **Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
@@ -1259,6 +1259,99 @@ exactly rather than inventing a second pattern.
 
 **15–25 days**, plus the 2-day spike that sets which end of that range applies. Phase 1 alone is
 ~4–5 days and is the part with the clearest value-to-risk ratio.
+
+#### Spike result (2026-09-23/24) — no-go as scoped
+
+Code: branch `spike/l3-silhouette`, not for merge. It holds the local Expo module
+`modules/video-deidentify/` (Android only) and a `__DEV__` panel at the bottom of Settings.
+The models are gitignored, so run `modules/video-deidentify/scripts/fetch-models.sh` before
+building. Tested on a Pixel 10a with four real teaching clips (13–19 s):
+1. Professional couple in black, closed position with turns, spectators at the right and the
+   bottom edge.
+2. Two teachers, open figure.
+3. Two teachers, open figure, poor light.
+4. Two teachers, roll-in/roll-out.
+
+**The premise changed first.** Talking the item through gave these corrections, which stand
+regardless of the verdict:
+- **Audience.** The intended audience is *public* (YouTube). Once footage is published the
+  GDPR household exemption ends, and KUG §22 needs consent to publish someone's image. So
+  de-identification has to be real, and on-device.
+- **Silhouettes are the primary strategy.** They keep the movement and drop identity.
+- **The AI comic path is an optional later phase.** A video-to-video render keeps likeness,
+  so it is not anonymisation, and it sends identifiable third-party footage to a paid
+  provider. That triggers Apple 5.1.2(i) (Nov 2025: name the AI provider, get explicit
+  consent before the first transmission), Google Play's AI-content rules, and EU AI Act
+  Art. 50 labelling (applies since 2 Aug 2026).
+- **Phases 0 and 1 are one piece of work.** Any local effect needs the same
+  decode → per-frame effect → encode pipeline that transcoding does.
+- **Fail closed.** Output frames are drawn *only* from segmentation labels as flat colour on
+  a flat background, never composited from source pixels, and audio is dropped. A
+  segmentation miss then shows as a missing limb, never a face. This held in every output:
+  a frame-by-frame palette check found only compression fringes at shape edges. Keep this
+  rule in any real feature.
+
+**What worked:**
+- **Transcoding (the original blocking unknown) is solved and cheap.** Media3 Transformer
+  1.9.0, pinned to expo-video's version, cuts and downscales to 720p in about 2 s for a 15 s
+  clip. No ffmpeg is needed.
+- **The fail-closed renderer and encoder work.** `MediaMetadataRetriever.getFramesAtIndex`
+  reads batches of frames, a canvas draws onto the `MediaCodec` input surface, and B-frames
+  are off so that timestamps can be rewritten on output. Encoding costs about 4 ms per frame.
+- **Rendering the selfie model's categories reads well on good footage.** Hair, skin and
+  clothes get shades of one colour, with contour lines where they meet, and face skin is drawn
+  like body skin. Clip 2 came out clean and stable, and the figure could be followed through
+  closed position.
+
+**What failed — segmentation quality, on the footage that matters:**
+
+| Model | Result |
+|---|---|
+| MediaPipe PoseLandmarker (`numPoses=2`, masks) | Found both dancers in 47 / 11 / 0 / 0 % of frames across the four clips. It detects people from the face and upper body, which disappear in turns and closed position. Its masks also rendered as outlines only; that cause is unresolved (a byte-order fix changed nothing). **Dropped.** |
+| Selfie multiclass (256×256) | Good on clip 2, acceptable on clip 4 with some background mislabelled. Clip 1: mostly torsos (small figures in black clothes against a busy background). Clip 3: blobs blinking in and out in poor light; the figure cannot be read. |
+| DeepLab-v3 (PASCAL VOC person) | Far too coarse everywhere, blobs only. |
+
+Post-processing helps only where the model is already decent:
+- a ±2-frame majority vote
+- hole filling
+- keeping only the connected blobs picked by a centre preference and followed from frame to frame
+
+It cannot restore limbs the model missed. On clip 1 it kept following a spectator's head at
+the bottom edge. A fix that stops edge blobs being *picked* changed the kept-blob counts by
+one frame, so the head is being *followed*, probably after touching the dancers' blob. Not
+investigated further.
+
+**Speed.** The target was at most 2× the clip length.
+
+| Model | Delegate | Segment ms per frame | Total |
+|---|---|---|---|
+| Selfie multiclass | CPU: the GPU delegate fails in `CalculatorGraph` Open | ~225 (at 640×360) | ~10× clip length |
+| PoseLandmarker | GPU | ~160 | ~7× |
+| DeepLab-v3 | GPU | ~47 | ~3.5× |
+
+Cleanup adds ~30 ms per frame. The GPU numbers show that ~2× is reachable *if* a good model
+runs on the GPU.
+
+**Size.** The arm64 debug APK grew from 109 MB to 146 MB with all three models. One model
+plus `libmediapipe_tasks_jni.so` (10.5 MB) is roughly +13–27 MB.
+
+**Verdict.** The pipeline is sound, but no off-the-shelf MediaPipe model segments full-body
+dancers reliably enough for footage that is not bright, close and uncluttered. Shipping on
+top of it would mean de-identified videos that are unreadable exactly when they matter:
+turns, closed position, shows, low light. **Do not build the feature on these models.**
+
+Options, if L3 is picked up again:
+1. **A real multi-person instance-segmentation model.** Detecting each person by the whole
+   body also gives two colours, lead and follow. Check the licence first: the popular
+   Ultralytics YOLO-seg models are AGPL-3.0, which would force the app open. Apache-2.0
+   candidates such as RTMDet-Ins need converting to TFLite/LiteRT. Several days, with
+   another quality spike on the same four clips before committing.
+2. **Ship narrowly on the current pipeline.** Multiclass with the cleanup, labelled "works
+   best on bright, close, uncluttered video", plus a preview before saving. It is honest,
+   but it is only useful for clip-2-like footage, and the speed stays at ~10× unless the GPU
+   delegate is made to work.
+3. **Park L3.** Transcoding and the fail-closed renderer are the reusable part, and they
+   live on the spike branch.
 
 ---
 
