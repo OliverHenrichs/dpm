@@ -31,7 +31,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
-| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | spike done — no-go as scoped | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — detect-then-track chosen, Android port started | [L3](#l3--ai-anonymised-comic-style-videos) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -70,7 +70,7 @@ Phase 0  F1 ◐ ─────────────────────�
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
-Phase 4  L3 spike ✅ → no-go on current models; see "Spike result" in L3
+Phase 4  L3 spike ✅ → MediaPipe no-go; RF-DETR + EdgeTAM chosen, Android port in progress
 ```
 
 **Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
@@ -1352,6 +1352,63 @@ Options, if L3 is picked up again:
    delegate is made to work.
 3. **Park L3.** Transcoding and the fail-closed renderer are the reusable part, and they
    live on the spike branch.
+
+#### Model search and desktop comparison (2026-09-24) — go for detect-then-track
+
+The search followed option 1. Requirements:
+- whole-body and multi-person
+- a permissive licence
+- an Android path
+- stable over time, because flicker was the main complaint
+
+Quality was the open question, so it was settled **on the desktop in Python** before any
+Android porting. The same four clips were used, with the same fail-closed two-colour
+renderer. The clips were copied off the phone with the user's consent and only silhouette
+outputs were inspected. Scripts: `deid.py`, `edgetam_eval.py`, `agree.py` in the session
+scratch folder. They are not in the repo; recreate them from this description if needed.
+
+**Ruled out before testing:**
+- **ML Kit Subject Segmentation** merges touching subjects, which fails closed position,
+  and takes ~200 ms per frame.
+- **Ultralytics YOLO-seg** is AGPL-3.0, which would force the app open.
+- **YOLO-NAS** weights are licensed for non-commercial use only.
+
+**Tested:**
+
+| Approach | Clip 1 | Clip 2 | Clip 3 | Clip 4 |
+|---|---|---|---|---|
+| A: RF-DETR-Seg Small per frame + two-slot tracker (IoU follow, centre-prior acquire, ±2-frame vote) | 94% of frames show both dancers. The colours swap in closed position, and later the follow is hidden behind the lead, so the tracker takes a spectator blob. | 99.5% | 96% | 96% |
+| **B: RF-DETR-Seg picks the couple once on frame 0, EdgeTAM tracks both** | **100%, identities stable, no spectators** | **100%** | **100%** | **100%** |
+
+- [RF-DETR-Seg](https://github.com/roboflow/rf-detr) is Apache-2.0 and detects people by
+  the whole body, each as its own instance. Clip 1 has a median of 11 people per frame, and
+  the centre prior still picks the couple.
+- [EdgeTAM](https://github.com/facebookresearch/EdgeTAM) is Meta's on-device SAM 2,
+  Apache-2.0. Its memory across frames is what fixes identity through overlaps: on clips
+  2-4 it agrees with A on who's who in every frame where A shows both dancers, and it also
+  fills the frames A dropped.
+- Low light (clip 3), which defeated every MediaPipe model, is solid with both approaches.
+- **Setup note:** EdgeTAM on PyTorch 2.14 needs `.view` → `.reshape` in
+  `sam2/modeling/perceiver.py:298` for more than one tracked object.
+
+**Decision: port B (RF-DETR once + EdgeTAM every frame) to Android.**
+- RF-DETR has a proven LiteRT GPU path: a community Nano port runs at ~110 ms per frame on
+  a Pixel 8a, and it only runs once per clip anyway.
+- EdgeTAM is the risk. It is three networks (1024×1024 image encoder, memory encoder,
+  decoder with memory attention) plus the memory bank in Kotlin. Meta reports 16 fps on an
+  iPhone 15 Pro Max; the ready-made Qualcomm AI Hub exports target Snapdragon, not the
+  Pixel's Tensor chip.
+- **First milestone: convert EdgeTAM to LiteRT and measure per-frame latency on the Pixel
+  before building anything around it.**
+- Fallback if EdgeTAM cannot be made fast enough on the phone: port A alone, accepting
+  occasional identity swaps.
+
+**Also requested:**
+- A trim UI: a draggable window of at most 30 s over the seek bar, which replaces the fixed
+  "first 30 s".
+- A provider seam, so an external service (for example Viggle) can sit beside the
+  on-device pipeline. Any external provider brings back the consent, cost and store-policy
+  requirements described above.
 
 ---
 
