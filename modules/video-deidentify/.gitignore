@@ -1,3 +1,4 @@
 android/src/main/assets/*.task
 android/src/main/assets/*.tflite
 android/build/
+android/src/main/assets/edgetam/

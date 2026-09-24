@@ -23,21 +23,30 @@ import kotlin.coroutines.resumeWithException
 
 data class TranscodeResult(val durationMs: Long)
 
-/** Stage A: trim to [maxSeconds] and scale the short side to [shortSide], as H.264. */
+/**
+ * Stage A: cut [startSeconds, endSeconds) — never longer than [maxSeconds] — and scale the short
+ * side to [shortSide], as H.264.
+ */
 class Transcoder(private val context: Context) {
   suspend fun run(
     src: Uri,
     out: File,
+    startSeconds: Double,
+    endSeconds: Double,
     maxSeconds: Double,
     shortSide: Int,
     removeAudio: Boolean,
     onProgress: (Double) -> Unit,
   ): TranscodeResult = withContext(Dispatchers.Main) {
+    val startMs = (startSeconds.coerceAtLeast(0.0) * 1000).toLong()
+    val capMs = startMs + (maxSeconds * 1000).toLong()
+    val endMs = if (endSeconds < 0) capMs else minOf((endSeconds * 1000).toLong(), capMs)
     val mediaItem = MediaItem.Builder()
       .setUri(src)
       .setClippingConfiguration(
         MediaItem.ClippingConfiguration.Builder()
-          .setEndPositionMs((maxSeconds * 1000).toLong())
+          .setStartPositionMs(startMs)
+          .setEndPositionMs(endMs)
           .build()
       )
       .build()

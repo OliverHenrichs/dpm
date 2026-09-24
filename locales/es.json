@@ -216,5 +216,18 @@
   "closeDetails": "Cerrar",
   "dismissDetails": "Descartar detalles",
   "legendHasVideo": "Tiene vídeo",
-  "legendModifiers": "Modificadores adjuntos"
+  "legendModifiers": "Modificadores adjuntos",
+  "deidentifyTitle": "Anonimizar un vídeo",
+  "deidentifyPickVideo": "Elegir un vídeo",
+  "deidentifyProviderOnDevice": "En este dispositivo",
+  "deidentifyRun": "Anonimizar",
+  "deidentifyProgress": "Procesando… {{percent}} %",
+  "deidentifyTooShort": "Este vídeo es demasiado corto para este método (mínimo {{min}} s).",
+  "deidentifyFailed": "No se pudo procesar el vídeo: {{message}}",
+  "deidentifyNoProvider": "La anonimización no está disponible en este dispositivo.",
+  "trimSelection": "{{start}}–{{end}} · {{length}} s de máx. {{max}} s",
+  "trimWindowA11y": "Parte del vídeo que se procesará",
+  "deidentifyProviderTracking": "Seguir a la pareja (beta)",
+  "deidentifyTapDancers": "Toca a cada bailarín en este fotograma ({{count}}/{{total}})",
+  "deidentifyResetTaps": "Volver a tocar"
 }

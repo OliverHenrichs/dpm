@@ -12,15 +12,36 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class DeidentifyOptions : Record {
+  /** Trim window in the source; a negative end means "to the end of the clip". */
+  @Field val startSeconds: Double = 0.0
+  @Field val endSeconds: Double = -1.0
+  /** Hard cap on the processed length, applied after the window. */
   @Field val maxSeconds: Double = 30.0
   @Field val height: Int = 720
   /** "passthrough" (trim + downscale only) or "silhouette". */
   @Field val mode: String = "passthrough"
   /**
-   * "pose" (MediaPipe PoseLandmarker, per person), "multiclass" (selfie multiclass segmenter)
-   * or "deeplab" (DeepLab-v3, general-scene person class).
+   * "pose" (MediaPipe PoseLandmarker, per person), "multiclass" (selfie multiclass segmenter),
+   * "deeplab" (DeepLab-v3, general-scene person class) or "edgetam" (EdgeTAM tracking from
+   * [prompts]).
    */
   @Field val segmenter: String = "pose"
+
+  /** EdgeTAM: one normalised [x, y] point per dancer on the first frame. */
+  @Field val prompts: List<List<Double>> = listOf(listOf(0.4, 0.55), listOf(0.6, 0.55))
+
+  /** Stop after this many frames (0 = whole clip) — for benchmarks. */
+  @Field val maxFrames: Int = 0
+
+  /** EdgeTAM graphs to force onto the CPU ("encode", "memcond", ...) — for diagnosis. */
+  @Field val cpuGraphs: List<String> = emptyList()
+
+  /** EdgeTAM mask upscaling: "bilinear" or "guided" (edges snapped to the frame's contours). */
+  @Field val refine: String = "guided"
+
+  /** EdgeTAM graphs to compute in fp32 on the GPU (default: none — fp32 tracking cost
+   *  +0.7 s/frame on a Pixel 10a and did not change the output). */
+  @Field val fp32Graphs: List<String> = emptyList()
 }
 
 class DeidentifyException(message: String, cause: Throwable? = null) :
@@ -51,6 +72,8 @@ class VideoDeidentifyModule : Module() {
         Transcoder(context).run(
           Uri.parse(srcUri),
           transcoded,
+          startSeconds = options.startSeconds,
+          endSeconds = options.endSeconds,
           maxSeconds = options.maxSeconds,
           shortSide = options.height,
           removeAudio = options.mode == "silhouette",
@@ -72,7 +95,12 @@ class VideoDeidentifyModule : Module() {
       val silhouetteFile = File(outDir, "$stamp-silhouette.mp4")
       val stats = try {
         withContext(Dispatchers.Default) {
-          SilhouetteRenderer(context, options.segmenter).render(transcoded, silhouetteFile) {
+          val points = options.prompts.map { android.graphics.PointF(it[0].toFloat(), it[1].toFloat()) }
+          SilhouetteRenderer(
+            context, options.segmenter, points, options.maxFrames, options.cpuGraphs.toSet(),
+            options.refine, options.fp32Graphs.toSet(),
+          )
+            .render(transcoded, silhouetteFile) {
             progress("silhouette", it)
           }
         }
@@ -100,7 +128,7 @@ class VideoDeidentifyModule : Module() {
         "avgCleanupMs" to stats.avgCleanupMs,
         "avgEncodeMs" to stats.avgEncodeMs,
         "framesByPeopleFound" to stats.framesByPeopleFound.mapKeys { it.key.toString() },
-      )
+      ) + stats.extra
     }
   }
 }

@@ -216,5 +216,18 @@
   "closeDetails": "বন্ধ করুন",
   "dismissDetails": "বিবরণ বন্ধ করুন",
   "legendHasVideo": "ভিডিও আছে",
-  "legendModifiers": "মডিফায়ার যুক্ত আছে"
+  "legendModifiers": "মডিফায়ার যুক্ত আছে",
+  "deidentifyTitle": "ভিডিওর পরিচয় লুকান",
+  "deidentifyPickVideo": "একটি ভিডিও বেছে নিন",
+  "deidentifyProviderOnDevice": "এই ডিভাইসে",
+  "deidentifyRun": "পরিচয় লুকান",
+  "deidentifyProgress": "প্রক্রিয়া চলছে… {{percent}}%",
+  "deidentifyTooShort": "এই পদ্ধতির জন্য ভিডিওটি খুব ছোট (কমপক্ষে {{min}} সেকেন্ড)।",
+  "deidentifyFailed": "ভিডিওটি প্রক্রিয়া করা যায়নি: {{message}}",
+  "deidentifyNoProvider": "এই ডিভাইসে পরিচয় লুকানো উপলব্ধ নয়।",
+  "trimSelection": "{{start}}–{{end}} · {{length}} সেকেন্ড (সর্বোচ্চ {{max}} সেকেন্ড)",
+  "trimWindowA11y": "ভিডিওর যে অংশটি প্রক্রিয়া করা হবে",
+  "deidentifyProviderTracking": "জুটিকে ট্র্যাক করুন (বিটা)",
+  "deidentifyTapDancers": "এই ফ্রেমে প্রত্যেক নৃত্যশিল্পীর উপর ট্যাপ করুন ({{count}}/{{total}})",
+  "deidentifyResetTaps": "আবার ট্যাপ করুন"
 }

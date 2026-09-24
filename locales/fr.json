@@ -216,5 +216,18 @@
   "closeDetails": "Fermer",
   "dismissDetails": "Masquer les détails",
   "legendHasVideo": "Contient une vidéo",
-  "legendModifiers": "Modificateurs attachés"
+  "legendModifiers": "Modificateurs attachés",
+  "deidentifyTitle": "Anonymiser une vidéo",
+  "deidentifyPickVideo": "Choisir une vidéo",
+  "deidentifyProviderOnDevice": "Sur cet appareil",
+  "deidentifyRun": "Anonymiser",
+  "deidentifyProgress": "Traitement… {{percent}} %",
+  "deidentifyTooShort": "Cette vidéo est trop courte pour cette méthode (au moins {{min}} s).",
+  "deidentifyFailed": "Impossible de traiter la vidéo : {{message}}",
+  "deidentifyNoProvider": "L'anonymisation n'est pas disponible sur cet appareil.",
+  "trimSelection": "{{start}}–{{end}} · {{length}} s sur max. {{max}} s",
+  "trimWindowA11y": "Partie de la vidéo à traiter",
+  "deidentifyProviderTracking": "Suivre le couple (bêta)",
+  "deidentifyTapDancers": "Touchez chaque danseur sur cette image ({{count}}/{{total}})",
+  "deidentifyResetTaps": "Recommencer"
 }

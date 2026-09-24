@@ -216,5 +216,18 @@
   "closeDetails": "Schließen",
   "dismissDetails": "Details schließen",
   "legendHasVideo": "Hat Video",
-  "legendModifiers": "Modifikatoren angehängt"
+  "legendModifiers": "Modifikatoren angehängt",
+  "deidentifyTitle": "Video unkenntlich machen",
+  "deidentifyPickVideo": "Video auswählen",
+  "deidentifyProviderOnDevice": "Auf diesem Gerät",
+  "deidentifyRun": "Unkenntlich machen",
+  "deidentifyProgress": "Wird verarbeitet … {{percent}} %",
+  "deidentifyTooShort": "Dieses Video ist für diese Methode zu kurz (mindestens {{min}} s).",
+  "deidentifyFailed": "Das Video konnte nicht verarbeitet werden: {{message}}",
+  "deidentifyNoProvider": "Unkenntlichmachen ist auf diesem Gerät nicht verfügbar.",
+  "trimSelection": "{{start}}–{{end}} · {{length}} s von max. {{max}} s",
+  "trimWindowA11y": "Zu verarbeitender Teil des Videos",
+  "deidentifyProviderTracking": "Paar verfolgen (Beta)",
+  "deidentifyTapDancers": "Tippe in diesem Bild auf jede tanzende Person ({{count}}/{{total}})",
+  "deidentifyResetTaps": "Neu tippen"
 }

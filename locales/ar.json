@@ -216,5 +216,18 @@
   "closeDetails": "إغلاق",
   "dismissDetails": "إخفاء التفاصيل",
   "legendHasVideo": "يحتوي على فيديو",
-  "legendModifiers": "مُعدِّلات مرفقة"
+  "legendModifiers": "مُعدِّلات مرفقة",
+  "deidentifyTitle": "إخفاء الهوية في فيديو",
+  "deidentifyPickVideo": "اختر فيديو",
+  "deidentifyProviderOnDevice": "على هذا الجهاز",
+  "deidentifyRun": "إخفاء الهوية",
+  "deidentifyProgress": "جارٍ المعالجة… {{percent}}٪",
+  "deidentifyTooShort": "هذا الفيديو قصير جدًا لهذه الطريقة (على الأقل {{min}} ث).",
+  "deidentifyFailed": "تعذّرت معالجة الفيديو: {{message}}",
+  "deidentifyNoProvider": "إخفاء الهوية غير متاح على هذا الجهاز.",
+  "trimSelection": "{{start}}–{{end}} · {{length}} ث من أصل {{max}} ث كحد أقصى",
+  "trimWindowA11y": "جزء الفيديو المراد معالجته",
+  "deidentifyProviderTracking": "تتبّع الثنائي (تجريبي)",
+  "deidentifyTapDancers": "انقر على كل راقص في هذا الإطار ({{count}}/{{total}})",
+  "deidentifyResetTaps": "انقر من جديد"
 }

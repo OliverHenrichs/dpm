@@ -2,6 +2,7 @@ package expo.modules.videodeidentify
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.PointF
 import android.media.MediaMetadataRetriever
 import java.io.File
 import kotlin.math.roundToInt
@@ -23,6 +24,7 @@ data class SilhouetteStats(
    * the "lost dancer" count.
    */
   val framesByPeopleFound: Map<Int, Int>,
+  val extra: Map<String, Any> = emptyMap(),
 )
 
 /**
@@ -36,22 +38,32 @@ data class SilhouetteStats(
  * The encoder scales the drawn frame up with filtering, which blends palette colours at the
  * edges — still no source pixels.
  */
-class SilhouetteRenderer(private val context: Context, private val segmenterKind: String) {
+class SilhouetteRenderer(
+  private val context: Context,
+  private val segmenterKind: String,
+  private val prompts: List<PointF> = emptyList(),
+  /** Stop after this many frames (0 = all) — for quick benchmarks. */
+  private val maxFrames: Int = 0,
+  private val cpuGraphs: Set<String> = emptySet(),
+  private val refine: String = "guided",
+  private val fp32Graphs: Set<String> = emptySet(),
+) {
   fun render(src: File, out: File, onProgress: (Double) -> Unit): SilhouetteStats {
     val retriever = MediaMetadataRetriever()
     retriever.setDataSource(src.absolutePath)
     try {
-      val frameCount = retriever.meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)
+      val totalFrames = retriever.meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)
+      val frameCount = if (maxFrames > 0) minOf(maxFrames, totalFrames) else totalFrames
       val durationMs = retriever.meta(MediaMetadataRetriever.METADATA_KEY_DURATION)
       val rotation = retriever.meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
       val rawWidth = retriever.meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
       require(frameCount > 0 && durationMs > 0) { "No video frames in transcoded file" }
-      val fps = frameCount * 1000.0 / durationMs
+      val fps = totalFrames * 1000.0 / durationMs
 
       val params = MediaMetadataRetriever.BitmapParams().apply {
         preferredConfig = Bitmap.Config.ARGB_8888
       }
-      val segmenter = createSegmenter(context, segmenterKind)
+      val segmenter = createSegmenter(context, segmenterKind, prompts, cpuGraphs, refine, fp32Graphs)
       val structured = segmenter is CategorySegmenter
       var encoder: SurfaceEncoder? = null
       var cleanup: MaskCleanup? = null
@@ -85,7 +97,10 @@ class SilhouetteRenderer(private val context: Context, private val segmenterKind
             if (encoder == null) {
               outW = frame.width and 1.inv()
               outH = frame.height and 1.inv()
-              val scale = WORK_SHORT_SIDE.toDouble() / minOf(frame.width, frame.height)
+              // EdgeTAM resizes its input to 1024x1024 whatever it gets, so it can draw at the
+              // output resolution for free; the per-frame segmenters work smaller for speed.
+              val workShort = if (segmenter is EdgeTamSegmenter) minOf(frame.width, frame.height) else WORK_SHORT_SIDE
+              val scale = workShort.toDouble() / minOf(frame.width, frame.height)
               workW = (frame.width * scale).roundToInt()
               workH = (frame.height * scale).roundToInt()
               // Frames come back either already rotated or raw; only re-apply the
@@ -144,6 +159,7 @@ class SilhouetteRenderer(private val context: Context, private val segmenterKind
         avgCleanupMs = cleanupNs / 1_000_000.0 / frameCount,
         avgEncodeMs = encodeNs / 1_000_000.0 / frameCount,
         framesByPeopleFound = histogram,
+        extra = segmenter.extraStats,
       )
     } finally {
       retriever.release()

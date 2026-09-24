@@ -1,12 +1,26 @@
 export type DeidentifyMode = "passthrough" | "silhouette";
-export type DeidentifySegmenter = "pose" | "multiclass" | "deeplab";
+export type DeidentifySegmenter = "pose" | "multiclass" | "deeplab" | "edgetam";
 
 export type DeidentifyOptions = {
+  /** Trim window in the source, in seconds. `endSeconds` defaults to the end of the clip. */
+  startSeconds?: number;
+  endSeconds?: number;
+  /** Hard cap on the processed length, applied after the window. */
   maxSeconds?: number;
   /** Target short side in pixels. */
   height?: number;
   mode?: DeidentifyMode;
   segmenter?: DeidentifySegmenter;
+  /** EdgeTAM: one normalised [x, y] point per dancer on the first frame. */
+  prompts?: number[][];
+  /** Stop after this many frames (0 = whole clip) — for benchmarks. */
+  maxFrames?: number;
+  /** EdgeTAM graphs to force onto the CPU — for diagnosing GPU numerics. */
+  cpuGraphs?: string[];
+  /** EdgeTAM mask upscaling: "bilinear", or "guided" to snap edges to the frame's contours. */
+  refine?: "bilinear" | "guided";
+  /** EdgeTAM graphs computed in fp32 on the GPU; default none. */
+  fp32Graphs?: string[];
 };
 
 export type DeidentifyResult = {

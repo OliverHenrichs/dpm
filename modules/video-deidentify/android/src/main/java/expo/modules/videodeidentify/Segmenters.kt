@@ -23,6 +23,9 @@ interface Segmenter : AutoCloseable {
   val name: String
   val delegate: String
 
+  /** Segmenter-specific numbers for the result, e.g. per-graph timing. */
+  val extraStats: Map<String, Any> get() = emptyMap()
+
   /** Fills [labels] (width * height of [frame]) and returns how many people were found. */
   fun segment(frame: Bitmap, timestampMs: Long, labels: ByteArray): Int
 }
@@ -44,7 +47,15 @@ private fun <T> createWithFallback(build: (Delegate) -> T): Pair<T, String> =
     build(Delegate.CPU) to "cpu (gpu failed: ${e.message?.take(120)})"
   }
 
-fun createSegmenter(context: Context, kind: String): Segmenter = when (kind) {
+fun createSegmenter(
+  context: Context,
+  kind: String,
+  prompts: List<android.graphics.PointF> = emptyList(),
+  cpuGraphs: Set<String> = emptySet(),
+  refine: String = "guided",
+  fp32Graphs: Set<String> = emptySet(),
+): Segmenter = when (kind) {
+  "edgetam" -> EdgeTamSegmenter(context, prompts, cpuGraphs, refine, fp32Graphs)
   "multiclass" -> CategorySegmenter.multiclass(context)
   "deeplab" -> CategorySegmenter.deeplab(context)
   else -> PoseSegmenter(context)

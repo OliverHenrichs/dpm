@@ -1,42 +1,54 @@
-// SPIKE (L3, branch spike/l3-silhouette) — throwaway dev-only UI, not for merge.
-// Strings are deliberately untranslated.
-import React, { useEffect, useState } from "react";
+// SPIKE (L3, branch spike/l3-silhouette) — dev-only entry point, not for merge.
+// The real entry point will be a pattern's video; this only hosts the trim panel meanwhile.
+import React, { useState } from "react";
 import { Button, StyleSheet, Text, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import {
-  DeidentifyMode,
-  DeidentifyResult,
-  DeidentifySegmenter,
-  VideoDeidentifyModule,
-} from "@/modules/video-deidentify";
+import { useTranslation } from "react-i18next";
 import { VideoItem } from "@/src/common/components/VideoItem";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import DeidentifyTrimPanel from "@/src/deidentify/components/DeidentifyTrimPanel";
+import { DeidentifyOutcome } from "@/src/deidentify/providers/DeidentifyProvider";
+import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
+import { availableProviders } from "@/src/deidentify/providers/registry";
+import {
+  setTrackingPlacement,
+  setTrackingRefine,
+} from "@/src/deidentify/providers/onDeviceTracking";
 
-const RUNS: {
+/** Where and how precisely the EdgeTAM graphs run, for comparing on the same clip. */
+const TRACKING = ["memcond", "decode", "memorize"];
+const GRAPH_PLACEMENTS: {
   label: string;
-  mode: DeidentifyMode;
-  segmenter?: DeidentifySegmenter;
+  cpuGraphs: string[];
+  fp32Graphs: string[];
 }[] = [
-  { label: "Transcode", mode: "passthrough" },
-  { label: "Multiclass", mode: "silhouette", segmenter: "multiclass" },
-  { label: "DeepLab", mode: "silhouette", segmenter: "deeplab" },
+  { label: "GPU fp16", cpuGraphs: [], fp32Graphs: [] },
+  { label: "GPU fp32 tracking", cpuGraphs: [], fp32Graphs: TRACKING },
+  { label: "All CPU", cpuGraphs: ["encode", ...TRACKING], fp32Graphs: [] },
 ];
 
 const DeidentifySpikePanel: React.FC = () => {
+  const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
   const [source, setSource] = useState<string | null>(null);
-  const [progress, setProgress] = useState<string>("");
-  const [result, setResult] = useState<DeidentifyResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<DeidentifyOutcome | null>(null);
+  const [placement, setPlacement] = useState(0);
+  const [refine, setRefine] = useState<"bilinear" | "guided">("guided");
 
-  useEffect(() => {
-    const sub = VideoDeidentifyModule?.addListener("onProgress", (e) =>
-      setProgress(`${e.stage} ${Math.round(e.progress * 100)}%`),
+  const chooseRefine = (r: "bilinear" | "guided") => {
+    setRefine(r);
+    setTrackingRefine(r);
+  };
+
+  const choosePlacement = (i: number) => {
+    setPlacement(i);
+    setTrackingPlacement(
+      GRAPH_PLACEMENTS[i].cpuGraphs,
+      GRAPH_PLACEMENTS[i].fp32Graphs,
     );
-    return () => sub?.remove();
-  }, []);
+  };
 
   const pick = async () => {
     const picked = await ImagePicker.launchImageLibraryAsync({
@@ -48,52 +60,65 @@ const DeidentifySpikePanel: React.FC = () => {
     }
   };
 
-  const run = async (mode: DeidentifyMode, segmenter?: DeidentifySegmenter) => {
-    if (!source || !VideoDeidentifyModule) return;
-    setResult(null);
-    setError(null);
-    try {
-      const r = await VideoDeidentifyModule.deidentify(source, {
-        maxSeconds: 30,
-        height: 720,
-        mode,
-        segmenter,
-      });
-      console.log("[deidentify]", JSON.stringify(r));
-      setResult(r);
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setProgress("");
+  const onDone = (outcome: DeidentifyOutcome) => {
+    // logcat cuts lines at ~4000 characters and the per-frame diagnostics are longer, so the
+    // stats go out in numbered chunks that `grep '\[deidentify\]'` can reassemble.
+    const json = JSON.stringify(outcome);
+    const size = 3000;
+    const parts = Math.ceil(json.length / size);
+    for (let i = 0; i < parts; i++) {
+      console.log(
+        `[deidentify] ${i + 1}/${parts} ${json.slice(i * size, (i + 1) * size)}`,
+      );
     }
+    setResult(outcome);
   };
 
-  const textColor = { color: palette[PaletteColor.PrimaryText] };
   return (
     <View style={styles.panel}>
-      <Text style={[styles.title, textColor]}>Spike: de-identify video</Text>
-      <Button
-        title={source ? "Pick another video" : "Pick video"}
-        onPress={pick}
-      />
-      {source && (
-        <View style={styles.row}>
-          {RUNS.map((r) => (
-            <Button
-              key={r.label}
-              title={r.label}
-              disabled={!!progress}
-              onPress={() => run(r.mode, r.segmenter)}
-            />
-          ))}
-        </View>
+      <Text
+        style={[styles.title, { color: palette[PaletteColor.PrimaryText] }]}
+      >
+        {t("deidentifyTitle")}
+      </Text>
+      <Button title={t("deidentifyPickVideo")} onPress={pick} />
+      <View style={styles.row}>
+        {GRAPH_PLACEMENTS.map((g, i) => (
+          <Button
+            key={g.label}
+            title={g.label}
+            disabled={i === placement}
+            onPress={() => choosePlacement(i)}
+          />
+        ))}
+      </View>
+      <View style={styles.row}>
+        {(["bilinear", "guided"] as const).map((r) => (
+          <Button
+            key={r}
+            title={r === "guided" ? "Edges: guided" : "Edges: bilinear"}
+            disabled={r === refine}
+            onPress={() => chooseRefine(r)}
+          />
+        ))}
+      </View>
+      {source && !result && (
+        <DeidentifyTrimPanel
+          key={source}
+          sourceUri={source}
+          providers={availableProviders(ALL_PROVIDERS)}
+          onDone={onDone}
+        />
       )}
-      {!!progress && <Text style={textColor}>{progress}</Text>}
-      {error && <Text style={{ color: "red" }}>{error}</Text>}
       {result && (
         <>
-          <Text style={[styles.stats, textColor]}>
-            {JSON.stringify({ ...result, uri: undefined }, null, 1)}
+          <Text
+            style={[
+              styles.stats,
+              { color: palette[PaletteColor.SecondaryText] },
+            ]}
+          >
+            {JSON.stringify(result.stats, null, 1)}
           </Text>
           <VideoItem
             key={result.uri}
@@ -109,8 +134,8 @@ const DeidentifySpikePanel: React.FC = () => {
 const styles = StyleSheet.create({
   panel: { gap: 8, marginBottom: 24 },
   title: { fontWeight: "bold", fontSize: 16 },
-  row: { flexDirection: "row", gap: 8 },
   stats: { fontFamily: "monospace", fontSize: 11 },
+  row: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
 });
 
 export default DeidentifySpikePanel;
