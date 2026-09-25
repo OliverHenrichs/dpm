@@ -31,7 +31,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
-| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — detect-then-track chosen, Android port started | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — on-device tracking works on the Pixel; speed and integration open | [L3](#l3--ai-anonymised-comic-style-videos) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -70,7 +70,7 @@ Phase 0  F1 ◐ ─────────────────────�
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
-Phase 4  L3 spike ✅ → MediaPipe no-go; RF-DETR + EdgeTAM chosen, Android port in progress
+Phase 4  L3: EdgeTAM + RF-DETR re-anchoring work on device; speed and integration open
 ```
 
 **Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
@@ -1409,6 +1409,70 @@ scratch folder. They are not in the repo; recreate them from this description if
 - A provider seam, so an external service (for example Viggle) can sit beside the
   on-device pipeline. Any external provider brings back the consent, cost and store-policy
   requirements described above.
+
+#### On-device port (2026-09-24/25): works on a Pixel 10a
+
+Branch `spike/l3-silhouette`, commits `1c8ec35`, `c1352a7` and `c4a60f3`.
+
+**Pipeline:**
+1. The user taps both dancers on the first frame of a trim window of at most 30 s.
+2. EdgeTAM tracks them on the GPU.
+3. While a dancer is lost at a crossing, RF-DETR-Seg re-anchors her (CPU, occasional).
+4. Output is a two-colour 720p silhouette, drawn only from masks (fail-closed), with
+   guided-filter edges and ±2-frame smoothing.
+
+On clip 1's crossing, the phone's dancer mask area now follows the desktop PyTorch
+reference closely.
+
+**Where the models come from:**
+- EdgeTAM's LiteRT graphs are converted with an adapted copy of john-rocky/LiteRT-Models'
+  script (MIT), in `modules/video-deidentify/scripts/convert_edgetam_video.py`. The port's
+  published model files are no longer public.
+- RF-DETR is exported with `rfdetr`'s own TFLite export (`scripts/export_rfdetr.py`).
+- Both are gitignored.
+
+**Pitfalls found.** Each looked plausible and was wrong until it was *measured*. The measuring
+tools:
+- The phone logs per-frame mask areas, in chunks because logcat truncates at ~4000 chars.
+- A Python replica of the phone pipeline on the same `.tflite` files reproduces a run from its
+  taps and its kept transcode.
+
+| Symptom on the phone | Cause | Fix |
+|---|---|---|
+| Correct first frame, then noise | After the transformers-5 rope fix, memcond had ops with only constant inputs, which the GPU delegate computes wrongly without rejecting them | Bake the finished rope tables in the conversion |
+| A hidden dancer never came back; the other track grew over both | The port wrote hard 0/1 masks into memory on every frame; SAM 2 writes soft masks on tracking frames | Soft memory masks |
+| After a crossing the dancer came back unsteadily | The front dancer's track learned the hidden one's body | SAM 2's `non_overlap_masks_for_mem_enc` |
+| She shrank early at the crossing | The image encoder in fp16 on the GPU. The phone's encoder input matched the desktop's (mean diff 0.6/255), so it was arithmetic, not pixels | Encoder in fp32 (+~0.1 s/frame). fp32 for the tracking graphs changed nothing (+0.7 s/frame) |
+| She still came back ~0.6 s late | Re-finding her from memory alone is slow and chaotic at a crossing; tiny numeric differences decided it | Re-anchoring with RF-DETR (see below) |
+| Limbs blinked near the threshold | Frame-to-frame jitter | ±2-frame weighted average when drawing (memory untouched) |
+
+Also tried, and without effect: the model's "occlusion" embedding (absent in this checkpoint),
+keeping only good frames in memory (the dancer is never declared absent once the fixes above
+are in), and a mask start instead of a tap (~14% closer to the reference on the desktop; not
+worth it on its own).
+
+**Re-anchoring (detect then track):**
+- A dancer counts as *weak* while her mask is under 50% of her usual area.
+- While she's weak, every 3 frames, a person near her last clear position, at least 40% of her
+  size and less than 30% covered by the other dancer is handed to EdgeTAM as a correction.
+  This is SAM 2's `add_new_mask` on a tracked frame, which makes it a conditioning memory.
+- On clip 1 it fired exactly twice: at the early drop and at the re-emergence.
+
+**Cost on a Pixel 10a:** ~1.5 s per frame, so ~22 min for 30 s. Of that:
+- ~0.7 s is the models: encode 0.19, memcond 0.31, decode 0.10, memorize 0.11
+- **~0.75 s is Kotlin glue**: edge refinement, resampling, memory assembly
+- RF-DETR costs ~2.9 s per call, but only during weak phases (6 calls in 190 frames)
+
+The debug APK carries every model tried; a release needs only EdgeTAM plus RF-DETR,
+about 125 MB of fp16 weights.
+
+**Open:**
+- Speed: the Kotlin glue is the first target. Tracking at 15 fps is a second lever.
+- Validate on clips 2–4, not just clip 1.
+- Move the feature from the dev panel into a pattern's videos (a generated video reference with
+  its badge).
+- Remove the spike debug aids: the dev panel, the kept transcode and the encoder dump.
+- The consent UI and a real remote provider.
 
 ---
 
