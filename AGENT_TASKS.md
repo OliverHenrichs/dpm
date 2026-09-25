@@ -31,7 +31,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
-| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — on-device tracking works on the Pixel; speed and integration open | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — works on the Pixel (tracking, arms, ~12 min per 30 s); integration open | [L3](#l3--ai-anonymised-comic-style-videos) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -70,7 +70,7 @@ Phase 0  F1 ◐ ─────────────────────�
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
-Phase 4  L3: EdgeTAM + RF-DETR re-anchoring work on device; speed and integration open
+Phase 4  L3: works on device (EdgeTAM + RF-DETR + pose, ~12 min per 30 s); integration open
 ```
 
 **Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
@@ -1466,12 +1466,73 @@ worth it on its own).
 The debug APK carries every model tried; a release needs only EdgeTAM plus RF-DETR,
 about 125 MB of fp16 weights.
 
+This section's cost and open items are superseded by the next section.
+
+#### Arms and speed (2026-09-25/26)
+
+Commits `cfb6446` to `f4fdbb7`.
+
+**Arms.** A silhouette cannot show an arm in front of the same body: it's the same colour. At
+overlaps, the masks cannot say who is in front, because EdgeTAM "completes" a body behind an
+occluding arm, so both masks claim the arm. What was tried, and what stayed:
+
+| Tried | Result |
+|---|---|
+| "Whoever moves onto the other's area is in front" | Removed: fails when a dancer passes *behind* |
+| Outlines per dancer, pale colours, 3 px, over both fills | Kept: shapes stay readable whoever wins the fill |
+| Re-anchoring corrections as permanent conditioning frames | Changed: a correction whose 96×96 RF-DETR mask held a sliver of the partner made the leader swallow the follower's arm for the rest of the clip. Corrections now expire after 15 frames and exclude the partner's current pixels |
+| Guided edge filter replacing the mask | Changed: it averaged thin limbs (a raised forearm) away. It may now only add to the plain mask |
+| **Pose skeleton per dancer** | Kept; see below |
+
+How the pose skeleton works (`PoseSkeletons.kt`):
+- MediaPipe PoseLandmarker, already in the app, runs one VIDEO-mode tracker per dancer.
+- Each dancer's input is a cut-out from her tracked mask with 25% margin, with pixels only the
+  partner claims greyed out. Without the greying, the follower's skeleton jumped onto the leader
+  in closed position.
+- The previous frame's arms arbitrate where masks overlap: never grey near her own arms, always
+  grey near the partner's. Without this, the leader's model took her arm as his second.
+- Drawing: along every clearly visible upper arm or forearm, an arm-width band (derived from
+  shoulder width) is filled in the dancer's colour and outlined. Over the partner the arm shows
+  in front; over the own torso its outline does. Bones and wrist/ankle dots are drawn in the
+  outline colour, with joints averaged over ±2 frames like the masks.
+
+On clip 1 the follower's arm to the joined hands now shows over the leader. At the moment her
+hand is on his shoulder, neither is visible in the original either, so nothing is drawn there,
+which is correct.
+
+**Speed on a Pixel 10a** (ms per frame, clip 1):
+
+| Stage | Before | Loops fixed | + worker thread | + 15 fps |
+|---|---|---|---|---|
+| Models | 764 | 722 | 724 | per tracked frame |
+| Kotlin glue | 385 | 150 | 154 | ½ of frames |
+| Drawing | 831 | 293 | 260 (hidden) | hidden |
+| Pose, 2 dancers | 184 | 83 | 87 | 104–152 |
+| **Total per frame** | **2,080** | **1,244** | **1,077** | **~640** |
+| 30 s clip | ~31 min | ~21 min | ~18 min | **~12 min** |
+
+What the columns changed:
+- **Loops fixed:** `parallelFor` over rows and columns, a sigmoid lookup table, ImageNet
+  normalisation by lookup table, precomputed bilinear resampling, the guided filter in its fast
+  form (coefficients at half resolution), outlines by separable erosion, arm bands limited to
+  their bounding box, and reused buffers.
+- **Worker thread:** `SilhouetteDrawer` draws frame *n* on a worker thread while the GPU tracks
+  frame *n+1*. Each job gets a snapshot of its window and its own buffers; at most 3 are in
+  flight.
+- **15 fps:** `trackEvery = 2`, now the default. The frames between two tracked frames get
+  linearly interpolated logits, and EdgeTAM's memory counts tracked frames as consecutive. The
+  user saw the same quality on clips 1 and 4.
+
+Further levers, each smaller than those above:
+- pose on every second frame, with joints interpolated
+- converting the tracking graphs with batch 2, so both dancers go in one call
+
 **Open:**
-- Speed: the Kotlin glue is the first target. Tracking at 15 fps is a second lever.
-- Validate on clips 2–4, not just clip 1.
-- Move the feature from the dev panel into a pattern's videos (a generated video reference with
-  its badge).
-- Remove the spike debug aids: the dev panel, the kept transcode and the encoder dump.
+- A final run of all four clips with these defaults.
+- Move the feature from the dev panel into a pattern's videos, as a generated video reference
+  with its badge.
+- Remove the spike's debug aids: the dev panel with the GPU/CPU, edges and tracking toggles, the
+  kept transcode, the encoder dump, and the chunked diagnostics in the log.
 - The consent UI and a real remote provider.
 
 ---
