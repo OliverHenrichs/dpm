@@ -15,7 +15,8 @@ import kotlin.math.exp
  *  - "bilinear": the logits are interpolated and thresholded at the frame's resolution, as SAM 2
  *    itself does (nearest-neighbour sampling gave 2–3 px staircases);
  *  - "guided": additionally a guided filter (He et al.) with the frame's luminance as guide pulls
- *    the edges onto the real contours — fingers, hems, gaps between legs.
+ *    the edges onto the real contours — fingers, hems, gaps between legs. It can only add to the
+ *    plain mask, never remove from it, so thin limbs survive.
  * The frame only steers where the mask boundary lies; the output is still drawn from the mask
  * alone, so the fail-closed guarantee holds.
  */
@@ -68,6 +69,7 @@ class EdgeTamSegmenter(
   private var h = 0
   private lateinit var score: Array<FloatArray>
   private lateinit var filter: GuidedFilter
+  private var plain = FloatArray(0)
 
   /** A tracked frame waiting to be drawn: its masks and (for guided edges) its guide image. */
   private class Pending(val masks: List<FloatArray>, val guide: FloatArray?)
@@ -144,11 +146,43 @@ class EdgeTamSegmenter(
         best = cand
         bestDist = dist
       }
-      val chosen = best ?: return@forEachIndexed
+      // Never hand her the pixels her partner currently claims: RF-DETR's person masks are
+      // coarse (96x96) and around joined hands can include a sliver of the partner.
+      val chosen = best?.copyOf() ?: return@forEachIndexed
+      for (j in tracked.indices) if (j != i) for (p in 0 until MASK * MASK) if (tracked[j][p] > 0f) chosen[p] = false
+      if (chosen.count { it } < MIN_SIZE * ref) return@forEachIndexed
       out[i] = FloatArray(MASK * MASK) { if (chosen[it]) 10f else -10f }
       corrections += listOf(frameIndex, i, area, chosen.count { it })
     }
     return out
+  }
+
+  /**
+   * Each dancer's whole outline, drawn over both fills in a light shade of her colour (label
+   * [OUTLINE_BASE] + dancer index). An arm in front of the partner then shows as an outlined arm
+   * over the partner's body whichever mask won the fill there.
+   */
+  private fun drawOutlines(labels: ByteArray, objects: Int) {
+    for (i in 0 until objects) {
+      val s = score[i]
+      val outline = (OUTLINE_BASE + i).toByte()
+      for (y in 0 until h) {
+        for (x in 0 until w) {
+          val p = y * w + x
+          if (s[p] <= 0f) continue
+          var edge = false
+          for (d in 1..OUTLINE_WIDTH) {
+            if ((x - d < 0 || s[p - d] <= 0f) || (x + d >= w || s[p + d] <= 0f) ||
+              (y - d < 0 || s[p - d * w] <= 0f) || (y + d >= h || s[p + d * w] <= 0f)
+            ) {
+              edge = true
+              break
+            }
+          }
+          if (edge) labels[p] = outline
+        }
+      }
+    }
   }
 
   /** All people in [frame] as 256x256 masks over the frame. */
@@ -204,14 +238,22 @@ class EdgeTamSegmenter(
     smoothed.forEachIndexed { i, mask ->
       upsample(mask, score[i])
       if (guide != null) {
+        // The filter may only add, never remove: it averaged thin limbs (a raised forearm, a
+        // few px wide) with the background below the threshold and erased them. So a pixel is
+        // body if the guided result or the plain mask says so — the filter still adds detail.
         val s = score[i]
         for (p in s.indices) s[p] = sigmoid(s[p])
+        if (plain.size != s.size) plain = FloatArray(s.size)
+        System.arraycopy(s, 0, plain, 0, s.size)
         filter.apply(s)
-        for (p in s.indices) s[p] -= 0.5f
+        for (p in s.indices) s[p] = maxOf(s[p], plain[p]) - 0.5f
       }
     }
 
-    // Where two dancers overlap, the stronger score wins.
+    // Fill: where two dancers overlap, the stronger mask wins. The masks cannot say who is in
+    // front — EdgeTAM "completes" a body behind an occluding arm, so both claim the arm, and a
+    // "whoever moves onto the other's area is in front" rule failed when a dancer passed behind.
+    // So the fill picks one, and outlines (below) keep both shapes readable.
     val seen = BooleanArray(objects)
     val drawnPx = IntArray(objects)
     for (p in 0 until w * h) {
@@ -231,6 +273,7 @@ class EdgeTamSegmenter(
       }
     }
     drawnPx.forEachIndexed { i, n -> drawnArea[i].add(n) }
+    drawOutlines(labels, objects)
 
     drawn++
     // Drop frames no later window needs.
@@ -279,6 +322,9 @@ class EdgeTamSegmenter(
     /** SPIKE: save the encoder's input for a few frames, to compare with a desktop replay. */
     var DUMP_ENCODER_INPUT = false
     private const val MASK = 256
+    /** Outline width in output pixels, and the label of dancer 0's outline (dancer i: +i). */
+    private const val OUTLINE_WIDTH = 3
+    const val OUTLINE_BASE = 3
     /** Frames either side averaged into each drawn frame. */
     private const val SMOOTH_RADIUS = 2
     /** Re-anchoring: "weak" below this share of the usual area; checked every n frames. */

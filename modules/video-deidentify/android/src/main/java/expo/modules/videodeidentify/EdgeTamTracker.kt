@@ -289,9 +289,13 @@ class EdgeTamTracker(
     val condFrame = bank[0].frame
     val real = ArrayList<Pair<Spatial, Int>>()
     real.add(bank[0] to 6)
-    // Corrections are conditioning frames too (temporal slot 6, as SAM 2 gives cond frames).
-    state.conds.takeLast(MAX_CORRECTIONS).forEach { real.add(it to 6) }
-    val corrected = state.conds.map { it.frame }.toSet()
+    // Corrections are conditioning frames too (temporal slot 6, as SAM 2 gives cond frames), but
+    // only for CORRECTION_TTL frames: long enough to bring a dancer back. Kept for good, a
+    // correction whose person mask included a sliver of the partner (joined hands at 96x96) kept
+    // claiming that area for the rest of the clip — the follower's arm vanished into the leader.
+    val live = state.conds.filter { fi - it.frame <= CORRECTION_TTL }.takeLast(MAX_CORRECTIONS)
+    live.forEach { real.add(it to 6) }
+    val corrected = live.map { it.frame }.toSet()
     for (off in NMM - 1 downTo 1) {
       if (real.size >= NMM) break
       val pf = fi - off
@@ -528,8 +532,9 @@ class EdgeTamTracker(
   }
 
   companion object {
-    /** Conditioning memories kept from corrections, besides the first frame. */
+    /** Conditioning memories kept from corrections, besides the first frame, and for how long. */
     private const val MAX_CORRECTIONS = 2
+    private const val CORRECTION_TTL = 15
     /** Bump whenever the .tflite assets change. 2: memcond without constant-only ops. */
     private const val MODEL_VERSION = 2
     private const val SIZE = 1024

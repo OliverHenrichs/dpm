@@ -212,8 +212,18 @@ class SilhouetteRenderer(
     private const val BACKGROUND = 0xFF1E1E24.toInt()
     private const val CONTOUR = 0xFF451A03.toInt()
 
-    /** Index = pose slot: background, dancer 1, dancer 2. Opaque ARGB. */
-    private val SLOT_PALETTE = intArrayOf(BACKGROUND, 0xFFF59E0B.toInt(), 0xFF14B8A6.toInt())
+    /**
+     * Index = label: background, dancer 1, dancer 2, then their outlines (EdgeTamSegmenter
+     * OUTLINE_BASE + dancer) in light shades — dark shades were barely visible on the phone,
+     * against both the dark background and the partner's fill. Opaque ARGB.
+     */
+    private val SLOT_PALETTE = intArrayOf(
+      BACKGROUND,
+      0xFFF59E0B.toInt(), // dancer 1, amber
+      0xFF14B8A6.toInt(), // dancer 2, teal
+      0xFFFDE68A.toInt(), // dancer 1 outline, pale amber
+      0xFF99F6E4.toInt(), // dancer 2 outline, pale teal
+    )
 
     /** Index = MulticlassCategory. */
     private val CATEGORY_PALETTE = intArrayOf(
