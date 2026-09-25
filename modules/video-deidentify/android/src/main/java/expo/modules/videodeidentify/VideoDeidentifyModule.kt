@@ -39,9 +39,16 @@ class DeidentifyOptions : Record {
   /** EdgeTAM mask upscaling: "bilinear" or "guided" (edges snapped to the frame's contours). */
   @Field val refine: String = "guided"
 
-  /** EdgeTAM graphs to compute in fp32 on the GPU (default: none — fp32 tracking cost
-   *  +0.7 s/frame on a Pixel 10a and did not change the output). */
-  @Field val fp32Graphs: List<String> = emptyList()
+  /**
+   * EdgeTAM graphs to compute in fp32 on the GPU. Default: the image encoder. With it in fp16
+   * the phone's features drifted from the desktop's and a dancer shrank early at a crossing
+   * (clip 1: 614 vs ~1500 px at frame 114); fp32 there brought it to ~1400. fp32 for the
+   * tracking graphs made no difference and cost +0.7 s/frame.
+   */
+  @Field val fp32Graphs: List<String> = listOf("encode")
+
+  /** Keep the transcoded intermediate (source footage!) for replaying on a desktop — debug only. */
+  @Field val keepTranscoded: Boolean = false
 }
 
 class DeidentifyException(message: String, cause: Throwable? = null) :
@@ -93,6 +100,7 @@ class VideoDeidentifyModule : Module() {
       }
 
       val silhouetteFile = File(outDir, "$stamp-silhouette.mp4")
+      EdgeTamSegmenter.DUMP_ENCODER_INPUT = options.keepTranscoded
       val stats = try {
         withContext(Dispatchers.Default) {
           val points = options.prompts.map { android.graphics.PointF(it[0].toFloat(), it[1].toFloat()) }
@@ -107,7 +115,7 @@ class VideoDeidentifyModule : Module() {
       } catch (e: Exception) {
         throw DeidentifyException("Silhouette render failed: ${e.message}", e)
       } finally {
-        transcoded.delete()
+        if (!options.keepTranscoded) transcoded.delete()
       }
       val totalMs = (System.nanoTime() - started) / 1_000_000
 
@@ -128,6 +136,7 @@ class VideoDeidentifyModule : Module() {
         "avgCleanupMs" to stats.avgCleanupMs,
         "avgEncodeMs" to stats.avgEncodeMs,
         "framesByPeopleFound" to stats.framesByPeopleFound.mapKeys { it.key.toString() },
+        "transcodedFile" to if (options.keepTranscoded) transcoded.name else "",
       ) + stats.extra
     }
   }

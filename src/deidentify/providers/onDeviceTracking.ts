@@ -14,7 +14,7 @@ const trackingDebug: {
   refine: "bilinear" | "guided";
 } = {
   cpuGraphs: [],
-  fp32Graphs: [],
+  fp32Graphs: ["encode"],
   refine: "guided",
 };
 
@@ -66,6 +66,8 @@ export const onDeviceTracking: DeidentifyProvider = {
           cpuGraphs: trackingDebug.cpuGraphs,
           fp32Graphs: trackingDebug.fp32Graphs,
           refine: trackingDebug.refine,
+          // SPIKE: kept so a run can be replayed on the desktop; remove before this ships.
+          keepTranscoded: true,
         },
       );
       return { uri, stats };

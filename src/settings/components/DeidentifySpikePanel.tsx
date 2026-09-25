@@ -23,8 +23,10 @@ const GRAPH_PLACEMENTS: {
   cpuGraphs: string[];
   fp32Graphs: string[];
 }[] = [
+  { label: "GPU fp32 encoder", cpuGraphs: [], fp32Graphs: ["encode"] },
   { label: "GPU fp16", cpuGraphs: [], fp32Graphs: [] },
   { label: "GPU fp32 tracking", cpuGraphs: [], fp32Graphs: TRACKING },
+  { label: "GPU fp32 all", cpuGraphs: [], fp32Graphs: ["encode", ...TRACKING] },
   { label: "All CPU", cpuGraphs: ["encode", ...TRACKING], fp32Graphs: [] },
 ];
 

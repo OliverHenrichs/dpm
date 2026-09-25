@@ -27,7 +27,11 @@ class EdgeTamSegmenter(
   fp32Graphs: Set<String> = emptySet(),
 ) : Segmenter {
   override val name = "edgetam"
-  private val tracker = EdgeTamTracker(context, cpuGraphs, fp32Graphs)
+  private val tracker = EdgeTamTracker(context, cpuGraphs, fp32Graphs).also {
+    if (DUMP_ENCODER_INPUT) {
+      it.dumpDir = java.io.File(context.cacheDir, "deidentify/debug").apply { mkdirs() }
+    }
+  }
   override val delegate get() = tracker.accelerator
   override val extraStats: Map<String, Any>
     get() = tracker.timing.toMap() + mapOf(
@@ -48,9 +52,21 @@ class EdgeTamSegmenter(
   private var w = 0
   private var h = 0
   private lateinit var score: Array<FloatArray>
-  private lateinit var guide: FloatArray
   private lateinit var filter: GuidedFilter
 
+  /** A tracked frame waiting to be drawn: its masks and (for guided edges) its guide image. */
+  private class Pending(val masks: List<FloatArray>, val guide: FloatArray?)
+
+  private val pending = ArrayDeque<Pending>()
+  private var received = 0
+  private var drawn = 0
+
+  /**
+   * Tracks [frame] and draws the frame [SMOOTH_RADIUS] behind it: each frame's masks are a
+   * weighted average of its neighbours' (weights 1-2-3-2-1). Masks near the threshold flickered
+   * frame to frame — arms and head of a dancer re-emerging after a crossing blinked in and out —
+   * and the clip is processed offline, so the drawing can look ahead. Memory is not affected.
+   */
   override fun segment(frame: Bitmap, timestampMs: Long, labels: ByteArray): Int {
     val masks = if (frameIndex == 0) tracker.start(frame, prompts) else tracker.track(frameIndex, frame)
     frameIndex++
@@ -61,16 +77,46 @@ class EdgeTamSegmenter(
       w = frame.width
       h = frame.height
       score = Array(masks.size) { FloatArray(w * h) }
-      guide = FloatArray(w * h)
       filter = GuidedFilter(w, h, RADIUS, EPS)
     }
-    if (refine == "guided") {
-      luminance(frame, guide)
-      filter.setGuide(guide)
+    val guide = if (refine == "guided") FloatArray(w * h).also { luminance(frame, it) } else null
+    pending.addLast(Pending(masks.map { it.copyOf() }, guide))
+    received++
+    val found = if (received - drawn > SMOOTH_RADIUS) draw(labels) else -1
+    refineNs += System.nanoTime() - t0
+    return found
+  }
+
+  override fun drain(labels: ByteArray): Int {
+    if (drawn >= received) return -1
+    val t0 = System.nanoTime()
+    val found = draw(labels)
+    refineNs += System.nanoTime() - t0
+    return found
+  }
+
+  /** Draws frame [drawn] from the frames around it that are still buffered. */
+  private fun draw(labels: ByteArray): Int {
+    val k = drawn
+    val first = received - pending.size // frame index of pending[0]
+    val objects = pending[k - first].masks.size
+    val smoothed = List(objects) { FloatArray(MASK * MASK) }
+    var weightSum = 0f
+    for (j in maxOf(first, k - SMOOTH_RADIUS)..minOf(received - 1, k + SMOOTH_RADIUS)) {
+      val weight = (SMOOTH_RADIUS + 1 - kotlin.math.abs(j - k)).toFloat()
+      weightSum += weight
+      pending[j - first].masks.forEachIndexed { i, m ->
+        val out = smoothed[i]
+        for (p in out.indices) out[p] += weight * m[p]
+      }
     }
-    masks.forEachIndexed { i, mask ->
+    for (out in smoothed) for (p in out.indices) out[p] /= weightSum
+
+    val guide = pending[k - first].guide
+    if (guide != null) filter.setGuide(guide)
+    smoothed.forEachIndexed { i, mask ->
       upsample(mask, score[i])
-      if (refine == "guided") {
+      if (guide != null) {
         val s = score[i]
         for (p in s.indices) s[p] = sigmoid(s[p])
         filter.apply(s)
@@ -79,12 +125,12 @@ class EdgeTamSegmenter(
     }
 
     // Where two dancers overlap, the stronger score wins.
-    var found = 0
-    val seen = BooleanArray(masks.size)
+    val seen = BooleanArray(objects)
+    val drawnPx = IntArray(objects)
     for (p in 0 until w * h) {
       var best = 0f
       var label = 0
-      for (i in masks.indices) {
+      for (i in 0 until objects) {
         val v = score[i][p]
         if (v > best) {
           best = v
@@ -92,14 +138,17 @@ class EdgeTamSegmenter(
         }
       }
       labels[p] = label.toByte()
-      if (label > 0) seen[label - 1] = true
+      if (label > 0) {
+        seen[label - 1] = true
+        drawnPx[label - 1]++
+      }
     }
-    val drawn = IntArray(masks.size)
-    for (p in 0 until w * h) if (labels[p] > 0) drawn[labels[p] - 1]++
-    drawn.forEachIndexed { i, n -> drawnArea[i].add(n) }
-    seen.forEach { if (it) found++ }
-    refineNs += System.nanoTime() - t0
-    return found
+    drawnPx.forEachIndexed { i, n -> drawnArea[i].add(n) }
+
+    drawn++
+    // Drop frames no later window needs.
+    while (received - pending.size < drawn - SMOOTH_RADIUS) pending.removeFirst()
+    return seen.count { it }
   }
 
   /** Bilinear 256x256 -> w x h (align_corners = false), as SAM 2 resizes its logits. */
@@ -137,7 +186,11 @@ class EdgeTamSegmenter(
   override fun close() = tracker.close()
 
   companion object {
+    /** SPIKE: save the encoder's input for a few frames, to compare with a desktop replay. */
+    var DUMP_ENCODER_INPUT = false
     private const val MASK = 256
+    /** Frames either side averaged into each drawn frame. */
+    private const val SMOOTH_RADIUS = 2
     /** Guided-filter window radius and regularisation, at 720p. */
     private const val RADIUS = 8
     private const val EPS = 1e-3f

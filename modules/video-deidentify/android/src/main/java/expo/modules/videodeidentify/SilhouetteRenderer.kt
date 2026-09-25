@@ -121,7 +121,9 @@ class SilhouetteRenderer(
             small.recycle()
 
             val c = cleanup
-            if (c == null) {
+            if (found < 0) {
+              // the segmenter is looking ahead; this frame's labels come out later
+            } else if (c == null) {
               emit(labels, found)
             } else {
               val t1 = System.nanoTime()
@@ -132,6 +134,11 @@ class SilhouetteRenderer(
             index++
           }
           onProgress(index.toDouble() / frameCount)
+        }
+        while (true) {
+          val found = segmenter.drain(labels)
+          if (found < 0) break
+          emit(labels, found)
         }
         cleanup?.let { c ->
           val t1 = System.nanoTime()

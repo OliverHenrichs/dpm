@@ -64,6 +64,10 @@ class EdgeTamTracker(
   }
 
   val timing = Timing()
+
+  /** Debug: when set, the encoder's exact input image is saved here for [dumpFrames]. */
+  var dumpDir: File? = null
+  private val dumpFrames = setOf(0, 60, 108, 114, 120)
   /** Where each graph actually runs, e.g. {encode=GPU, memcond=CPU}. */
   val accelerators = linkedMapOf<String, String>()
   val accelerator get() = accelerators.entries.joinToString(" ") { "${it.key}=${it.value}" }
@@ -149,7 +153,7 @@ class EdgeTamTracker(
    */
   fun start(frame: Bitmap, points: List<PointF>): List<FloatArray> {
     objects.clear()
-    val (pixRaw, hi0, hi1) = encodeFrame(frame)
+    val (pixRaw, hi0, hi1) = encodeFrame(frame, 0)
     val t0 = System.nanoTime()
     val pixFeat = FloatArray(IE)
     for (c in 0 until 256) {
@@ -172,7 +176,7 @@ class EdgeTamTracker(
 
   /** A later frame: each object is tracked from its own memory. */
   fun track(fi: Int, frame: Bitmap): List<FloatArray> {
-    val (pixRaw, hi0, hi1) = encodeFrame(frame)
+    val (pixRaw, hi0, hi1) = encodeFrame(frame, fi)
     val masks = objects.map { state ->
       val t0 = System.nanoTime()
       val (memory, mpos, keyMask) = assemble(state, fi)
@@ -192,9 +196,14 @@ class EdgeTamTracker(
     return masks.map { it.mask }
   }
 
-  private fun encodeFrame(src: Bitmap): Triple<FloatArray, FloatArray, FloatArray> {
+  private fun encodeFrame(src: Bitmap, fi: Int): Triple<FloatArray, FloatArray, FloatArray> {
     val t0 = System.nanoTime()
     Canvas(canvasBmp).drawBitmap(src, null, RectF(0f, 0f, SIZE.toFloat(), SIZE.toFloat()), paint)
+    dumpDir?.takeIf { fi in dumpFrames }?.let { dir ->
+      File(dir, "encoder-input-$fi.png").outputStream().use {
+        canvasBmp.compress(Bitmap.CompressFormat.PNG, 100, it)
+      }
+    }
     canvasBmp.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
     val plane = SIZE * SIZE
     for (i in pixels.indices) {
@@ -298,7 +307,12 @@ class EdgeTamTracker(
     return Triple(memory, mpos, mask)
   }
 
-  private class Decoded(val state: ObjectState, val mask: FloatArray, val ptr: FloatArray)
+  private class Decoded(
+    val state: ObjectState,
+    val mask: FloatArray,
+    val ptr: FloatArray,
+    val appearing: Boolean,
+  )
 
   /** Decode, pick the best candidate, gate on the object score; returns 256x256 logits. */
   private fun decodeOne(
@@ -328,7 +342,7 @@ class EdgeTamTracker(
     val ptr = FloatArray(256)
     if (appearing) System.arraycopy(out, 196611 + best * 256, ptr, 0, 256)
     else System.arraycopy(noObjptr, 0, ptr, 0, 256)
-    return Decoded(state, mask, ptr)
+    return Decoded(state, mask, ptr, appearing)
   }
 
   /**

@@ -19,8 +19,10 @@ export type DeidentifyOptions = {
   cpuGraphs?: string[];
   /** EdgeTAM mask upscaling: "bilinear", or "guided" to snap edges to the frame's contours. */
   refine?: "bilinear" | "guided";
-  /** EdgeTAM graphs computed in fp32 on the GPU; default none. */
+  /** EdgeTAM graphs computed in fp32 on the GPU; default the image encoder. */
   fp32Graphs?: string[];
+  /** Keep the transcoded intermediate (source footage) for desktop replay — debug only. */
+  keepTranscoded?: boolean;
 };
 
 export type DeidentifyResult = {

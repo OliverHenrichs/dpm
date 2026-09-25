@@ -26,8 +26,15 @@ interface Segmenter : AutoCloseable {
   /** Segmenter-specific numbers for the result, e.g. per-graph timing. */
   val extraStats: Map<String, Any> get() = emptyMap()
 
-  /** Fills [labels] (width * height of [frame]) and returns how many people were found. */
+  /**
+   * Fills [labels] (width * height of [frame]) and returns how many people were found. A
+   * segmenter that looks ahead (see [drain]) may instead return -1, meaning "no frame ready yet";
+   * its labels then lag the input, but come out in order.
+   */
   fun segment(frame: Bitmap, timestampMs: Long, labels: ByteArray): Int
+
+  /** After the last frame: fills [labels] with the next pending frame, or returns -1 when none. */
+  fun drain(labels: ByteArray): Int = -1
 }
 
 private fun loadModel(context: Context, asset: String): ByteBuffer {
