@@ -86,6 +86,7 @@ class EdgeTamTracker(
   private val notAPoint: FloatArray
 
   private val inputFloats = FloatArray(3 * SIZE * SIZE)
+  private val toMemory = Bilinear(256, 256, SIZE, SIZE)
   private val pixels = IntArray(SIZE * SIZE)
   private val canvasBmp = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
   private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
@@ -219,11 +220,16 @@ class EdgeTamTracker(
     }
     canvasBmp.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
     val plane = SIZE * SIZE
-    for (i in pixels.indices) {
-      val p = pixels[i]
-      inputFloats[i] = (((p shr 16) and 0xFF) / 255f - MEAN[0]) / STD[0]
-      inputFloats[plane + i] = (((p shr 8) and 0xFF) / 255f - MEAN[1]) / STD[1]
-      inputFloats[2 * plane + i] = ((p and 0xFF) / 255f - MEAN[2]) / STD[2]
+    val px = pixels
+    val input = inputFloats
+    parallelFor(SIZE) { y ->
+      for (x in 0 until SIZE) {
+        val i = y * SIZE + x
+        val p = px[i]
+        input[i] = NORM_R[(p shr 16) and 0xFF]
+        input[plane + i] = NORM_G[(p shr 8) and 0xFF]
+        input[2 * plane + i] = NORM_B[p and 0xFF]
+      }
     }
     val t1 = System.nanoTime()
     val eo = run1(encode, inputFloats)
@@ -499,28 +505,7 @@ class EdgeTamTracker(
    * into [out]: sigmoid(v)*20-10 when [soft], else (v>0)*20-10.
    */
   private fun maskForMem(mask: FloatArray, out: FloatArray, offset: Int, soft: Boolean) {
-    val scale = 256f / SIZE
-    for (oy in 0 until SIZE) {
-      var sy = (oy + 0.5f) * scale - 0.5f
-      if (sy < 0f) sy = 0f
-      if (sy > 255f) sy = 255f
-      val y0 = sy.toInt()
-      val y1 = if (y0 < 255) y0 + 1 else y0
-      val fy = sy - y0
-      for (ox in 0 until SIZE) {
-        var sx = (ox + 0.5f) * scale - 0.5f
-        if (sx < 0f) sx = 0f
-        if (sx > 255f) sx = 255f
-        val x0 = sx.toInt()
-        val x1 = if (x0 < 255) x0 + 1 else x0
-        val fx = sx - x0
-        val v = mask[y0 * 256 + x0] * (1 - fx) * (1 - fy) + mask[y0 * 256 + x1] * fx * (1 - fy) +
-          mask[y1 * 256 + x0] * (1 - fx) * fy + mask[y1 * 256 + x1] * fx * fy
-        out[offset + oy * SIZE + ox] = if (soft) {
-          SCALE / (1f + kotlin.math.exp(-v.coerceIn(-30f, 30f))) + BIAS
-        } else if (v > 0f) SCALE + BIAS else BIAS
-      }
-    }
+    toMemory.resample(mask, out, if (soft) Bilinear.Out.MEMORY_SOFT else Bilinear.Out.MEMORY_HARD, offset)
   }
 
   override fun close() {
@@ -540,6 +525,10 @@ class EdgeTamTracker(
     private const val SIZE = 1024
     private val MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
     private val STD = floatArrayOf(0.229f, 0.224f, 0.225f)
+    /** ImageNet normalisation of an 8-bit channel value, per channel, by table. */
+    private val NORM_R = FloatArray(256) { (it / 255f - MEAN[0]) / STD[0] }
+    private val NORM_G = FloatArray(256) { (it / 255f - MEAN[1]) / STD[1] }
+    private val NORM_B = FloatArray(256) { (it / 255f - MEAN[2]) / STD[2] }
     private const val IE = 256 * 64 * 64
     private const val H0 = 32 * 256 * 256
     private const val H1 = 64 * 128 * 128

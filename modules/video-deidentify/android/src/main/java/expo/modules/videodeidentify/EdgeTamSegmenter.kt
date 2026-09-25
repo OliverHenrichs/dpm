@@ -3,7 +3,6 @@ package expo.modules.videodeidentify
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.PointF
-import kotlin.math.exp
 
 /**
  * [EdgeTamTracker] behind the [Segmenter] seam: the first frame starts tracking from [prompts]
@@ -73,7 +72,14 @@ class EdgeTamSegmenter(
   private var h = 0
   private lateinit var score: Array<FloatArray>
   private lateinit var filter: GuidedFilter
+  private lateinit var upsampler: Bilinear
   private var plain = FloatArray(0)
+  private var pixels = IntArray(0)
+  // Reused per-frame scratch for outlines and arm bands.
+  private var body = BooleanArray(0)
+  private var eroded = BooleanArray(0)
+  private var rowRun = IntArray(0)
+  private val bands = ArrayList<BooleanArray>()
 
   /** A tracked frame waiting to be drawn: its masks and (for guided edges) its guide image. */
   private class Pending(
@@ -108,6 +114,7 @@ class EdgeTamSegmenter(
       h = frame.height
       score = Array(masks.size) { FloatArray(w * h) }
       filter = GuidedFilter(w, h, RADIUS, EPS)
+      upsampler = Bilinear(MASK, MASK, w, h)
     }
     val guide = if (refine == "guided") FloatArray(w * h).also { luminance(frame, it) } else null
     val joints = skeletons?.detect(frame, masks, timestampMs) ?: masks.map { null }
@@ -173,24 +180,52 @@ class EdgeTamSegmenter(
    * over the partner's body whichever mask won the fill there.
    */
   private fun drawOutlines(labels: ByteArray, objects: Int) {
+    if (body.size != w * h) {
+      body = BooleanArray(w * h)
+      eroded = BooleanArray(w * h)
+      rowRun = IntArray(w * h)
+    }
     for (i in 0 until objects) {
-      val s = score[i]
+      val sc = score[i]
+      parallelFor(h) { y -> for (x in 0 until w) { val p = y * w + x; body[p] = sc[p] > 0f } }
+      erode(body, eroded, OUTLINE_WIDTH)
       val outline = (OUTLINE_BASE + i).toByte()
-      for (y in 0 until h) {
+      parallelFor(h) { y ->
         for (x in 0 until w) {
           val p = y * w + x
-          if (s[p] <= 0f) continue
-          var edge = false
-          for (d in 1..OUTLINE_WIDTH) {
-            if ((x - d < 0 || s[p - d] <= 0f) || (x + d >= w || s[p + d] <= 0f) ||
-              (y - d < 0 || s[p - d * w] <= 0f) || (y + d >= h || s[p + d * w] <= 0f)
-            ) {
-              edge = true
-              break
-            }
-          }
-          if (edge) labels[p] = outline
+          if (body[p] && !eroded[p]) labels[p] = outline
         }
+      }
+    }
+  }
+
+  /**
+   * Square erosion by [r]: [dst] is true where every pixel within r (Chebyshev) of it is true in
+   * [src]; outside the frame counts as false. Two separable passes of run counts, rows then
+   * columns in parallel.
+   */
+  private fun erode(src: BooleanArray, dst: BooleanArray, r: Int) {
+    val full = 2 * r + 1
+    val run = rowRun
+    parallelFor(h) { y ->
+      val row = y * w
+      var count = 0
+      for (x in -r until w + r) {
+        val add = x + r
+        if (add in 0 until w && src[row + add]) count++
+        val drop = x - r - 1
+        if (drop in 0 until w && src[row + drop]) count--
+        if (x in 0 until w) run[row + x] = if (count == full) 1 else 0
+      }
+    }
+    parallelFor(w) { x ->
+      var count = 0
+      for (y in -r until h + r) {
+        val add = y + r
+        if (add in 0 until h) count += run[add * w + x]
+        val drop = y - r - 1
+        if (drop in 0 until h) count -= run[drop * w + x]
+        if (y in 0 until h) dst[y * w + x] = count == full
       }
     }
   }
@@ -227,9 +262,11 @@ class EdgeTamSegmenter(
    * some mask claims the body, so no arm is painted into the background. Returns each dancer's
    * band so it can be outlined (over the own torso only the outline shows: the arm in front).
    */
-  private fun armBands(labels: ByteArray, joints: List<FloatArray?>): List<BooleanArray> =
+  private fun armBands(labels: ByteArray, joints: List<FloatArray?>): List<Band> =
     joints.mapIndexed { i, j ->
-      val band = BooleanArray(w * h)
+      while (bands.size <= i) bands += BooleanArray(w * h)
+      if (bands[i].size != w * h) bands[i] = BooleanArray(w * h)
+      val band = Band(bands[i])
       if (j == null) return@mapIndexed band
       val shoulder = kotlin.math.hypot(j[11 * 3] - j[12 * 3], j[11 * 3 + 1] - j[12 * 3 + 1])
       val r = (shoulder * ARM_WIDTH_SHARE).coerceIn(ARM_RADIUS_MIN, ARM_RADIUS_MAX)
@@ -238,19 +275,40 @@ class EdgeTamSegmenter(
         capsule(band, j[a * 3], j[a * 3 + 1], j[b * 3], j[b * 3 + 1], r)
       }
       val fill = (i + 1).toByte()
-      for (p in band.indices) {
-        if (!band[p]) continue
-        if (labels[p].toInt() == 0) band[p] = false // no body here: not an arm either
+      band.forEach { p ->
+        if (labels[p].toInt() == 0) band.cells[p] = false // no body here: not an arm either
         else labels[p] = fill
       }
       band
     }
 
-  private fun capsule(band: BooleanArray, x0: Float, y0: Float, x1: Float, y1: Float, r: Float) {
+  /** A reused mask plus the box it was drawn in, so only that box is visited and cleared. */
+  private inner class Band(val cells: BooleanArray) {
+    var x0 = w
+    var y0 = h
+    var x1 = -1
+    var y1 = -1
+
+    fun grow(ax: Int, ay: Int, bx: Int, by: Int) {
+      x0 = minOf(x0, ax); y0 = minOf(y0, ay); x1 = maxOf(x1, bx); y1 = maxOf(y1, by)
+    }
+
+    inline fun forEach(body: (Int) -> Unit) {
+      for (y in y0..y1) for (x in x0..x1) { val p = y * w + x; if (cells[p]) body(p) }
+    }
+
+    fun clear() {
+      for (y in y0..y1) java.util.Arrays.fill(cells, y * w + x0, y * w + x1 + 1, false)
+    }
+  }
+
+  private fun capsule(band: Band, x0: Float, y0: Float, x1: Float, y1: Float, r: Float) {
     val minX = (minOf(x0, x1) - r).toInt().coerceAtLeast(0)
     val maxX = (maxOf(x0, x1) + r).toInt().coerceAtMost(w - 1)
     val minY = (minOf(y0, y1) - r).toInt().coerceAtLeast(0)
     val maxY = (maxOf(y0, y1) + r).toInt().coerceAtMost(h - 1)
+    if (minX > maxX || minY > maxY) return
+    band.grow(minX, minY, maxX, maxY)
     val dx = x1 - x0
     val dy = y1 - y0
     val len2 = dx * dx + dy * dy
@@ -258,19 +316,21 @@ class EdgeTamSegmenter(
       val t = if (len2 == 0f) 0f else (((x - x0) * dx + (y - y0) * dy) / len2).coerceIn(0f, 1f)
       val ex = x0 + t * dx - x
       val ey = y0 + t * dy - y
-      if (ex * ex + ey * ey <= r * r) band[y * w + x] = true
+      if (ex * ex + ey * ey <= r * r) band.cells[y * w + x] = true
     }
   }
 
   /** The band's edge (a band pixel with a non-band 4-neighbour within 2 px), in [colour]. */
-  private fun outlineBand(labels: ByteArray, band: BooleanArray, colour: Byte) {
-    for (y in 0 until h) for (x in 0 until w) {
+  private fun outlineBand(labels: ByteArray, band: Band, colour: Byte) {
+    if (band.x1 < 0) return
+    val cells = band.cells
+    for (y in band.y0..band.y1) for (x in band.x0..band.x1) {
       val p = y * w + x
-      if (!band[p]) continue
+      if (!cells[p]) continue
       var edge = false
       for (d in 1..2) {
-        if ((x - d < 0 || !band[p - d]) || (x + d >= w || !band[p + d]) ||
-          (y - d < 0 || !band[p - d * w]) || (y + d >= h || !band[p + d * w])
+        if ((x - d < 0 || !cells[p - d]) || (x + d >= w || !cells[p + d]) ||
+          (y - d < 0 || !cells[p - d * w]) || (y + d >= h || !cells[p + d * w])
         ) {
           edge = true
           break
@@ -364,17 +424,19 @@ class EdgeTamSegmenter(
     val guide = pending[k - first].guide
     if (guide != null) filter.setGuide(guide)
     smoothed.forEachIndexed { i, mask ->
-      upsample(mask, score[i])
+      val s = score[i]
       if (guide != null) {
         // The filter may only add, never remove: it averaged thin limbs (a raised forearm, a
         // few px wide) with the background below the threshold and erased them. So a pixel is
         // body if the guided result or the plain mask says so — the filter still adds detail.
-        val s = score[i]
-        for (p in s.indices) s[p] = sigmoid(s[p])
+        upsampler.resample(mask, s, Bilinear.Out.SIGMOID)
         if (plain.size != s.size) plain = FloatArray(s.size)
         System.arraycopy(s, 0, plain, 0, s.size)
         filter.apply(s)
-        for (p in s.indices) s[p] = maxOf(s[p], plain[p]) - 0.5f
+        val pl = plain
+        parallelFor(h) { y -> for (x in 0 until w) { val q = y * w + x; s[q] = maxOf(s[q], pl[q]) - 0.5f } }
+      } else {
+        upsampler.resample(mask, s, Bilinear.Out.PLAIN)
       }
     }
 
@@ -382,30 +444,38 @@ class EdgeTamSegmenter(
     // front — EdgeTAM "completes" a body behind an occluding arm, so both claim the arm, and a
     // "whoever moves onto the other's area is in front" rule failed when a dancer passed behind.
     // So the fill picks one, and outlines (below) keep both shapes readable.
+    val sc = score
+    parallelFor(h) { y ->
+      for (x in 0 until w) {
+        val p = y * w + x
+        var best = 0f
+        var label = 0
+        for (i in 0 until objects) {
+          val v = sc[i][p]
+          if (v > best) {
+            best = v
+            label = i + 1
+          }
+        }
+        labels[p] = label.toByte()
+      }
+    }
     val seen = BooleanArray(objects)
     val drawnPx = IntArray(objects)
     for (p in 0 until w * h) {
-      var best = 0f
-      var label = 0
-      for (i in 0 until objects) {
-        val v = score[i][p]
-        if (v > best) {
-          best = v
-          label = i + 1
-        }
-      }
-      labels[p] = label.toByte()
-      if (label > 0) {
-        seen[label - 1] = true
-        drawnPx[label - 1]++
+      val l = labels[p].toInt()
+      if (l > 0) {
+        seen[l - 1] = true
+        drawnPx[l - 1]++
       }
     }
     drawnPx.forEachIndexed { i, n -> drawnArea[i].add(n) }
     val joints = if (skeletons != null) List(objects) { averagedJoints(it, k, first) } else emptyList()
-    val bands = if (skeletons != null) armBands(labels, joints) else emptyList()
+    val armBandsDrawn = if (skeletons != null) armBands(labels, joints) else emptyList()
     drawOutlines(labels, objects)
-    bands.forEachIndexed { i, band -> outlineBand(labels, band, (OUTLINE_BASE + i).toByte()) }
+    armBandsDrawn.forEachIndexed { i, band -> outlineBand(labels, band, (OUTLINE_BASE + i).toByte()) }
     if (skeletons != null) drawSkeletons(labels, joints)
+    armBandsDrawn.forEach { it.clear() }
 
     drawn++
     // Drop frames no later window needs.
@@ -413,37 +483,18 @@ class EdgeTamSegmenter(
     return seen.count { it }
   }
 
-  /** Bilinear 256x256 -> w x h (align_corners = false), as SAM 2 resizes its logits. */
-  private fun upsample(mask: FloatArray, out: FloatArray) {
-    val sx = MASK.toFloat() / w
-    val sy = MASK.toFloat() / h
-    for (y in 0 until h) {
-      val fy = ((y + 0.5f) * sy - 0.5f).coerceIn(0f, (MASK - 1).toFloat())
-      val y0 = fy.toInt()
-      val y1 = minOf(y0 + 1, MASK - 1)
-      val ty = fy - y0
+  private fun luminance(frame: Bitmap, out: FloatArray) {
+    if (pixels.size != w * h) pixels = IntArray(w * h)
+    frame.getPixels(pixels, 0, w, 0, 0, w, h)
+    val px = pixels
+    parallelFor(h) { y ->
       for (x in 0 until w) {
-        val fx = ((x + 0.5f) * sx - 0.5f).coerceIn(0f, (MASK - 1).toFloat())
-        val x0 = fx.toInt()
-        val x1 = minOf(x0 + 1, MASK - 1)
-        val tx = fx - x0
-        val top = mask[y0 * MASK + x0] * (1 - tx) + mask[y0 * MASK + x1] * tx
-        val bottom = mask[y1 * MASK + x0] * (1 - tx) + mask[y1 * MASK + x1] * tx
-        out[y * w + x] = top * (1 - ty) + bottom * ty
+        val c = px[y * w + x]
+        out[y * w + x] =
+          (0.299f * ((c shr 16) and 0xFF) + 0.587f * ((c shr 8) and 0xFF) + 0.114f * (c and 0xFF)) / 255f
       }
     }
   }
-
-  private fun luminance(frame: Bitmap, out: FloatArray) {
-    val px = IntArray(w * h)
-    frame.getPixels(px, 0, w, 0, 0, w, h)
-    for (i in px.indices) {
-      val c = px[i]
-      out[i] = (0.299f * ((c shr 16) and 0xFF) + 0.587f * ((c shr 8) and 0xFF) + 0.114f * (c and 0xFF)) / 255f
-    }
-  }
-
-  private fun sigmoid(v: Float) = 1f / (1f + exp(-v.coerceIn(-30f, 30f)))
 
   override fun close() {
     tracker.close()
@@ -484,68 +535,78 @@ class EdgeTamSegmenter(
 }
 
 /**
- * Grey-guide guided filter (He, Sun, Tang 2010) with O(1)-per-pixel box means. The guide's
- * statistics are computed once per frame by [setGuide] and reused for every mask filtered
- * against it.
+ * Grey-guide guided filter (He, Sun, Tang 2010), in its "fast" form (He & Sun 2015): the linear
+ * coefficients are computed on a [factor]-times subsampled guide and mask, then upsampled and
+ * applied at full resolution. Nearly the same edges at a fraction of the cost — the full-res
+ * version took most of the ~0.8 s/frame the drawing cost on a Pixel 10a. The guide's statistics
+ * are computed once per frame by [setGuide] and reused for every mask filtered against it.
  */
-class GuidedFilter(private val w: Int, private val h: Int, private val r: Int, private val eps: Float) {
-  private val n = w * h
+class GuidedFilter(
+  private val w: Int,
+  private val h: Int,
+  r: Int,
+  private val eps: Float,
+  private val factor: Int = 2,
+) {
+  private val lw = w / factor
+  private val lh = h / factor
+  private val n = lw * lh
+  private val box = BoxMean(lw, lh, maxOf(1, r / factor))
+  private val up = Bilinear(lw, lh, w, h)
+  private lateinit var guide: FloatArray
+  private val guideLow = FloatArray(n)
   private val meanI = FloatArray(n)
   private val varI = FloatArray(n)
-  private lateinit var guide: FloatArray
+  private val pLow = FloatArray(n)
   private val meanP = FloatArray(n)
   private val meanIp = FloatArray(n)
   private val tmp = FloatArray(n)
   private val a = FloatArray(n)
   private val b = FloatArray(n)
-  private val rowSum = FloatArray(n)
+  private val aFull = FloatArray(w * h)
+  private val bFull = FloatArray(w * h)
 
   fun setGuide(i: FloatArray) {
     guide = i
-    box(i, meanI)
-    for (k in 0 until n) tmp[k] = i[k] * i[k]
-    box(tmp, varI)
-    for (k in 0 until n) varI[k] -= meanI[k] * meanI[k]
+    downsample(i, guideLow)
+    box.apply(guideLow, meanI)
+    parallelFor(lh) { y -> for (x in 0 until lw) { val k = y * lw + x; tmp[k] = guideLow[k] * guideLow[k] } }
+    box.apply(tmp, varI)
+    parallelFor(lh) { y -> for (x in 0 until lw) { val k = y * lw + x; varI[k] -= meanI[k] * meanI[k] } }
   }
 
-  /** Filters [p] in place. */
+  /** Filters [p] (full resolution) in place. */
   fun apply(p: FloatArray) {
-    box(p, meanP)
-    for (k in 0 until n) tmp[k] = guide[k] * p[k]
-    box(tmp, meanIp)
-    for (k in 0 until n) {
-      val cov = meanIp[k] - meanI[k] * meanP[k]
-      a[k] = cov / (varI[k] + eps)
-      b[k] = meanP[k] - a[k] * meanI[k]
-    }
-    box(a, tmp)
-    box(b, meanP) // reuse as mean of b
-    for (k in 0 until n) p[k] = tmp[k] * guide[k] + meanP[k]
-  }
-
-  /** Mean over a (2r+1)^2 window, edges averaged over the in-frame part. Separable sliding sums. */
-  private fun box(src: FloatArray, dst: FloatArray) {
-    for (y in 0 until h) {
-      val row = y * w
-      var sum = 0f
-      for (x in 0..minOf(r, w - 1)) sum += src[row + x]
-      for (x in 0 until w) {
-        rowSum[row + x] = sum / (minOf(x + r, w - 1) - maxOf(x - r, 0) + 1)
-        val add = x + r + 1
-        val drop = x - r
-        if (add < w) sum += src[row + add]
-        if (drop >= 0) sum -= src[row + drop]
+    downsample(p, pLow)
+    box.apply(pLow, meanP)
+    parallelFor(lh) { y -> for (x in 0 until lw) { val k = y * lw + x; tmp[k] = guideLow[k] * pLow[k] } }
+    box.apply(tmp, meanIp)
+    parallelFor(lh) { y ->
+      for (x in 0 until lw) {
+        val k = y * lw + x
+        val cov = meanIp[k] - meanI[k] * meanP[k]
+        a[k] = cov / (varI[k] + eps)
+        b[k] = meanP[k] - a[k] * meanI[k]
       }
     }
-    for (x in 0 until w) {
-      var sum = 0f
-      for (y in 0..minOf(r, h - 1)) sum += rowSum[y * w + x]
-      for (y in 0 until h) {
-        dst[y * w + x] = sum / (minOf(y + r, h - 1) - maxOf(y - r, 0) + 1)
-        val add = y + r + 1
-        val drop = y - r
-        if (add < h) sum += rowSum[add * w + x]
-        if (drop >= 0) sum -= rowSum[drop * w + x]
+    box.apply(a, tmp)
+    up.resample(tmp, aFull)
+    box.apply(b, tmp)
+    up.resample(tmp, bFull)
+    parallelFor(h) { y -> for (x in 0 until w) { val k = y * w + x; p[k] = aFull[k] * guide[k] + bFull[k] } }
+  }
+
+  /** Mean of each [factor] x [factor] block. */
+  private fun downsample(src: FloatArray, dst: FloatArray) {
+    val inv = 1f / (factor * factor)
+    parallelFor(lh) { y ->
+      for (x in 0 until lw) {
+        var sum = 0f
+        for (dy in 0 until factor) {
+          val row = (y * factor + dy) * w + x * factor
+          for (dx in 0 until factor) sum += src[row + dx]
+        }
+        dst[y * lw + x] = sum * inv
       }
     }
   }

@@ -99,7 +99,7 @@ class PoseSkeletons(context: Context, private val dancers: Int) : AutoCloseable 
       val reach = ARM_REACH * w
       val own = armSegments(last[i], w, h)
       val theirs = masks.indices.filter { it != i }.flatMap { armSegments(last[it], w, h) }
-      for (y in 0 until ch) {
+      parallelFor(ch) { y ->
         val my256 = (y0 + y) * MASK / h
         for (x in 0 until cw) {
           val cell = my256 * MASK + (x0 + x) * MASK / w
