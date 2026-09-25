@@ -28,6 +28,8 @@ class EdgeTamSegmenter(
   fp32Graphs: Set<String> = emptySet(),
   /** Re-anchor a dancer lost at a crossing with a person detector (see [reanchor]). */
   private val reanchorEnabled: Boolean = true,
+  /** Draw a pose skeleton per dancer over the silhouettes (see [PoseSkeletons]). */
+  private val skeletonEnabled: Boolean = true,
 ) : Segmenter {
   override val name = "edgetam"
   private val tracker = EdgeTamTracker(context, cpuGraphs, fp32Graphs).also {
@@ -47,6 +49,7 @@ class EdgeTamSegmenter(
       "corrections" to corrections,
       "detectorRuns" to detectorRuns,
       "detectorMs" to if (detectorRuns == 0) 0.0 else detectorNs / 1_000_000.0 / detectorRuns,
+      "skeletonMs" to (skeletons?.ms ?: 0L) / frameIndex.coerceAtLeast(1).toDouble(),
     )
   /** Per dancer, per frame: pixels > 0 in the 256x256 mask, and pixels drawn at output size. */
   private val maskArea = List(prompts.size) { ArrayList<Int>() }
@@ -57,6 +60,7 @@ class EdgeTamSegmenter(
   // Re-anchoring state, per dancer.
   private val context = context.applicationContext
   private var detector: PersonDetector? = null
+  private val skeletons = if (skeletonEnabled) PoseSkeletons(context, prompts.size) else null
   private val refArea = arrayOfNulls<Float>(prompts.size)
   private val lastPos = arrayOfNulls<PointF>(prompts.size)
   /** (frame, dancer, area before, corrected area) per correction — for the stats. */
@@ -72,7 +76,12 @@ class EdgeTamSegmenter(
   private var plain = FloatArray(0)
 
   /** A tracked frame waiting to be drawn: its masks and (for guided edges) its guide image. */
-  private class Pending(val masks: List<FloatArray>, val guide: FloatArray?)
+  private class Pending(
+    val masks: List<FloatArray>,
+    val guide: FloatArray?,
+    /** Per dancer: 33 joints as [x, y, visibility] normalised to the frame, or null. */
+    val joints: List<FloatArray?>,
+  )
 
   private val pending = ArrayDeque<Pending>()
   private var received = 0
@@ -101,7 +110,8 @@ class EdgeTamSegmenter(
       filter = GuidedFilter(w, h, RADIUS, EPS)
     }
     val guide = if (refine == "guided") FloatArray(w * h).also { luminance(frame, it) } else null
-    pending.addLast(Pending(masks.map { it.copyOf() }, guide))
+    val joints = skeletons?.detect(frame, masks, timestampMs) ?: masks.map { null }
+    pending.addLast(Pending(masks.map { it.copyOf() }, guide, joints))
     received++
     val found = if (received - drawn > SMOOTH_RADIUS) draw(labels) else -1
     refineNs += System.nanoTime() - t0
@@ -182,6 +192,124 @@ class EdgeTamSegmenter(
           if (edge) labels[p] = outline
         }
       }
+    }
+  }
+
+  /**
+   * A dancer's joints averaged over the same ±[SMOOTH_RADIUS] frames as the masks (1-2-3-2-1),
+   * in output pixels as [x, y, visibility] x 33 — or null when the drawn frame has no pose.
+   */
+  private fun averagedJoints(i: Int, k: Int, first: Int): FloatArray? {
+    if (pending[k - first].joints[i] == null) return null // neighbours only steady, never invent
+    val sum = FloatArray(33 * 3)
+    val weights = FloatArray(33)
+    for (j in maxOf(first, k - SMOOTH_RADIUS)..minOf(received - 1, k + SMOOTH_RADIUS)) {
+      val joints = pending[j - first].joints[i] ?: continue
+      val weight = (SMOOTH_RADIUS + 1 - kotlin.math.abs(j - k)).toFloat()
+      for (n in 0 until 33) {
+        sum[n * 3] += weight * joints[n * 3]
+        sum[n * 3 + 1] += weight * joints[n * 3 + 1]
+        sum[n * 3 + 2] += weight * joints[n * 3 + 2]
+        weights[n] += weight
+      }
+    }
+    return FloatArray(33 * 3) { idx ->
+      val n = idx / 3
+      val v = sum[idx] / weights[n]
+      when (idx % 3) { 0 -> v * w; 1 -> v * h; else -> v }
+    }
+  }
+
+  /**
+   * Arms in front: the pose model only calls an arm clearly visible when it can see it, so an
+   * arm across the partner is in front of her. Along each such upper arm and forearm, a band of
+   * arm width is filled in the dancer's colour over whichever mask won there — limited to where
+   * some mask claims the body, so no arm is painted into the background. Returns each dancer's
+   * band so it can be outlined (over the own torso only the outline shows: the arm in front).
+   */
+  private fun armBands(labels: ByteArray, joints: List<FloatArray?>): List<BooleanArray> =
+    joints.mapIndexed { i, j ->
+      val band = BooleanArray(w * h)
+      if (j == null) return@mapIndexed band
+      val shoulder = kotlin.math.hypot(j[11 * 3] - j[12 * 3], j[11 * 3 + 1] - j[12 * 3 + 1])
+      val r = (shoulder * ARM_WIDTH_SHARE).coerceIn(ARM_RADIUS_MIN, ARM_RADIUS_MAX)
+      for ((a, b) in ARMS) {
+        if (minOf(j[a * 3 + 2], j[b * 3 + 2]) < PoseSkeletons.VISIBLE) continue
+        capsule(band, j[a * 3], j[a * 3 + 1], j[b * 3], j[b * 3 + 1], r)
+      }
+      val fill = (i + 1).toByte()
+      for (p in band.indices) {
+        if (!band[p]) continue
+        if (labels[p].toInt() == 0) band[p] = false // no body here: not an arm either
+        else labels[p] = fill
+      }
+      band
+    }
+
+  private fun capsule(band: BooleanArray, x0: Float, y0: Float, x1: Float, y1: Float, r: Float) {
+    val minX = (minOf(x0, x1) - r).toInt().coerceAtLeast(0)
+    val maxX = (maxOf(x0, x1) + r).toInt().coerceAtMost(w - 1)
+    val minY = (minOf(y0, y1) - r).toInt().coerceAtLeast(0)
+    val maxY = (maxOf(y0, y1) + r).toInt().coerceAtMost(h - 1)
+    val dx = x1 - x0
+    val dy = y1 - y0
+    val len2 = dx * dx + dy * dy
+    for (y in minY..maxY) for (x in minX..maxX) {
+      val t = if (len2 == 0f) 0f else (((x - x0) * dx + (y - y0) * dy) / len2).coerceIn(0f, 1f)
+      val ex = x0 + t * dx - x
+      val ey = y0 + t * dy - y
+      if (ex * ex + ey * ey <= r * r) band[y * w + x] = true
+    }
+  }
+
+  /** The band's edge (a band pixel with a non-band 4-neighbour within 2 px), in [colour]. */
+  private fun outlineBand(labels: ByteArray, band: BooleanArray, colour: Byte) {
+    for (y in 0 until h) for (x in 0 until w) {
+      val p = y * w + x
+      if (!band[p]) continue
+      var edge = false
+      for (d in 1..2) {
+        if ((x - d < 0 || !band[p - d]) || (x + d >= w || !band[p + d]) ||
+          (y - d < 0 || !band[p - d * w]) || (y + d >= h || !band[p + d * w])
+        ) {
+          edge = true
+          break
+        }
+      }
+      if (edge) labels[p] = colour
+    }
+  }
+
+  /** Bones between joints the model sees clearly, and wrist/ankle dots, in the outline colour. */
+  private fun drawSkeletons(labels: ByteArray, joints: List<FloatArray?>) {
+    joints.forEachIndexed { i, j ->
+      if (j == null) return@forEachIndexed
+      val colour = (OUTLINE_BASE + i).toByte()
+      for ((a, b) in PoseSkeletons.BONES) {
+        if (minOf(j[a * 3 + 2], j[b * 3 + 2]) < PoseSkeletons.VISIBLE) continue
+        line(labels, j[a * 3], j[a * 3 + 1], j[b * 3], j[b * 3 + 1], BONE_RADIUS, colour)
+      }
+      for (n in PoseSkeletons.ENDS) {
+        if (j[n * 3 + 2] >= PoseSkeletons.VISIBLE) disc(labels, j[n * 3], j[n * 3 + 1], JOINT_RADIUS, colour)
+      }
+    }
+  }
+
+  private fun line(labels: ByteArray, x0: Float, y0: Float, x1: Float, y1: Float, r: Float, v: Byte) {
+    val steps = maxOf(1, (kotlin.math.hypot(x1 - x0, y1 - y0) / (r / 2)).toInt())
+    for (s in 0..steps) {
+      val t = s.toFloat() / steps
+      disc(labels, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r, v)
+    }
+  }
+
+  private fun disc(labels: ByteArray, cx: Float, cy: Float, r: Float, v: Byte) {
+    val ri = r.toInt() + 1
+    for (dy in -ri..ri) for (dx in -ri..ri) {
+      if (dx * dx + dy * dy > r * r) continue
+      val x = cx.toInt() + dx
+      val y = cy.toInt() + dy
+      if (x in 0 until w && y in 0 until h) labels[y * w + x] = v
     }
   }
 
@@ -273,7 +401,11 @@ class EdgeTamSegmenter(
       }
     }
     drawnPx.forEachIndexed { i, n -> drawnArea[i].add(n) }
+    val joints = if (skeletons != null) List(objects) { averagedJoints(it, k, first) } else emptyList()
+    val bands = if (skeletons != null) armBands(labels, joints) else emptyList()
     drawOutlines(labels, objects)
+    bands.forEachIndexed { i, band -> outlineBand(labels, band, (OUTLINE_BASE + i).toByte()) }
+    if (skeletons != null) drawSkeletons(labels, joints)
 
     drawn++
     // Drop frames no later window needs.
@@ -316,6 +448,7 @@ class EdgeTamSegmenter(
   override fun close() {
     tracker.close()
     detector?.close()
+    skeletons?.close()
   }
 
   companion object {
@@ -325,6 +458,15 @@ class EdgeTamSegmenter(
     /** Outline width in output pixels, and the label of dancer 0's outline (dancer i: +i). */
     private const val OUTLINE_WIDTH = 3
     const val OUTLINE_BASE = 3
+    /** Skeleton line and wrist/ankle dot radii in output pixels. */
+    private const val BONE_RADIUS = 2.5f
+    private const val JOINT_RADIUS = 5f
+    /** Arm band: half-width as a share of shoulder width, clamped to output pixels. */
+    private const val ARM_WIDTH_SHARE = 0.14f
+    private const val ARM_RADIUS_MIN = 5f
+    private const val ARM_RADIUS_MAX = 22f
+    /** Upper arms and forearms (BlazePose indices). */
+    private val ARMS = arrayOf(11 to 13, 13 to 15, 12 to 14, 14 to 16)
     /** Frames either side averaged into each drawn frame. */
     private const val SMOOTH_RADIUS = 2
     /** Re-anchoring: "weak" below this share of the usual area; checked every n frames. */
