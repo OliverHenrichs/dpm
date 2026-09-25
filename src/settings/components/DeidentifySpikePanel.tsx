@@ -13,6 +13,7 @@ import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
 import { availableProviders } from "@/src/deidentify/providers/registry";
 import {
   setTrackingPlacement,
+  setTrackingEvery,
   setTrackingRefine,
 } from "@/src/deidentify/providers/onDeviceTracking";
 
@@ -38,6 +39,13 @@ const DeidentifySpikePanel: React.FC = () => {
   const [result, setResult] = useState<DeidentifyOutcome | null>(null);
   const [placement, setPlacement] = useState(0);
   const [refine, setRefine] = useState<"bilinear" | "guided">("guided");
+
+  const [every, setEvery] = useState(1);
+
+  const chooseEvery = (n: number) => {
+    setEvery(n);
+    setTrackingEvery(n);
+  };
 
   const chooseRefine = (r: "bilinear" | "guided") => {
     setRefine(r);
@@ -101,6 +109,16 @@ const DeidentifySpikePanel: React.FC = () => {
             title={r === "guided" ? "Edges: guided" : "Edges: bilinear"}
             disabled={r === refine}
             onPress={() => chooseRefine(r)}
+          />
+        ))}
+      </View>
+      <View style={styles.row}>
+        {[1, 2].map((n) => (
+          <Button
+            key={n}
+            title={n === 1 ? "Track: every frame" : "Track: every 2nd"}
+            disabled={n === every}
+            onPress={() => chooseEvery(n)}
           />
         ))}
       </View>

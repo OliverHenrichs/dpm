@@ -47,6 +47,9 @@ class DeidentifyOptions : Record {
    */
   @Field val fp32Graphs: List<String> = listOf("encode")
 
+  /** EdgeTAM: track every n-th frame and interpolate the frames between (1 = every frame). */
+  @Field val trackEvery: Int = 1
+
   /** Keep the transcoded intermediate (source footage!) for replaying on a desktop — debug only. */
   @Field val keepTranscoded: Boolean = false
 }
@@ -106,7 +109,7 @@ class VideoDeidentifyModule : Module() {
           val points = options.prompts.map { android.graphics.PointF(it[0].toFloat(), it[1].toFloat()) }
           SilhouetteRenderer(
             context, options.segmenter, points, options.maxFrames, options.cpuGraphs.toSet(),
-            options.refine, options.fp32Graphs.toSet(),
+            options.refine, options.fp32Graphs.toSet(), options.trackEvery.coerceAtLeast(1),
           )
             .render(transcoded, silhouetteFile) {
             progress("silhouette", it)

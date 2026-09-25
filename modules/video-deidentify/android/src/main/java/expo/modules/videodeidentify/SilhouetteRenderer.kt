@@ -47,6 +47,7 @@ class SilhouetteRenderer(
   private val cpuGraphs: Set<String> = emptySet(),
   private val refine: String = "guided",
   private val fp32Graphs: Set<String> = emptySet(),
+  private val trackEvery: Int = 1,
 ) {
   fun render(src: File, out: File, onProgress: (Double) -> Unit): SilhouetteStats {
     val retriever = MediaMetadataRetriever()
@@ -63,7 +64,7 @@ class SilhouetteRenderer(
       val params = MediaMetadataRetriever.BitmapParams().apply {
         preferredConfig = Bitmap.Config.ARGB_8888
       }
-      val segmenter = createSegmenter(context, segmenterKind, prompts, cpuGraphs, refine, fp32Graphs)
+      val segmenter = createSegmenter(context, segmenterKind, prompts, cpuGraphs, refine, fp32Graphs, trackEvery)
       val structured = segmenter is CategorySegmenter
       var encoder: SurfaceEncoder? = null
       var cleanup: MaskCleanup? = null

@@ -21,6 +21,8 @@ export type DeidentifyOptions = {
   refine?: "bilinear" | "guided";
   /** EdgeTAM graphs computed in fp32 on the GPU; default the image encoder. */
   fp32Graphs?: string[];
+  /** EdgeTAM: track every n-th frame and interpolate the rest (1 = every frame). */
+  trackEvery?: number;
   /** Keep the transcoded intermediate (source footage) for desktop replay — debug only. */
   keepTranscoded?: boolean;
 };

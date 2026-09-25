@@ -61,8 +61,9 @@ fun createSegmenter(
   cpuGraphs: Set<String> = emptySet(),
   refine: String = "guided",
   fp32Graphs: Set<String> = emptySet(),
+  trackEvery: Int = 1,
 ): Segmenter = when (kind) {
-  "edgetam" -> EdgeTamSegmenter(context, prompts, cpuGraphs, refine, fp32Graphs)
+  "edgetam" -> EdgeTamSegmenter(context, prompts, cpuGraphs, refine, fp32Graphs, trackEvery = trackEvery)
   "multiclass" -> CategorySegmenter.multiclass(context)
   "deeplab" -> CategorySegmenter.deeplab(context)
   else -> PoseSegmenter(context)

@@ -12,10 +12,16 @@ const trackingDebug: {
   cpuGraphs: string[];
   fp32Graphs: string[];
   refine: "bilinear" | "guided";
+  trackEvery: number;
 } = {
   cpuGraphs: [],
   fp32Graphs: ["encode"],
   refine: "guided",
+  trackEvery: 1,
+};
+
+export const setTrackingEvery = (n: number) => {
+  trackingDebug.trackEvery = n;
 };
 
 export const setTrackingPlacement = (
@@ -66,6 +72,7 @@ export const onDeviceTracking: DeidentifyProvider = {
           cpuGraphs: trackingDebug.cpuGraphs,
           fp32Graphs: trackingDebug.fp32Graphs,
           refine: trackingDebug.refine,
+          trackEvery: trackingDebug.trackEvery,
           // SPIKE: set true to keep the transcode (source footage) for replaying a run on the
           // desktop — see the L3 write-up. Off: it would pile up the user's footage in the cache.
           keepTranscoded: false,
