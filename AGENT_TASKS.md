@@ -32,6 +32,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — works on the Pixel (tracking, arms, ~12 min per 30 s); integration open | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **M–L** | idea | [L4](#l4--transcripts-of-what-teachers-say-in-a-video) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -1534,6 +1535,47 @@ Further levers, each smaller than those above:
 - Remove the spike's debug aids: the dev panel with the GPU/CPU, edges and tracking toggles, the
   kept transcode, the encoder dump, and the chunked diagnostics in the log.
 - The consent UI and a real remote provider.
+
+---
+
+### L4 — Transcripts of what teachers say in a video
+
+> *"Dance teachers often say things during their demonstration that could inform the pattern
+> description."*
+
+Not started; this records the idea and the constraints known so far.
+
+**Shape of the feature.**
+- For a pattern's local video, transcribe the speech and show it with timestamps.
+- Let the user pick the sentences worth keeping and add them to the description. Tapping a line
+  seeks the video there.
+- Never write into the description automatically: teachers ramble, count out loud and joke, and
+  the description is the user's.
+
+**Constraints that follow from L3:**
+- **Voices are personal data too.** Transcribe on the device, like the silhouettes. A remote
+  speech-to-text service brings back everything in L3's consent and store-policy notes
+  (Apple 5.1.2(i), GDPR).
+- **Transcribe from the source, not from the de-identified copy.** L3's output drops audio on
+  purpose, since voices identify people. So the transcript should be made before, or
+  independently of, de-identification, and it is only text.
+- **Languages:** the app ships nine; teachers speak whatever they speak, often with dance jargon
+  ("anchor", "sugar push") that general models mangle. The model must be multilingual and
+  detect the language.
+
+**Candidates to check when this is picked up** (verify the current state then):
+- **Whisper tiny/base** (MIT) on-device. There are LiteRT conversions (e.g. under
+  `litert-community` on Hugging Face) and `whisper.cpp` ports for Android. It's multilingual, has
+  timestamps, and runs faster than real time for tiny/base on a recent phone.
+- **Android's on-device `SpeechRecognizer`:** free and small, but built for live microphone
+  input, not for files; unclear for recorded clips.
+
+A summarising step ("turn this transcript into a description") would need an LLM. On-device
+options are limited; a remote one needs consent. It's a separate, later step.
+
+**Open questions:** whether the transcript should be stored with the pattern (and so exported
+and shared), or only used transiently while editing the description. Storing it means another
+`IVideoReference` extension and a format bump, like L3's `generated` field.
 
 ---
 
