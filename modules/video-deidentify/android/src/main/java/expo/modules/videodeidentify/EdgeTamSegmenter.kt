@@ -25,6 +25,8 @@ class EdgeTamSegmenter(
   cpuGraphs: Set<String> = emptySet(),
   private val refine: String = "guided",
   fp32Graphs: Set<String> = emptySet(),
+  /** Re-anchor a dancer lost at a crossing with a person detector (see [reanchor]). */
+  private val reanchorEnabled: Boolean = true,
 ) : Segmenter {
   override val name = "edgetam"
   private val tracker = EdgeTamTracker(context, cpuGraphs, fp32Graphs).also {
@@ -41,12 +43,25 @@ class EdgeTamSegmenter(
       "taps" to prompts.map { listOf(it.x, it.y) },
       "maskArea" to maskArea.map { it.toList() },
       "drawnArea" to drawnArea.map { it.toList() },
+      "corrections" to corrections,
+      "detectorRuns" to detectorRuns,
+      "detectorMs" to if (detectorRuns == 0) 0.0 else detectorNs / 1_000_000.0 / detectorRuns,
     )
   /** Per dancer, per frame: pixels > 0 in the 256x256 mask, and pixels drawn at output size. */
   private val maskArea = List(prompts.size) { ArrayList<Int>() }
   private val drawnArea = List(prompts.size) { ArrayList<Int>() }
   private var frameIndex = 0
   private var refineNs = 0L
+
+  // Re-anchoring state, per dancer.
+  private val context = context.applicationContext
+  private var detector: PersonDetector? = null
+  private val refArea = arrayOfNulls<Float>(prompts.size)
+  private val lastPos = arrayOfNulls<PointF>(prompts.size)
+  /** (frame, dancer, area before, corrected area) per correction — for the stats. */
+  private val corrections = ArrayList<List<Int>>()
+  private var detectorRuns = 0
+  private var detectorNs = 0L
 
   // Per-frame scratch, sized on first use.
   private var w = 0
@@ -68,7 +83,11 @@ class EdgeTamSegmenter(
    * and the clip is processed offline, so the drawing can look ahead. Memory is not affected.
    */
   override fun segment(frame: Bitmap, timestampMs: Long, labels: ByteArray): Int {
-    val masks = if (frameIndex == 0) tracker.start(frame, prompts) else tracker.track(frameIndex, frame)
+    val masks = if (frameIndex == 0) {
+      tracker.start(frame, prompts)
+    } else {
+      tracker.track(frameIndex, frame) { tracked -> if (reanchorEnabled) reanchor(frame, tracked) else emptyMap() }
+    }
     frameIndex++
     masks.forEachIndexed { i, m -> maskArea[i].add(m.count { it > 0f }) }
 
@@ -85,6 +104,74 @@ class EdgeTamSegmenter(
     val found = if (received - drawn > SMOOTH_RADIUS) draw(labels) else -1
     refineNs += System.nanoTime() - t0
     return found
+  }
+
+  /**
+   * Detect-then-track correction. While a dancer is weak — under half her usual mask area, as at
+   * a crossing where her partner hides her — look every [REANCHOR_EVERY] frames for a person that
+   * is near her last clear position, at least 40% of her usual size and not more than 30% covered
+   * by the other dancer, and hand EdgeTAM that person's mask as a correction. Without it she came
+   * back ~0.6 s after she was visible again (clip 1, phone), waiting for memory to re-find her.
+   */
+  private fun reanchor(frame: Bitmap, tracked: List<FloatArray>): Map<Int, FloatArray> {
+    val out = HashMap<Int, FloatArray>()
+    var people: List<BooleanArray>? = null
+    tracked.forEachIndexed { i, mask ->
+      val area = mask.count { it > 0f }
+      val ref = refArea[i] ?: area.toFloat().also { refArea[i] = it }
+      if (area >= WEAK * ref) {
+        refArea[i] = 0.9f * ref + 0.1f * area
+        centroid(mask)?.let { lastPos[i] = it }
+        return@forEachIndexed
+      }
+      val last = lastPos[i] ?: return@forEachIndexed
+      if (frameIndex % REANCHOR_EVERY != 0) return@forEachIndexed
+      val candidates = people ?: detect(frame).also { people = it }
+      var best: BooleanArray? = null
+      var bestDist = Float.MAX_VALUE
+      for (cand in candidates) {
+        val ca = cand.count { it }
+        if (ca < MIN_SIZE * ref) continue
+        val c = centroid(cand) ?: continue
+        val dist = kotlin.math.hypot(c.x - last.x, c.y - last.y)
+        if (dist >= MAX_DISTANCE || dist >= bestDist) continue
+        val covered = tracked.indices.filter { it != i }.maxOfOrNull { j ->
+          var n = 0
+          for (p in 0 until MASK * MASK) if (cand[p] && tracked[j][p] > 0f) n++
+          n.toFloat() / ca
+        } ?: 0f
+        if (covered >= MAX_COVERED) continue
+        best = cand
+        bestDist = dist
+      }
+      val chosen = best ?: return@forEachIndexed
+      out[i] = FloatArray(MASK * MASK) { if (chosen[it]) 10f else -10f }
+      corrections += listOf(frameIndex, i, area, chosen.count { it })
+    }
+    return out
+  }
+
+  /** All people in [frame] as 256x256 masks over the frame. */
+  private fun detect(frame: Bitmap): List<BooleanArray> {
+    val t0 = System.nanoTime()
+    val d = detector ?: PersonDetector(context).also { detector = it }
+    val masks = d.detect(frame).map { person ->
+      val logits = PersonDetector.resample(person.maskLogits, MASK, MASK)
+      BooleanArray(MASK * MASK) { logits[it] > 0f }
+    }
+    detectorRuns++
+    detectorNs += System.nanoTime() - t0
+    return masks
+  }
+
+  private fun centroid(mask: FloatArray): PointF? = centroid(BooleanArray(mask.size) { mask[it] > 0f })
+
+  private fun centroid(mask: BooleanArray): PointF? {
+    var sx = 0f
+    var sy = 0f
+    var n = 0
+    for (p in mask.indices) if (mask[p]) { sx += p % MASK; sy += p / MASK; n++ }
+    return if (n == 0) null else PointF(sx / n / MASK, sy / n / MASK)
   }
 
   override fun drain(labels: ByteArray): Int {
@@ -183,7 +270,10 @@ class EdgeTamSegmenter(
 
   private fun sigmoid(v: Float) = 1f / (1f + exp(-v.coerceIn(-30f, 30f)))
 
-  override fun close() = tracker.close()
+  override fun close() {
+    tracker.close()
+    detector?.close()
+  }
 
   companion object {
     /** SPIKE: save the encoder's input for a few frames, to compare with a desktop replay. */
@@ -191,6 +281,14 @@ class EdgeTamSegmenter(
     private const val MASK = 256
     /** Frames either side averaged into each drawn frame. */
     private const val SMOOTH_RADIUS = 2
+    /** Re-anchoring: "weak" below this share of the usual area; checked every n frames. */
+    private const val WEAK = 0.5f
+    private const val REANCHOR_EVERY = 3
+    /** A candidate must be this large (share of usual area), this close (share of frame), and
+     *  covered by the other dancer less than this share. */
+    private const val MIN_SIZE = 0.4f
+    private const val MAX_DISTANCE = 0.15f
+    private const val MAX_COVERED = 0.3f
     /** Guided-filter window radius and regularisation, at 720p. */
     private const val RADIUS = 8
     private const val EPS = 1e-3f

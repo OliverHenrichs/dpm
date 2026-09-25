@@ -66,8 +66,9 @@ export const onDeviceTracking: DeidentifyProvider = {
           cpuGraphs: trackingDebug.cpuGraphs,
           fp32Graphs: trackingDebug.fp32Graphs,
           refine: trackingDebug.refine,
-          // SPIKE: kept so a run can be replayed on the desktop; remove before this ships.
-          keepTranscoded: true,
+          // SPIKE: set true to keep the transcode (source footage) for replaying a run on the
+          // desktop — see the L3 write-up. Off: it would pile up the user's footage in the cache.
+          keepTranscoded: false,
         },
       );
       return { uri, stats };

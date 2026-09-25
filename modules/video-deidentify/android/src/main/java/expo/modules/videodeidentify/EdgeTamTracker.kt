@@ -95,6 +95,8 @@ class EdgeTamTracker(
   private class ObjectState {
     val spatial = ArrayList<Spatial>()
     val pointers = ArrayList<Pointer>()
+    /** Extra conditioning frames from corrections (SAM 2's add_new_mask on a later frame). */
+    val conds = ArrayList<Spatial>()
   }
 
   private val objects = ArrayList<ObjectState>()
@@ -174,8 +176,16 @@ class EdgeTamTracker(
     return decoded.map { it.mask }
   }
 
-  /** A later frame: each object is tracked from its own memory. */
-  fun track(fi: Int, frame: Bitmap): List<FloatArray> {
+  /**
+   * A later frame: each object is tracked from its own memory. [correct] sees the tracked masks
+   * (256x256 logits) and may return, per object index, a corrected mask (logits, > 0 = object)
+   * for this frame — see [applyCorrection].
+   */
+  fun track(
+    fi: Int,
+    frame: Bitmap,
+    correct: ((List<FloatArray>) -> Map<Int, FloatArray>)? = null,
+  ): List<FloatArray> {
     val (pixRaw, hi0, hi1) = encodeFrame(frame, fi)
     val masks = objects.map { state ->
       val t0 = System.nanoTime()
@@ -190,6 +200,9 @@ class EdgeTamTracker(
       val pixFeat = run1(memcond, mcIn)
       timing.memcondNs += System.nanoTime() - t1
       decodeOne(state, pixFeat, hi0, hi1, trackSparse)
+    }.toMutableList()
+    correct?.invoke(masks.map { it.mask })?.forEach { (i, corrected) ->
+      masks[i] = applyCorrection(masks[i].state, corrected, pixRaw, hi0, hi1)
     }
     memorizeAll(fi, pixRaw, masks)
     timing.frames++
@@ -276,9 +289,13 @@ class EdgeTamTracker(
     val condFrame = bank[0].frame
     val real = ArrayList<Pair<Spatial, Int>>()
     real.add(bank[0] to 6)
+    // Corrections are conditioning frames too (temporal slot 6, as SAM 2 gives cond frames).
+    state.conds.takeLast(MAX_CORRECTIONS).forEach { real.add(it to 6) }
+    val corrected = state.conds.map { it.frame }.toSet()
     for (off in NMM - 1 downTo 1) {
+      if (real.size >= NMM) break
       val pf = fi - off
-      if (pf == condFrame) continue
+      if (pf == condFrame || pf in corrected) continue
       val hit = bank.firstOrNull { it.frame == pf } ?: continue
       real.add(hit to off - 1)
     }
@@ -312,7 +329,58 @@ class EdgeTamTracker(
     val mask: FloatArray,
     val ptr: FloatArray,
     val appearing: Boolean,
+    val correction: Boolean = false,
   )
+
+  /**
+   * SAM 2's `add_new_mask` on a tracked frame: the given mask becomes this frame's output and a
+   * conditioning memory (always attended to, like the first frame). The object pointer comes from
+   * decoding a point inside the mask on unconditioned features, choosing the candidate that
+   * overlaps the mask best — the port's decoder cannot take a mask prompt.
+   */
+  private fun applyCorrection(
+    state: ObjectState,
+    corrected: FloatArray,
+    pixRaw: FloatArray,
+    hi0: FloatArray,
+    hi1: FloatArray,
+  ): Decoded {
+    var sx = 0.0
+    var sy = 0.0
+    var n = 0
+    for (p in 0 until 65536) if (corrected[p] > 0f) { sx += p % 256; sy += p / 256; n++ }
+    val cx = sx / n
+    val cy = sy / n
+    var inside = 0
+    var bestD = Double.MAX_VALUE
+    for (p in 0 until 65536) {
+      if (corrected[p] <= 0f) continue
+      val d = (p % 256 - cx) * (p % 256 - cx) + (p / 256 - cy) * (p / 256 - cy)
+      if (d < bestD) { bestD = d; inside = p }
+    }
+    val pixFeat = FloatArray(IE)
+    for (c in 0 until 256) {
+      val nm = noMemory[c]
+      val b = c * 4096
+      for (s in 0 until 4096) pixFeat[b + s] = pixRaw[b + s] + nm
+    }
+    val px = (inside % 256 + 0.5f) / 256f * SIZE
+    val py = (inside / 256 + 0.5f) / 256f * SIZE
+    val probe = decodeOne(state, pixFeat, hi0, hi1, pointSparse(px, py)) { out ->
+      (0 until 3).maxBy { k ->
+        var inter = 0
+        var union = 0
+        for (p in 0 until 65536) {
+          val a = out[k * 65536 + p] > 0f
+          val b = corrected[p] > 0f
+          if (a && b) inter++
+          if (a || b) union++
+        }
+        if (union == 0) 0.0 else inter.toDouble() / union
+      }
+    }
+    return Decoded(state, corrected, probe.ptr, appearing = true, correction = true)
+  }
 
   /** Decode, pick the best candidate, gate on the object score; returns 256x256 logits. */
   private fun decodeOne(
@@ -374,14 +442,16 @@ class EdgeTamTracker(
       t = System.nanoTime()
       val memIn = FloatArray(2 * IE)
       System.arraycopy(pixRaw, 0, memIn, 0, IE)
-      maskForMem(forMemory[i], memIn, IE, soft = fi > 0)
+      // A correction is a given mask, not a prediction: binarised, like the first frame's.
+      maskForMem(forMemory[i], memIn, IE, soft = fi > 0 && !d.correction)
       timing.kotlinNs += System.nanoTime() - t
 
       t = System.nanoTime()
       val mo = run1(memorize, memIn)
       timing.memorizeNs += System.nanoTime() - t
 
-      d.state.spatial.add(Spatial(fi, mo.copyOfRange(0, SPT * MEMCH), mo.copyOfRange(SPT * MEMCH, 2 * SPT * MEMCH)))
+      val memory = Spatial(fi, mo.copyOfRange(0, SPT * MEMCH), mo.copyOfRange(SPT * MEMCH, 2 * SPT * MEMCH))
+      if (d.correction) d.state.conds.add(memory) else d.state.spatial.add(memory)
       d.state.pointers.add(Pointer(fi, d.ptr))
       prune(d.state, fi)
     }
@@ -458,6 +528,8 @@ class EdgeTamTracker(
   }
 
   companion object {
+    /** Conditioning memories kept from corrections, besides the first frame. */
+    private const val MAX_CORRECTIONS = 2
     /** Bump whenever the .tflite assets change. 2: memcond without constant-only ops. */
     private const val MODEL_VERSION = 2
     private const val SIZE = 1024
