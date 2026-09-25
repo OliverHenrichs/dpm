@@ -17,7 +17,9 @@ const trackingDebug: {
   cpuGraphs: [],
   fp32Graphs: ["encode"],
   refine: "guided",
-  trackEvery: 1,
+  // Tracking at 15 fps (interpolating the frames between) looked the same as every frame on
+  // clips 1 and 4 and takes ~0.64 instead of ~1.08 s per frame on a Pixel 10a.
+  trackEvery: 2,
 };
 
 export const setTrackingEvery = (n: number) => {

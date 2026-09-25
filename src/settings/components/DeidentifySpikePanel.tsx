@@ -40,7 +40,7 @@ const DeidentifySpikePanel: React.FC = () => {
   const [placement, setPlacement] = useState(0);
   const [refine, setRefine] = useState<"bilinear" | "guided">("guided");
 
-  const [every, setEvery] = useState(1);
+  const [every, setEvery] = useState(2);
 
   const chooseEvery = (n: number) => {
     setEvery(n);
