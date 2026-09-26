@@ -31,7 +31,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
-| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — works on the Pixel (tracking, arms, ~12 min per 30 s); integration open | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
 | 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **M–L** | idea | [L4](#l4--transcripts-of-what-teachers-say-in-a-video) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
@@ -71,7 +71,7 @@ Phase 0  F1 ◐ ─────────────────────�
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
-Phase 4  L3: works on device (EdgeTAM + RF-DETR + pose, ~12 min per 30 s); integration open
+Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
 ```
 
 **Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
@@ -1528,13 +1528,76 @@ Further levers, each smaller than those above:
 - pose on every second frame, with joints interpolated
 - converting the tracking graphs with batch 2, so both dancers go in one call
 
+The open items moved to the next section.
+
+#### In the app (2026-09-26)
+
+Commits `fb22189` to `0a6feb4`. The dev panel is gone; the feature lives in a pattern's videos.
+
+**Where it is:**
+- **Edit Pattern → Videos → "Edit video"** (the button next to '+'). Pick one of the pattern's
+  local videos, or one from the gallery (it is added to the pattern first). A sheet shows the
+  video with a trim bar over the whole clip.
+  - **Shorten** cuts the selection at the source's size, audio kept. It needs no taps and has no
+    length cap: a separate feature that happens to share the Media3 pass (`shortenVideo.ts`,
+    `height: 0` keeps the size).
+  - **De-identify** is enabled once the selection fits the provider (1–30 s). The tap step then
+    offers **one dancer or a couple** (`minPromptCount: 1`); the native side was already sized by
+    the number of taps. A video that already is a silhouette can only be shortened, and keeps its
+    provenance.
+- **Pattern list → '+'**: *New pattern*, *From a video* (gallery) and *Record a video* (system
+  camera, via `ImagePicker.launchCameraAsync`). The video seeds the new pattern's form; after
+  saving, "Edit the video?" opens the same sheet — unless a job on that video was already started
+  from the form.
+- A **banner** on the pattern list reports each job; a line links to its pattern (select, open
+  details, scroll to it) when that pattern is in the active list.
+
+**Data:** `IVideoReference.generated = { method, createdAt }` marks a video the app made; export
+format 3.1.0 carries it, and `validateExportData` drops only a malformed field. Generated videos
+show a "Silhouette" badge. A finished job **replaces** the source in the pattern; the original
+stays in the gallery. Picked and recorded videos are now copied into the document directory
+(`persistVideo`) — the picker's cache URIs could vanish, a latent bug for every picked video.
+
+**Background jobs** (`src/deidentify/jobs/jobStore.ts`):
+- A module-level store, not component state. On the phone Android destroyed and recreated the
+  activity mid-run, in the same process: jobs held in React state vanished with the old tree,
+  while the native run carried on and would have written that tree's stale pattern snapshot back.
+- One job at a time (two pipelines do not fit in memory), screen kept awake (`expo-keep-awake`).
+- A job finds its video **by URI** across the list, so it works for a pattern not yet saved. A
+  finished result goes through the attach handler of the *currently mounted* tree
+  (`DeidentifyJobsProvider`, merging with the active list in memory), or straight to storage for
+  another list. `applyReplacements` swaps it into drafts saved later, and an open edit form swaps
+  it in live.
+
+**Pitfalls found:**
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| The trim bar could not be dragged | A React Native `Modal` renders outside the drawer's `GestureHandlerRootView`; an RNGH pan inside never activates on Android | The sheet mounts its own root (noted in `src/pattern/graph/AGENTS.md`) |
+| Dragging near the sheet's edge went "back" | The sheet is not inside `PageContainer`, so its content reached Android's 20 dp back-gesture band | Horizontal padding `SCREEN_EDGE_INSET + 16` |
+| A job "was cancelled", the app "crashed" | The activity was destroyed and recreated four times in one process; the final crash was LogBox dismissing on the dead activity after Metro hot-reloaded half-edited files mid-test | The job store above; don't edit while the user tests |
+| Recording would terminate the app on iOS | `expo-camera`'s `microphonePermission: false` deletes `NSMicrophoneUsageDescription`, and its mods run after `expo-image-picker`'s | Both plugins carry the strings; Android keeps `RECORD_AUDIO` blocked (the camera app records the audio) — see root `AGENTS.md` |
+
+**Removed:** the spike's per-frame method ("On this device": selfie-multiclass, DeepLab, pose
+masks, `MaskCleanup`) and its two models (~18 MB). It lost dancers in closed position. Tracking is
+the only provider; with one, the editor shows no method picker.
+
+**Runs on a Pixel 10a** with these defaults: a couple, 7 s, 0.74 s/frame, both dancers in all 212
+frames, 2 re-anchors; one dancer, 13.4 s, 0.49 s/frame, found in all 400 frames, 2 re-anchors at
+the start. Java heap sat at its 256 MB cap during an earlier run while the system killed other
+apps — watch it on clips near 30 s.
+
 **Open:**
-- A final run of all four clips with these defaults.
-- Move the feature from the dev panel into a pattern's videos, as a generated video reference
-  with its badge.
-- Remove the spike's debug aids: the dev panel with the GPU/CPU, edges and tracking toggles, the
-  kept transcode, the encoder dump, and the chunked diagnostics in the log.
-- The consent UI and a real remote provider.
+- **iOS**: the native module is Android-only (Vision person segmentation or a Core ML EdgeTAM port
+  would be the route; needs a Mac/EAS build). Today the editor button is simply absent there.
+- **Consent UI and a remote provider** (e.g. Viggle): `runDeidentify` already refuses
+  `sendsFootageOffDevice` without a recorded consent; the step that records it does not exist.
+- Remaining debug options in the native module: the GPU/CPU placement and fp32 overrides, the kept
+  transcode, the encoder dump. `onDeviceTracking.ts` still exports their setters.
+- A job lives only as long as the process; if Android kills the app mid-run the job is lost (the
+  original video is untouched). A foreground service would fix it.
+- A banner line for a job in another list is plain text; opening would need switching lists.
+- Release size: only EdgeTAM, RF-DETR and the pose model are packaged now (~130 MB of weights).
 
 ---
 
