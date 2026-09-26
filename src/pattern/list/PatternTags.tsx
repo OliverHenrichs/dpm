@@ -84,7 +84,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     tagsContainer: {
       ...getCommonBorder(palette),
       padding: 6,
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
       position: "relative",
     },
     tagsRow: {
@@ -96,12 +96,12 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     tagItem: {
       ...getCommonBorder(palette),
       ...getCommonRow(),
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
       paddingHorizontal: 8,
     },
-    tagText: { color: palette[PaletteColor.TagText], fontSize: 14 },
+    tagText: { color: palette[PaletteColor.OnSurfaceVariant], fontSize: 14 },
     tagRemove: {
-      color: palette[PaletteColor.TagText],
+      color: palette[PaletteColor.OnSurfaceVariant],
       fontSize: 16,
       marginLeft: 4,
     },

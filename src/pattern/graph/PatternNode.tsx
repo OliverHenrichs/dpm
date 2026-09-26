@@ -75,7 +75,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
         y={y - NODE_HEIGHT / 2}
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
-        fill={palette[PaletteColor.PrimaryText]}
+        fill={palette[PaletteColor.Text]}
         fillOpacity={bgOpacity}
         stroke={borderColor}
         strokeWidth={2}
@@ -110,7 +110,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
         y={y - 5}
         fontSize={12}
         fontWeight="bold"
-        fill={palette[PaletteColor.PrimaryText]}
+        fill={palette[PaletteColor.Text]}
         textAnchor="middle"
       >
         {displayName}
@@ -121,7 +121,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
         x={x}
         y={y + 11}
         fontSize={10}
-        fill={palette[PaletteColor.SecondaryText]}
+        fill={palette[PaletteColor.TextMuted]}
         textAnchor="middle"
       >
         {`${pattern.counts} count`}

@@ -156,7 +156,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
     },
     buttonText: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
       fontSize: 12,
       fontWeight: "600",
     },
@@ -185,7 +185,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 14,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     closeButton: {
       fontSize: 12,
@@ -197,7 +197,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     sectionTitle: {
       fontSize: 12,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 4,
     },
     legendItem: {
@@ -215,7 +215,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     legendText: {
       fontSize: 11,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     glyph: {
       marginRight: 8,
@@ -223,7 +223,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     arrowText: {
       fontSize: 18,
       marginRight: 8,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
   });
 

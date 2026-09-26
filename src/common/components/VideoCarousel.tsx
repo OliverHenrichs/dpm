@@ -92,7 +92,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     badgeText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
     paginationText: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
   });
 };

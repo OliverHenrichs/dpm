@@ -103,7 +103,7 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
         value={searchQuery}
         onChangeText={setSearchQuery}
         style={styles.searchInput}
-        placeholderTextColor={palette[PaletteColor.SecondaryText]}
+        placeholderTextColor={palette[PaletteColor.TextMuted]}
         autoFocus={true}
       />
 
@@ -176,7 +176,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       alignItems: "center" as const,
     },
     createNewTagText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "bold" as const,
       fontSize: 14,
     },
@@ -186,7 +186,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     sectionTitle: {
       fontSize: 14,
       fontWeight: "600" as const,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 8,
       textTransform: "uppercase" as const,
     },
@@ -197,13 +197,13 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     },
     existingTagChip: {
       ...getCommonBorder(palette),
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
       paddingVertical: 8,
       paddingHorizontal: 12,
       borderRadius: 16,
     },
     existingTagText: {
-      color: palette[PaletteColor.TagText],
+      color: palette[PaletteColor.OnSurfaceVariant],
       fontSize: 14,
     },
     emptyState: {
@@ -211,7 +211,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       alignItems: "center" as const,
     },
     emptyStateText: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontSize: 14,
       fontStyle: "italic" as const,
     },

@@ -31,7 +31,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     subtitle: {
       fontSize: 14,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 16,
       lineHeight: 20,
     },

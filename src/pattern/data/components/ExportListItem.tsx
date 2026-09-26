@@ -43,7 +43,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       padding: 12,
       borderRadius: 8,
       marginBottom: 8,
-      backgroundColor: palette[PaletteColor.CardBackground],
+      backgroundColor: palette[PaletteColor.Surface],
       borderWidth: 2,
       borderColor: "transparent",
     },
@@ -72,11 +72,11 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     listName: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 4,
     },
     listMeta: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
   });

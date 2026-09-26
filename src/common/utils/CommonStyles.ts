@@ -32,12 +32,12 @@ const createCommonLabel = (
 export const getCommonLabel = (
   palette: Record<PaletteColor, string>,
   color?: string,
-): TextStyle => createCommonLabel(palette, PaletteColor.PrimaryText, color);
+): TextStyle => createCommonLabel(palette, PaletteColor.Text, color);
 
 export const getCommon2ndOrderLabel = (
   palette: Record<PaletteColor, string>,
   color?: string,
-): TextStyle => createCommonLabel(palette, PaletteColor.SecondaryText, color);
+): TextStyle => createCommonLabel(palette, PaletteColor.TextMuted, color);
 
 export const getCommonRow = (): ViewStyle => ({
   flexDirection: "row",
@@ -48,16 +48,17 @@ export const getCommonInput = (
   palette: Record<PaletteColor, string>,
 ): ViewStyle & TextStyle => ({
   ...getCommonBorder(palette),
+  borderColor: palette[PaletteColor.BorderStrong],
   padding: 8,
-  color: palette[PaletteColor.SecondaryText],
-  backgroundColor: palette[PaletteColor.TagBg],
+  color: palette[PaletteColor.Text],
+  backgroundColor: palette[PaletteColor.SurfaceVariant],
 });
 
 export const getCommonPrereqContainer = (
   palette: Record<PaletteColor, string>,
 ): ViewStyle => ({
   ...getCommonBorder(palette),
-  backgroundColor: palette[PaletteColor.TagBg],
+  backgroundColor: palette[PaletteColor.SurfaceVariant],
   padding: 8,
   marginVertical: 8,
 });
@@ -76,7 +77,7 @@ export const getCommonTagItem = (
 ): ViewStyle => ({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: palette[PaletteColor.TagBg],
+  backgroundColor: palette[PaletteColor.SurfaceVariant],
   paddingHorizontal: 8,
   marginRight: 4,
   marginBottom: 4,
@@ -86,7 +87,7 @@ export const getCommonTagItem = (
 export const getCommonTagText = (
   palette: Record<PaletteColor, string>,
 ): TextStyle => ({
-  color: palette[PaletteColor.TagText],
+  color: palette[PaletteColor.OnSurfaceVariant],
   fontSize: 12,
 });
 
@@ -113,7 +114,7 @@ export const getCommonStyles = (colorScheme: "light" | "dark") => {
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     } as TextStyle,
     sectionHeaderRow: {
       flexDirection: "row",

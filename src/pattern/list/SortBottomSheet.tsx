@@ -104,11 +104,11 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     optionActive: {
       borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
     },
     optionText: {
       fontSize: 16,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     optionTextActive: {
       fontWeight: "bold",

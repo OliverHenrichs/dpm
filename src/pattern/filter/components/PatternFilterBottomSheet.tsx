@@ -201,7 +201,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       alignItems: "center" as const,
     },
     resetButtonText: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontWeight: "bold" as const,
       fontSize: 16,
     },
@@ -213,7 +213,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       alignItems: "center" as const,
     },
     applyButtonText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "bold" as const,
       fontSize: 16,
     },

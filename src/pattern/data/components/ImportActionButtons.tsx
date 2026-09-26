@@ -95,13 +95,13 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     actionButtonText: {
       fontSize: 14,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     actionButtonTextSelected: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
     newListBadge: {
-      backgroundColor: palette[PaletteColor.Accent] + "20",
+      backgroundColor: palette[PaletteColor.Success] + "20",
       paddingVertical: 8,
       paddingHorizontal: 12,
       borderRadius: 6,
@@ -109,7 +109,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     newListText: {
       fontSize: 14,
-      color: palette[PaletteColor.Accent],
+      color: palette[PaletteColor.Success],
       fontWeight: "600",
     },
   });

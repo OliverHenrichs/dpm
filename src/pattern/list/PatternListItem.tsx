@@ -127,7 +127,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     patternItemSelected: {
       borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
     },
     patternItemHeader: {
       flexDirection: "row",
@@ -136,12 +136,12 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     patternName: {
       fontWeight: "bold",
       fontSize: 16,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     deleteIcon: {
       fontSize: 20,
       marginLeft: 8,
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
     },
     iconButton: {
       paddingHorizontal: 4,

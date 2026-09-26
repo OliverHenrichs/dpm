@@ -63,7 +63,7 @@ const getStyles = (
   return StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "flex-end" as const,
     },
     bottomSheet: {
@@ -85,11 +85,11 @@ const getStyles = (
     bottomSheetTitle: {
       fontSize: 18,
       fontWeight: "bold" as const,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     closeButton: {
       fontSize: 24,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       padding: 4,
     },
   });

@@ -114,7 +114,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     overlay: {
       flex: 1,
       justifyContent: "flex-end",
-      backgroundColor: palette[PaletteColor.ModalOverlay],
+      backgroundColor: palette[PaletteColor.Overlay],
     },
     card: {
       maxHeight: "92%",
@@ -136,11 +136,11 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       flex: 1,
       fontSize: 18,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     close: {
       fontSize: 20,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       padding: 4,
     },
   });

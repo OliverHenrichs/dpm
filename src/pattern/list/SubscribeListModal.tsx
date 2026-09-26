@@ -156,7 +156,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                 <Icon
                   name="alert-circle-outline"
                   size={18}
-                  color={palette[PaletteColor.Error]}
+                  color={palette[PaletteColor.Danger]}
                 />
                 <Text style={styles.warningText}>
                   {t("sharingNotAvailable")}
@@ -177,7 +177,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                       setPreview(null);
                     }}
                     placeholder="ABC12345"
-                    placeholderTextColor={palette[PaletteColor.SecondaryText]}
+                    placeholderTextColor={palette[PaletteColor.TextMuted]}
                     autoCapitalize="characters"
                     maxLength={8}
                     returnKeyType="search"
@@ -191,7 +191,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     <Icon
                       name="qrcode-scan"
                       size={20}
-                      color={palette[PaletteColor.Surface]}
+                      color={palette[PaletteColor.OnPrimary]}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -205,7 +205,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     <Icon
                       name="magnify"
                       size={20}
-                      color={palette[PaletteColor.Surface]}
+                      color={palette[PaletteColor.OnPrimary]}
                     />
                   </TouchableOpacity>
                 </View>
@@ -225,7 +225,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     <Icon
                       name="cloud-check-outline"
                       size={20}
-                      color={palette[PaletteColor.Accent]}
+                      color={palette[PaletteColor.Success]}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.previewName}>{preview.name}</Text>
@@ -279,7 +279,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
       padding: 20,
@@ -294,13 +294,13 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 20,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 16,
     },
     label: {
       fontSize: 13,
       fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 8,
     },
     inputRow: {
@@ -319,7 +319,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       fontSize: 20,
       fontWeight: "bold",
       letterSpacing: 3,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     lookupButton: {
       backgroundColor: palette[PaletteColor.Primary],
@@ -332,7 +332,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       opacity: 0.4,
     },
     errorText: {
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
       fontSize: 13,
       marginBottom: 8,
     },
@@ -343,7 +343,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
       borderRadius: 8,
       padding: 12,
       marginTop: 8,
@@ -352,17 +352,17 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     previewName: {
       fontSize: 15,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     previewMeta: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     warningBox: {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      backgroundColor: palette[PaletteColor.Error] + "15",
+      backgroundColor: palette[PaletteColor.Danger] + "15",
       borderRadius: 8,
       padding: 12,
       marginBottom: 16,
@@ -370,7 +370,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     warningText: {
       flex: 1,
       fontSize: 13,
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
     },
     buttonRow: {
       flexDirection: "row",
@@ -388,7 +388,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     cancelButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     confirmButton: {
       flex: 1,
@@ -403,7 +403,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     confirmButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
   });
 

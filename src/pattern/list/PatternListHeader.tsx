@@ -46,7 +46,7 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
           size={24}
           color={
             hasActiveFilter
-              ? palette[PaletteColor.Accent]
+              ? palette[PaletteColor.Success]
               : palette[PaletteColor.Primary]
           }
         />
@@ -55,7 +55,7 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
         <Icon
           name="lock-outline"
           size={24}
-          color={palette[PaletteColor.SecondaryText]}
+          color={palette[PaletteColor.TextMuted]}
           accessibilityLabel={t("readonlyList")}
         />
       ) : (

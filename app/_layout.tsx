@@ -79,11 +79,11 @@ function AppDrawer() {
               swipeEdgeWidth: 40,
               drawerStyle: styles.drawerStyle,
               drawerActiveTintColor: palette[PaletteColor.Primary],
-              drawerInactiveTintColor: palette[PaletteColor.SecondaryText],
+              drawerInactiveTintColor: palette[PaletteColor.TextMuted],
               drawerLabelStyle: {
                 fontSize: 16,
                 fontWeight: "500",
-                color: palette[PaletteColor.PrimaryText],
+                color: palette[PaletteColor.Text],
               },
             }}
             drawerContent={(props) => (

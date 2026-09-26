@@ -204,16 +204,16 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     languageValue: {
       fontSize: 16,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     languageEnglishName: {
       flex: 1,
       fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     languageChevron: {
       fontSize: 20,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     themeRow: {
       flexDirection: "row",
@@ -233,11 +233,11 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: palette[PaletteColor.Primary],
     },
     themeButtonText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       fontWeight: "bold",
     },
     themeButtonTextSelected: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
   });
 

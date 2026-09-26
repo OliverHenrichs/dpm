@@ -26,7 +26,7 @@ const NameFilter: React.FC<NameFilterProps> = ({
         value={value}
         onChangeText={onChange}
         style={styles.input}
-        placeholderTextColor={palette[PaletteColor.SecondaryText]}
+        placeholderTextColor={palette[PaletteColor.TextMuted]}
       />
     </View>
   );

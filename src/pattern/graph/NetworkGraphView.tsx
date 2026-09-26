@@ -154,7 +154,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     emptyText: {
       fontSize: 16,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       textAlign: "center",
     },
   });

@@ -407,10 +407,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     tabText: {
       fontSize: 14,
       fontWeight: "500",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     tabTextActive: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "700",
     },
     tabBadge: {
@@ -419,7 +419,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.3)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
     },
@@ -441,13 +441,13 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     emptyStateText: {
       fontSize: 18,
       fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 8,
       textAlign: "center",
     },
     emptyStateSubtext: {
       fontSize: 14,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       textAlign: "center",
     },
   });

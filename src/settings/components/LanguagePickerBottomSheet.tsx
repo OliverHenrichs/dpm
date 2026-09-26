@@ -91,12 +91,12 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: "transparent",
     },
     rowSelected: {
-      backgroundColor: palette[PaletteColor.CardBackground],
+      backgroundColor: palette[PaletteColor.Surface],
       borderColor: palette[PaletteColor.Primary],
     },
     label: {
       fontSize: 16,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     labelSelected: {
       fontWeight: "bold",
@@ -105,7 +105,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     englishName: {
       flex: 1,
       fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     check: {
       width: 20,

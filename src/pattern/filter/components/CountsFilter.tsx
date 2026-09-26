@@ -29,7 +29,7 @@ const CountsFilter: React.FC<CountsFilterProps> = ({
         }
         style={styles.input}
         keyboardType="numeric"
-        placeholderTextColor={palette[PaletteColor.SecondaryText]}
+        placeholderTextColor={palette[PaletteColor.TextMuted]}
       />
     </View>
   );

@@ -34,7 +34,7 @@ export const getChipContainer = (): ViewStyle => ({
 
 export const getChip = (palette: Record<PaletteColor, string>): ViewStyle => ({
   ...getCommonBorder(palette),
-  backgroundColor: palette[PaletteColor.TagBg],
+  backgroundColor: palette[PaletteColor.SurfaceVariant],
   paddingVertical: 8,
   paddingHorizontal: 12,
   borderRadius: 16,
@@ -50,14 +50,14 @@ export const getChipSelected = (
 export const getChipText = (
   palette: Record<PaletteColor, string>,
 ): TextStyle => ({
-  color: palette[PaletteColor.TagText],
+  color: palette[PaletteColor.OnSurfaceVariant],
   fontSize: 14,
 });
 
 export const getChipTextSelected = (
   palette: Record<PaletteColor, string>,
 ): TextStyle => ({
-  color: palette[PaletteColor.PrimaryText],
+  color: palette[PaletteColor.OnPrimary],
   fontWeight: "bold",
 });
 

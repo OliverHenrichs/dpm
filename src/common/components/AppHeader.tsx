@@ -95,7 +95,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       textAlign: "center",
       fontSize: 20,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
   });
 export default AppHeader;

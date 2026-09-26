@@ -138,7 +138,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     itemSelected: {
       borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
     },
     itemHeader: {
       flexDirection: "row",
@@ -150,7 +150,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     name: {
       fontWeight: "bold",
       fontSize: 16,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     badges: {
       flexDirection: "row",
@@ -158,26 +158,26 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       marginTop: 2,
     },
     positionBadge: {
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
       borderRadius: 4,
       paddingHorizontal: 6,
       paddingVertical: 1,
     },
     positionBadgeText: {
       fontSize: 10,
-      color: palette[PaletteColor.TagText],
+      color: palette[PaletteColor.OnSurfaceVariant],
       fontWeight: "600",
       textTransform: "uppercase",
     },
     universalBadge: {
-      backgroundColor: palette[PaletteColor.Accent] + "33",
+      backgroundColor: palette[PaletteColor.Success] + "33",
       borderRadius: 4,
       paddingHorizontal: 6,
       paddingVertical: 1,
     },
     universalBadgeText: {
       fontSize: 10,
-      color: palette[PaletteColor.Accent],
+      color: palette[PaletteColor.Success],
       fontWeight: "600",
     },
     actions: {

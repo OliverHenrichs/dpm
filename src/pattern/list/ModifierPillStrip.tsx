@@ -174,7 +174,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 12,
       fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       textTransform: "uppercase",
       letterSpacing: 0.8,
       marginBottom: 4,
@@ -204,19 +204,19 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: palette[PaletteColor.Primary],
     },
     pillUniversal: {
-      borderColor: palette[PaletteColor.Accent],
+      borderColor: palette[PaletteColor.Success],
     },
     pillText: {
       fontSize: 13,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     pillTextSelected: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "600",
     },
     positionBadge: {
       fontSize: 9,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       textTransform: "uppercase",
       fontWeight: "600",
       letterSpacing: 0.5,
@@ -225,7 +225,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       position: "absolute",
       top: -6,
       right: -6,
-      backgroundColor: palette[PaletteColor.Error],
+      backgroundColor: palette[PaletteColor.Danger],
       borderRadius: 9,
       width: 18,
       height: 18,
@@ -234,7 +234,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       zIndex: 2,
     },
     detachButtonText: {
-      color: "#fff",
+      color: palette[PaletteColor.OnDanger],
       fontSize: 13,
       fontWeight: "bold",
       lineHeight: 16,

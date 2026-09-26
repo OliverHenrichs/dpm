@@ -92,12 +92,12 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       alignItems: "center",
     },
     emptyStateText: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontSize: 14,
       fontStyle: "italic",
     },
     emptyStateSubtext: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontSize: 12,
       marginTop: 4,
     },

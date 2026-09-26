@@ -43,10 +43,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     banner: {
       paddingVertical: 8,
       paddingHorizontal: 12,
-      backgroundColor: palette[PaletteColor.Error],
+      backgroundColor: palette[PaletteColor.Danger],
     },
     text: {
-      color: "#FFFFFF",
+      color: palette[PaletteColor.OnDanger],
       fontSize: 13,
       textAlign: "center",
     },

@@ -67,8 +67,10 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
             accessibilityHint={open ? t("videoJobOpenPattern") : undefined}
             style={[
               styles.line,
-              job.status === "failed" && { color: palette[PaletteColor.Error] },
-              job.status === "done" && { color: palette[PaletteColor.Accent] },
+              job.status === "failed" && {
+                color: palette[PaletteColor.Danger],
+              },
+              job.status === "done" && { color: palette[PaletteColor.Success] },
               open && styles.link,
             ]}
           >
@@ -100,7 +102,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: palette[PaletteColor.Border],
       backgroundColor: palette[PaletteColor.Surface],
     },
-    line: { fontSize: 13, color: palette[PaletteColor.PrimaryText] },
+    line: { fontSize: 13, color: palette[PaletteColor.Text] },
     link: { textDecorationLine: "underline" },
     dismissButton: {
       ...getCommonButton(palette, palette[PaletteColor.Border]),
@@ -108,7 +110,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     dismiss: {
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
   });
 

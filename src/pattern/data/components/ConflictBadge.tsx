@@ -17,14 +17,14 @@ export const ConflictBadge: React.FC<ConflictBadgeProps> = ({ palette }) => {
 const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     conflictBadge: {
-      backgroundColor: palette[PaletteColor.Error] + "20",
+      backgroundColor: palette[PaletteColor.Danger] + "20",
       paddingHorizontal: 8,
       paddingVertical: 2,
       borderRadius: 4,
     },
     conflictBadgeText: {
       fontSize: 11,
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
       fontWeight: "600",
     },
   });

@@ -226,7 +226,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 8,
     },
     otherLabel: getCommon2ndOrderLabel(palette),
@@ -257,11 +257,11 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       fontSize: 20,
       fontWeight: "bold",
       marginBottom: 4,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     patternDetailsDesc: {
       fontStyle: "italic",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 8,
     },
     patternDetailsRow: {
@@ -272,7 +272,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     patternDetailsValue: {
       fontSize: 16,
       fontWeight: "bold",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
   });
 };

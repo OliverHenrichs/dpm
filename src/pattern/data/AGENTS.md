@@ -5,11 +5,12 @@ are relative to `src/pattern/data/`.
 
 ## Pattern ids are never reused
 
-`IPatternList.nextPatternId` is a high-water mark and `nextPatternId(list, patterns)` in `patternIds.ts` is the only way to mint one; `usePatternCrud` keeps the mark ahead of every id the list has ever used, measured over the patterns before *and* after each write so a delete cannot lower it. They used to be `max(id) + 1` over the patterns present, which is unique at any instant but not over time — the manual graph layout, which outlives individual patterns, then attached a stored position to whichever pattern later inherited the id. The allocator also takes `max(id) + 1` into account, so a missing or corrupt mark can never produce a collision; that is why there is no migration.
+`IPatternList.nextPatternId` is a high-water mark and `nextPatternId(list, patterns)` in `patternIds.ts` is the only way to mint one; `usePatternCrud` keeps the mark ahead of every id the list has ever used, measured over the patterns before _and_ after each write so a delete cannot lower it. They used to be `max(id) + 1` over the patterns present, which is unique at any instant but not over time — the manual graph layout, which outlives individual patterns, then attached a stored position to whichever pattern later inherited the id. The allocator also takes `max(id) + 1` into account, so a missing or corrupt mark can never produce a collision; that is why there is no migration.
 
 ## Persistence (AsyncStorage)
 
 Storage keys in `PatternListStorage.ts`:
+
 - `@patternLists` — serialised `IPatternList[]` (no patterns)
 - `@patterns_{listId}` — serialised `IPattern[]` for a given list
 - `@activeListId` — UUID of the currently active list
@@ -30,7 +31,6 @@ Patterns and lists are stored under **separate keys**. Always use the helpers in
 
 `clearAllData` removes the per-list `@patterns_*` keys as well as the two top-level ones. `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list no longer exists and is called once, unawaited, from `ActivePatternListProvider` after the initial load — it must never delay or fail first paint.
 
-
 ## Schema versioning and migrations
 
 Stored data carries a version under `@schemaVersion`, and `runMigrations()`
@@ -40,7 +40,7 @@ state that was already there.
 
 Rules for adding one: bump `SCHEMA_VERSION`, add the migration to `MIGRATIONS`, and make it
 **idempotent** — a crash part-way through leaves the version marker unchanged, so it runs again
-next launch. Migrations never run backwards: if the stored version is *ahead* of the build (the
+next launch. Migrations never run backwards: if the stored version is _ahead_ of the build (the
 user installed an older APK over a newer one), nothing runs and the marker is left alone, because
 downgrading the data would discard whatever the newer build added. A failed migration is logged
 and does not block startup; the read-time repairs still cope.
@@ -66,7 +66,7 @@ What it returns is normalised: optional fields filled in, references resolvable.
 downstream re-checks it.
 
 `canImport` (`types/ExportVersion.ts`) owns compatibility, separate from `exportDataVersion` which
-is what we *write*. A newer **minor** is refused rather than parsed best-effort: the writer added
+is what we _write_. A newer **minor** is refused rather than parsed best-effort: the writer added
 a field this build cannot carry, and saving over it would silently drop the user's data. Bumping
 the format means bumping `SUPPORTED_MINOR` here too.
 
@@ -101,8 +101,6 @@ Version `"3.1.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `
 
 Export/import UI lives in `components/` (`PatternListExportModal`, `PatternListImportModal`, and helpers `ConflictBadge`, `ExportListItem`, `ImportListItem`, `ImportSummary`, `SelectAllButton`, `ImportActionButtons`). The backing hooks are `useExportSelection` and `useImportDecisions` (`ImportAction = "skip" | "replace"` per list, defaulting to `skip` on id conflict) in `hooks/`; `src/settings/hooks/useDataTransfer.ts` orchestrates the full flow from `SettingsScreen`.
 
-
 ## Default list templates
 
 `DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames. Picking a template happens in `PatternListTemplateModal`.
-

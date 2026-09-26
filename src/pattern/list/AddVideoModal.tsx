@@ -112,7 +112,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
         <TextInput
           style={[styles.input, urlError ? styles.inputError : null]}
           placeholder={t("videoUrl")}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={palette[PaletteColor.TextMuted]}
           value={url}
           onChangeText={(text) => {
             setUrl(text);
@@ -125,7 +125,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
         <TextInput
           style={styles.input}
           placeholder={t("startTimePlaceholder")}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={palette[PaletteColor.TextMuted]}
           value={startTimeText}
           onChangeText={setStartTimeText}
           keyboardType="numbers-and-punctuation"
@@ -154,10 +154,10 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       marginBottom: 8,
     },
     inputError: {
-      borderColor: palette[PaletteColor.Error],
+      borderColor: palette[PaletteColor.Danger],
     },
     errorText: {
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
       fontSize: 12,
       marginBottom: 8,
     },
@@ -166,7 +166,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       alignItems: "center",
     },
     libraryButtonText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "bold",
       fontSize: 15,
     },
@@ -175,7 +175,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       alignItems: "center",
     },
     addUrlButtonText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "bold",
       fontSize: 15,
     },
@@ -191,7 +191,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       backgroundColor: palette[PaletteColor.Border],
     },
     dividerText: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontSize: 13,
     },
   });

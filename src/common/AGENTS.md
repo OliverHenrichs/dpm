@@ -8,12 +8,21 @@ below are relative to `src/common/`.
 Every component that needs colours does:
 
 ```tsx
-const { colorScheme } = useThemeContext();       // "light" | "dark"
-const palette = getPalette(colorScheme);          // → LightPalette or DarkPalette
+const { colorScheme } = useThemeContext(); // "light" | "dark"
+const palette = getPalette(colorScheme); // → LightPalette or DarkPalette
 // then: palette[PaletteColor.Background], etc.
 ```
 
-Styles are created inline per-render (no shared static stylesheets). `PaletteColor` enum and both palettes live in `utils/ColorPalette.ts`. Recurring style fragments are factored into `utils/CommonStyles.ts` (`getCommonButton`, `getCommonInput`, `getCommonLabel`, …) and `src/pattern/filter/FilterCommonStyles.ts` (chips, filter sections) — reuse those instead of re-declaring them.
+Styles are created inline per-render (no shared static stylesheets). `PaletteColor` enum and both palettes live in `utils/ColorPalette.ts`.
+
+**Pick a role for what the colour is used as, and pair every fill with its `On*` role.** Text or
+an icon on a `Primary` fill is `OnPrimary`, on `Danger` it is `OnDanger` — never `Surface`,
+`Text` or `"#fff"`, which is how selected chips ended up at 2.2:1. `Text` is body text,
+`TextMuted` is hints and placeholders, `Border` is decorative, `BorderStrong` outlines a control
+(inputs), `Overlay` is every modal scrim. `__tests__/unit/ColorPalette.test.ts` holds each
+pairing to WCAG AA in both themes, so a palette tweak that breaks legibility fails CI; a new role
+belongs in its pair list. The only literal colours left are the black scrims and white labels over
+video and the camera, which do not change with the theme. Recurring style fragments are factored into `utils/CommonStyles.ts` (`getCommonButton`, `getCommonInput`, `getCommonLabel`, …) and `src/pattern/filter/FilterCommonStyles.ts` (chips, filter sections) — reuse those instead of re-declaring them.
 
 ## Header layout
 

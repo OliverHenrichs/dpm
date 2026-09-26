@@ -66,11 +66,7 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
               accessibilityRole="button"
               accessibilityLabel={t("closeDetails")}
             >
-              <Icon
-                name="close"
-                size={24}
-                color={palette[PaletteColor.PrimaryText]}
-              />
+              <Icon name="close" size={24} color={palette[PaletteColor.Text]} />
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -98,7 +94,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
     },
@@ -126,7 +122,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     modalTitle: {
       fontSize: 20,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       flex: 1,
     },
     closeButton: {

@@ -125,7 +125,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
           value={modifier.name}
           onChangeText={(text) => setModifier({ ...modifier, name: text })}
           style={styles.input}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={palette[PaletteColor.TextMuted]}
         />
 
         {/* Position */}
@@ -196,7 +196,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
         {/* Buttons */}
         <View style={styles.buttonRow}>
           <TouchableOpacity onPress={handleFinish} style={styles.buttonSave}>
-            <Text style={styles.buttonText}>{t("saveModifier")}</Text>
+            <Text style={styles.buttonTextOnPrimary}>{t("saveModifier")}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={onCancel} style={styles.buttonCancel}>
             <Text style={styles.buttonText}>{t("cancel")}</Text>
@@ -220,7 +220,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 8,
     },
     label: getCommonLabel(palette),
@@ -243,10 +243,10 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     },
     pillText: {
       fontSize: 13,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     pillTextSelected: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "600",
     },
     switchRow: {
@@ -265,7 +265,11 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       backgroundColor: palette[PaletteColor.Border],
     },
     buttonText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
+      fontWeight: "bold",
+    },
+    buttonTextOnPrimary: {
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "bold",
     },
   });

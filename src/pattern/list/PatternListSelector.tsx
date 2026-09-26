@@ -239,7 +239,7 @@ const PatternListSelector: React.FC = () => {
             <Icon
               name="lock-outline"
               size={18}
-              color={palette[PaletteColor.SecondaryText]}
+              color={palette[PaletteColor.TextMuted]}
               accessibilityLabel={t("readonlyList")}
             />
           )}
@@ -440,7 +440,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       gap: 12,
     },
     listCard: {
-      backgroundColor: palette[PaletteColor.CardBackground],
+      backgroundColor: palette[PaletteColor.Surface],
       borderRadius: 12,
       padding: 16,
       borderWidth: 2,
@@ -459,7 +459,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     listName: {
       fontSize: 18,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 4,
     },
     listNameActive: {
@@ -467,7 +467,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     listStyle: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 8,
     },
     typeColorRow: {
@@ -482,7 +482,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     moreTypes: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginLeft: 4,
     },
     activeIndicator: {
@@ -497,7 +497,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     readonlyHint: {
       fontSize: 14,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontStyle: "italic",
     },
     headerActions: {
@@ -518,12 +518,12 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     emptyText: {
       fontSize: 18,
       fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 8,
     },
     emptySubtext: {
       fontSize: 14,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       textAlign: "center",
     },
     actionSheetOptions: {
@@ -540,10 +540,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     actionSheetOptionText: {
       fontSize: 16,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     actionSheetOptionTextDestructive: {
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
     },
   });
 

@@ -81,7 +81,7 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               value={includeVideos}
               onValueChange={setIncludeVideos}
               trackColor={{
-                false: palette[PaletteColor.SecondaryText],
+                false: palette[PaletteColor.TextMuted],
                 true: palette[PaletteColor.Primary],
               }}
               thumbColor={palette[PaletteColor.Border]}
@@ -93,7 +93,7 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               value={exportAsReadonly}
               onValueChange={setExportAsReadonly}
               trackColor={{
-                false: palette[PaletteColor.SecondaryText],
+                false: palette[PaletteColor.TextMuted],
                 true: palette[PaletteColor.Primary],
               }}
               thumbColor={palette[PaletteColor.Border]}
@@ -125,7 +125,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
       padding: 20,
@@ -141,7 +141,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 20,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 16,
     },
     listContainer: {
@@ -157,7 +157,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     toggleLabel: {
       fontSize: 15,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     buttonRow: {
       flexDirection: "row",
@@ -175,7 +175,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     cancelButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     exportButton: {
       flex: 1,
@@ -190,7 +190,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     exportButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
   });
 export default PatternListExportModal;

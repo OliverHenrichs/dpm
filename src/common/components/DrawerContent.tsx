@@ -111,13 +111,13 @@ function getStyles(palette: Record<PaletteColor, string>) {
     itemLabel: {
       fontSize: 16,
       fontWeight: "500",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     divider: {
       height: 1,
       marginHorizontal: 16,
       marginVertical: 8,
-      backgroundColor: palette[PaletteColor.SecondaryText],
+      backgroundColor: palette[PaletteColor.TextMuted],
       opacity: 0.3,
     },
   });

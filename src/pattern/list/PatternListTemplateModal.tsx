@@ -347,7 +347,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           // never say what the field is for.
           accessibilityLabel={t("listName")}
           placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={palette[PaletteColor.TextMuted]}
         />
 
         {/* ── Pattern Types ─────────────────────────────────────────────── */}
@@ -379,7 +379,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                 value={dt.slug}
                 onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
                 placeholder={t("typeName")}
-                placeholderTextColor={palette[PaletteColor.SecondaryText]}
+                placeholderTextColor={palette[PaletteColor.TextMuted]}
                 onFocus={() => setColorPopoverId(null)}
               />
               <TouchableOpacity
@@ -516,7 +516,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
       padding: 20,
@@ -533,19 +533,19 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 22,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 6,
     },
     subtitle: {
       fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 20,
     },
     templateList: {
       maxHeight: 420,
     },
     templateCard: {
-      backgroundColor: palette[PaletteColor.CardBackground],
+      backgroundColor: palette[PaletteColor.Surface],
       borderRadius: 12,
       padding: 16,
       marginBottom: 10,
@@ -559,22 +559,22 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     templateName: {
       fontSize: 17,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 4,
     },
     templateDescription: {
       fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     label: {
       fontSize: 13,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 6,
     },
     sectionHint: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 8,
     },
     input: {
@@ -583,7 +583,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       paddingHorizontal: 12,
       paddingVertical: 10,
       fontSize: 16,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       borderWidth: 1,
       borderColor: palette[PaletteColor.Border],
     },
@@ -639,7 +639,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: "transparent",
     },
     colorSwatchSelected: {
-      borderColor: palette[PaletteColor.PrimaryText],
+      borderColor: palette[PaletteColor.Text],
     },
     typeSlugInput: {
       flex: 1,
@@ -648,16 +648,16 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       paddingHorizontal: 10,
       paddingVertical: 7,
       fontSize: 14,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       borderWidth: 1,
       borderColor: palette[PaletteColor.Border],
     },
     typeSlugInputError: {
-      borderColor: palette[PaletteColor.Error],
+      borderColor: palette[PaletteColor.Danger],
     },
     slugError: {
       fontSize: 11,
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
       marginBottom: 4,
       marginLeft: 36,
     },
@@ -676,10 +676,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     removeTypeButtonText: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     removeTypeButtonTextDisabled: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     addTypeButton: {
       marginTop: 4,
@@ -722,7 +722,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: palette[PaletteColor.Primary],
     },
     checkmark: {
-      color: "#fff",
+      color: palette[PaletteColor.OnPrimary],
       fontSize: 13,
       fontWeight: "bold",
     },
@@ -732,10 +732,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     patternToggleName: {
       fontSize: 14,
       fontWeight: "500",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     patternToggleNameOff: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     patternToggleMeta: {
       flexDirection: "row",
@@ -750,12 +750,12 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     patternToggleSlug: {
       fontSize: 11,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       textTransform: "uppercase",
     },
     patternToggleCounts: {
       fontSize: 11,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     // ── Buttons ────────────────────────────────────────────────────────────
     buttonRow: {
@@ -774,7 +774,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     backButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     createButton: {
       flex: 1,
@@ -789,7 +789,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     createButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
     cancelButton: {
       marginTop: 10,
@@ -798,7 +798,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     cancelButtonText: {
       fontSize: 16,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
   });
 

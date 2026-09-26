@@ -137,7 +137,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
             <Icon
               name="movie-edit"
               size={28}
-              color={palette[PaletteColor.Accent]}
+              color={palette[PaletteColor.Success]}
             />
           </TouchableOpacity>
         )}
@@ -191,7 +191,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     },
     urlPlaceholderText: {
       fontSize: 9,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       textAlign: "center",
       marginTop: 2,
     },
@@ -213,7 +213,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       position: "absolute",
       top: -8,
       right: -8,
-      backgroundColor: palette[PaletteColor.Error],
+      backgroundColor: palette[PaletteColor.Danger],
       borderRadius: 10,
       width: 20,
       height: 20,
@@ -222,7 +222,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       zIndex: 2,
     },
     removeButtonText: {
-      color: "#fff",
+      color: palette[PaletteColor.OnDanger],
       fontWeight: "bold",
       fontSize: 14,
       lineHeight: 18,

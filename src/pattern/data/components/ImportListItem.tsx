@@ -36,7 +36,7 @@ export const ImportListItem: React.FC<ImportListItemProps> = ({
               <Icon
                 name="lock-outline"
                 size={11}
-                color={palette[PaletteColor.SecondaryText]}
+                color={palette[PaletteColor.TextMuted]}
               />
               <Text style={styles.readonlyBadgeText}>{t("readonlyBadge")}</Text>
             </View>
@@ -63,7 +63,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       padding: 12,
       borderRadius: 8,
       marginBottom: 12,
-      backgroundColor: palette[PaletteColor.CardBackground],
+      backgroundColor: palette[PaletteColor.Surface],
       borderWidth: 1,
       borderColor: palette[PaletteColor.Border],
     },
@@ -82,25 +82,25 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 3,
-      backgroundColor: palette[PaletteColor.SecondaryText] + "20",
+      backgroundColor: palette[PaletteColor.TextMuted] + "20",
       paddingHorizontal: 8,
       paddingVertical: 2,
       borderRadius: 4,
     },
     readonlyBadgeText: {
       fontSize: 11,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontWeight: "600",
     },
     listName: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       flex: 1,
     },
     listMeta: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 12,
     },
   });

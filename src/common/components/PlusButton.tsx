@@ -30,7 +30,7 @@ const PlusButton: React.FC<PlusButtonProps> = ({
       <Icon
         name="plus-circle"
         size={size}
-        color={palette[PaletteColor.Accent]}
+        color={palette[PaletteColor.Success]}
       />
     </TouchableOpacity>
   );

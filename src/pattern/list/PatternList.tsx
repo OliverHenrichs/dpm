@@ -258,13 +258,13 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderColor: palette[PaletteColor.Border],
       backgroundColor: palette[PaletteColor.Surface],
     },
-    menuText: { fontSize: 16, color: palette[PaletteColor.PrimaryText] },
+    menuText: { fontSize: 16, color: palette[PaletteColor.Text] },
     emptyState: {
       paddingVertical: 32,
       alignItems: "center",
     },
     emptyStateText: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontSize: 14,
       fontStyle: "italic",
     },

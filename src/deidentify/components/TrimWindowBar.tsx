@@ -153,7 +153,7 @@ const TrimWindowBar: React.FC<Props> = ({
                     styles.playhead,
                     {
                       left: x(playhead),
-                      backgroundColor: palette[PaletteColor.PrimaryText],
+                      backgroundColor: palette[PaletteColor.Text],
                     },
                   ]}
                 />
@@ -162,9 +162,7 @@ const TrimWindowBar: React.FC<Props> = ({
           )}
         </View>
       </GestureDetector>
-      <Text
-        style={[styles.label, { color: palette[PaletteColor.SecondaryText] }]}
-      >
+      <Text style={[styles.label, { color: palette[PaletteColor.TextMuted] }]}>
         {label}
       </Text>
     </View>

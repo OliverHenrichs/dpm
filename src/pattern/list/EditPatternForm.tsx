@@ -336,7 +336,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               setNewPattern({ ...newPattern, name: text })
             }
             style={styles.input}
-            placeholderTextColor={palette[PaletteColor.SecondaryText]}
+            placeholderTextColor={palette[PaletteColor.TextMuted]}
           />
         </View>
         <View style={styles.input}>
@@ -349,7 +349,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             }
             keyboardType="numeric"
             style={styles.input}
-            placeholderTextColor={palette[PaletteColor.SecondaryText]}
+            placeholderTextColor={palette[PaletteColor.TextMuted]}
           />
         </View>
       </View>
@@ -402,7 +402,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         }
         style={styles.textarea}
         multiline
-        placeholderTextColor={palette[PaletteColor.SecondaryText]}
+        placeholderTextColor={palette[PaletteColor.TextMuted]}
       />
       <View style={styles.prereqContainer}>
         <Text style={styles.label}>{t("prerequisites")}</Text>
@@ -411,7 +411,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           value={prereqFilter}
           onChangeText={setPrereqFilter}
           style={styles.filterInput}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={palette[PaletteColor.TextMuted]}
         />
         <ScrollView horizontal>
           {patterns
@@ -610,7 +610,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 
       <View style={styles.buttonRow}>
         <TouchableOpacity onPress={handleFinish} style={styles.buttonIndigo}>
-          <Text style={styles.buttonText}>{t("savePattern")}</Text>
+          <Text style={styles.buttonTextOnPrimary}>{t("savePattern")}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onCancel} style={styles.buttonCancel}>
           <Text style={styles.buttonText}>{t("cancel")}</Text>
@@ -644,7 +644,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 8,
     },
     inputRow: { ...getCommonRow(), gap: 8, marginBottom: 8 },
@@ -661,14 +661,14 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       textDecorationLine: "line-through",
     },
     prereqHint: {
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontSize: 12,
       fontStyle: "italic",
       marginTop: 6,
     },
-    prereqItemText: { color: palette[PaletteColor.PrimaryText], fontSize: 14 },
+    prereqItemText: { color: palette[PaletteColor.Text], fontSize: 14 },
     prereqItemTextSelected: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "bold",
     },
     buttonRow: { ...getCommonRow(), gap: 8 },
@@ -679,7 +679,11 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       backgroundColor: palette[PaletteColor.Border],
     },
     buttonText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
+      fontWeight: "bold",
+    },
+    buttonTextOnPrimary: {
+      color: palette[PaletteColor.OnPrimary],
       fontWeight: "bold",
     },
     videosRow,
@@ -695,14 +699,14 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     },
     readonlyHint: {
       fontSize: 11,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       fontStyle: "italic",
       marginTop: 4,
     },
     jobLine: {
       fontSize: 12,
       marginBottom: 8,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     deidentifyChoices: {
       ...getCommonRow(),
@@ -714,7 +718,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     thumbFallback: {
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
     },
     disabled: { opacity: 0.5 },
     attachPickerItem: {
@@ -727,12 +731,12 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     },
     attachPickerItemText: {
       fontSize: 15,
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       fontWeight: "500",
     },
     attachPickerPositionText: {
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
   });
 };

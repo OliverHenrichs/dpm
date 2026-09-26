@@ -59,7 +59,7 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
           size={24}
           color={
             hasActiveFilter
-              ? palette[PaletteColor.Accent]
+              ? palette[PaletteColor.Success]
               : palette[PaletteColor.Primary]
           }
         />
@@ -72,7 +72,7 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
         <Icon
           name={viewMode === "timeline" ? "graph" : "timeline"}
           size={15}
-          color={palette[PaletteColor.Surface]}
+          color={palette[PaletteColor.OnPrimary]}
         />
         <Text style={styles.buttonText}>{t("toggleView")}</Text>
       </TouchableOpacity>
@@ -103,7 +103,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       paddingVertical: 2,
     },
     buttonText: {
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
       fontSize: 12,
       fontWeight: "600",
     },

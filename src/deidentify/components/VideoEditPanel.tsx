@@ -188,7 +188,9 @@ const VideoEditPanel: React.FC<Props> = ({
         disabled && styles.disabled,
       ]}
     >
-      <Text style={styles.buttonText}>{label}</Text>
+      <Text style={[styles.buttonText, primary && styles.buttonTextOnPrimary]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
   const tapHint = t("deidentifyTapDancers", {
@@ -375,15 +377,16 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       backgroundColor: "#000",
     },
     row: { ...getCommonRow(), gap: 8, flexWrap: "wrap" },
-    text: { color: palette[PaletteColor.PrimaryText] },
-    hint: { fontSize: 13, color: palette[PaletteColor.SecondaryText] },
+    text: { color: palette[PaletteColor.Text] },
+    hint: { fontSize: 13, color: palette[PaletteColor.TextMuted] },
     button: { flexGrow: 1, alignItems: "center" },
     buttonPrimary: getCommonButton(palette),
     buttonSecondary: getCommonButton(palette, palette[PaletteColor.Border]),
     buttonText: {
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       fontWeight: "bold",
     },
+    buttonTextOnPrimary: { color: palette[PaletteColor.OnPrimary] },
     disabled: { opacity: 0.5 },
     choice: {
       paddingHorizontal: 12,
@@ -395,9 +398,9 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     choiceSelected: {
       borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.TagBg],
+      backgroundColor: palette[PaletteColor.SurfaceVariant],
     },
-    choiceText: { color: palette[PaletteColor.PrimaryText] },
+    choiceText: { color: palette[PaletteColor.Text] },
     choiceTextSelected: {
       color: palette[PaletteColor.Primary],
       fontWeight: "bold",

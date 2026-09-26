@@ -89,7 +89,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
       padding: 32,
@@ -104,12 +104,12 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 18,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 10,
     },
     message: {
       fontSize: 15,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       lineHeight: 22,
       marginBottom: 24,
     },
@@ -134,7 +134,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     closeButtonText: {
       fontSize: 15,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     primaryButton: {
       backgroundColor: palette[PaletteColor.Primary],
@@ -142,15 +142,15 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     primaryButtonText: {
       fontSize: 15,
       fontWeight: "600",
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
     destructiveButton: {
-      backgroundColor: palette[PaletteColor.Error],
+      backgroundColor: palette[PaletteColor.Danger],
     },
     destructiveButtonText: {
       fontSize: 15,
       fontWeight: "600",
-      color: "#fff",
+      color: palette[PaletteColor.OnDanger],
     },
   });
 

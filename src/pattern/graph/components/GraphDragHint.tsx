@@ -81,7 +81,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     text: {
       flex: 1,
       fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
     },
     dismissButton: {
       padding: 4,

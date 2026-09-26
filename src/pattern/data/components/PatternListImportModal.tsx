@@ -103,7 +103,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
       padding: 20,
@@ -119,7 +119,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 20,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 8,
     },
     listContainer: {
@@ -142,7 +142,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     cancelButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
     importButton: {
       flex: 1,
@@ -154,7 +154,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     importButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
   });
 export default PatternListImportModal;

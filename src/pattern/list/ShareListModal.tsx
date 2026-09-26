@@ -107,7 +107,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
               <Icon
                 name="alert-circle-outline"
                 size={18}
-                color={palette[PaletteColor.Error]}
+                color={palette[PaletteColor.Danger]}
               />
               <Text style={styles.warningText}>{t("sharingNotAvailable")}</Text>
             </View>
@@ -128,7 +128,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                     size={20}
                     color={
                       copied
-                        ? palette[PaletteColor.Accent]
+                        ? palette[PaletteColor.Success]
                         : palette[PaletteColor.Primary]
                     }
                   />
@@ -150,7 +150,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <QRCode
                     value={list.shareCode}
                     size={160}
-                    color={palette[PaletteColor.PrimaryText]}
+                    color={palette[PaletteColor.Text]}
                     backgroundColor={palette[PaletteColor.Surface]}
                   />
                 </View>
@@ -177,7 +177,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <Icon
                     name="cloud-upload-outline"
                     size={18}
-                    color={palette[PaletteColor.Surface]}
+                    color={palette[PaletteColor.OnPrimary]}
                   />
                   <Text style={styles.primaryButtonText}>
                     {isPublished ? t("syncToCloud") : t("publishToCloud")}
@@ -192,7 +192,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <Icon
                     name="cloud-off-outline"
                     size={18}
-                    color={palette[PaletteColor.Error]}
+                    color={palette[PaletteColor.Danger]}
                   />
                   <Text style={styles.destructiveButtonText}>
                     {t("unpublish")}
@@ -244,7 +244,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: palette[PaletteColor.Overlay],
       justifyContent: "center",
       alignItems: "center",
       padding: 20,
@@ -259,18 +259,18 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     title: {
       fontSize: 20,
       fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
       marginBottom: 4,
     },
     listName: {
       fontSize: 15,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 20,
     },
     sectionLabel: {
       fontSize: 12,
       fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       letterSpacing: 1,
       textTransform: "uppercase",
       marginBottom: 8,
@@ -301,14 +301,14 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     },
     hint: {
       fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
+      color: palette[PaletteColor.TextMuted],
       marginBottom: 20,
     },
     warningBox: {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      backgroundColor: palette[PaletteColor.Error] + "15",
+      backgroundColor: palette[PaletteColor.Danger] + "15",
       borderRadius: 8,
       padding: 12,
       marginBottom: 20,
@@ -316,10 +316,10 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     warningText: {
       flex: 1,
       fontSize: 13,
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
     },
     errorText: {
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
       fontSize: 13,
       marginBottom: 12,
     },
@@ -341,7 +341,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     primaryButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.Surface],
+      color: palette[PaletteColor.OnPrimary],
     },
     destructiveButton: {
       flexDirection: "row",
@@ -351,12 +351,12 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       borderRadius: 8,
       padding: 14,
       borderWidth: 1,
-      borderColor: palette[PaletteColor.Error],
+      borderColor: palette[PaletteColor.Danger],
     },
     destructiveButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.Error],
+      color: palette[PaletteColor.Danger],
     },
     cancelButton: {
       borderRadius: 8,
@@ -368,7 +368,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     cancelButtonText: {
       fontSize: 16,
       fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
+      color: palette[PaletteColor.Text],
     },
   });
 
