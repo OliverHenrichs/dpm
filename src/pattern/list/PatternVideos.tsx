@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import { useTranslation } from "react-i18next";
 import {
   getCommonAddButtonContainer,
@@ -27,7 +21,6 @@ export type PatternVideosProps = {
   onRemoveVideo: (index: number) => void;
   /** Offers editing a video (shorten, de-identify) next to '+'; omitted where that cannot run. */
   onEditVideo?: () => void;
-  palette: Record<PaletteColor, string>;
   disabled?: boolean;
 };
 
@@ -37,11 +30,10 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   onAddVideo,
   onRemoveVideo,
   onEditVideo,
-  palette,
   disabled = false,
 }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
-  const styles = getStyles(palette);
 
   const renderThumbnails = () => {
     if (videoRefs.length === 0) return null;
@@ -134,16 +126,11 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
             accessibilityRole="button"
             accessibilityLabel={t("videoEditA11y")}
           >
-            <Icon
-              name="movie-edit"
-              size={28}
-              color={palette[PaletteColor.Success]}
-            />
+            <Icon name="movie-edit" size={28} color={theme.colors.success} />
           </TouchableOpacity>
         )}
         <PlusButton
           onPress={onAddVideo}
-          palette={palette}
           accessibilityLabel={t("add")}
           disabled={disabled}
         />
@@ -152,14 +139,14 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  return {
     prereqContainer: {
-      ...getCommonPrereqContainer(palette),
+      ...getCommonPrereqContainer(theme),
       position: "relative",
     },
-    label: { ...getCommonLabel(palette) },
-    videosRow: { ...getCommonRow(), gap: 4 },
+    label: { ...getCommonLabel(theme) },
+    videosRow: { ...getCommonRow(), gap: theme.space.xs },
     videosInputRow: {
       ...getCommonRow(),
       minHeight: 64,
@@ -167,7 +154,7 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     },
     thumbnailWrapper: {
       position: "relative",
-      marginTop: 8,
+      marginTop: theme.space.sm,
     },
     thumbnailContainer: {
       position: "relative",
@@ -178,42 +165,42 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     urlPlaceholder: {
       width: 64,
       height: 64,
-      borderRadius: 8,
-      backgroundColor: palette[PaletteColor.Primary] + "33",
+      borderRadius: theme.radius.md,
+      backgroundColor: alpha(theme.colors.primary, 0.2),
       borderWidth: 1,
-      borderColor: palette[PaletteColor.Primary],
+      borderColor: theme.colors.primary,
       justifyContent: "center",
       alignItems: "center",
-      padding: 4,
+      padding: theme.space.xs,
     },
     urlPlaceholderIcon: {
-      fontSize: 20,
+      fontSize: theme.iconSize.md,
     },
     urlPlaceholderText: {
-      fontSize: 9,
-      color: palette[PaletteColor.Text],
+      ...theme.typography.badge,
+      color: theme.colors.text,
       textAlign: "center",
-      marginTop: 2,
+      marginTop: theme.space.xxs,
     },
     urlBadge: {
       position: "absolute",
       bottom: 4,
       right: 0,
-      backgroundColor: "rgba(0,0,0,0.65)",
-      borderRadius: 4,
-      paddingHorizontal: 3,
+      backgroundColor: theme.media.scrim,
+      borderRadius: theme.radius.xs,
+      paddingHorizontal: theme.space.xs,
       paddingVertical: 1,
     },
     urlBadgeText: {
-      color: "#fff",
-      fontSize: 8,
+      ...theme.typography.badge,
+      color: theme.media.onScrim,
       fontWeight: "bold",
     },
     removeButton: {
       position: "absolute",
       top: -8,
       right: -8,
-      backgroundColor: palette[PaletteColor.Danger],
+      backgroundColor: theme.colors.danger,
       borderRadius: 10,
       width: 20,
       height: 20,
@@ -222,18 +209,18 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       zIndex: 2,
     },
     removeButtonText: {
-      color: palette[PaletteColor.OnDanger],
+      ...theme.typography.label,
+      color: theme.colors.onDanger,
       fontWeight: "bold",
-      fontSize: 14,
       lineHeight: 18,
     },
     addButtonContainer: {
       ...getCommonAddButtonContainer(),
       ...getCommonRow(),
-      gap: 4,
+      gap: theme.space.xs,
     },
-    iconButton: { padding: 1, borderRadius: 16 },
-  });
-};
+    iconButton: { padding: 1, borderRadius: theme.radius.xl },
+  };
+});
 
 export default PatternVideos;

@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from "react";
 import {
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import * as ImagePicker from "expo-image-picker";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import {
   IModifier,
   IVideoReference,
@@ -46,9 +44,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
   existing,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const createDefault = (): NewModifier => ({
     name: "",
@@ -125,7 +121,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
           value={modifier.name}
           onChangeText={(text) => setModifier({ ...modifier, name: text })}
           style={styles.input}
-          placeholderTextColor={palette[PaletteColor.TextMuted]}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
         {/* Position */}
@@ -165,10 +161,10 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
               setModifier({ ...modifier, universal: val })
             }
             trackColor={{
-              false: palette[PaletteColor.Border],
-              true: palette[PaletteColor.Primary],
+              false: theme.colors.border,
+              true: theme.colors.primary,
             }}
-            thumbColor={palette[PaletteColor.Surface]}
+            thumbColor={theme.colors.surface}
           />
         </View>
 
@@ -180,7 +176,6 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
               thumbnails={thumbnails}
               onAddVideo={() => setShowAddVideoModal(true)}
               onRemoveVideo={handleRemoveVideo}
-              palette={palette}
               disabled={(modifier.videoRefs?.length ?? 0) >= 3}
             />
             <AddVideoModal
@@ -188,7 +183,6 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
               onClose={() => setShowAddVideoModal(false)}
               onPickFromLibrary={handlePickFromLibrary}
               onAddUrl={handleAddUrlVideo}
-              palette={palette}
             />
           </>
         )}
@@ -207,72 +201,71 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  const baseButton = getCommonButton(palette);
-  const baseInput = getCommonInput(palette);
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  const baseButton = getCommonButton(theme);
+  const baseInput = getCommonInput(theme);
+  return {
     container: {
-      ...getCommonBorder(palette),
-      padding: 8,
-      marginBottom: 16,
-      backgroundColor: palette[PaletteColor.Surface],
+      ...getCommonBorder(theme),
+      padding: theme.space.sm,
+      marginBottom: theme.space.lg,
+      backgroundColor: theme.colors.surface,
     },
     sectionTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      marginBottom: 8,
+      ...theme.typography.title,
+      color: theme.colors.text,
+      marginBottom: theme.space.sm,
     },
-    label: getCommonLabel(palette),
+    label: getCommonLabel(theme),
     input: {
       ...baseInput,
-      marginBottom: 8,
+      marginBottom: theme.space.sm,
     },
     prereqContainer: {
-      ...getCommonPrereqContainer(palette),
+      ...getCommonPrereqContainer(theme),
     },
     row: {
       ...getCommonRow(),
-      gap: 6,
+      gap: theme.space.sm,
       flexWrap: "wrap",
     },
-    prereqItem: getCommonPrereqItem(palette),
+    prereqItem: getCommonPrereqItem(theme),
     prereqItemSelected: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderColor: palette[PaletteColor.Primary],
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
     },
     pillText: {
-      fontSize: 13,
-      color: palette[PaletteColor.Text],
+      ...theme.typography.bodySmall,
+      color: theme.colors.text,
     },
     pillTextSelected: {
-      color: palette[PaletteColor.OnPrimary],
+      color: theme.colors.onPrimary,
       fontWeight: "600",
     },
     switchRow: {
       ...getCommonRow(),
       justifyContent: "space-between",
-      marginVertical: 8,
+      marginVertical: theme.space.sm,
     },
     buttonRow: {
       ...getCommonRow(),
-      gap: 8,
-      marginTop: 8,
+      gap: theme.space.sm,
+      marginTop: theme.space.sm,
     },
     buttonSave: { ...baseButton },
     buttonCancel: {
       ...baseButton,
-      backgroundColor: palette[PaletteColor.Border],
+      backgroundColor: theme.colors.border,
     },
     buttonText: {
-      color: palette[PaletteColor.Text],
+      color: theme.colors.text,
       fontWeight: "bold",
     },
     buttonTextOnPrimary: {
-      color: palette[PaletteColor.OnPrimary],
+      color: theme.colors.onPrimary,
       fontWeight: "bold",
     },
-  });
-};
+  };
+});
 
 export default EditModifierForm;

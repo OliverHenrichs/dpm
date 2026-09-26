@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import {
   getCommon2ndOrderLabel,
   getCommonLabel,
@@ -21,7 +21,6 @@ type PatternDetailsProps = {
   patterns: IPattern[];
   patternTypes?: PatternType[]; // Optional for type name lookup
   modifiers?: IModifier[];
-  palette: Record<PaletteColor, string>;
   /**
    * Rule above the content, separating it from whatever sits on top.
    *
@@ -37,11 +36,9 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   patterns,
   patternTypes,
   modifiers = [],
-  palette,
   showTopSeparator = true,
 }) => {
   const { t } = useTranslation();
-  const styles = getStyles(palette);
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
     null,
   );
@@ -87,7 +84,6 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
       {activeVideoRefs.length > 0 && (
         <VideoCarousel
           videoRefs={activeVideoRefs}
-          palette={palette}
           generatedLabel={t("videoBadgeSilhouette")}
         />
       )}
@@ -120,7 +116,7 @@ function getPrerequisiteView(
   selectedPattern: IPattern,
   patterns: IPattern[],
   t: any,
-  styles: ReturnType<typeof getStyles>,
+  styles: Styles,
 ) {
   return (
     <View style={styles.multiSelectContainer}>
@@ -141,7 +137,7 @@ function getPrerequisiteView(
 function getPrerequisites(
   selectedPattern: IPattern,
   patterns: IPattern[],
-  styles: ReturnType<typeof getStyles>,
+  styles: Styles,
 ) {
   return (
     <>
@@ -165,11 +161,7 @@ function getPrerequisites(
  * detail view to ask — an absent tag list carries no information. A bare
  * "Tags:" with a blank after it is just height.
  */
-function getTagView(
-  selectedPattern: IPattern,
-  t: any,
-  styles: ReturnType<typeof getStyles>,
-) {
+function getTagView(selectedPattern: IPattern, t: any, styles: Styles) {
   if (selectedPattern.tags.length === 0) return null;
 
   return (
@@ -192,7 +184,7 @@ function getBuildsIntoView(
   selectedPattern: IPattern,
   patterns: IPattern[],
   t: any,
-  styles: ReturnType<typeof getStyles>,
+  styles: Styles,
 ) {
   const dependents = patterns.filter((pattern) =>
     pattern.prerequisites.includes(selectedPattern.id),
@@ -221,60 +213,60 @@ function getBuildsIntoView(
   );
 }
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  return {
     sectionTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      marginBottom: 8,
+      ...theme.typography.title,
+      color: theme.colors.text,
+      marginBottom: theme.space.sm,
     },
-    otherLabel: getCommon2ndOrderLabel(palette),
-    label: getCommonLabel(palette),
+    otherLabel: getCommon2ndOrderLabel(theme),
+    label: getCommonLabel(theme),
     multiSelectContainer: {
-      ...getCommonPrereqContainer(palette),
-      marginTop: 0,
+      ...getCommonPrereqContainer(theme),
+      marginTop: theme.space.none,
     },
-    prereqItem: getCommonPrereqItem(palette),
+    prereqItem: getCommonPrereqItem(theme),
     tagsRow: {
       ...getCommonRow(),
       flexWrap: "wrap",
     },
-    tagItem: getCommonTagItem(palette),
-    tagText: getCommonTagText(palette),
+    tagItem: getCommonTagItem(theme),
+    tagText: getCommonTagText(theme),
     detailsContainer: {
       borderTopWidth: 1,
-      borderTopColor: palette[PaletteColor.Border],
-      paddingTop: 8,
-      marginTop: 6,
+      borderTopColor: theme.colors.border,
+      paddingTop: theme.space.sm,
+      marginTop: theme.space.sm,
     },
     unseparated: {
       borderTopWidth: 0,
-      paddingTop: 0,
-      marginTop: 0,
+      paddingTop: theme.space.none,
+      marginTop: theme.space.none,
     },
     patternName: {
-      fontSize: 20,
-      fontWeight: "bold",
-      marginBottom: 4,
-      color: palette[PaletteColor.Text],
+      ...theme.typography.headline,
+      marginBottom: theme.space.xs,
+      color: theme.colors.text,
     },
     patternDetailsDesc: {
       fontStyle: "italic",
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 8,
+      color: theme.colors.textMuted,
+      marginBottom: theme.space.sm,
     },
     patternDetailsRow: {
       ...getCommonRow(),
-      marginBottom: 8,
+      marginBottom: theme.space.sm,
     },
     patternDetailsCol: { flex: 1 },
     patternDetailsValue: {
-      fontSize: 16,
+      ...theme.typography.button,
       fontWeight: "bold",
-      color: palette[PaletteColor.TextMuted],
+      color: theme.colors.textMuted,
     },
-  });
-};
+  };
+});
 
 export default PatternDetails;
+
+type Styles = typeof styles;

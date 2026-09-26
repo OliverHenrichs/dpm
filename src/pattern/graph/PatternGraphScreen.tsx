@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
 import PatternGraphHeader from "./PatternGraphHeader";
 import GraphViewContainer from "./GraphViewContainer";
@@ -23,9 +22,7 @@ import { useGraphLayout } from "@/src/pattern/graph/hooks/useGraphLayout";
 
 const PatternGraphScreen: React.FC = () => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
   const { activeList, patterns } = useActivePatternList();
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
@@ -89,9 +86,7 @@ const PatternGraphScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <PageContainer
-        style={{ backgroundColor: palette[PaletteColor.Background] }}
-      >
+      <PageContainer style={{ backgroundColor: theme.colors.background }}>
         <AppHeader />
 
         <View style={styles.contentContainer}>
@@ -106,7 +101,6 @@ const PatternGraphScreen: React.FC = () => {
 
           <GraphDragHint
             visible={viewMode === "graph" && model.nodes.length > 0}
-            palette={palette}
           />
 
           <GraphFilterSummary
@@ -115,14 +109,12 @@ const PatternGraphScreen: React.FC = () => {
             shown={shownCount}
             total={totalCount}
             onClear={clearFilter}
-            palette={palette}
           />
 
           <GraphViewContainer
             viewMode={viewMode}
             model={model}
             patternTypes={patternTypes}
-            palette={palette}
             resetKey={contentKey}
             hasActiveFilter={hasActiveFilter}
             positions={positions}
@@ -139,11 +131,7 @@ const PatternGraphScreen: React.FC = () => {
           allPatterns={patterns}
           patternTypes={patternTypes}
           headerSection={
-            <ChainModeFilter
-              chainMode={chainMode}
-              onChange={setChainMode}
-              palette={palette}
-            />
+            <ChainModeFilter chainMode={chainMode} onChange={setChainMode} />
           }
         />
 
@@ -170,12 +158,11 @@ const PatternGraphScreen: React.FC = () => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    contentContainer: {
-      ...getCommonListContainer(palette),
-      flex: 1,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  contentContainer: {
+    ...getCommonListContainer(theme),
+    flex: 1,
+  },
+}));
 
 export default PatternGraphScreen;

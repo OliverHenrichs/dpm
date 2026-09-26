@@ -1,8 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonButton } from "@/src/common/utils/CommonStyles";
 import {
   DeidentifyJob,
@@ -23,11 +22,9 @@ type Props = {
  */
 const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
+  const { theme } = useUnistyles();
   const { jobs, dismissFinished } = useDeidentifyJobs();
   if (jobs.length === 0) return null;
-  const styles = getStyles(palette);
 
   const line = (job: DeidentifyJob) => {
     const name = job.patternName;
@@ -68,9 +65,9 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
             style={[
               styles.line,
               job.status === "failed" && {
-                color: palette[PaletteColor.Danger],
+                color: theme.colors.danger,
               },
-              job.status === "done" && { color: palette[PaletteColor.Success] },
+              job.status === "done" && { color: theme.colors.success },
               open && styles.link,
             ]}
           >
@@ -91,27 +88,26 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    banner: {
-      gap: 4,
-      padding: 10,
-      marginBottom: 8,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    line: { fontSize: 13, color: palette[PaletteColor.Text] },
-    link: { textDecorationLine: "underline" },
-    dismissButton: {
-      ...getCommonButton(palette, palette[PaletteColor.Border]),
-      alignSelf: "flex-end",
-    },
-    dismiss: {
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  banner: {
+    gap: theme.space.xs,
+    padding: theme.space.md,
+    marginBottom: theme.space.sm,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  line: { ...theme.typography.bodySmall, color: theme.colors.text },
+  link: { textDecorationLine: "underline" },
+  dismissButton: {
+    ...getCommonButton(theme, theme.colors.border),
+    alignSelf: "flex-end",
+  },
+  dismiss: {
+    fontWeight: "bold",
+    color: theme.colors.text,
+  },
+}));
 
 export default DeidentifyJobsBanner;

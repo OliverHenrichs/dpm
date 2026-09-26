@@ -1,6 +1,7 @@
 import { FC } from "react";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import YouTubeVideoItem from "@/src/common/components/YouTubeVideoItem";
 import { isYouTubeUrl } from "@/src/common/utils/YouTubeUtils";
@@ -40,13 +41,13 @@ export const VideoItem: FC<VideoItemProps> = ({ videoRef, width }) => (
   </View>
 );
 
-const localStyles = StyleSheet.create({
+const localStyles = StyleSheet.create((theme) => ({
   videoItemContainer: {
     height: 200,
-    marginBottom: 8,
+    marginBottom: theme.space.sm,
   },
   videoPlayer: {
     width: "100%",
     height: "100%",
   },
-});
+}));

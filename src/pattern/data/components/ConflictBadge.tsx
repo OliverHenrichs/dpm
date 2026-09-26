@@ -1,30 +1,25 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
-interface ConflictBadgeProps {
-  palette: Record<PaletteColor, string>;
-}
-export const ConflictBadge: React.FC<ConflictBadgeProps> = ({ palette }) => {
+export const ConflictBadge: React.FC = () => {
   const { t } = useTranslation();
-  const styles = getStyles(palette);
   return (
     <View style={styles.conflictBadge}>
       <Text style={styles.conflictBadgeText}>{t("existsLabel")}</Text>
     </View>
   );
 };
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    conflictBadge: {
-      backgroundColor: palette[PaletteColor.Danger] + "20",
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 4,
-    },
-    conflictBadgeText: {
-      fontSize: 11,
-      color: palette[PaletteColor.Danger],
-      fontWeight: "600",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  conflictBadge: {
+    backgroundColor: alpha(theme.colors.danger, 0.13),
+    paddingHorizontal: theme.space.sm,
+    paddingVertical: theme.space.xxs,
+    borderRadius: theme.radius.xs,
+  },
+  conflictBadgeText: {
+    ...theme.typography.micro,
+    color: theme.colors.danger,
+  },
+}));

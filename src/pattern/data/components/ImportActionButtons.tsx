@@ -1,24 +1,22 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { ImportAction } from "@/src/pattern/data/hooks/useImportDecisions";
 
 interface ImportActionButtonsProps {
   currentAction: ImportAction;
   hasConflict: boolean;
   onActionChange: (action: ImportAction) => void;
-  palette: Record<PaletteColor, string>;
 }
 
 export const ImportActionButtons: React.FC<ImportActionButtonsProps> = ({
   currentAction,
   hasConflict,
   onActionChange,
-  palette,
 }) => {
   const { t } = useTranslation();
-  const styles = getStyles(palette);
   if (!hasConflict) {
     return (
       <View style={styles.newListBadge}>
@@ -72,44 +70,41 @@ export const ImportActionButtons: React.FC<ImportActionButtonsProps> = ({
     </View>
   );
 };
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    actionButtons: {
-      flexDirection: "row",
-      gap: 8,
-    },
-    actionButton: {
-      flex: 1,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 6,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Background],
-      alignItems: "center",
-    },
-    actionButtonSelected: {
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.Primary],
-    },
-    actionButtonText: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-    },
-    actionButtonTextSelected: {
-      color: palette[PaletteColor.OnPrimary],
-    },
-    newListBadge: {
-      backgroundColor: palette[PaletteColor.Success] + "20",
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 6,
-      alignItems: "center",
-    },
-    newListText: {
-      fontSize: 14,
-      color: palette[PaletteColor.Success],
-      fontWeight: "600",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  actionButtons: {
+    flexDirection: "row",
+    gap: theme.space.sm,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    alignItems: "center",
+  },
+  actionButtonSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
+  },
+  actionButtonText: {
+    ...theme.typography.label,
+    color: theme.colors.text,
+  },
+  actionButtonTextSelected: {
+    color: theme.colors.onPrimary,
+  },
+  newListBadge: {
+    backgroundColor: alpha(theme.colors.success, 0.13),
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    borderRadius: theme.radius.sm,
+    alignItems: "center",
+  },
+  newListText: {
+    ...theme.typography.label,
+    color: theme.colors.success,
+  },
+}));

@@ -1,7 +1,6 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -31,9 +30,6 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
   currentSort,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
 
   const sortOptions: { field: SortField; label: string }[] = [
     { field: "name", label: t("name") },
@@ -57,7 +53,6 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
       visible={visible}
       onClose={onClose}
       title={t("sortPatterns")}
-      palette={palette}
       maxHeight="50%"
     >
       <View style={styles.optionsContainer}>
@@ -87,37 +82,36 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    optionsContainer: {
-      gap: 8,
-    },
-    option: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: 16,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    optionActive: {
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-    },
-    optionText: {
-      fontSize: 16,
-      color: palette[PaletteColor.Text],
-    },
-    optionTextActive: {
-      fontWeight: "bold",
-      color: palette[PaletteColor.Primary],
-    },
-    orderIndicator: {
-      fontSize: 20,
-      color: palette[PaletteColor.Primary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  optionsContainer: {
+    gap: theme.space.sm,
+  },
+  option: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: theme.space.lg,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  optionActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  optionText: {
+    ...theme.typography.body,
+    color: theme.colors.text,
+  },
+  optionTextActive: {
+    fontWeight: "bold",
+    color: theme.colors.primary,
+  },
+  orderIndicator: {
+    fontSize: theme.iconSize.md,
+    color: theme.colors.primary,
+  },
+}));
 
 export default SortBottomSheet;

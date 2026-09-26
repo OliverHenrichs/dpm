@@ -1,6 +1,11 @@
 // @testing-library/react-native v13 registers its Jest matchers automatically;
 // the separate @testing-library/jest-native package is deprecated and gone.
 import { configure } from "@testing-library/react-native";
+// Unistyles is a native module. Its shipped mock resolves every
+// `StyleSheet.create` against the first registered theme, at import, so the
+// themes are registered here, before any component module loads.
+import "react-native-unistyles/mocks";
+import "@/src/common/theme/unistyles";
 import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/async-storage";
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
 import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";

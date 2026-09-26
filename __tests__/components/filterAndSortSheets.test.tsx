@@ -7,7 +7,6 @@ import SortBottomSheet, {
 } from "@/src/pattern/list/SortBottomSheet";
 import TagPickerBottomSheet from "@/src/pattern/list/TagPickerBottomSheet";
 import PatternTags from "@/src/pattern/list/PatternTags";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
@@ -20,7 +19,6 @@ import {
   screen,
 } from "@/utils/renderWithProviders";
 
-const palette = getPalette("light");
 const PUSH = createTestPatternType({ slug: "push" });
 const PASS = createTestPatternType({ slug: "pass" });
 

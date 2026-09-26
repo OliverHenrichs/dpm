@@ -2,15 +2,13 @@ import React, { useState } from "react";
 import {
   Modal,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { useExportSelection } from "@/src/pattern/data/hooks/useExportSelection";
@@ -34,9 +32,7 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
   const {
     selectedIds,
     toggleSelection,
@@ -62,7 +58,6 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
           <SelectAllButton
             allSelected={stats.allSelected}
             onToggle={toggleSelectAll}
-            palette={palette}
           />
           <ScrollView style={styles.listContainer}>
             {patternLists.map((list) => (
@@ -71,7 +66,6 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
                 list={list}
                 isSelected={selectedIds.has(list.id)}
                 onToggle={() => toggleSelection(list.id)}
-                palette={palette}
               />
             ))}
           </ScrollView>
@@ -81,10 +75,10 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               value={includeVideos}
               onValueChange={setIncludeVideos}
               trackColor={{
-                false: palette[PaletteColor.TextMuted],
-                true: palette[PaletteColor.Primary],
+                false: theme.colors.textMuted,
+                true: theme.colors.primary,
               }}
-              thumbColor={palette[PaletteColor.Border]}
+              thumbColor={theme.colors.border}
             />
           </View>
           <View style={styles.toggleRow}>
@@ -93,10 +87,10 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               value={exportAsReadonly}
               onValueChange={setExportAsReadonly}
               trackColor={{
-                false: palette[PaletteColor.TextMuted],
-                true: palette[PaletteColor.Primary],
+                false: theme.colors.textMuted,
+                true: theme.colors.primary,
               }}
-              thumbColor={palette[PaletteColor.Border]}
+              thumbColor={theme.colors.border}
             />
           </View>
           <View style={styles.buttonRow}>
@@ -121,76 +115,72 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
     </Modal>
   );
 };
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Overlay],
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    modalContent: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 500,
-      maxHeight: "80%",
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      marginBottom: 16,
-    },
-    listContainer: {
-      maxHeight: 400,
-      marginBottom: 16,
-    },
-    toggleRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingVertical: 10,
-      marginBottom: 12,
-    },
-    toggleLabel: {
-      fontSize: 15,
-      color: palette[PaletteColor.Text],
-    },
-    buttonRow: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    cancelButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-    },
-    exportButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-    },
-    exportButtonDisabled: {
-      opacity: 0.5,
-    },
-    exportButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.OnPrimary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.space.xl,
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 500,
+    maxHeight: "80%",
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.lg,
+  },
+  listContainer: {
+    maxHeight: 400,
+    marginBottom: theme.space.lg,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: theme.space.md,
+    marginBottom: theme.space.md,
+  },
+  toggleLabel: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.text,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  cancelButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.text,
+  },
+  exportButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+  },
+  exportButtonDisabled: {
+    opacity: 0.5,
+  },
+  exportButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.onPrimary,
+  },
+}));
 export default PatternListExportModal;

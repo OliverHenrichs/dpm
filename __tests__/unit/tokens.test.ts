@@ -1,9 +1,11 @@
 import {
-  DarkPalette,
-  LightPalette,
-  Palette,
-  PaletteColor as C,
-} from "@/src/common/utils/ColorPalette";
+  alpha,
+  ColorTokens,
+  darkColors,
+  lightColors,
+} from "@/src/common/theme/tokens";
+
+type C = keyof ColorTokens;
 
 /** WCAG 2.x relative luminance of a `#rrggbb` colour. */
 function luminance(hex: string): number {
@@ -26,42 +28,50 @@ const TEXT = 4.5;
 /** Control boundaries and meaningful icons: WCAG AA 1.4.11. */
 const NON_TEXT = 3;
 
-const BACKDROPS = [C.Background, C.Surface, C.SurfaceVariant] as const;
+const BACKDROPS: C[] = ["background", "surface", "surfaceVariant"];
 
 /** [foreground, background, minimum ratio] — every pairing the roles promise. */
 const PAIRS: [C, C, number][] = [
   ...BACKDROPS.flatMap((bg): [C, C, number][] => [
-    [C.Text, bg, TEXT],
-    [C.TextMuted, bg, TEXT],
-    [C.Primary, bg, TEXT],
-    [C.Danger, bg, TEXT],
+    ["text", bg, TEXT],
+    ["textMuted", bg, TEXT],
+    ["primary", bg, TEXT],
+    ["danger", bg, TEXT],
   ]),
-  [C.OnPrimary, C.Primary, TEXT],
-  [C.OnDanger, C.Danger, TEXT],
-  [C.OnSurfaceVariant, C.SurfaceVariant, TEXT],
-  [C.OnSurfaceVariant, C.Surface, TEXT],
+  ["onPrimary", "primary", TEXT],
+  ["onDanger", "danger", TEXT],
+  ["onSurfaceVariant", "surfaceVariant", TEXT],
+  ["onSurfaceVariant", "surface", TEXT],
   // Success is for icons and short labels on the page, not inside inputs.
-  [C.Success, C.Background, TEXT],
-  [C.Success, C.Surface, TEXT],
+  ["success", "background", TEXT],
+  ["success", "surface", TEXT],
   // An input's outline is judged against what surrounds it, not its own fill.
-  [C.BorderStrong, C.Surface, NON_TEXT],
-  [C.BorderStrong, C.Background, NON_TEXT],
+  ["borderStrong", "surface", NON_TEXT],
+  ["borderStrong", "background", NON_TEXT],
   // Secondary buttons are filled with Border.
-  [C.Text, C.Border, TEXT],
+  ["text", "border", TEXT],
 ];
 
 describe.each([
-  ["light", LightPalette],
-  ["dark", DarkPalette],
-] as [string, Palette][])("%s palette", (_, palette) => {
+  ["light", lightColors],
+  ["dark", darkColors],
+] as [string, ColorTokens][])("%s colours", (_, palette) => {
   it.each(PAIRS)("%s on %s reaches %s:1", (fg, bg, min) => {
     expect(contrast(palette[fg], palette[bg])).toBeGreaterThanOrEqual(min);
   });
 
   it("uses 6-digit hex for every solid colour, so a hex alpha can be appended", () => {
-    for (const role of Object.values(C)) {
-      if (role === C.Overlay) continue;
+    for (const role of Object.keys(palette) as C[]) {
+      if (role === "overlay") continue;
       expect(palette[role]).toMatch(/^#[0-9a-f]{6}$/);
     }
+  });
+});
+
+describe("alpha", () => {
+  it("appends the opacity as a hex byte", () => {
+    expect(alpha("#4f46e5", 0)).toBe("#4f46e500");
+    expect(alpha("#4f46e5", 0.12)).toBe("#4f46e51f");
+    expect(alpha("#4f46e5", 1)).toBe("#4f46e5ff");
   });
 });

@@ -1,11 +1,10 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { TouchableOpacity } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 
 interface PlusButtonProps {
   onPress: () => void;
-  palette: Record<PaletteColor, string>;
   accessibilityLabel?: string;
   disabled?: boolean;
   size?: number;
@@ -13,12 +12,11 @@ interface PlusButtonProps {
 
 const PlusButton: React.FC<PlusButtonProps> = ({
   onPress,
-  palette,
   accessibilityLabel,
   disabled = false,
   size = 28,
 }) => {
-  const styles = getStyles();
+  const { theme } = useUnistyles();
 
   return (
     <TouchableOpacity
@@ -27,21 +25,16 @@ const PlusButton: React.FC<PlusButtonProps> = ({
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
     >
-      <Icon
-        name="plus-circle"
-        size={size}
-        color={palette[PaletteColor.Success]}
-      />
+      <Icon name="plus-circle" size={size} color={theme.colors.success} />
     </TouchableOpacity>
   );
 };
 
-const getStyles = () =>
-  StyleSheet.create({
-    plusButton: {
-      padding: 1,
-      borderRadius: 16,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  plusButton: {
+    padding: 1,
+    borderRadius: theme.radius.xl,
+  },
+}));
 
 export default PlusButton;

@@ -1,9 +1,8 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { ScrollView, Text, TouchableOpacity } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/src/common/components/BottomSheet";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { LANGUAGES } from "@/src/settings/types/Languages";
 
 interface LanguagePickerBottomSheetProps {
@@ -26,9 +25,6 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
   onSelect,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
 
   const handleSelect = (code: string) => {
     onSelect(code);
@@ -40,7 +36,6 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
       visible={visible}
       onClose={onClose}
       title={t("selectLanguage")}
-      palette={palette}
     >
       <ScrollView contentContainerStyle={styles.listContent}>
         {LANGUAGES.map((language) => {
@@ -75,45 +70,44 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    listContent: {
-      paddingBottom: 8,
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      paddingVertical: 14,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: "transparent",
-    },
-    rowSelected: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderColor: palette[PaletteColor.Primary],
-    },
-    label: {
-      fontSize: 16,
-      color: palette[PaletteColor.Text],
-    },
-    labelSelected: {
-      fontWeight: "bold",
-      color: palette[PaletteColor.Primary],
-    },
-    englishName: {
-      flex: 1,
-      fontSize: 13,
-      color: palette[PaletteColor.TextMuted],
-    },
-    check: {
-      width: 20,
-      textAlign: "right",
-      fontSize: 16,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Primary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  listContent: {
+    paddingBottom: theme.space.sm,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+    paddingVertical: theme.space.lg,
+    paddingHorizontal: theme.space.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  rowSelected: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.primary,
+  },
+  label: {
+    ...theme.typography.body,
+    color: theme.colors.text,
+  },
+  labelSelected: {
+    fontWeight: "bold",
+    color: theme.colors.primary,
+  },
+  englishName: {
+    ...theme.typography.bodySmall,
+    flex: 1,
+    color: theme.colors.textMuted,
+  },
+  check: {
+    ...theme.typography.button,
+    width: 20,
+    textAlign: "right",
+    fontWeight: "bold",
+    color: theme.colors.primary,
+  },
+}));
 
 export default LanguagePickerBottomSheet;

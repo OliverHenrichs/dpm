@@ -1,19 +1,18 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import Svg, { Circle, Path } from "react-native-svg";
 
 interface LegendProps {
-  palette: Record<PaletteColor, string>;
   patternTypes: PatternType[];
 }
 
-const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
+const Legend: React.FC<LegendProps> = ({ patternTypes }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
-  const styles = getStyles(palette);
 
   if (!isExpanded) {
     return (
@@ -54,7 +53,7 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
             style={[
               styles.colorBox,
               {
-                backgroundColor: palette[PaletteColor.Surface],
+                backgroundColor: theme.colors.surface,
                 opacity: 0.3,
               },
             ]}
@@ -66,7 +65,7 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
             style={[
               styles.colorBox,
               {
-                backgroundColor: palette[PaletteColor.Surface],
+                backgroundColor: theme.colors.surface,
                 opacity: 0.5,
               },
             ]}
@@ -78,7 +77,7 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
             style={[
               styles.colorBox,
               {
-                backgroundColor: palette[PaletteColor.Surface],
+                backgroundColor: theme.colors.surface,
                 opacity: 0.7,
               },
             ]}
@@ -94,7 +93,7 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
             style={[
               styles.colorBox,
               {
-                borderColor: palette[PaletteColor.Primary],
+                borderColor: theme.colors.primary,
                 borderWidth: 3,
               },
             ]}
@@ -110,10 +109,7 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
             whatever fonts the device has. */}
         <View style={styles.legendItem}>
           <Svg width={20} height={20} style={styles.glyph}>
-            <Path
-              d="M 6 6 L 14 10 L 6 14 Z"
-              fill={palette[PaletteColor.Primary]}
-            />
+            <Path d="M 6 6 L 14 10 L 6 14 Z" fill={theme.colors.primary} />
           </Svg>
           <Text style={styles.legendText}>{t("legendHasVideo")}</Text>
         </View>
@@ -125,7 +121,7 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
                 cx={5 + index * 5}
                 cy={10}
                 r={1.6}
-                fill={palette[PaletteColor.Primary]}
+                fill={theme.colors.primary}
               />
             ))}
           </Svg>
@@ -142,89 +138,86 @@ const Legend: React.FC<LegendProps> = ({ palette, patternTypes }) => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    collapsedButton: {
-      position: "absolute",
-      bottom: 10,
-      right: 16,
-      backgroundColor: palette[PaletteColor.Primary],
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 8,
-      elevation: 4,
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
-    },
-    buttonText: {
-      color: palette[PaletteColor.OnPrimary],
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    expandedContainer: {
-      position: "absolute",
-      bottom: 10,
-      right: 16,
-      backgroundColor: palette[PaletteColor.Surface],
-      borderWidth: 2,
-      borderColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 12,
-      maxWidth: 200,
-      elevation: 4,
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
-    },
-    header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: palette[PaletteColor.Border],
-      paddingBottom: 8,
-    },
-    title: {
-      fontSize: 14,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-    },
-    closeButton: {
-      fontSize: 12,
-      color: palette[PaletteColor.Primary],
-    },
-    section: {
-      marginBottom: 12,
-    },
-    sectionTitle: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-      marginBottom: 4,
-    },
-    legendItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginVertical: 2,
-    },
-    colorBox: {
-      width: 20,
-      height: 20,
-      borderWidth: 2,
-      borderRadius: 4,
-      marginRight: 8,
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    legendText: {
-      fontSize: 11,
-      color: palette[PaletteColor.TextMuted],
-    },
-    glyph: {
-      marginRight: 8,
-    },
-    arrowText: {
-      fontSize: 18,
-      marginRight: 8,
-      color: palette[PaletteColor.Text],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  collapsedButton: {
+    position: "absolute",
+    bottom: 10,
+    right: 16,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.sm,
+    borderRadius: theme.radius.md,
+    ...theme.elevation.md,
+  },
+  buttonText: {
+    ...theme.typography.caption,
+    color: theme.colors.onPrimary,
+    fontWeight: "600",
+  },
+  expandedContainer: {
+    position: "absolute",
+    bottom: 10,
+    right: 16,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    maxWidth: 200,
+    ...theme.elevation.md,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingBottom: theme.space.sm,
+  },
+  title: {
+    ...theme.typography.label,
+    fontWeight: "bold",
+    color: theme.colors.text,
+  },
+  closeButton: {
+    ...theme.typography.caption,
+    color: theme.colors.primary,
+  },
+  section: {
+    marginBottom: theme.space.md,
+  },
+  sectionTitle: {
+    ...theme.typography.caption,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginBottom: theme.space.xs,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: theme.space.xxs,
+  },
+  colorBox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderRadius: theme.radius.xs,
+    marginRight: theme.space.sm,
+    backgroundColor: theme.colors.surface,
+  },
+  legendText: {
+    ...theme.typography.micro,
+    color: theme.colors.textMuted,
+  },
+  glyph: {
+    marginRight: theme.space.sm,
+  },
+  arrowText: {
+    ...theme.typography.title,
+    marginRight: theme.space.sm,
+    color: theme.colors.text,
+  },
+}));
 
 export default Legend;

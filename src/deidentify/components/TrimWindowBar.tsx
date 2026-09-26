@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
+import { LayoutChangeEvent, Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import {
   dragWindow,
   formatSeconds,
@@ -50,8 +49,6 @@ const TrimWindowBar: React.FC<Props> = ({
   playhead,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
   const [width, setWidth] = useState(0);
   // Deltas apply to the window as it was when the drag began, so rounding cannot accumulate.
   // Shared values rather than refs, as in useNodeDrag: the React Compiler rejects refs read
@@ -106,15 +103,11 @@ const TrimWindowBar: React.FC<Props> = ({
     onChangeEnd(next);
   };
 
-  const primary = palette[PaletteColor.Primary];
   return (
     <View>
       <GestureDetector gesture={pan}>
         <View
-          style={[
-            styles.track,
-            { backgroundColor: palette[PaletteColor.Surface] },
-          ]}
+          style={styles.track}
           onLayout={(e: LayoutChangeEvent) =>
             setWidth(e.nativeEvent.layout.width)
           }
@@ -135,45 +128,34 @@ const TrimWindowBar: React.FC<Props> = ({
                 testID="trim-window"
                 style={[
                   styles.window,
-                  {
-                    left: x(window.start),
-                    width: x(length),
-                    borderColor: primary,
-                  },
+                  { left: x(window.start), width: x(length) },
                 ]}
               >
-                <View style={[styles.grip, { backgroundColor: primary }]} />
+                <View style={styles.grip} />
                 <View style={styles.fill} />
-                <View style={[styles.grip, { backgroundColor: primary }]} />
+                <View style={styles.grip} />
               </View>
               {playhead !== undefined && (
                 <View
                   pointerEvents="none"
-                  style={[
-                    styles.playhead,
-                    {
-                      left: x(playhead),
-                      backgroundColor: palette[PaletteColor.Text],
-                    },
-                  ]}
+                  style={[styles.playhead, { left: x(playhead) }]}
                 />
               )}
             </>
           )}
         </View>
       </GestureDetector>
-      <Text style={[styles.label, { color: palette[PaletteColor.TextMuted] }]}>
-        {label}
-      </Text>
+      <Text style={styles.label}>{label}</Text>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create((theme) => ({
   track: {
     height: TRACK_HEIGHT,
-    borderRadius: 8,
+    borderRadius: theme.radius.md,
     overflow: "hidden",
+    backgroundColor: theme.colors.surface,
   },
   window: {
     position: "absolute",
@@ -182,10 +164,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderTopWidth: 2,
     borderBottomWidth: 2,
-    borderRadius: 8,
+    borderRadius: theme.radius.md,
+    borderColor: theme.colors.primary,
   },
   grip: {
     width: GRIP_WIDTH,
+    backgroundColor: theme.colors.primary,
   },
   fill: {
     flex: 1,
@@ -195,12 +179,14 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
+    backgroundColor: theme.colors.text,
   },
   label: {
-    marginTop: 6,
-    fontSize: 13,
+    ...theme.typography.bodySmall,
+    marginTop: theme.space.sm,
     textAlign: "center",
+    color: theme.colors.textMuted,
   },
-});
+}));
 
 export default TrimWindowBar;

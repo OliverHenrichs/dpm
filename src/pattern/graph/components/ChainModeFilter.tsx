@@ -1,8 +1,7 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
-import { getFilterCommonStyles } from "@/src/pattern/filter/FilterCommonStyles";
+import { filterStyles as styles } from "@/src/pattern/filter/FilterCommonStyles";
 import { ChainMode } from "@/src/pattern/graph/model/selectSubgraph";
 import {
   CHAIN_MODE_LABELS,
@@ -12,7 +11,6 @@ import {
 interface ChainModeFilterProps {
   chainMode: ChainMode;
   onChange: (mode: ChainMode) => void;
-  palette: Record<PaletteColor, string>;
 }
 
 /**
@@ -24,10 +22,8 @@ interface ChainModeFilterProps {
 const ChainModeFilter: React.FC<ChainModeFilterProps> = ({
   chainMode,
   onChange,
-  palette,
 }) => {
   const { t } = useTranslation();
-  const styles = getFilterCommonStyles(palette);
 
   return (
     <View style={styles.filterSection}>

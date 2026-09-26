@@ -1,13 +1,7 @@
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import {
   getCommonButton,
@@ -21,7 +15,6 @@ export type AddVideoModalProps = {
   onClose: () => void;
   onPickFromLibrary: () => void;
   onAddUrl: (url: string, startTime?: number) => void;
-  palette: Record<PaletteColor, string>;
 };
 
 const AddVideoModal: React.FC<AddVideoModalProps> = ({
@@ -29,10 +22,9 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
   onClose,
   onPickFromLibrary,
   onAddUrl,
-  palette,
 }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
-  const styles = getStyles(palette);
 
   const [url, setUrl] = useState("");
   const [startTimeText, setStartTimeText] = useState("");
@@ -86,7 +78,6 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
       visible={visible}
       onClose={handleClose}
       title={t("addVideo")}
-      palette={palette}
       minHeight="40%"
       maxHeight="70%"
     >
@@ -112,7 +103,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
         <TextInput
           style={[styles.input, urlError ? styles.inputError : null]}
           placeholder={t("videoUrl")}
-          placeholderTextColor={palette[PaletteColor.TextMuted]}
+          placeholderTextColor={theme.colors.textMuted}
           value={url}
           onChangeText={(text) => {
             setUrl(text);
@@ -125,7 +116,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
         <TextInput
           style={styles.input}
           placeholder={t("startTimePlaceholder")}
-          placeholderTextColor={palette[PaletteColor.TextMuted]}
+          placeholderTextColor={theme.colors.textMuted}
           value={startTimeText}
           onChangeText={setStartTimeText}
           keyboardType="numbers-and-punctuation"
@@ -138,63 +129,63 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  const baseButton = getCommonButton(palette);
-  const baseInput = getCommonInput(palette);
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  const baseButton = getCommonButton(theme);
+  const baseInput = getCommonInput(theme);
+  return {
     section: {
-      marginBottom: 8,
+      marginBottom: theme.space.sm,
     },
     label: {
-      ...getCommonLabel(palette),
-      marginBottom: 4,
+      ...getCommonLabel(theme),
+      marginBottom: theme.space.xs,
     },
     input: {
       ...baseInput,
-      marginBottom: 8,
+      marginBottom: theme.space.sm,
     },
     inputError: {
-      borderColor: palette[PaletteColor.Danger],
+      borderColor: theme.colors.danger,
     },
     errorText: {
-      color: palette[PaletteColor.Danger],
-      fontSize: 12,
-      marginBottom: 8,
+      ...theme.typography.caption,
+      color: theme.colors.danger,
+      marginBottom: theme.space.sm,
     },
     libraryButton: {
       ...baseButton,
       alignItems: "center",
     },
     libraryButtonText: {
-      color: palette[PaletteColor.OnPrimary],
+      ...theme.typography.label,
+      color: theme.colors.onPrimary,
       fontWeight: "bold",
-      fontSize: 15,
     },
     addUrlButton: {
       ...baseButton,
       alignItems: "center",
     },
     addUrlButtonText: {
-      color: palette[PaletteColor.OnPrimary],
+      ...theme.typography.label,
+      color: theme.colors.onPrimary,
       fontWeight: "bold",
-      fontSize: 15,
     },
     dividerRow: {
       ...getCommonRow(),
       alignItems: "center",
-      marginVertical: 12,
-      gap: 8,
+      marginVertical: theme.space.md,
+      gap: theme.space.sm,
     },
     dividerLine: {
       flex: 1,
       height: 1,
-      backgroundColor: palette[PaletteColor.Border],
+      backgroundColor: theme.colors.border,
     },
     dividerText: {
-      color: palette[PaletteColor.TextMuted],
-      fontSize: 13,
+      ...theme.typography.bodySmall,
+      color: theme.colors.textMuted,
     },
-  });
-};
+  };
+});
 
 export default AddVideoModal;

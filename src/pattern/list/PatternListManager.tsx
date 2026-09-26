@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
   IPattern,
@@ -20,8 +14,6 @@ import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
@@ -38,8 +30,7 @@ import { patternHasVideo } from "@/src/deidentify/jobs/replaceVideo";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
+  const { theme } = useUnistyles();
   const {
     activeList,
     patterns,
@@ -80,7 +71,6 @@ const PatternListManager = () => {
   const [reveal, setReveal] = useState<{ id: number; at: number }>();
   const [deidentifyTarget, setDeidentifyTarget] =
     useState<DeidentifyTarget | null>(null);
-  const styles = getStyles(palette);
 
   // The mutations live in usePatternCrud; what is left here is which modal is
   // open. Each returns whether it was applied, so a rejected edit — a blank
@@ -188,9 +178,7 @@ const PatternListManager = () => {
   if (!activeList) {
     return (
       <View style={{ flex: 1 }}>
-        <PageContainer
-          style={{ backgroundColor: palette[PaletteColor.Background] }}
-        >
+        <PageContainer style={{ backgroundColor: theme.colors.background }}>
           <AppHeader />
           <View style={styles.emptyStateContainer}>
             <Text style={styles.emptyStateText}>{t("noPatternLists")}</Text>
@@ -205,9 +193,7 @@ const PatternListManager = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <PageContainer
-        style={{ backgroundColor: palette[PaletteColor.Background] }}
-      >
+      <PageContainer style={{ backgroundColor: theme.colors.background }}>
         <AppHeader />
 
         {/* Add / Edit Pattern modals */}
@@ -379,77 +365,74 @@ const PatternListManager = () => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    contentContainer: {
-      ...getCommonListContainer(palette),
-      flex: 1,
-    },
-    container: { flex: 1 },
-    tabStrip: {
-      flexDirection: "row",
-      marginHorizontal: 8,
-      marginBottom: 4,
-      borderRadius: 8,
-      overflow: "hidden",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    tab: {
-      flex: 1,
-      paddingVertical: 8,
-      alignItems: "center",
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    tabActive: {
-      backgroundColor: palette[PaletteColor.Primary],
-    },
-    tabText: {
-      fontSize: 14,
-      fontWeight: "500",
-      color: palette[PaletteColor.TextMuted],
-    },
-    tabTextActive: {
-      color: palette[PaletteColor.OnPrimary],
-      fontWeight: "700",
-    },
-    tabBadge: {
-      fontSize: 12,
-      fontWeight: "400",
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Overlay],
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    modalContent: {
-      borderRadius: 0,
-      padding: 20,
-      minWidth: "80%",
-      maxHeight: "100%",
-      elevation: 5,
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    emptyStateContainer: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 32,
-    },
-    emptyStateText: {
-      fontSize: 18,
-      fontWeight: "600",
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 8,
-      textAlign: "center",
-    },
-    emptyStateSubtext: {
-      fontSize: 14,
-      color: palette[PaletteColor.TextMuted],
-      textAlign: "center",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  contentContainer: {
+    ...getCommonListContainer(theme),
+    flex: 1,
+  },
+  container: { flex: 1 },
+  tabStrip: {
+    flexDirection: "row",
+    marginHorizontal: theme.space.sm,
+    marginBottom: theme.space.xs,
+    borderRadius: theme.radius.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: theme.space.sm,
+    alignItems: "center",
+    backgroundColor: theme.colors.surface,
+  },
+  tabActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  tabText: {
+    ...theme.typography.bodySmall,
+    fontWeight: "500",
+    color: theme.colors.textMuted,
+  },
+  tabTextActive: {
+    color: theme.colors.onPrimary,
+    fontWeight: "700",
+  },
+  tabBadge: {
+    ...theme.typography.caption,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    borderRadius: theme.radius.none,
+    padding: theme.space.xl,
+    minWidth: "80%",
+    maxHeight: "100%",
+    ...theme.elevation.md,
+    backgroundColor: theme.colors.surface,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.space.xxxl,
+  },
+  emptyStateText: {
+    ...theme.typography.title,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+    textAlign: "center",
+  },
+  emptyStateSubtext: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    textAlign: "center",
+  },
+}));
 
 export default PatternListManager;

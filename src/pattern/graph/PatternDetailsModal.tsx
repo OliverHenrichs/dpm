@@ -3,16 +3,14 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { useTranslation } from "react-i18next";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
 
@@ -34,9 +32,7 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   return (
     <Modal
@@ -66,7 +62,7 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
               accessibilityRole="button"
               accessibilityLabel={t("closeDetails")}
             >
-              <Icon name="close" size={24} color={palette[PaletteColor.Text]} />
+              <Icon name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -79,7 +75,6 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
                 patterns={allPatterns}
                 patternTypes={patternTypes}
                 modifiers={modifiers}
-                palette={palette}
                 showTopSeparator={false}
               />
             )}
@@ -90,55 +85,52 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Overlay],
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    modalContent: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 12,
-      padding: 0,
-      minWidth: "85%",
-      // A ceiling, not a height. The card is as tall as its content until the
-      // content would not fit, and only then does the ScrollView start
-      // scrolling — a short pattern gets a short card.
-      maxHeight: "80%",
-      elevation: 5,
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
-    },
-    modalHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      borderBottomWidth: 2,
-      borderBottomColor: palette[PaletteColor.Primary],
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      flex: 1,
-    },
-    closeButton: {
-      padding: 4,
-    },
-    modalScroll: {
-      // React Native's ScrollView puts `flexGrow: 1` on its content container,
-      // which makes it fill the parent's whole allowance — here, the full 80%
-      // — whatever the content's height. Both of these have to be zero for the
-      // card to size itself to what is in it.
-      flexGrow: 0,
-    },
-    modalScrollContent: {
-      flexGrow: 0,
-      padding: 20,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.space.none,
+    minWidth: "85%",
+    // A ceiling, not a height. The card is as tall as its content until the
+    // content would not fit, and only then does the ScrollView start
+    // scrolling — a short pattern gets a short card.
+    maxHeight: "80%",
+    ...theme.elevation.md,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: theme.space.xl,
+    paddingVertical: theme.space.lg,
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.primary,
+  },
+  modalTitle: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    flex: 1,
+  },
+  closeButton: {
+    padding: theme.space.xs,
+  },
+  modalScroll: {
+    // React Native's ScrollView puts `flexGrow: 1` on its content container,
+    // which makes it fill the parent's whole allowance — here, the full 80%
+    // — whatever the content's height. Both of these have to be zero for the
+    // card to size itself to what is in it.
+    flexGrow: 0,
+  },
+  modalScrollContent: {
+    flexGrow: 0,
+    padding: theme.space.xl,
+  },
+}));
 
 export default PatternDetailsModal;

@@ -1,8 +1,8 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 
 interface GraphFilterSummaryProps {
   visible: boolean;
@@ -10,7 +10,6 @@ interface GraphFilterSummaryProps {
   shown: number;
   total: number;
   onClear: () => void;
-  palette: Record<PaletteColor, string>;
 }
 
 /**
@@ -27,12 +26,10 @@ const GraphFilterSummary: React.FC<GraphFilterSummaryProps> = ({
   shown,
   total,
   onClear,
-  palette,
 }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
   if (!visible) return null;
-
-  const styles = getStyles(palette);
 
   return (
     <View style={styles.bar}>
@@ -45,37 +42,32 @@ const GraphFilterSummary: React.FC<GraphFilterSummaryProps> = ({
         accessibilityRole="button"
         accessibilityLabel={t("clearFilter")}
       >
-        <Icon
-          name="close-circle"
-          size={18}
-          color={palette[PaletteColor.Primary]}
-        />
+        <Icon name="close-circle" size={18} color={theme.colors.primary} />
       </TouchableOpacity>
     </View>
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    bar: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 8,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      backgroundColor: palette[PaletteColor.Surface],
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: palette[PaletteColor.Border],
-    },
-    text: {
-      flex: 1,
-      fontSize: 12,
-      color: palette[PaletteColor.TextMuted],
-    },
-    clearButton: {
-      padding: 4,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  bar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.space.sm,
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+  },
+  text: {
+    ...theme.typography.caption,
+    flex: 1,
+    color: theme.colors.textMuted,
+  },
+  clearButton: {
+    padding: theme.space.xs,
+  },
+}));
 
 export default GraphFilterSummary;

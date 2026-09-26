@@ -1,16 +1,8 @@
 import React from "react";
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import VideoEditPanel from "@/src/deidentify/components/VideoEditPanel";
 import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
@@ -40,10 +32,7 @@ type Props = {
  */
 const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
   const { start } = useDeidentifyJobs();
-  const styles = getStyles(palette);
 
   return (
     <Modal
@@ -108,41 +97,39 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    root: { flex: 1 },
-    overlay: {
-      flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: palette[PaletteColor.Overlay],
-    },
-    card: {
-      maxHeight: "92%",
-      padding: 16,
-      // The trim bar is dragged sideways: keep it out of Android's back-gesture band, which a
-      // full-width sheet does not do on its own (it is not inside PageContainer).
-      paddingHorizontal: SCREEN_EDGE_INSET + 16,
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
-      backgroundColor: palette[PaletteColor.Background],
-    },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 12,
-      gap: 8,
-    },
-    title: {
-      flex: 1,
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-    },
-    close: {
-      fontSize: 20,
-      color: palette[PaletteColor.TextMuted],
-      padding: 4,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  root: { flex: 1 },
+  overlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: theme.colors.overlay,
+  },
+  card: {
+    maxHeight: "92%",
+    padding: theme.space.lg,
+    // The trim bar is dragged sideways: keep it out of Android's back-gesture band, which a
+    // full-width sheet does not do on its own (it is not inside PageContainer).
+    paddingHorizontal: SCREEN_EDGE_INSET + 16,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
+    backgroundColor: theme.colors.background,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.space.md,
+    gap: theme.space.sm,
+  },
+  title: {
+    ...theme.typography.title,
+    flex: 1,
+    color: theme.colors.text,
+  },
+  close: {
+    fontSize: theme.iconSize.md,
+    color: theme.colors.textMuted,
+    padding: theme.space.xs,
+  },
+}));
 
 export default DeidentifyModal;

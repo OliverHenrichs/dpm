@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import PatternNode from "@/src/pattern/graph/PatternNode";
 import { buildGraphModel } from "@/src/pattern/graph/model/GraphModel";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import {
   IPattern,
   IPatternModifierRef,
@@ -16,7 +15,6 @@ import {
 } from "@/utils/testFactories";
 
 const TYPE = createTestPatternType({ slug: "push", color: "#FF0000" });
-const palette = getPalette("light");
 const CENTRE = { x: 200, y: 150 };
 /** Mirrors the renderer; the point of the tests below is that it is uniform. */
 const BADGE_INSET = 3;
@@ -60,7 +58,7 @@ function renderNode(
   expect(node.foundational).toBe(foundational);
   render(
     <Svg>
-      <PatternNode node={node} x={CENTRE.x} y={CENTRE.y} palette={palette} />
+      <PatternNode node={node} x={CENTRE.x} y={CENTRE.y} />
     </Svg>,
   );
 }

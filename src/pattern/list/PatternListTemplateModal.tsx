@@ -3,15 +3,13 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import {
   createBachataList,
   createBlankList,
@@ -116,10 +114,6 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
   visible,
   ...bodyProps
 }) => {
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
-
   return (
     <Modal
       visible={visible}
@@ -151,9 +145,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   onSaveList,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const isEditMode = !!editList; // this operator ensures editList is not undefined or null, treating both as "not in edit mode"
 
@@ -347,7 +339,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           // never say what the field is for.
           accessibilityLabel={t("listName")}
           placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
-          placeholderTextColor={palette[PaletteColor.TextMuted]}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
         {/* ── Pattern Types ─────────────────────────────────────────────── */}
@@ -379,7 +371,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                 value={dt.slug}
                 onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
                 placeholder={t("typeName")}
-                placeholderTextColor={palette[PaletteColor.TextMuted]}
+                placeholderTextColor={theme.colors.textMuted}
                 onFocus={() => setColorPopoverId(null)}
               />
               <TouchableOpacity
@@ -512,294 +504,287 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   return step === "pick" ? renderPickStep() : renderConfigureStep();
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Overlay],
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    modalContent: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 500,
-      maxHeight: "88%",
-      flexShrink: 1,
-    },
-    title: {
-      fontSize: 22,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      marginBottom: 6,
-    },
-    subtitle: {
-      fontSize: 13,
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 20,
-    },
-    templateList: {
-      maxHeight: 420,
-    },
-    templateCard: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 10,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    templateCardBlank: {
-      borderStyle: "dashed",
-      borderColor: palette[PaletteColor.Primary],
-    },
-    templateName: {
-      fontSize: 17,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-      marginBottom: 4,
-    },
-    templateDescription: {
-      fontSize: 13,
-      color: palette[PaletteColor.TextMuted],
-    },
-    label: {
-      fontSize: 13,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-      marginBottom: 6,
-    },
-    sectionHint: {
-      fontSize: 12,
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 8,
-    },
-    input: {
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      fontSize: 16,
-      color: palette[PaletteColor.Text],
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    // ── Type rows ──────────────────────────────────────────────────────────
-    typeRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 8,
-      gap: 8,
-      zIndex: 10,
-    },
-    // The open swatch grid hangs down over the rows beneath it. Those rows are
-    // later siblings with the same zIndex, so they would paint over it: the row
-    // holding the popover has to be lifted above them for the whole time it is
-    // open. zIndex does that on iOS and web; on Android sibling draw order
-    // follows elevation, hence both. The popover's own zIndex only orders it
-    // against the other children of its row, never against another row.
-    typeRowRaised: {
-      zIndex: 100,
-      elevation: 8,
-    },
-    typeColorDot: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      borderWidth: 2,
-      borderColor: palette[PaletteColor.Border],
-    },
-    colorPopover: {
-      position: "absolute",
-      left: 36,
-      top: 0,
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 10,
-      padding: 8,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      zIndex: 100,
-      elevation: 8,
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.2)",
-    },
-    colorSwatchGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      width: 148,
-      gap: 6,
-    },
-    colorSwatch: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      borderWidth: 2,
-      borderColor: "transparent",
-    },
-    colorSwatchSelected: {
-      borderColor: palette[PaletteColor.Text],
-    },
-    typeSlugInput: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      paddingHorizontal: 10,
-      paddingVertical: 7,
-      fontSize: 14,
-      color: palette[PaletteColor.Text],
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    typeSlugInputError: {
-      borderColor: palette[PaletteColor.Danger],
-    },
-    slugError: {
-      fontSize: 11,
-      color: palette[PaletteColor.Danger],
-      marginBottom: 4,
-      marginLeft: 36,
-    },
-    removeTypeButton: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: palette[PaletteColor.Background],
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    removeTypeButtonDisabled: {
-      opacity: 0.35,
-    },
-    removeTypeButtonText: {
-      fontSize: 12,
-      color: palette[PaletteColor.TextMuted],
-    },
-    removeTypeButtonTextDisabled: {
-      color: palette[PaletteColor.TextMuted],
-    },
-    addTypeButton: {
-      marginTop: 4,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Primary],
-      alignSelf: "flex-start",
-    },
-    addTypeButtonText: {
-      fontSize: 13,
-      color: palette[PaletteColor.Primary],
-      fontWeight: "600",
-    },
-    // ── Pattern toggles ────────────────────────────────────────────────────
-    patternToggleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 8,
-      paddingHorizontal: 4,
-      borderRadius: 8,
-      marginBottom: 4,
-      gap: 10,
-    },
-    patternToggleRowOff: {
-      opacity: 0.4,
-    },
-    checkbox: {
-      width: 22,
-      height: 22,
-      borderRadius: 5,
-      borderWidth: 2,
-      borderColor: palette[PaletteColor.Border],
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    checkboxChecked: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderColor: palette[PaletteColor.Primary],
-    },
-    checkmark: {
-      color: palette[PaletteColor.OnPrimary],
-      fontSize: 13,
-      fontWeight: "bold",
-    },
-    patternToggleInfo: {
-      flex: 1,
-    },
-    patternToggleName: {
-      fontSize: 14,
-      fontWeight: "500",
-      color: palette[PaletteColor.Text],
-    },
-    patternToggleNameOff: {
-      color: palette[PaletteColor.TextMuted],
-    },
-    patternToggleMeta: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 2,
-      gap: 4,
-    },
-    typeColorPip: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-    },
-    patternToggleSlug: {
-      fontSize: 11,
-      color: palette[PaletteColor.TextMuted],
-      textTransform: "uppercase",
-    },
-    patternToggleCounts: {
-      fontSize: 11,
-      color: palette[PaletteColor.TextMuted],
-    },
-    // ── Buttons ────────────────────────────────────────────────────────────
-    buttonRow: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    backButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    backButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-    },
-    createButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-    },
-    createButtonDisabled: {
-      opacity: 0.5,
-    },
-    createButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.OnPrimary],
-    },
-    cancelButton: {
-      marginTop: 10,
-      padding: 14,
-      alignItems: "center",
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      color: palette[PaletteColor.TextMuted],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.space.xl,
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 500,
+    maxHeight: "88%",
+    flexShrink: 1,
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.sm,
+  },
+  subtitle: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.xl,
+  },
+  templateList: {
+    maxHeight: 420,
+  },
+  templateCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.space.lg,
+    marginBottom: theme.space.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  templateCardBlank: {
+    borderStyle: "dashed",
+    borderColor: theme.colors.primary,
+  },
+  templateName: {
+    ...theme.typography.button,
+    color: theme.colors.text,
+    marginBottom: theme.space.xs,
+  },
+  templateDescription: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+  },
+  label: {
+    ...theme.typography.label,
+    color: theme.colors.text,
+    marginBottom: theme.space.sm,
+  },
+  sectionHint: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+  },
+  input: {
+    ...theme.typography.body,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.md,
+    color: theme.colors.text,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  // ── Type rows ──────────────────────────────────────────────────────────
+  typeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.space.sm,
+    gap: theme.space.sm,
+    zIndex: 10,
+  },
+  // The open swatch grid hangs down over the rows beneath it. Those rows are
+  // later siblings with the same zIndex, so they would paint over it: the row
+  // holding the popover has to be lifted above them for the whole time it is
+  // open. zIndex does that on iOS and web; on Android sibling draw order
+  // follows elevation, hence both. The popover's own zIndex only orders it
+  // against the other children of its row, never against another row.
+  typeRowRaised: {
+    zIndex: 100,
+    elevation: 8,
+  },
+  typeColorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+  },
+  colorPopover: {
+    position: "absolute",
+    left: 36,
+    top: 0,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 10,
+    padding: theme.space.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    zIndex: 100,
+    ...theme.elevation.md,
+    elevation: 8,
+  },
+  colorSwatchGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    width: 148,
+    gap: theme.space.sm,
+  },
+  colorSwatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  colorSwatchSelected: {
+    borderColor: theme.colors.text,
+  },
+  typeSlugInput: {
+    ...theme.typography.bodySmall,
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.sm,
+    color: theme.colors.text,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  typeSlugInputError: {
+    borderColor: theme.colors.danger,
+  },
+  slugError: {
+    ...theme.typography.micro,
+    color: theme.colors.danger,
+    marginBottom: theme.space.xs,
+    marginLeft: 36,
+  },
+  removeTypeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  removeTypeButtonDisabled: {
+    opacity: 0.35,
+  },
+  removeTypeButtonText: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+  },
+  removeTypeButtonTextDisabled: {
+    color: theme.colors.textMuted,
+  },
+  addTypeButton: {
+    marginTop: theme.space.xs,
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    alignSelf: "flex-start",
+  },
+  addTypeButtonText: {
+    ...theme.typography.label,
+    color: theme.colors.primary,
+  },
+  // ── Pattern toggles ────────────────────────────────────────────────────
+  patternToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.xs,
+    borderRadius: theme.radius.md,
+    marginBottom: theme.space.xs,
+    gap: theme.space.md,
+  },
+  patternToggleRowOff: {
+    opacity: 0.4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: theme.radius.xs,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  checkmark: {
+    ...theme.typography.label,
+    color: theme.colors.onPrimary,
+    fontWeight: "bold",
+  },
+  patternToggleInfo: {
+    flex: 1,
+  },
+  patternToggleName: {
+    ...theme.typography.bodySmall,
+    fontWeight: "500",
+    color: theme.colors.text,
+  },
+  patternToggleNameOff: {
+    color: theme.colors.textMuted,
+  },
+  patternToggleMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: theme.space.xxs,
+    gap: theme.space.xs,
+  },
+  typeColorPip: {
+    width: 8,
+    height: 8,
+    borderRadius: theme.radius.xs,
+  },
+  patternToggleSlug: {
+    ...theme.typography.micro,
+    color: theme.colors.textMuted,
+    textTransform: "uppercase",
+  },
+  patternToggleCounts: {
+    ...theme.typography.micro,
+    color: theme.colors.textMuted,
+  },
+  // ── Buttons ────────────────────────────────────────────────────────────
+  buttonRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+  },
+  backButton: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  backButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.text,
+  },
+  createButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+  },
+  createButtonDisabled: {
+    opacity: 0.5,
+  },
+  createButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.onPrimary,
+  },
+  cancelButton: {
+    marginTop: theme.space.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    ...theme.typography.body,
+    color: theme.colors.textMuted,
+  },
+}));
 
 export default PatternListTemplateModal;

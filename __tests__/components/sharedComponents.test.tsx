@@ -4,7 +4,6 @@ import AppDialog from "@/src/common/components/AppDialog";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import VideoCarousel from "@/src/common/components/VideoCarousel";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import { IModifier, IVideoReference } from "@/src/pattern/types/IPatternList";
 import { generateUUID } from "@/src/pattern/types/PatternType";
 import {
@@ -18,7 +17,6 @@ import {
   screen,
 } from "@/utils/renderWithProviders";
 
-const palette = getPalette("light");
 const TYPE = createTestPatternType({ slug: "push" });
 
 const urlVideo = (value: string, startTime?: number): IVideoReference => ({
@@ -129,12 +127,7 @@ describe("BottomSheet", () => {
   const renderSheet = (visible = true) => {
     const onClose = jest.fn();
     renderWithProviders(
-      <BottomSheet
-        visible={visible}
-        onClose={onClose}
-        title="Filter Patterns"
-        palette={palette}
-      >
+      <BottomSheet visible={visible} onClose={onClose} title="Filter Patterns">
         <Text>sheet body</Text>
       </BottomSheet>,
       { activeListId: null },
@@ -178,10 +171,9 @@ describe("VideoCarousel", () => {
   const { FlatList, View } = require("react-native");
 
   const renderCarousel = (videoRefs: IVideoReference[]) => {
-    const view = renderWithProviders(
-      <VideoCarousel videoRefs={videoRefs} palette={palette} />,
-      { activeListId: null },
-    );
+    const view = renderWithProviders(<VideoCarousel videoRefs={videoRefs} />, {
+      activeListId: null,
+    });
     return view;
   };
 
@@ -319,7 +311,6 @@ describe("PatternDetails", () => {
         })}
         patterns={[]}
         patternTypes={[TYPE]}
-        palette={palette}
         {...props}
       />,
       { activeListId: null },

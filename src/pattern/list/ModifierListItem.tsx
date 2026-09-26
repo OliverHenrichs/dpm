@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -31,9 +31,7 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
   onDelete,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const positionLabel =
@@ -79,11 +77,7 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
               style={styles.iconButton}
               accessibilityLabel={t("editModifier")}
             >
-              <Icon
-                name="pencil"
-                size={20}
-                color={palette[PaletteColor.Primary]}
-              />
+              <Icon name="pencil" size={20} color={theme.colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={(e) => {
@@ -104,7 +98,6 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
           modifier={modifier}
           patterns={patterns}
           patternTypes={patternTypes}
-          palette={palette}
         />
       )}
 
@@ -125,73 +118,70 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    item: {
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      borderWidth: 2,
-      marginBottom: 8,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    itemSelected: {
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-    },
-    itemHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    itemMeta: {
-      flex: 1,
-    },
-    name: {
-      fontWeight: "bold",
-      fontSize: 16,
-      color: palette[PaletteColor.Text],
-    },
-    badges: {
-      flexDirection: "row",
-      gap: 4,
-      marginTop: 2,
-    },
-    positionBadge: {
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-      borderRadius: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 1,
-    },
-    positionBadgeText: {
-      fontSize: 10,
-      color: palette[PaletteColor.OnSurfaceVariant],
-      fontWeight: "600",
-      textTransform: "uppercase",
-    },
-    universalBadge: {
-      backgroundColor: palette[PaletteColor.Success] + "33",
-      borderRadius: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 1,
-    },
-    universalBadgeText: {
-      fontSize: 10,
-      color: palette[PaletteColor.Success],
-      fontWeight: "600",
-    },
-    actions: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    iconButton: {
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
-    deleteIcon: {
-      fontSize: 20,
-      marginLeft: 8,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  item: {
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 2,
+    marginBottom: theme.space.sm,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  itemSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  itemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  itemMeta: {
+    flex: 1,
+  },
+  name: {
+    ...theme.typography.button,
+    fontWeight: "bold",
+    color: theme.colors.text,
+  },
+  badges: {
+    flexDirection: "row",
+    gap: theme.space.xs,
+    marginTop: theme.space.xxs,
+  },
+  positionBadge: {
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.radius.xs,
+    paddingHorizontal: theme.space.sm,
+    paddingVertical: 1,
+  },
+  positionBadgeText: {
+    ...theme.typography.badge,
+    color: theme.colors.onSurfaceVariant,
+    textTransform: "uppercase",
+  },
+  universalBadge: {
+    backgroundColor: alpha(theme.colors.success, 0.2),
+    borderRadius: theme.radius.xs,
+    paddingHorizontal: theme.space.sm,
+    paddingVertical: 1,
+  },
+  universalBadgeText: {
+    ...theme.typography.badge,
+    color: theme.colors.success,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconButton: {
+    paddingHorizontal: theme.space.xs,
+    paddingVertical: theme.space.xxs,
+  },
+  deleteIcon: {
+    fontSize: theme.iconSize.md,
+    marginLeft: theme.space.sm,
+  },
+}));
 
 export default ModifierListItem;

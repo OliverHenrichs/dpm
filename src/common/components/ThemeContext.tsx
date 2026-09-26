@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { useColorScheme as useNativeColorScheme } from "react-native";
+import { UnistylesRuntime } from "react-native-unistyles";
 import { loadStoredTheme, saveTheme } from "@/src/settings/data/ThemeStorage";
 import { ThemeType } from "@/src/settings/types/Themes";
 
@@ -49,6 +50,13 @@ export const ThemeProvider: React.FC<{
     setThemeState(next);
     void saveTheme(next);
   };
+
+  // Unistyles owns the styles, so it has to hear about the choice. Adaptive
+  // themes follow the system on their own; a fixed choice switches that off.
+  useEffect(() => {
+    UnistylesRuntime.setAdaptiveThemes(theme === "system");
+    if (theme !== "system") UnistylesRuntime.setTheme(theme);
+  }, [theme]);
 
   // Derived straight from the inputs — no state/effect needed, so the very
   // first render already paints in the right scheme.

@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
   IPattern,
@@ -18,7 +18,6 @@ import {
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import * as ImagePicker from "expo-image-picker";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import PatternVideos from "./PatternVideos";
@@ -26,7 +25,6 @@ import PatternTags from "./PatternTags";
 import AddVideoModal from "./AddVideoModal";
 import ModifierPillStrip from "./ModifierPillStrip";
 import BottomSheet from "@/src/common/components/BottomSheet";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
@@ -130,10 +128,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     () => findIneligiblePrerequisiteIds(patterns, existing?.id),
     [patterns, existing?.id],
   );
-
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   // Resolve which videoRefs are currently active for the selected pill
   const activeVideoRefs: IVideoReference[] = (() => {
@@ -336,7 +331,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               setNewPattern({ ...newPattern, name: text })
             }
             style={styles.input}
-            placeholderTextColor={palette[PaletteColor.TextMuted]}
+            placeholderTextColor={theme.colors.textMuted}
           />
         </View>
         <View style={styles.input}>
@@ -349,7 +344,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             }
             keyboardType="numeric"
             style={styles.input}
-            placeholderTextColor={palette[PaletteColor.TextMuted]}
+            placeholderTextColor={theme.colors.textMuted}
           />
         </View>
       </View>
@@ -402,7 +397,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         }
         style={styles.textarea}
         multiline
-        placeholderTextColor={palette[PaletteColor.TextMuted]}
+        placeholderTextColor={theme.colors.textMuted}
       />
       <View style={styles.prereqContainer}>
         <Text style={styles.label}>{t("prerequisites")}</Text>
@@ -411,7 +406,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           value={prereqFilter}
           onChangeText={setPrereqFilter}
           style={styles.filterInput}
-          placeholderTextColor={palette[PaletteColor.TextMuted]}
+          placeholderTextColor={theme.colors.textMuted}
         />
         <ScrollView horizontal>
           {patterns
@@ -480,7 +475,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         tags={newPattern.tags}
         setTags={(tags) => setNewPattern({ ...newPattern, tags })}
         allPatterns={patterns}
-        styles={styles}
       />
 
       {/* Modifier pill strip (only shown when modifiers exist) */}
@@ -514,7 +508,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
         onEditVideo={canEditVideos ? handleEditVideo : undefined}
-        palette={palette}
         disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
       />
       {draftJobs.map((job) => (
@@ -532,7 +525,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         visible={showDeidentifyPicker}
         onClose={() => setShowDeidentifyPicker(false)}
         title={t("deidentifyChooseVideo")}
-        palette={palette}
         minHeight="25%"
         maxHeight="50%"
       >
@@ -578,7 +570,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onClose={() => setShowAddVideoModal(false)}
         onPickFromLibrary={handlePickFromLibrary}
         onAddUrl={handleAddUrlVideo}
-        palette={palette}
       />
 
       {/* Attach modifier picker */}
@@ -586,7 +577,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         visible={showAttachPicker}
         onClose={() => setShowAttachPicker(false)}
         title={t("attachModifier")}
-        palette={palette}
         minHeight="20%"
         maxHeight="50%"
       >
@@ -620,70 +610,73 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  const videosRow: import("react-native").ViewStyle = {
+const styles = StyleSheet.create((theme) => {
+  const videosRow = {
     flexDirection: "row",
     alignItems: "center",
-  };
-  const videosInputRow: import("react-native").ViewStyle = {
+  } as const;
+  const videosInputRow = {
     flexDirection: "row",
     alignItems: "center",
     minHeight: 64,
     height: 78,
-  };
-  const baseInput = getCommonInput(palette);
-  const baseButton = getCommonButton(palette);
-  const commonBorder = getCommonBorder(palette);
-  return StyleSheet.create({
+  } as const;
+  const baseInput = getCommonInput(theme);
+  const baseButton = getCommonButton(theme);
+  const commonBorder = getCommonBorder(theme);
+  return {
     addPatternContainer: {
       ...commonBorder,
-      padding: 8,
-      marginBottom: 16,
-      backgroundColor: palette[PaletteColor.Surface],
+      padding: theme.space.sm,
+      marginBottom: theme.space.lg,
+      backgroundColor: theme.colors.surface,
     },
     sectionTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      marginBottom: 8,
+      ...theme.typography.title,
+      color: theme.colors.text,
+      marginBottom: theme.space.sm,
     },
-    inputRow: { ...getCommonRow(), gap: 8, marginBottom: 8 },
+    inputRow: {
+      ...getCommonRow(),
+      gap: theme.space.sm,
+      marginBottom: theme.space.sm,
+    },
     input: { flex: 1, height: "100%", ...baseInput },
     textarea: { ...baseInput, minHeight: 48 },
-    label: { ...getCommonLabel(palette) },
-    otherLabel: { ...getCommon2ndOrderLabel(palette) },
-    prereqContainer: getCommonPrereqContainer(palette),
-    filterInput: { ...baseInput, height: 40, marginBottom: 8 },
-    prereqItem: getCommonPrereqItem(palette),
-    prereqItemSelected: { backgroundColor: palette[PaletteColor.Primary] },
+    label: { ...getCommonLabel(theme) },
+    otherLabel: { ...getCommon2ndOrderLabel(theme) },
+    prereqContainer: getCommonPrereqContainer(theme),
+    filterInput: { ...baseInput, height: 40, marginBottom: theme.space.sm },
+    prereqItem: getCommonPrereqItem(theme),
+    prereqItemSelected: { backgroundColor: theme.colors.primary },
     prereqItemDisabled: { opacity: 0.35 },
     prereqItemTextDisabled: {
       textDecorationLine: "line-through",
     },
     prereqHint: {
-      color: palette[PaletteColor.TextMuted],
-      fontSize: 12,
+      ...theme.typography.caption,
+      color: theme.colors.textMuted,
       fontStyle: "italic",
-      marginTop: 6,
+      marginTop: theme.space.sm,
     },
-    prereqItemText: { color: palette[PaletteColor.Text], fontSize: 14 },
+    prereqItemText: { ...theme.typography.bodySmall, color: theme.colors.text },
     prereqItemTextSelected: {
-      color: palette[PaletteColor.OnPrimary],
+      color: theme.colors.onPrimary,
       fontWeight: "bold",
     },
-    buttonRow: { ...getCommonRow(), gap: 8 },
-    buttonRowWithBorder: { ...getCommonRow(), gap: 8 },
+    buttonRow: { ...getCommonRow(), gap: theme.space.sm },
+    buttonRowWithBorder: { ...getCommonRow(), gap: theme.space.sm },
     buttonIndigo: { ...baseButton },
     buttonCancel: {
       ...baseButton,
-      backgroundColor: palette[PaletteColor.Border],
+      backgroundColor: theme.colors.border,
     },
     buttonText: {
-      color: palette[PaletteColor.Text],
+      color: theme.colors.text,
       fontWeight: "bold",
     },
     buttonTextOnPrimary: {
-      color: palette[PaletteColor.OnPrimary],
+      color: theme.colors.onPrimary,
       fontWeight: "bold",
     },
     videosRow,
@@ -692,53 +685,53 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       justifyContent: "center",
       alignItems: "center",
       height: 64,
-      marginLeft: 8,
+      marginLeft: theme.space.sm,
     },
     modifierSection: {
-      ...getCommonPrereqContainer(palette),
+      ...getCommonPrereqContainer(theme),
     },
     readonlyHint: {
-      fontSize: 11,
-      color: palette[PaletteColor.TextMuted],
+      ...theme.typography.micro,
+      color: theme.colors.textMuted,
       fontStyle: "italic",
-      marginTop: 4,
+      marginTop: theme.space.xs,
     },
     jobLine: {
-      fontSize: 12,
-      marginBottom: 8,
-      color: palette[PaletteColor.TextMuted],
+      ...theme.typography.caption,
+      marginBottom: theme.space.sm,
+      color: theme.colors.textMuted,
     },
     deidentifyChoices: {
       ...getCommonRow(),
       flexWrap: "wrap",
-      gap: 8,
-      marginBottom: 16,
+      gap: theme.space.sm,
+      marginBottom: theme.space.lg,
     },
-    deidentifyThumb: { width: 96, height: 96, borderRadius: 8 },
+    deidentifyThumb: { width: 96, height: 96, borderRadius: theme.radius.md },
     thumbFallback: {
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
+      backgroundColor: theme.colors.surfaceVariant,
     },
     disabled: { opacity: 0.5 },
     attachPickerItem: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingVertical: 12,
+      paddingVertical: theme.space.md,
       borderBottomWidth: 1,
-      borderBottomColor: palette[PaletteColor.Border],
+      borderBottomColor: theme.colors.border,
     },
     attachPickerItemText: {
-      fontSize: 15,
-      color: palette[PaletteColor.Text],
+      ...theme.typography.bodySmall,
+      color: theme.colors.text,
       fontWeight: "500",
     },
     attachPickerPositionText: {
-      fontSize: 12,
-      color: palette[PaletteColor.TextMuted],
+      ...theme.typography.caption,
+      color: theme.colors.textMuted,
     },
-  });
-};
+  };
+});
 
 export default EditPatternForm;

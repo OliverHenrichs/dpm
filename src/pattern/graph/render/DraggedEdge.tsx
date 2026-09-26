@@ -1,10 +1,10 @@
 import React from "react";
+import { useUnistyles } from "react-native-unistyles";
 import { Path } from "react-native-svg";
 import Animated, {
   SharedValue,
   useAnimatedProps,
 } from "react-native-reanimated";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import {
   generateOrthogonalPath,
   LayoutPosition,
@@ -22,7 +22,6 @@ interface DraggedEdgeProps {
   draggingFrom: boolean;
   elided: boolean;
   forceDirection?: boolean;
-  palette: Record<PaletteColor, string>;
 }
 
 /**
@@ -40,8 +39,8 @@ const DraggedEdge: React.FC<DraggedEdgeProps> = ({
   draggingFrom,
   elided,
   forceDirection,
-  palette,
 }) => {
+  const { theme } = useUnistyles();
   const animatedProps = useAnimatedProps(() => {
     const moving = { x: dragX.get(), y: dragY.get() };
     const from = draggingFrom ? moving : anchor;
@@ -52,7 +51,7 @@ const DraggedEdge: React.FC<DraggedEdgeProps> = ({
   return (
     <AnimatedPath
       animatedProps={animatedProps}
-      stroke={palette[PaletteColor.Primary]}
+      stroke={theme.colors.primary}
       strokeWidth={2}
       strokeDasharray={elided ? ELIDED_DASH : undefined}
       fill="none"

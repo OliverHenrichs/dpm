@@ -1,10 +1,9 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
 
 interface PatternGraphHeaderProps {
@@ -26,9 +25,7 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
   onResetLayout,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const rightActions = (
     <>
@@ -40,11 +37,7 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
           style={styles.iconButton}
           accessibilityLabel={t("resetLayout")}
         >
-          <Icon
-            name="backup-restore"
-            size={24}
-            color={palette[PaletteColor.Primary]}
-          />
+          <Icon name="backup-restore" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
       )}
       {/* Same icon/colour convention as PatternListHeader, so an active
@@ -57,11 +50,7 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
         <Icon
           name={hasActiveFilter ? "filter" : "filter-outline"}
           size={24}
-          color={
-            hasActiveFilter
-              ? palette[PaletteColor.Success]
-              : palette[PaletteColor.Primary]
-          }
+          color={hasActiveFilter ? theme.colors.success : theme.colors.primary}
         />
       </TouchableOpacity>
       <TouchableOpacity
@@ -72,7 +61,7 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
         <Icon
           name={viewMode === "timeline" ? "graph" : "timeline"}
           size={15}
-          color={palette[PaletteColor.OnPrimary]}
+          color={theme.colors.onPrimary}
         />
         <Text style={styles.buttonText}>{t("toggleView")}</Text>
       </TouchableOpacity>
@@ -87,26 +76,25 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    controlButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: palette[PaletteColor.Primary],
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 8,
-      gap: 6,
-    },
-    iconButton: {
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
-    buttonText: {
-      color: palette[PaletteColor.OnPrimary],
-      fontSize: 12,
-      fontWeight: "600",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  controlButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.sm,
+    borderRadius: theme.radius.md,
+    gap: theme.space.sm,
+  },
+  iconButton: {
+    paddingHorizontal: theme.space.xs,
+    paddingVertical: theme.space.xxs,
+  },
+  buttonText: {
+    ...theme.typography.caption,
+    color: theme.colors.onPrimary,
+    fontWeight: "600",
+  },
+}));
 
 export default PatternGraphHeader;

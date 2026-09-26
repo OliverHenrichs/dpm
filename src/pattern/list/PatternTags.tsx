@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
   getCommonAddButtonContainer,
@@ -17,19 +16,14 @@ interface PatternTagsProps {
   tags: string[];
   setTags: (tags: string[]) => void;
   allPatterns?: IPattern[];
-  styles?: any;
 }
 
 const PatternTags: React.FC<PatternTagsProps> = ({
   tags,
   setTags,
   allPatterns,
-  styles: styleOverrides,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = { ...styleOverrides, ...getStyles(palette) };
 
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 
@@ -63,7 +57,6 @@ const PatternTags: React.FC<PatternTagsProps> = ({
       <View style={styles.addButtonContainer}>
         <PlusButton
           onPress={() => setIsBottomSheetVisible(true)}
-          palette={palette}
           accessibilityLabel={t("addTag")}
         />
       </View>
@@ -79,35 +72,38 @@ const PatternTags: React.FC<PatternTagsProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
+const styles = StyleSheet.create((theme) => {
   return {
     tagsContainer: {
-      ...getCommonBorder(palette),
-      padding: 6,
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
+      ...getCommonBorder(theme),
+      padding: theme.space.sm,
+      backgroundColor: theme.colors.surfaceVariant,
       position: "relative",
     },
     tagsRow: {
       ...getCommonRow(),
       flexWrap: "wrap",
-      gap: 4,
-      marginTop: 8,
+      gap: theme.space.xs,
+      marginTop: theme.space.sm,
     },
     tagItem: {
-      ...getCommonBorder(palette),
+      ...getCommonBorder(theme),
       ...getCommonRow(),
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-      paddingHorizontal: 8,
+      backgroundColor: theme.colors.surfaceVariant,
+      paddingHorizontal: theme.space.sm,
     },
-    tagText: { color: palette[PaletteColor.OnSurfaceVariant], fontSize: 14 },
+    tagText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+    },
     tagRemove: {
-      color: palette[PaletteColor.OnSurfaceVariant],
-      fontSize: 16,
-      marginLeft: 4,
+      ...theme.typography.body,
+      color: theme.colors.onSurfaceVariant,
+      marginLeft: theme.space.xs,
     },
-    label: { ...getCommonLabel(palette) },
+    label: { ...getCommonLabel(theme) },
     addButtonContainer: getCommonAddButtonContainer(),
   };
-};
+});
 
 export default PatternTags;

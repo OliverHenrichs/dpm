@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from "react";
-import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { Text, useWindowDimensions, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { measureCanvas } from "@/src/pattern/graph/model/canvasMetrics";
 import NetworkGraphSvg from "./GraphSvg";
@@ -14,7 +14,6 @@ import DragOverlay from "@/src/pattern/graph/render/DragOverlay";
 
 interface NetworkGraphViewProps {
   model: GraphModel;
-  palette: Record<PaletteColor, string>;
   /** Distinguishes "nothing matched" from "this list is empty". */
   hasActiveFilter: boolean;
   /** The positions to draw: the manual layout where one exists. */
@@ -26,7 +25,6 @@ interface NetworkGraphViewProps {
 
 const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   model,
-  palette,
   hasActiveFilter,
   positions,
   onMoveNode,
@@ -34,7 +32,6 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
 }) => {
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
-  const styles = getStyles(palette);
 
   // Measured from the positions actually being drawn, not from the automatic
   // layout: a manual layout replaces those, and a node dragged past the
@@ -117,7 +114,6 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
           svgHeight={svgHeight}
           model={model}
           positions={positions}
-          palette={palette}
           draggingId={draggingId}
           dragX={dragX}
           dragY={dragY}
@@ -130,7 +126,6 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
             origin={positions.get(draggedNode.pattern.id)!}
             dragX={dragX}
             dragY={dragY}
-            palette={palette}
           />
         )}
       </ZoomableCanvas>
@@ -138,25 +133,24 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-      overflow: "hidden",
-    },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: palette[PaletteColor.Background],
-      padding: 32,
-    },
-    emptyText: {
-      fontSize: 16,
-      color: palette[PaletteColor.TextMuted],
-      textAlign: "center",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    overflow: "hidden",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: theme.colors.background,
+    padding: theme.space.xxxl,
+  },
+  emptyText: {
+    ...theme.typography.body,
+    color: theme.colors.textMuted,
+    textAlign: "center",
+  },
+}));
 
 export default NetworkGraphView;

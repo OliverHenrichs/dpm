@@ -2,17 +2,16 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
 import { useCameraPermissions } from "expo-camera";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import QrCodeScanner from "@/src/common/components/QrCodeScanner";
 import { fetchSharedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
@@ -34,9 +33,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
   onSubscribe,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -156,7 +153,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                 <Icon
                   name="alert-circle-outline"
                   size={18}
-                  color={palette[PaletteColor.Danger]}
+                  color={theme.colors.danger}
                 />
                 <Text style={styles.warningText}>
                   {t("sharingNotAvailable")}
@@ -177,7 +174,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                       setPreview(null);
                     }}
                     placeholder="ABC12345"
-                    placeholderTextColor={palette[PaletteColor.TextMuted]}
+                    placeholderTextColor={theme.colors.textMuted}
                     autoCapitalize="characters"
                     maxLength={8}
                     returnKeyType="search"
@@ -191,7 +188,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     <Icon
                       name="qrcode-scan"
                       size={20}
-                      color={palette[PaletteColor.OnPrimary]}
+                      color={theme.colors.onPrimary}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -205,7 +202,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     <Icon
                       name="magnify"
                       size={20}
-                      color={palette[PaletteColor.OnPrimary]}
+                      color={theme.colors.onPrimary}
                     />
                   </TouchableOpacity>
                 </View>
@@ -215,7 +212,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                 {isLoading && (
                   <ActivityIndicator
                     size="small"
-                    color={palette[PaletteColor.Primary]}
+                    color={theme.colors.primary}
                     style={styles.spinner}
                   />
                 )}
@@ -225,7 +222,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     <Icon
                       name="cloud-check-outline"
                       size={20}
-                      color={palette[PaletteColor.Success]}
+                      color={theme.colors.success}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.previewName}>{preview.name}</Text>
@@ -275,136 +272,129 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Overlay],
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    card: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 420,
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      marginBottom: 16,
-    },
-    label: {
-      fontSize: 13,
-      fontWeight: "600",
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 8,
-    },
-    inputRow: {
-      flexDirection: "row",
-      gap: 10,
-      marginBottom: 8,
-    },
-    input: {
-      flex: 1,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Background],
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      fontSize: 20,
-      fontWeight: "bold",
-      letterSpacing: 3,
-      color: palette[PaletteColor.Text],
-    },
-    lookupButton: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      paddingHorizontal: 14,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    lookupButtonDisabled: {
-      opacity: 0.4,
-    },
-    errorText: {
-      color: palette[PaletteColor.Danger],
-      fontSize: 13,
-      marginBottom: 8,
-    },
-    spinner: {
-      marginVertical: 8,
-    },
-    previewBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-      borderRadius: 8,
-      padding: 12,
-      marginTop: 8,
-      marginBottom: 4,
-    },
-    previewName: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-    },
-    previewMeta: {
-      fontSize: 12,
-      color: palette[PaletteColor.TextMuted],
-    },
-    warningBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      backgroundColor: palette[PaletteColor.Danger] + "15",
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 16,
-    },
-    warningText: {
-      flex: 1,
-      fontSize: 13,
-      color: palette[PaletteColor.Danger],
-    },
-    buttonRow: {
-      flexDirection: "row",
-      gap: 10,
-      marginTop: 20,
-    },
-    cancelButton: {
-      flex: 1,
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-    },
-    confirmButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-    },
-    confirmButtonDisabled: {
-      opacity: 0.4,
-    },
-    confirmButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.OnPrimary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  overlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.space.xl,
+  },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 420,
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.lg,
+  },
+  label: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+  },
+  inputRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+    marginBottom: theme.space.sm,
+  },
+  input: {
+    ...theme.typography.headline,
+    flex: 1,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+    letterSpacing: 3,
+    color: theme.colors.text,
+  },
+  lookupButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.lg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lookupButtonDisabled: {
+    opacity: 0.4,
+  },
+  errorText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.danger,
+    marginBottom: theme.space.sm,
+  },
+  spinner: {
+    marginVertical: theme.space.sm,
+  },
+  previewBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.md,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    marginTop: theme.space.sm,
+    marginBottom: theme.space.xs,
+  },
+  previewName: {
+    ...theme.typography.label,
+    color: theme.colors.text,
+  },
+  previewMeta: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+  },
+  warningBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+    backgroundColor: alpha(theme.colors.danger, 0.08),
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    marginBottom: theme.space.lg,
+  },
+  warningText: {
+    ...theme.typography.bodySmall,
+    flex: 1,
+    color: theme.colors.danger,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+    marginTop: theme.space.xl,
+  },
+  cancelButton: {
+    flex: 1,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  cancelButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.text,
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+  },
+  confirmButtonDisabled: {
+    opacity: 0.4,
+  },
+  confirmButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.onPrimary,
+  },
+}));
 
 export default SubscribeListModal;

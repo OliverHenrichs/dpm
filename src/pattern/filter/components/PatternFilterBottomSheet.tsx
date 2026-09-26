@@ -1,14 +1,7 @@
 import React, { useMemo, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -51,9 +44,6 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
   headerSection,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
 
   const [filter, setFilter] = useState<PatternFilter>(currentFilter);
 
@@ -122,7 +112,6 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
       visible={visible}
       onClose={handleClose}
       title={t("filterPatterns")}
-      palette={palette}
       maxHeight="95%"
       minHeight="85%"
     >
@@ -135,33 +124,25 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
         <NameFilter
           value={filter.name}
           onChange={(text) => setFilter({ ...filter, name: text })}
-          palette={palette}
         />
 
         <TypeFilter
           availableTypes={patternTypes}
           selectedTypes={filter.types}
           onToggle={toggleType}
-          palette={palette}
         />
 
-        <LevelFilter
-          selectedLevels={filter.levels}
-          onToggle={toggleLevel}
-          palette={palette}
-        />
+        <LevelFilter selectedLevels={filter.levels} onToggle={toggleLevel} />
 
         <CountsFilter
           counts={filter.counts}
           onChange={(value) => setFilter({ ...filter, counts: value })}
-          palette={palette}
         />
 
         <TagFilter
           allTags={allTags}
           selectedTags={filter.tags}
           onToggle={toggleTag}
-          palette={palette}
         />
       </ScrollView>
 
@@ -178,46 +159,46 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  return {
     scrollView: {
       flex: 1,
     },
     scrollContent: {
-      paddingBottom: 16,
+      paddingBottom: theme.space.lg,
     },
     buttonRow: {
       flexDirection: "row" as const,
-      gap: 12,
-      marginTop: 16,
+      gap: theme.space.md,
+      marginTop: theme.space.lg,
     },
     resetButton: {
       flex: 1,
       borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      borderRadius: 8,
-      backgroundColor: palette[PaletteColor.Surface],
-      padding: 12,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.surface,
+      padding: theme.space.md,
       alignItems: "center" as const,
     },
     resetButtonText: {
-      color: palette[PaletteColor.TextMuted],
+      ...theme.typography.button,
+      color: theme.colors.textMuted,
       fontWeight: "bold" as const,
-      fontSize: 16,
     },
     applyButton: {
       flex: 1,
-      backgroundColor: palette[PaletteColor.Primary],
-      padding: 12,
-      borderRadius: 8,
+      backgroundColor: theme.colors.primary,
+      padding: theme.space.md,
+      borderRadius: theme.radius.md,
       alignItems: "center" as const,
     },
     applyButtonText: {
-      color: palette[PaletteColor.OnPrimary],
+      ...theme.typography.button,
+      color: theme.colors.onPrimary,
       fontWeight: "bold" as const,
-      fontSize: 16,
     },
-  });
-};
+  };
+});
 
 export default PatternFilterBottomSheet;

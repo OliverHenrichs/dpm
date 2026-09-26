@@ -1,7 +1,6 @@
 import React from "react";
 import { Circle, Path } from "react-native-svg";
 import Legend from "@/src/pattern/graph/Legend";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import { createTestPatternType } from "@/utils/testFactories";
 import {
   fireEvent,
@@ -9,14 +8,13 @@ import {
   screen,
 } from "@/utils/renderWithProviders";
 
-const palette = getPalette("light");
 const TYPES = [
   createTestPatternType({ slug: "push", color: "#FF0000" }),
   createTestPatternType({ slug: "pass", color: "#00FF00" }),
 ];
 
 const renderLegend = (patternTypes = TYPES) =>
-  renderWithProviders(<Legend palette={palette} patternTypes={patternTypes} />);
+  renderWithProviders(<Legend patternTypes={patternTypes} />);
 
 const expand = () => fireEvent.press(screen.getByText("Legend"));
 

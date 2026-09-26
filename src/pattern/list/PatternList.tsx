@@ -2,18 +2,16 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   ListRenderItemInfo,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import PatternFilterBottomSheet, {
   PatternFilter,
 } from "../filter/components/PatternFilterBottomSheet";
@@ -52,9 +50,7 @@ type PatternListProps = {
 
 const PatternList: React.FC<PatternListProps> = (props) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
   const isReadonly = props.isReadonly ?? false;
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -186,7 +182,6 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           visible={isAddMenuVisible}
           onClose={() => setIsAddMenuVisible(false)}
           title={t("addPattern")}
-          palette={palette}
           maxHeight="40%"
           minHeight="25%"
         >
@@ -220,11 +215,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
                   action();
                 }}
               >
-                <Icon
-                  name={icon}
-                  size={22}
-                  color={palette[PaletteColor.Primary]}
-                />
+                <Icon name={icon} size={22} color={theme.colors.primary} />
                 <Text style={styles.menuText}>{label}</Text>
               </TouchableOpacity>
             ))}
@@ -242,32 +233,31 @@ const PatternList: React.FC<PatternListProps> = (props) => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    scrollView: {
-      flex: 1,
-    },
-    menu: { gap: 8 },
-    menuOption: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      padding: 16,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    menuText: { fontSize: 16, color: palette[PaletteColor.Text] },
-    emptyState: {
-      paddingVertical: 32,
-      alignItems: "center",
-    },
-    emptyStateText: {
-      color: palette[PaletteColor.TextMuted],
-      fontSize: 14,
-      fontStyle: "italic",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  scrollView: {
+    flex: 1,
+  },
+  menu: { gap: theme.space.sm },
+  menuOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.md,
+    padding: theme.space.lg,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  menuText: { ...theme.typography.body, color: theme.colors.text },
+  emptyState: {
+    paddingVertical: theme.space.xxxl,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    fontStyle: "italic",
+  },
+}));
 
 export default PatternList;

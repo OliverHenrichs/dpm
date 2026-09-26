@@ -3,16 +3,15 @@ import {
   ActivityIndicator,
   Clipboard,
   Modal,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import QRCode from "react-native-qrcode-svg";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPatternList, IPattern } from "@/src/pattern/types/IPatternList";
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
@@ -38,9 +37,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   onUnpublished,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +104,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
               <Icon
                 name="alert-circle-outline"
                 size={18}
-                color={palette[PaletteColor.Danger]}
+                color={theme.colors.danger}
               />
               <Text style={styles.warningText}>{t("sharingNotAvailable")}</Text>
             </View>
@@ -126,11 +123,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <Icon
                     name={copied ? "check" : "content-copy"}
                     size={20}
-                    color={
-                      copied
-                        ? palette[PaletteColor.Success]
-                        : palette[PaletteColor.Primary]
-                    }
+                    color={copied ? theme.colors.success : theme.colors.primary}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -141,7 +134,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <Icon
                     name={showQr ? "qrcode-remove" : "qrcode"}
                     size={20}
-                    color={palette[PaletteColor.Primary]}
+                    color={theme.colors.primary}
                   />
                 </TouchableOpacity>
               </View>
@@ -150,8 +143,8 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <QRCode
                     value={list.shareCode}
                     size={160}
-                    color={palette[PaletteColor.Text]}
-                    backgroundColor={palette[PaletteColor.Surface]}
+                    color={theme.colors.text}
+                    backgroundColor={theme.colors.surface}
                   />
                 </View>
               )}
@@ -164,7 +157,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           {isLoading ? (
             <ActivityIndicator
               size="large"
-              color={palette[PaletteColor.Primary]}
+              color={theme.colors.primary}
               style={styles.spinner}
             />
           ) : (
@@ -177,7 +170,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <Icon
                     name="cloud-upload-outline"
                     size={18}
-                    color={palette[PaletteColor.OnPrimary]}
+                    color={theme.colors.onPrimary}
                   />
                   <Text style={styles.primaryButtonText}>
                     {isPublished ? t("syncToCloud") : t("publishToCloud")}
@@ -192,7 +185,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <Icon
                     name="cloud-off-outline"
                     size={18}
-                    color={palette[PaletteColor.Danger]}
+                    color={theme.colors.danger}
                   />
                   <Text style={styles.destructiveButtonText}>
                     {t("unpublish")}
@@ -240,136 +233,130 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Overlay],
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    card: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 420,
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-      marginBottom: 4,
-    },
-    listName: {
-      fontSize: 15,
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 20,
-    },
-    sectionLabel: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: palette[PaletteColor.TextMuted],
-      letterSpacing: 1,
-      textTransform: "uppercase",
-      marginBottom: 8,
-    },
-    codeRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      marginBottom: 8,
-    },
-    code: {
-      flex: 1,
-      fontSize: 24,
-      fontWeight: "bold",
-      letterSpacing: 4,
-      color: palette[PaletteColor.Primary],
-      fontVariant: ["tabular-nums"],
-    },
-    copyButton: {
-      padding: 4,
-    },
-    qrContainer: {
-      alignItems: "center",
-      paddingVertical: 16,
-    },
-    hint: {
-      fontSize: 13,
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 20,
-    },
-    warningBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      backgroundColor: palette[PaletteColor.Danger] + "15",
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 20,
-    },
-    warningText: {
-      flex: 1,
-      fontSize: 13,
-      color: palette[PaletteColor.Danger],
-    },
-    errorText: {
-      color: palette[PaletteColor.Danger],
-      fontSize: 13,
-      marginBottom: 12,
-    },
-    spinner: {
-      marginVertical: 20,
-    },
-    buttonCol: {
-      gap: 10,
-    },
-    primaryButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-    },
-    primaryButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.OnPrimary],
-    },
-    destructiveButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      borderRadius: 8,
-      padding: 14,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Danger],
-    },
-    destructiveButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Danger],
-    },
-    cancelButton: {
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  overlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.space.xl,
+  },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 420,
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.xs,
+  },
+  listName: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.xl,
+  },
+  sectionLabel: {
+    ...theme.typography.caption,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: theme.space.sm,
+  },
+  codeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+    marginBottom: theme.space.sm,
+  },
+  code: {
+    ...theme.typography.display,
+    flex: 1,
+    letterSpacing: 4,
+    color: theme.colors.primary,
+    fontVariant: ["tabular-nums"],
+  },
+  copyButton: {
+    padding: theme.space.xs,
+  },
+  qrContainer: {
+    alignItems: "center",
+    paddingVertical: theme.space.lg,
+  },
+  hint: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.xl,
+  },
+  warningBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+    backgroundColor: alpha(theme.colors.danger, 0.08),
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    marginBottom: theme.space.xl,
+  },
+  warningText: {
+    ...theme.typography.bodySmall,
+    flex: 1,
+    color: theme.colors.danger,
+  },
+  errorText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.danger,
+    marginBottom: theme.space.md,
+  },
+  spinner: {
+    marginVertical: theme.space.xl,
+  },
+  buttonCol: {
+    gap: theme.space.md,
+  },
+  primaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.space.sm,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+  },
+  primaryButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.onPrimary,
+  },
+  destructiveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.space.sm,
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+  },
+  destructiveButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.danger,
+  },
+  cancelButton: {
+    borderRadius: theme.radius.md,
+    padding: theme.space.lg,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  cancelButtonText: {
+    ...theme.typography.button,
+    color: theme.colors.text,
+  },
+}));
 
 export default ShareListModal;

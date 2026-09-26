@@ -1,98 +1,85 @@
 import React from "react";
 import {
+  DimensionValue,
   Modal,
   Pressable,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { StyleSheet } from "react-native-unistyles";
 
 interface BottomSheetProps {
   visible: boolean;
   onClose: () => void;
   title: string;
-  palette: Record<PaletteColor, string>;
   children: React.ReactNode;
-  maxHeight?: string;
-  minHeight?: string;
+  maxHeight?: DimensionValue;
+  minHeight?: DimensionValue;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
   visible,
   onClose,
   title,
-  palette,
   children,
   maxHeight = "80%",
   minHeight = "50%",
-}) => {
-  const styles = getStyles(palette, maxHeight, minHeight);
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable
-          style={styles.bottomSheet}
-          onPress={(e) => e?.stopPropagation?.()}
-        >
-          <View style={styles.bottomSheetHeader}>
-            <Text style={styles.bottomSheetTitle}>{title}</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeButton}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          {children}
-        </Pressable>
+}) => (
+  <Modal
+    visible={visible}
+    animationType="slide"
+    transparent={true}
+    onRequestClose={onClose}
+  >
+    <Pressable style={styles.modalOverlay} onPress={onClose}>
+      <Pressable
+        style={styles.bottomSheet(maxHeight, minHeight)}
+        onPress={(e) => e?.stopPropagation?.()}
+      >
+        <View style={styles.bottomSheetHeader}>
+          <Text style={styles.bottomSheetTitle}>{title}</Text>
+          <TouchableOpacity onPress={onClose}>
+            <Text style={styles.closeButton}>✕</Text>
+          </TouchableOpacity>
+        </View>
+        {children}
       </Pressable>
-    </Modal>
-  );
-};
+    </Pressable>
+  </Modal>
+);
 
-const getStyles = (
-  palette: Record<PaletteColor, string>,
-  maxHeight: string,
-  minHeight: string,
-) => {
-  return StyleSheet.create({
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Overlay],
-      justifyContent: "flex-end" as const,
-    },
-    bottomSheet: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      paddingTop: 16,
-      paddingHorizontal: 16,
-      paddingBottom: 32,
-      maxHeight: maxHeight as any,
-      minHeight: minHeight as any,
-    },
-    bottomSheetHeader: {
-      flexDirection: "row" as const,
-      justifyContent: "space-between" as const,
-      alignItems: "center" as const,
-      marginBottom: 16,
-    },
-    bottomSheetTitle: {
-      fontSize: 18,
-      fontWeight: "bold" as const,
-      color: palette[PaletteColor.Text],
-    },
-    closeButton: {
-      fontSize: 24,
-      color: palette[PaletteColor.TextMuted],
-      padding: 4,
-    },
-  });
-};
+const styles = StyleSheet.create((theme) => ({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: "flex-end",
+  },
+  bottomSheet: (maxHeight: DimensionValue, minHeight: DimensionValue) => ({
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.radius.xxl,
+    borderTopRightRadius: theme.radius.xxl,
+    paddingTop: theme.space.lg,
+    paddingHorizontal: theme.space.lg,
+    paddingBottom: theme.space.xxxl,
+    maxHeight,
+    minHeight,
+  }),
+  bottomSheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.space.lg,
+  },
+  bottomSheetTitle: {
+    ...theme.typography.title,
+    color: theme.colors.text,
+  },
+  closeButton: {
+    fontSize: theme.iconSize.lg,
+    color: theme.colors.textMuted,
+    padding: theme.space.xs,
+  },
+}));
 
 export default BottomSheet;

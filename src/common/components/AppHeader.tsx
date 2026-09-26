@@ -1,10 +1,9 @@
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
 import { router, useNavigation, usePathname } from "expo-router";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
   DRAWER_ROUTES,
@@ -28,10 +27,8 @@ const AppHeader: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<DrawerNavigation>();
   const pathname = usePathname();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
+  const { theme } = useUnistyles();
   const { activeList } = useActivePatternList();
-  const styles = getStyles(palette);
   const route = DRAWER_ROUTES.find((r) => r.href === pathname);
   const screenTitle =
     route?.name === "index" ? t("appTitle") : route && t(route.titleKey);
@@ -62,40 +59,38 @@ const AppHeader: React.FC = () => {
         accessibilityRole="button"
         accessibilityLabel={t("openMenu")}
       >
-        <Icon name="menu" size={28} color={palette[PaletteColor.Primary]} />
+        <Icon name="menu" size={28} color={theme.colors.primary} />
       </TouchableOpacity>
     </View>
   );
 };
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 8,
-      backgroundColor: palette[PaletteColor.Background],
-    },
-    headerSlot: {
-      width: HEADER_SLOT_SIZE,
-      height: HEADER_SLOT_SIZE,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    headerIcon: { width: 40, height: 40 },
-    headerTitle: {
-      // Laid out *between* the buttons, never over them.
-      //
-      // This used to be `position: "absolute"` spanning the full header width,
-      // kept harmless by `pointerEvents: "none"` — except that is a View style
-      // prop and RN's Text does not implement it, so the title sat on top of
-      // the home button and swallowed most taps on it. Taking it out of the
-      // overlay removes the whole class of problem rather than relying on a
-      // property that has to be honoured for the button to work at all.
-      flex: 1,
-      textAlign: "center",
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Text],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: theme.space.sm,
+    backgroundColor: theme.colors.background,
+  },
+  headerSlot: {
+    width: HEADER_SLOT_SIZE,
+    height: HEADER_SLOT_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerIcon: { width: 40, height: 40 },
+  headerTitle: {
+    ...theme.typography.headline,
+    // Laid out *between* the buttons, never over them.
+    //
+    // This used to be `position: "absolute"` spanning the full header width,
+    // kept harmless by `pointerEvents: "none"` — except that is a View style
+    // prop and RN's Text does not implement it, so the title sat on top of
+    // the home button and swallowed most taps on it. Taking it out of the
+    // overlay removes the whole class of problem rather than relying on a
+    // property that has to be honoured for the button to work at all.
+    flex: 1,
+    textAlign: "center",
+    color: theme.colors.text,
+  },
+}));
 export default AppHeader;

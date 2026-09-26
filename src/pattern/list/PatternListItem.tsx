@@ -1,13 +1,12 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
 import AppDialog from "@/src/common/components/AppDialog";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 
 interface PatternListItemProps {
   pattern: IPattern;
@@ -33,9 +32,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   onDelete,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const handleToggleSelect = () => {
@@ -68,11 +65,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
               style={styles.iconButton}
               accessibilityLabel={t("editPattern")}
             >
-              <Icon
-                name="pencil"
-                size={20}
-                color={palette[PaletteColor.Primary]}
-              />
+              <Icon name="pencil" size={20} color={theme.colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={(e) => {
@@ -93,7 +86,6 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
           patterns={allPatterns}
           patternTypes={patternTypes}
           modifiers={modifiers}
-          palette={palette}
         />
       )}
       <AppDialog
@@ -113,41 +105,40 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    patternItem: {
-      paddingVertical: 4,
-      paddingRight: 4,
-      paddingLeft: 12,
-      borderRadius: 8,
-      borderWidth: 2,
-      marginBottom: 8,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    patternItemSelected: {
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-    },
-    patternItemHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    patternName: {
-      fontWeight: "bold",
-      fontSize: 16,
-      color: palette[PaletteColor.Text],
-    },
-    deleteIcon: {
-      fontSize: 20,
-      marginLeft: 8,
-      color: palette[PaletteColor.Danger],
-    },
-    iconButton: {
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  patternItem: {
+    paddingVertical: theme.space.xs,
+    paddingRight: theme.space.xs,
+    paddingLeft: theme.space.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 2,
+    marginBottom: theme.space.sm,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  patternItemSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  patternItemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  patternName: {
+    ...theme.typography.button,
+    fontWeight: "bold",
+    color: theme.colors.text,
+  },
+  deleteIcon: {
+    fontSize: theme.iconSize.md,
+    marginLeft: theme.space.sm,
+    color: theme.colors.danger,
+  },
+  iconButton: {
+    paddingHorizontal: theme.space.xs,
+    paddingVertical: theme.space.xxs,
+  },
+}));
 
 // Rows are rendered by a FlatList and get identical props on most re-renders of
 // the list; memoising keeps unrelated rows (and their thumbnails) from

@@ -3,16 +3,14 @@ import {
   GestureResponderEvent,
   LayoutChangeEvent,
   Pressable,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useEventListener } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonButton, getCommonRow } from "@/src/common/utils/CommonStyles";
 import TrimWindowBar from "@/src/deidentify/components/TrimWindowBar";
 import {
@@ -69,8 +67,6 @@ const VideoEditPanel: React.FC<Props> = ({
   onDeidentify,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
   const [provider, setProvider] = useState<DeidentifyProvider | undefined>(
     providers[0],
   );
@@ -166,8 +162,6 @@ const VideoEditPanel: React.FC<Props> = ({
     );
     if (point) setTaps([...taps, point]);
   };
-
-  const styles = getStyles(palette);
   const button = (
     label: string,
     onPress: () => void,
@@ -367,55 +361,54 @@ const VideoEditPanel: React.FC<Props> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    panel: { gap: 12 },
-    preview: {
-      width: "100%",
-      aspectRatio: 16 / 9,
-      maxHeight: 420,
-      backgroundColor: "#000",
-    },
-    row: { ...getCommonRow(), gap: 8, flexWrap: "wrap" },
-    text: { color: palette[PaletteColor.Text] },
-    hint: { fontSize: 13, color: palette[PaletteColor.TextMuted] },
-    button: { flexGrow: 1, alignItems: "center" },
-    buttonPrimary: getCommonButton(palette),
-    buttonSecondary: getCommonButton(palette, palette[PaletteColor.Border]),
-    buttonText: {
-      color: palette[PaletteColor.Text],
-      fontWeight: "bold",
-    },
-    buttonTextOnPrimary: { color: palette[PaletteColor.OnPrimary] },
-    disabled: { opacity: 0.5 },
-    choice: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    choiceSelected: {
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-    },
-    choiceText: { color: palette[PaletteColor.Text] },
-    choiceTextSelected: {
-      color: palette[PaletteColor.Primary],
-      fontWeight: "bold",
-    },
-    marker: {
-      position: "absolute",
-      width: MARKER,
-      height: MARKER,
-      borderRadius: MARKER / 2,
-      borderWidth: 2,
-      borderColor: "#fff",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    markerText: { color: "#000", fontWeight: "bold" },
-  });
+const styles = StyleSheet.create((theme) => ({
+  panel: { gap: theme.space.md },
+  preview: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    maxHeight: 420,
+    backgroundColor: theme.media.black,
+  },
+  row: { ...getCommonRow(), gap: theme.space.sm, flexWrap: "wrap" },
+  text: { color: theme.colors.text },
+  hint: { ...theme.typography.bodySmall, color: theme.colors.textMuted },
+  button: { flexGrow: 1, alignItems: "center" },
+  buttonPrimary: getCommonButton(theme),
+  buttonSecondary: getCommonButton(theme, theme.colors.border),
+  buttonText: {
+    color: theme.colors.text,
+    fontWeight: "bold",
+  },
+  buttonTextOnPrimary: { color: theme.colors.onPrimary },
+  disabled: { opacity: 0.5 },
+  choice: {
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.sm,
+    borderRadius: theme.radius.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  choiceSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  choiceText: { color: theme.colors.text },
+  choiceTextSelected: {
+    color: theme.colors.primary,
+    fontWeight: "bold",
+  },
+  marker: {
+    position: "absolute",
+    width: MARKER,
+    height: MARKER,
+    borderRadius: MARKER / 2,
+    borderWidth: 2,
+    borderColor: theme.media.onScrim,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  markerText: { color: theme.media.black, fontWeight: "bold" },
+}));
 
 export default VideoEditPanel;

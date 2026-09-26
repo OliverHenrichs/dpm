@@ -1,25 +1,21 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useTranslation } from "react-i18next";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import { getFilterCommonStyles } from "../FilterCommonStyles";
+import { filterStyles as styles } from "../FilterCommonStyles";
 
 interface TypeFilterProps {
   availableTypes: PatternType[];
   selectedTypes: string[];
   onToggle: (typeId: string) => void;
-  palette: Record<PaletteColor, string>;
 }
 
 const TypeFilter: React.FC<TypeFilterProps> = ({
   availableTypes,
   selectedTypes,
   onToggle,
-  palette,
 }) => {
   const { t } = useTranslation();
-  const styles = getFilterCommonStyles(palette);
 
   if (!availableTypes || availableTypes.length === 0) {
     return null;

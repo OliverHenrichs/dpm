@@ -8,9 +8,9 @@ import DraggedEdge from "@/src/pattern/graph/render/DraggedEdge";
 import NetworkGraphSvg from "@/src/pattern/graph/GraphSvg";
 import DragOverlay from "@/src/pattern/graph/render/DragOverlay";
 import { buildGraphModel } from "@/src/pattern/graph/model/GraphModel";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import { render, screen } from "@testing-library/react-native";
 import Animated from "react-native-reanimated";
+import { lightColors } from "@/src/common/theme/tokens";
 import Svg, { G, Path } from "react-native-svg";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -20,7 +20,6 @@ import {
 } from "@/utils/testFactories";
 
 const TYPE = createTestPatternType({ slug: "push" });
-const palette = getPalette("light");
 
 const pattern = (id: number, prerequisites: number[] = []): IPattern =>
   createTestPattern(TYPE.id, { id, name: `P${id}`, prerequisites });
@@ -60,19 +59,13 @@ describe("drawing during a drag", () => {
     it("leaves the dragged node out, for the overlay to draw", () => {
       // Drawn twice it would ghost at its old position; drawn as an animated
       // SVG group it vanished outright on device.
-      const rendered = drawNodes(
-        MODEL.nodes,
-        POSITIONS,
-        palette,
-        jest.fn(),
-        drag(2),
-      );
+      const rendered = drawNodes(MODEL.nodes, POSITIONS, jest.fn(), drag(2));
 
       expect(rendered.filter(Boolean)).toHaveLength(2);
     });
 
     it("draws every node when no drag is in flight", () => {
-      const rendered = drawNodes(MODEL.nodes, POSITIONS, palette, jest.fn(), {
+      const rendered = drawNodes(MODEL.nodes, POSITIONS, jest.fn(), {
         draggingId: null,
       });
 
@@ -81,7 +74,7 @@ describe("drawing during a drag", () => {
 
     it("draws every node when no drag state was passed at all", () => {
       // The timeline draws the same nodes and has no drag.
-      const rendered = drawNodes(MODEL.nodes, POSITIONS, palette, jest.fn());
+      const rendered = drawNodes(MODEL.nodes, POSITIONS, jest.fn());
 
       expect(rendered.filter(Boolean)).toHaveLength(3);
     });
@@ -91,7 +84,7 @@ describe("drawing during a drag", () => {
     it("animates both edges touching the dragged node", () => {
       // 2 is the middle of 1 → 2 → 3, so both edges move with it.
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, palette, drag(2)),
+        drawEdges(MODEL.edges, POSITIONS, lightColors, drag(2)),
       );
 
       expect(rendered.filter((t) => t === DraggedEdge)).toHaveLength(2);
@@ -100,7 +93,7 @@ describe("drawing during a drag", () => {
     it("leaves an edge that does not touch it alone", () => {
       // Dragging 1 moves only 1 → 2; 2 → 3 is untouched.
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, palette, drag(1)),
+        drawEdges(MODEL.edges, POSITIONS, lightColors, drag(1)),
       );
 
       expect(rendered.filter((t) => t === DraggedEdge)).toHaveLength(1);
@@ -108,7 +101,7 @@ describe("drawing during a drag", () => {
 
     it("animates nothing when no drag is in flight", () => {
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, palette, { draggingId: null }),
+        drawEdges(MODEL.edges, POSITIONS, lightColors, { draggingId: null }),
       );
 
       expect(rendered).not.toContain(DraggedEdge);
@@ -116,7 +109,7 @@ describe("drawing during a drag", () => {
 
     it("still draws every edge", () => {
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, palette, drag(2)),
+        drawEdges(MODEL.edges, POSITIONS, lightColors, drag(2)),
       );
 
       expect(rendered).toHaveLength(MODEL.edges.length);
@@ -135,7 +128,7 @@ describe("whether a node claims touches", () => {
   const groupProps = () => screen.UNSAFE_getAllByType(G).map((g) => g.props);
 
   it("claims nothing when no press handler is given", () => {
-    render(<Svg>{drawNodes(MODEL.nodes, POSITIONS, palette, undefined)}</Svg>);
+    render(<Svg>{drawNodes(MODEL.nodes, POSITIONS, undefined)}</Svg>);
 
     expect(groupProps().every((props) => props.onPress === undefined)).toBe(
       true,
@@ -151,7 +144,6 @@ describe("whether a node claims touches", () => {
         svgHeight={1000}
         model={MODEL}
         positions={POSITIONS}
-        palette={palette}
         onNodeTap={jest.fn()}
       />,
     );
@@ -162,7 +154,7 @@ describe("whether a node claims touches", () => {
   });
 
   it("still claims touches when one is, for the timeline", () => {
-    render(<Svg>{drawNodes(MODEL.nodes, POSITIONS, palette, jest.fn())}</Svg>);
+    render(<Svg>{drawNodes(MODEL.nodes, POSITIONS, jest.fn())}</Svg>);
 
     expect(groupProps().some((props) => props.onPress !== undefined)).toBe(
       true,
@@ -185,7 +177,6 @@ describe("what the animated elements compute", () => {
           origin={origin}
           dragX={makeMutable(at.x)}
           dragY={makeMutable(at.y)}
-          palette={palette}
         />,
       );
       const view = screen
@@ -242,7 +233,6 @@ describe("what the animated elements compute", () => {
           origin={{ x: 100, y: 100 }}
           dragX={makeMutable(100)}
           dragY={makeMutable(100)}
-          palette={palette}
         />,
       );
 
@@ -262,7 +252,6 @@ describe("what the animated elements compute", () => {
           dragY={makeMutable(0)}
           draggingFrom={draggingFrom}
           elided={false}
-          palette={palette}
         />,
       );
 
@@ -294,7 +283,6 @@ describe("what the animated elements compute", () => {
           dragY={makeMutable(0)}
           draggingFrom={false}
           elided
-          palette={palette}
         />,
       );
 

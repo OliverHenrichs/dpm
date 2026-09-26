@@ -1,15 +1,13 @@
 import React, { useMemo, useState } from "react";
 import {
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
   getCommonBorder,
@@ -33,9 +31,7 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
   allPatterns,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -92,18 +88,13 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
   };
 
   return (
-    <BottomSheet
-      visible={visible}
-      onClose={handleClose}
-      title={t("addTag")}
-      palette={palette}
-    >
+    <BottomSheet visible={visible} onClose={handleClose} title={t("addTag")}>
       <TextInput
         placeholder={t("addTag")}
         value={searchQuery}
         onChangeText={setSearchQuery}
         style={styles.searchInput}
-        placeholderTextColor={palette[PaletteColor.TextMuted]}
+        placeholderTextColor={theme.colors.textMuted}
         autoFocus={true}
       />
 
@@ -154,68 +145,67 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  return {
     searchInput: {
-      ...getCommonInput(palette),
-      marginBottom: 16,
-      fontSize: 16,
+      ...theme.typography.body,
+      ...getCommonInput(theme),
+      marginBottom: theme.space.lg,
     },
     tagsScrollView: {
       flex: 1,
     },
     tagsScrollContent: {
-      paddingBottom: 16,
+      paddingBottom: theme.space.lg,
     },
     createNewTagButton: {
-      ...getCommonBorder(palette),
-      backgroundColor: palette[PaletteColor.Primary],
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 16,
+      ...getCommonBorder(theme),
+      backgroundColor: theme.colors.primary,
+      padding: theme.space.md,
+      borderRadius: theme.radius.md,
+      marginBottom: theme.space.lg,
       alignItems: "center" as const,
     },
     createNewTagText: {
-      color: palette[PaletteColor.OnPrimary],
+      ...theme.typography.label,
+      color: theme.colors.onPrimary,
       fontWeight: "bold" as const,
-      fontSize: 14,
     },
     existingTagsSection: {
-      marginBottom: 16,
+      marginBottom: theme.space.lg,
     },
     sectionTitle: {
-      fontSize: 14,
-      fontWeight: "600" as const,
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 8,
+      ...theme.typography.label,
+      color: theme.colors.textMuted,
+      marginBottom: theme.space.sm,
       textTransform: "uppercase" as const,
     },
     tagsGrid: {
       flexDirection: "row" as const,
       flexWrap: "wrap" as const,
-      gap: 8,
+      gap: theme.space.sm,
     },
     existingTagChip: {
-      ...getCommonBorder(palette),
-      backgroundColor: palette[PaletteColor.SurfaceVariant],
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 16,
+      ...getCommonBorder(theme),
+      backgroundColor: theme.colors.surfaceVariant,
+      paddingVertical: theme.space.sm,
+      paddingHorizontal: theme.space.md,
+      borderRadius: theme.radius.xl,
     },
     existingTagText: {
-      color: palette[PaletteColor.OnSurfaceVariant],
-      fontSize: 14,
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
     },
     emptyState: {
-      paddingVertical: 32,
+      paddingVertical: theme.space.xxxl,
       alignItems: "center" as const,
     },
     emptyStateText: {
-      color: palette[PaletteColor.TextMuted],
-      fontSize: 14,
+      ...theme.typography.bodySmall,
+      color: theme.colors.textMuted,
       fontStyle: "italic" as const,
     },
-  });
-};
+  };
+});
 
 export default TagPickerBottomSheet;

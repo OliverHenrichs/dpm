@@ -1,21 +1,18 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 
 interface SelectAllButtonProps {
   allSelected: boolean;
   onToggle: () => void;
-  palette: Record<PaletteColor, string>;
 }
 
 export const SelectAllButton: React.FC<SelectAllButtonProps> = ({
   allSelected,
   onToggle,
-  palette,
 }) => {
   const { t } = useTranslation();
-  const styles = getStyles(palette);
   return (
     <TouchableOpacity style={styles.selectAllButton} onPress={onToggle}>
       <Text style={styles.selectAllText}>
@@ -25,17 +22,15 @@ export const SelectAllButton: React.FC<SelectAllButtonProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    selectAllButton: {
-      alignSelf: "flex-end",
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      marginBottom: 12,
-    },
-    selectAllText: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: palette[PaletteColor.Primary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  selectAllButton: {
+    alignSelf: "flex-end",
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    marginBottom: theme.space.md,
+  },
+  selectAllText: {
+    ...theme.typography.label,
+    color: theme.colors.primary,
+  },
+}));

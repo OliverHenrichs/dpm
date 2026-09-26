@@ -5,24 +5,70 @@ below are relative to `src/common/`.
 
 ## Theming
 
-Every component that needs colours does:
+Styling runs on **Unistyles 3** (`react-native-unistyles`, a native Nitro module) over the design
+tokens in `theme/tokens.ts`. A component declares its styles once, at module level, against the
+theme:
 
 ```tsx
-const { colorScheme } = useThemeContext(); // "light" | "dark"
-const palette = getPalette(colorScheme); // → LightPalette or DarkPalette
-// then: palette[PaletteColor.Background], etc.
+import { StyleSheet } from "react-native-unistyles";
+
+const styles = StyleSheet.create((theme) => ({
+  card: {
+    backgroundColor: theme.colors.surface,
+    padding: theme.space.lg,
+    borderRadius: theme.radius.lg,
+    ...theme.elevation.sm,
+  },
+  title: { ...theme.typography.title, color: theme.colors.text },
+}));
 ```
 
-Styles are created inline per-render (no shared static stylesheets). `PaletteColor` enum and both palettes live in `utils/ColorPalette.ts`.
+A theme switch updates those styles natively, without re-rendering. A value that is **not** a
+`style` — an icon's `color`, `placeholderTextColor`, an SVG `fill`, a navigator option — comes from
+`const { theme } = useUnistyles()`, which does re-render. A style that depends on props is a
+function inside the sheet (`bottomSheet: (maxHeight) => ({ … })`, called as
+`styles.bottomSheet(maxHeight)`); never build a style object in render.
 
-**Pick a role for what the colour is used as, and pair every fill with its `On*` role.** Text or
-an icon on a `Primary` fill is `OnPrimary`, on `Danger` it is `OnDanger` — never `Surface`,
-`Text` or `"#fff"`, which is how selected chips ended up at 2.2:1. `Text` is body text,
-`TextMuted` is hints and placeholders, `Border` is decorative, `BorderStrong` outlines a control
-(inputs), `Overlay` is every modal scrim. `__tests__/unit/ColorPalette.test.ts` holds each
-pairing to WCAG AA in both themes, so a palette tweak that breaks legibility fails CI; a new role
-belongs in its pair list. The only literal colours left are the black scrims and white labels over
-video and the camera, which do not change with the theme. Recurring style fragments are factored into `utils/CommonStyles.ts` (`getCommonButton`, `getCommonInput`, `getCommonLabel`, …) and `src/pattern/filter/FilterCommonStyles.ts` (chips, filter sections) — reuse those instead of re-declaring them.
+**Every value comes from a token.** `theme.colors` (roles), `theme.space` (4-point scale),
+`theme.radius`, `theme.typography` (spread a text style, then set its colour), `theme.elevation`,
+`theme.iconSize`, `theme.motion`; `theme.media` for what sits over video and the camera, which does
+not follow the theme. Changing the look is an edit to `tokens.ts`, not to screens. A new literal —
+a hex, a font size, a stray `padding: 10` — is a missing token: add the token.
+
+**Pick a colour role for what it is used as, and pair every fill with its `on*` role.** Text or an
+icon on a `primary` fill is `onPrimary`, on `danger` it is `onDanger` — never `surface`, `text` or
+`"#fff"`, which is how selected chips ended up at 2.2:1. `text` is body text, `textMuted` is hints
+and placeholders, `border` is decorative, `borderStrong` outlines a control (inputs), `overlay` is
+every modal scrim. `__tests__/unit/tokens.test.ts` holds each pairing to WCAG AA in both themes, so
+a palette tweak that breaks legibility fails CI; a new role belongs in its pair list. For a tint of
+a role use `alpha(theme.colors.primary, 0.12)`.
+
+**`theme.elevation` sets `elevation` as well as `boxShadow`, on purpose.** Android paints siblings
+in elevation order and ignores `zIndex` for that; a popover that must sit above the rows under it
+needs it (`PatternListTemplateModal` pins that in a test).
+
+Shared fragments live in `utils/CommonStyles.ts` (`getCommonButton(theme)`, `getCommonInput(theme)`,
+…, and the `commonStyles` sheet) and `src/pattern/filter/FilterCommonStyles.ts` (`filterStyles`).
+Spread the fragments **inside** a `StyleSheet.create`; spreading a Unistyles style at a `style=`
+prop (`{...styles.card}`) cuts it off from theme updates.
+
+**Setup, and where it breaks.**
+- The themes are registered in `theme/unistyles.ts`, which must run before any
+  `StyleSheet.create`. The app's entry `index.ts` imports it ahead of expo-router, and
+  `app/_layout.tsx` imports it first too, because web's static renderer loads routes directly and
+  never runs `index.ts` — without it the web export fails with "no theme has been selected yet".
+- `babel.config.js` runs the Unistyles plugin with `root: "src"` and an **absolute**
+  `autoProcessPaths` for `app/`. The plugin matches that option as a substring of each file path;
+  a bare `"app"` also matched files inside `node_modules`, Unistyles' own among them, and broke the
+  web bundle with `Cannot read properties of undefined (reading 'createUnistylesElement')`.
+- On web the pre-rendered HTML carries class names only; `theme/ServerStyles.web.tsx`
+  (`useServerUnistyles`) writes the CSS behind them into the page, both themes under
+  `prefers-color-scheme`. The native `ServerStyles.tsx` renders nothing.
+- `ThemeProvider` still owns the user's choice (system / light / dark) and its persistence, and
+  forwards it to `UnistylesRuntime` (adaptive themes for "system").
+- Unistyles is a native module: adding it, or upgrading it, means rebuilding the dev client.
+- The two Reanimated-driven graph views (`DragOverlay`, `ZoomableCanvas`) keep React Native's
+  `StyleSheet` for their theme-free layout.
 
 ## Header layout
 

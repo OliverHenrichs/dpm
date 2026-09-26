@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import PlusButton from "@/src/common/components/PlusButton";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
@@ -29,19 +28,12 @@ const ModifierList: React.FC<ModifierListProps> = ({
   onDelete,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
   const [selectedModifier, setSelectedModifier] = useState<
     IModifier | undefined
   >(undefined);
 
   const rightActions = isReadonly ? null : (
-    <PlusButton
-      onPress={onAdd}
-      palette={palette}
-      accessibilityLabel={t("addModifier")}
-    />
+    <PlusButton onPress={onAdd} accessibilityLabel={t("addModifier")} />
   );
 
   return (
@@ -82,25 +74,24 @@ const ModifierList: React.FC<ModifierListProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    scrollView: {
-      flex: 1,
-    },
-    emptyState: {
-      paddingVertical: 32,
-      alignItems: "center",
-    },
-    emptyStateText: {
-      color: palette[PaletteColor.TextMuted],
-      fontSize: 14,
-      fontStyle: "italic",
-    },
-    emptyStateSubtext: {
-      color: palette[PaletteColor.TextMuted],
-      fontSize: 12,
-      marginTop: 4,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  scrollView: {
+    flex: 1,
+  },
+  emptyState: {
+    paddingVertical: theme.space.xxxl,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    fontStyle: "italic",
+  },
+  emptyStateSubtext: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginTop: theme.space.xs,
+  },
+}));
 
 export default ModifierList;

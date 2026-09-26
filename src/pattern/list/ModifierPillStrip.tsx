@@ -1,14 +1,7 @@
 import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import {
   IModifier,
   IPatternModifierRef,
@@ -39,9 +32,6 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   onShowAttachPicker,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
 
   const universalModifiers = modifiers.filter((m) => m.universal);
   const attachedNonUniversal = modifiers.filter(
@@ -166,88 +156,86 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    container: {
-      marginVertical: 4,
-    },
-    title: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: palette[PaletteColor.TextMuted],
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
-      marginBottom: 4,
-    },
-    strip: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 4,
-      gap: 6,
-    },
-    pillWrapper: {
-      position: "relative",
-    },
-    pill: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    pillSelected: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderColor: palette[PaletteColor.Primary],
-    },
-    pillUniversal: {
-      borderColor: palette[PaletteColor.Success],
-    },
-    pillText: {
-      fontSize: 13,
-      color: palette[PaletteColor.Text],
-    },
-    pillTextSelected: {
-      color: palette[PaletteColor.OnPrimary],
-      fontWeight: "600",
-    },
-    positionBadge: {
-      fontSize: 9,
-      color: palette[PaletteColor.TextMuted],
-      textTransform: "uppercase",
-      fontWeight: "600",
-      letterSpacing: 0.5,
-    },
-    detachButton: {
-      position: "absolute",
-      top: -6,
-      right: -6,
-      backgroundColor: palette[PaletteColor.Danger],
-      borderRadius: 9,
-      width: 18,
-      height: 18,
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 2,
-    },
-    detachButtonText: {
-      color: palette[PaletteColor.OnDanger],
-      fontSize: 13,
-      fontWeight: "bold",
-      lineHeight: 16,
-    },
-    pillAttach: {
-      borderStyle: "dashed",
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: "transparent",
-    },
-    pillAttachText: {
-      fontSize: 13,
-      color: palette[PaletteColor.Primary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    marginVertical: theme.space.xs,
+  },
+  title: {
+    ...theme.typography.caption,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: theme.space.xs,
+  },
+  strip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: theme.space.xs,
+    gap: theme.space.sm,
+  },
+  pillWrapper: {
+    position: "relative",
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.xs,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.xs,
+    borderRadius: theme.radius.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  pillSelected: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  pillUniversal: {
+    borderColor: theme.colors.success,
+  },
+  pillText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.text,
+  },
+  pillTextSelected: {
+    color: theme.colors.onPrimary,
+    fontWeight: "600",
+  },
+  positionBadge: {
+    ...theme.typography.badge,
+    color: theme.colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  detachButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: theme.colors.danger,
+    borderRadius: 9,
+    width: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
+  },
+  detachButtonText: {
+    ...theme.typography.label,
+    color: theme.colors.onDanger,
+    fontWeight: "bold",
+    lineHeight: 16,
+  },
+  pillAttach: {
+    borderStyle: "dashed",
+    borderColor: theme.colors.primary,
+    backgroundColor: "transparent",
+  },
+  pillAttachText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.primary,
+  },
+}));
 
 export default ModifierPillStrip;

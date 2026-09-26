@@ -1,11 +1,7 @@
 import React, { useCallback, useState } from "react";
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
@@ -17,8 +13,6 @@ import {
   savePatterns,
 } from "@/src/pattern/data/PatternListStorage";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
 import PageContainer from "@/src/common/components/PageContainer";
@@ -36,9 +30,7 @@ import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 
 const PatternListSelector: React.FC = () => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
   const { activeList, setActiveList, refreshActiveList } =
     useActivePatternList();
 
@@ -231,7 +223,7 @@ const PatternListSelector: React.FC = () => {
             <Icon
               name="cloud-check-outline"
               size={18}
-              color={palette[PaletteColor.Primary]}
+              color={theme.colors.primary}
               accessibilityLabel={t("shareToCloud")}
             />
           )}
@@ -239,7 +231,7 @@ const PatternListSelector: React.FC = () => {
             <Icon
               name="lock-outline"
               size={18}
-              color={palette[PaletteColor.TextMuted]}
+              color={theme.colors.textMuted}
               accessibilityLabel={t("readonlyList")}
             />
           )}
@@ -258,9 +250,7 @@ const PatternListSelector: React.FC = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <PageContainer
-        style={{ backgroundColor: palette[PaletteColor.Background] }}
-      >
+      <PageContainer style={{ backgroundColor: theme.colors.background }}>
         <AppHeader />
         <View style={styles.container}>
           <SectionHeader
@@ -276,13 +266,12 @@ const PatternListSelector: React.FC = () => {
                     <Icon
                       name="cloud-download-outline"
                       size={22}
-                      color={palette[PaletteColor.Primary]}
+                      color={theme.colors.primary}
                     />
                   </TouchableOpacity>
                 )}
                 <PlusButton
                   onPress={() => setShowTemplateModal(true)}
-                  palette={palette}
                   accessibilityLabel={t("createPatternList")}
                 />
               </View>
@@ -321,7 +310,6 @@ const PatternListSelector: React.FC = () => {
           visible={listActionTarget !== null}
           onClose={() => setListActionTarget(null)}
           title={listActionTarget?.name ?? ""}
-          palette={palette}
           maxHeight="30%"
           minHeight="20%"
         >
@@ -428,123 +416,121 @@ const PatternListSelector: React.FC = () => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    container: {
-      ...getCommonListContainer(palette),
-      flex: 1,
-    },
-    listContainer: {
-      paddingHorizontal: 8,
-      paddingVertical: 8,
-      gap: 12,
-    },
-    listCard: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 12,
-      padding: 16,
-      borderWidth: 2,
-      borderColor: "transparent",
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    listCardActive: {
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: palette[PaletteColor.Primary] + "15",
-    },
-    listCardContent: {
-      flex: 1,
-    },
-    listName: {
-      fontSize: 18,
-      fontWeight: "600",
-      color: palette[PaletteColor.Text],
-      marginBottom: 4,
-    },
-    listNameActive: {
-      color: palette[PaletteColor.Primary],
-    },
-    listStyle: {
-      fontSize: 12,
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 8,
-    },
-    typeColorRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    typeColorDot: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-    },
-    moreTypes: {
-      fontSize: 12,
-      color: palette[PaletteColor.TextMuted],
-      marginLeft: 4,
-    },
-    activeIndicator: {
-      fontSize: 24,
-      color: palette[PaletteColor.Primary],
-      fontWeight: "bold",
-    },
-    listCardIndicators: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    readonlyHint: {
-      fontSize: 14,
-      color: palette[PaletteColor.TextMuted],
-      fontStyle: "italic",
-    },
-    headerActions: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    subscribeButton: {
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      paddingVertical: 64,
-    },
-    emptyText: {
-      fontSize: 18,
-      fontWeight: "600",
-      color: palette[PaletteColor.TextMuted],
-      marginBottom: 8,
-    },
-    emptySubtext: {
-      fontSize: 14,
-      color: palette[PaletteColor.TextMuted],
-      textAlign: "center",
-    },
-    actionSheetOptions: {
-      gap: 4,
-    },
-    actionSheetOption: {
-      paddingVertical: 14,
-      paddingHorizontal: 4,
-      borderBottomWidth: 1,
-      borderBottomColor: palette[PaletteColor.Border],
-    },
-    actionSheetOptionDestructive: {
-      borderBottomWidth: 0,
-    },
-    actionSheetOptionText: {
-      fontSize: 16,
-      color: palette[PaletteColor.Text],
-    },
-    actionSheetOptionTextDestructive: {
-      color: palette[PaletteColor.Danger],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    ...getCommonListContainer(theme),
+    flex: 1,
+  },
+  listContainer: {
+    paddingHorizontal: theme.space.sm,
+    paddingVertical: theme.space.sm,
+    gap: theme.space.md,
+  },
+  listCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    padding: theme.space.lg,
+    borderWidth: 2,
+    borderColor: "transparent",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  listCardActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: alpha(theme.colors.primary, 0.08),
+  },
+  listCardContent: {
+    flex: 1,
+  },
+  listName: {
+    ...theme.typography.title,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginBottom: theme.space.xs,
+  },
+  listNameActive: {
+    color: theme.colors.primary,
+  },
+  listStyle: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+  },
+  typeColorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+  },
+  typeColorDot: {
+    width: 16,
+    height: 16,
+    borderRadius: theme.radius.md,
+  },
+  moreTypes: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginLeft: theme.space.xs,
+  },
+  activeIndicator: {
+    fontSize: theme.iconSize.lg,
+    color: theme.colors.primary,
+  },
+  listCardIndicators: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+  },
+  readonlyHint: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    fontStyle: "italic",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+  },
+  subscribeButton: {
+    paddingHorizontal: theme.space.xs,
+    paddingVertical: theme.space.xxs,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 64,
+  },
+  emptyText: {
+    ...theme.typography.title,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+  },
+  emptySubtext: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    textAlign: "center",
+  },
+  actionSheetOptions: {
+    gap: theme.space.xs,
+  },
+  actionSheetOption: {
+    paddingVertical: theme.space.lg,
+    paddingHorizontal: theme.space.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  actionSheetOptionDestructive: {
+    borderBottomWidth: 0,
+  },
+  actionSheetOptionText: {
+    ...theme.typography.body,
+    color: theme.colors.text,
+  },
+  actionSheetOptionTextDestructive: {
+    color: theme.colors.danger,
+  },
+}));
 
 export default PatternListSelector;

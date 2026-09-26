@@ -1,22 +1,17 @@
 import React from "react";
 import { Text, TextInput, View } from "react-native";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { getFilterCommonStyles } from "../FilterCommonStyles";
+import { filterStyles as styles } from "../FilterCommonStyles";
 
 interface CountsFilterProps {
   counts?: number;
   onChange: (value?: number) => void;
-  palette: Record<PaletteColor, string>;
 }
 
-const CountsFilter: React.FC<CountsFilterProps> = ({
-  counts,
-  onChange,
-  palette,
-}) => {
+const CountsFilter: React.FC<CountsFilterProps> = ({ counts, onChange }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
-  const styles = getFilterCommonStyles(palette);
 
   return (
     <View style={styles.filterSection}>
@@ -29,7 +24,7 @@ const CountsFilter: React.FC<CountsFilterProps> = ({
         }
         style={styles.input}
         keyboardType="numeric"
-        placeholderTextColor={palette[PaletteColor.TextMuted]}
+        placeholderTextColor={theme.colors.textMuted}
       />
     </View>
   );

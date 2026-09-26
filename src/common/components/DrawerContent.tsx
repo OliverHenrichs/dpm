@@ -1,16 +1,10 @@
 import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import {
   DRAWER_ROUTES,
   DrawerRoute,
@@ -28,11 +22,8 @@ interface DrawerContentProps {
 
 export default function DrawerContent({ navigation }: DrawerContentProps) {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const styles = getStyles(palette);
 
   const go = (route: DrawerRoute) => {
     navigation.closeDrawer();
@@ -75,50 +66,49 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
   );
 }
 
-function getStyles(palette: Record<PaletteColor, string>) {
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  return {
     drawerStyle: {
-      backgroundColor: palette[PaletteColor.Background],
+      backgroundColor: theme.colors.background,
     },
     drawerContent: {
       flexGrow: 1,
-      backgroundColor: palette[PaletteColor.Background],
+      backgroundColor: theme.colors.background,
     },
     drawerHeaderContainer: {
-      paddingBottom: 16,
-      paddingHorizontal: 16,
+      paddingBottom: theme.space.lg,
+      paddingHorizontal: theme.space.lg,
       alignItems: "center",
-      backgroundColor: palette[PaletteColor.Background],
+      backgroundColor: theme.colors.background,
     },
     drawerHeader: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Primary],
+      ...theme.typography.title,
+      color: theme.colors.primary,
       letterSpacing: 1,
     },
     item: {
-      marginHorizontal: 10,
-      marginVertical: 4,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 4,
+      marginHorizontal: theme.space.md,
+      marginVertical: theme.space.xs,
+      paddingHorizontal: theme.space.lg,
+      paddingVertical: theme.space.md,
+      borderRadius: theme.radius.xs,
     },
     itemFocused: {
       // Matches the highlight the old react-navigation DrawerItem applied:
       // the primary colour at 12% opacity.
-      backgroundColor: palette[PaletteColor.Primary] + "1F",
+      backgroundColor: alpha(theme.colors.primary, 0.12),
     },
     itemLabel: {
-      fontSize: 16,
+      ...theme.typography.body,
       fontWeight: "500",
-      color: palette[PaletteColor.Text],
+      color: theme.colors.text,
     },
     divider: {
       height: 1,
-      marginHorizontal: 16,
-      marginVertical: 8,
-      backgroundColor: palette[PaletteColor.TextMuted],
+      marginHorizontal: theme.space.lg,
+      marginVertical: theme.space.sm,
+      backgroundColor: theme.colors.textMuted,
       opacity: 0.3,
     },
-  });
-}
+  };
+});
