@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "Opens the pattern",
   "close": "Close",
   "lookUpList": "Look up list",
-  "createTag": "Create \"{{tag}}\""
+  "createTag": "Create \"{{tag}}\"",
+  "sortAscending": "ascending",
+  "sortDescending": "descending",
+  "moreOptions": "More options"
 }

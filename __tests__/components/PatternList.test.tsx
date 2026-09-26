@@ -8,7 +8,6 @@ import {
   fireEvent,
   renderWithProviders,
   screen,
-  within,
 } from "@/utils/renderWithProviders";
 
 const TYPE = createTestPatternType({ slug: "push" });
@@ -49,9 +48,10 @@ describe("PatternList", () => {
   it("sorts by name ascending by default, not by insertion order", () => {
     renderList();
 
+    // Each row is named after its pattern; the hint is what they share.
     const renderedOrder = screen
-      .getAllByLabelText("Select Pattern")
-      .map((row) => within(row).getByText(/.+/).props.children);
+      .getAllByHintText("Select Pattern")
+      .map((row) => row.props.accessibilityLabel);
 
     expect(renderedOrder).toEqual(["Left Side Pass", "Sugar Push", "Whip"]);
   });

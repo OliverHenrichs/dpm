@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "Öffnet die Figur",
   "close": "Schließen",
   "lookUpList": "Liste suchen",
-  "createTag": "„{{tag}}“ anlegen"
+  "createTag": "„{{tag}}“ anlegen",
+  "sortAscending": "aufsteigend",
+  "sortDescending": "absteigend",
+  "moreOptions": "Weitere Optionen"
 }

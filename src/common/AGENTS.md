@@ -73,7 +73,8 @@ prop (`{...styles.card}`) cuts it off from theme updates.
 
 ## UI primitives — `ui/`
 
-Screens compose `AppText`, `Button`, `IconButton`, `Chip` and `Card` from `@/src/common/ui`
+Screens compose `AppText`, `Button`, `IconButton`, `Chip`, `Card`, `ListRow` and
+`SegmentedControl` from `@/src/common/ui`
 rather than styling `TouchableOpacity` and `Text` by hand. They carry what every hand-rolled
 touchable kept forgetting: pressed feedback (Material ripple on Android, a fade elsewhere), a 44dp
 touch target, `accessibilityRole`/`accessibilityState`, and haptics where they belong.
@@ -87,6 +88,17 @@ touch target, `accessibilityRole`/`accessibilityState`, and haptics where they b
 - **`Chip`** — a selectable pill (filters, types, levels, one-of-several). Selection is shown by
   colour _and_ a check mark; pressing gives a selection haptic. `swatch` adds a colour dot.
 - **`Card`** — a surface; with `onPress` the whole card is one button.
+- **`ListRow`** — every row of a list, sheet, menu or drawer: `icon` or `leading`, `title` with
+  `meta` and `subtitle` (a string or badges), `trailing` controls (separately pressable).
+  `selection="single"` is a radio with a check (a language, the active list, a sort field);
+  `"multiple"` a checkbox (lists to export); omitted, a button whose `selected` highlights the
+  current entry (the drawer). `expanded` shows a chevron and announces the state. `variant="card"`
+  for rows standing on the page, `plain` inside sheets. Rows that expand into details holding a
+  native player (`PatternListItem`, `ModifierListItem`) keep a plain `View` as the container and use
+  `ListRow` only for the header — see "Dismissal touches" below.
+- **`SegmentedControl`** — two to four exclusive options in one track, with optional counts.
+  `kind="tabs"` switches the view below (the list manager's Patterns / Modifiers); `kind="choice"`
+  sets a value, announced as radios (import's Skip / Replace).
 - **`AppText`** — `variant` is a text style, `color` a colour role.
 
 `Button` and `Chip` default their `accessibilityLabel` to their visible text, which is what tests
@@ -99,9 +111,12 @@ development builds only) shows every token and primitive in the active theme wit
 at the top. It is the fast loop for design work: change `theme/tokens.ts` or a primitive, save, look.
 Its strings are not translated on purpose — no user sees it — and release builds redirect it home.
 
-Still hand-rolled, for a later pass: list rows and cards (`PatternListItem`'s row,
-`PatternListSelector`'s list cards, `ModifierPillStrip`), `PatternListManager`'s tabs, the sort
-sheet's options, and the template modal's colour picker.
+A list's actions are never behind a long press alone: `PatternListSelector` shows a "more" button on
+each card, and the long press is only a shortcut to the same sheet.
+
+Still hand-rolled, for a later pass: `ModifierPillStrip` (pills with position badges and a detach
+control), the template modal's pattern toggles and colour picker, the video thumbnails'
+remove badges, and the graph's hint and filter summary.
 
 ## Header layout
 

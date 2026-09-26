@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, Text, TouchableOpacity } from "react-native";
+import { ScrollView } from "react-native";
+import { ListRow } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/src/common/components/BottomSheet";
@@ -45,24 +46,19 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
           const gloss =
             language.englishName === language.label ? "" : language.englishName;
           return (
-            <TouchableOpacity
+            // The endonym alone strands a reader who picked a script by
+            // mistake, so the English name shows beside it.
+            <ListRow
               key={language.code}
-              style={[styles.row, selected && styles.rowSelected]}
+              title={language.label}
+              meta={gloss}
+              selection="single"
+              selected={selected}
               onPress={() => handleSelect(language.code)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
               accessibilityLabel={
                 gloss ? `${language.label} (${gloss})` : language.label
               }
-            >
-              <Text style={[styles.label, selected && styles.labelSelected]}>
-                {language.label}
-              </Text>
-              {/* The endonym alone strands a reader who picked a script by
-                  mistake, so the English name shows beside it. */}
-              <Text style={styles.englishName}>{gloss}</Text>
-              <Text style={styles.check}>{selected ? "✓" : ""}</Text>
-            </TouchableOpacity>
+            />
           );
         })}
       </ScrollView>
@@ -73,40 +69,6 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
 const styles = StyleSheet.create((theme) => ({
   listContent: {
     paddingBottom: theme.space.sm,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.space.sm,
-    paddingVertical: theme.space.lg,
-    paddingHorizontal: theme.space.md,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  rowSelected: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.primary,
-  },
-  label: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-  },
-  labelSelected: {
-    fontWeight: "bold",
-    color: theme.colors.primary,
-  },
-  englishName: {
-    ...theme.typography.bodySmall,
-    flex: 1,
-    color: theme.colors.textMuted,
-  },
-  check: {
-    ...theme.typography.button,
-    width: 20,
-    textAlign: "right",
-    fontWeight: "bold",
-    color: theme.colors.primary,
   },
 }));
 

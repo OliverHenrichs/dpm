@@ -14,6 +14,8 @@ import {
   Card,
   Chip,
   IconButton,
+  ListRow,
+  SegmentedControl,
   TextVariant,
 } from "@/src/common/ui";
 
@@ -29,6 +31,9 @@ const DesignGallery: React.FC = () => {
   const { theme: preference, setTheme } = useThemeContext();
   const [selected, setSelected] = useState<string[]>(["Salsa"]);
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<"patterns" | "modifiers">("patterns");
+  const [language, setLanguage] = useState("en");
+  const [expanded, setExpanded] = useState(false);
 
   if (!__DEV__) return <Redirect href="/" />;
 
@@ -197,6 +202,68 @@ const DesignGallery: React.FC = () => {
             <Chip label="Push" swatch="#e11d48" onPress={() => {}} />
             <Chip label="Off" disabled onPress={() => {}} />
           </View>
+        </Section>
+
+        <Section title="Segmented control">
+          <SegmentedControl
+            segments={[
+              { value: "patterns", label: "Patterns" },
+              { value: "modifiers", label: "Modifiers", count: 2 },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+        </Section>
+
+        <Section title="List rows">
+          <View>
+            <ListRow
+              title="Edit list"
+              icon="pencil-outline"
+              onPress={() => {}}
+            />
+            <ListRow
+              title="Delete list"
+              icon="trash-can-outline"
+              destructive
+              onPress={() => {}}
+            />
+            {[
+              { code: "en", label: "English" },
+              { code: "de", label: "Deutsch", meta: "German" },
+            ].map((lang) => (
+              <ListRow
+                key={lang.code}
+                title={lang.label}
+                meta={lang.meta}
+                selection="single"
+                selected={language === lang.code}
+                onPress={() => setLanguage(lang.code)}
+              />
+            ))}
+          </View>
+          <ListRow
+            variant="card"
+            title="Salsa"
+            subtitle="12 patterns"
+            selection="multiple"
+            selected={selected.includes("Salsa")}
+            onPress={() => toggle("Salsa")}
+          />
+          <ListRow
+            variant="card"
+            title="Cross body lead"
+            expanded={expanded}
+            onPress={() => setExpanded((e) => !e)}
+            trailing={
+              <IconButton
+                icon="pencil"
+                size={theme.iconSize.md}
+                accessibilityLabel="Edit"
+                onPress={() => {}}
+              />
+            }
+          />
         </Section>
 
         <Section title="Cards">

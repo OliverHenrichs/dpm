@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Text, View } from "react-native";
+import { IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { alpha } from "@/src/common/theme/tokens";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { router, useFocusEffect } from "expo-router";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
@@ -208,36 +208,42 @@ const PatternListSelector: React.FC = () => {
     const isActive = activeList?.id === item.id;
 
     return (
-      <TouchableOpacity
-        style={[styles.listCard, isActive && styles.listCardActive]}
+      <ListRow
+        variant="card"
+        title={item.name}
+        selection="single"
+        selected={isActive}
         onPress={() => handleSelectList(item)}
+        // A shortcut only: the "more" button below is the visible way in.
         onLongPress={() => setListActionTarget(item)}
-      >
-        <View style={styles.listCardContent}>
-          <Text style={[styles.listName, isActive && styles.listNameActive]}>
-            {item.name}
-          </Text>
-        </View>
-        <View style={styles.listCardIndicators}>
-          {item.shareCode && (
-            <Icon
-              name="cloud-check-outline"
-              size={18}
-              color={theme.colors.primary}
-              accessibilityLabel={t("shareToCloud")}
+        trailing={
+          <View style={styles.listCardIndicators}>
+            {item.shareCode && (
+              <Icon
+                name="cloud-check-outline"
+                size={theme.iconSize.sm}
+                color={theme.colors.primary}
+                accessibilityLabel={t("shareToCloud")}
+              />
+            )}
+            {item.readonly && (
+              <Icon
+                name="lock-outline"
+                size={theme.iconSize.sm}
+                color={theme.colors.textMuted}
+                accessibilityLabel={t("readonlyList")}
+              />
+            )}
+            <IconButton
+              icon="dots-vertical"
+              color="textMuted"
+              size={theme.iconSize.md}
+              onPress={() => setListActionTarget(item)}
+              accessibilityLabel={`${t("moreOptions")}: ${item.name}`}
             />
-          )}
-          {item.readonly && (
-            <Icon
-              name="lock-outline"
-              size={18}
-              color={theme.colors.textMuted}
-              accessibilityLabel={t("readonlyList")}
-            />
-          )}
-          {isActive && <Text style={styles.activeIndicator}>✓</Text>}
-        </View>
-      </TouchableOpacity>
+          </View>
+        }
+      />
     );
   };
 
@@ -258,17 +264,11 @@ const PatternListSelector: React.FC = () => {
             rightActions={
               <View style={styles.headerActions}>
                 {firebaseAvailable && (
-                  <TouchableOpacity
+                  <IconButton
+                    icon="cloud-download-outline"
                     onPress={() => setShowSubscribeModal(true)}
-                    style={styles.subscribeButton}
                     accessibilityLabel={t("subscribeToList")}
-                  >
-                    <Icon
-                      name="cloud-download-outline"
-                      size={22}
-                      color={theme.colors.primary}
-                    />
-                  </TouchableOpacity>
+                  />
                 )}
                 <PlusButton
                   onPress={() => setShowTemplateModal(true)}
@@ -315,50 +315,36 @@ const PatternListSelector: React.FC = () => {
         >
           <View style={styles.actionSheetOptions}>
             {!listActionTarget?.readonly && (
-              <TouchableOpacity
-                style={styles.actionSheetOption}
+              <ListRow
+                title={t("editPatternList")}
+                icon="pencil-outline"
                 onPress={() =>
                   listActionTarget && handleEditList(listActionTarget)
                 }
-              >
-                <Text style={styles.actionSheetOptionText}>
-                  {t("editPatternList")}
-                </Text>
-              </TouchableOpacity>
+              />
             )}
             {firebaseAvailable && !listActionTarget?.readonly && (
-              <TouchableOpacity
-                style={styles.actionSheetOption}
+              <ListRow
+                title={
+                  listActionTarget?.shareCode
+                    ? t("manageSharing")
+                    : t("shareToCloud")
+                }
+                icon="cloud-upload-outline"
                 onPress={() =>
                   listActionTarget && handleOpenShare(listActionTarget)
                 }
-              >
-                <Text style={styles.actionSheetOptionText}>
-                  {listActionTarget?.shareCode
-                    ? t("manageSharing")
-                    : t("shareToCloud")}
-                </Text>
-              </TouchableOpacity>
+              />
             )}
             {!listActionTarget?.readonly && (
-              <TouchableOpacity
-                style={[
-                  styles.actionSheetOption,
-                  styles.actionSheetOptionDestructive,
-                ]}
+              <ListRow
+                title={t("deletePatternList")}
+                icon="trash-can-outline"
+                destructive
                 onPress={() =>
                   listActionTarget && handleDeleteList(listActionTarget)
                 }
-              >
-                <Text
-                  style={[
-                    styles.actionSheetOptionText,
-                    styles.actionSheetOptionTextDestructive,
-                  ]}
-                >
-                  {t("deletePatternList")}
-                </Text>
-              </TouchableOpacity>
+              />
             )}
             {listActionTarget?.readonly && (
               <View style={styles.actionSheetOption}>
@@ -426,56 +412,6 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.space.sm,
     gap: theme.space.md,
   },
-  listCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    padding: theme.space.lg,
-    borderWidth: 2,
-    borderColor: "transparent",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  listCardActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: alpha(theme.colors.primary, 0.08),
-  },
-  listCardContent: {
-    flex: 1,
-  },
-  listName: {
-    ...theme.typography.title,
-    fontWeight: "600",
-    color: theme.colors.text,
-    marginBottom: theme.space.xs,
-  },
-  listNameActive: {
-    color: theme.colors.primary,
-  },
-  listStyle: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
-    marginBottom: theme.space.sm,
-  },
-  typeColorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.space.sm,
-  },
-  typeColorDot: {
-    width: 16,
-    height: 16,
-    borderRadius: theme.radius.md,
-  },
-  moreTypes: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
-    marginLeft: theme.space.xs,
-  },
-  activeIndicator: {
-    fontSize: theme.iconSize.lg,
-    color: theme.colors.primary,
-  },
   listCardIndicators: {
     flexDirection: "row",
     alignItems: "center",
@@ -490,10 +426,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.space.sm,
-  },
-  subscribeButton: {
-    paddingHorizontal: theme.space.xs,
-    paddingVertical: theme.space.xxs,
   },
   emptyContainer: {
     flex: 1,
@@ -520,16 +452,6 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.space.xs,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-  },
-  actionSheetOptionDestructive: {
-    borderBottomWidth: 0,
-  },
-  actionSheetOptionText: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-  },
-  actionSheetOptionTextDestructive: {
-    color: theme.colors.danger,
   },
 }));
 

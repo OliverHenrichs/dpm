@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "पैटर्न खोलता है",
   "close": "बंद करें",
   "lookUpList": "सूची खोजें",
-  "createTag": "\"{{tag}}\" बनाएँ"
+  "createTag": "\"{{tag}}\" बनाएँ",
+  "sortAscending": "आरोही",
+  "sortDescending": "अवरोही",
+  "moreOptions": "अधिक विकल्प"
 }

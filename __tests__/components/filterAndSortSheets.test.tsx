@@ -227,13 +227,13 @@ describe("SortBottomSheet", () => {
   it("marks the active field with its direction", () => {
     renderSheet({ field: "name", order: "asc" });
 
-    expect(screen.getByText("↑")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Name, ascending")).toBeOnTheScreen();
   });
 
   it("shows a down arrow when descending", () => {
     renderSheet({ field: "name", order: "desc" });
 
-    expect(screen.getByText("↓")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Name, descending")).toBeOnTheScreen();
   });
 
   it("sorts ascending when a new field is chosen", () => {

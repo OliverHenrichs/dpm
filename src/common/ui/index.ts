@@ -14,3 +14,7 @@ export type { ChipProps } from "./Chip";
 export { default as IconButton } from "./IconButton";
 export type { IconButtonProps } from "./IconButton";
 export { haptics } from "./haptics";
+export { default as ListRow } from "./ListRow";
+export type { ListRowProps, ListRowSelection } from "./ListRow";
+export { default as SegmentedControl } from "./SegmentedControl";
+export type { Segment, SegmentedControlProps } from "./SegmentedControl";

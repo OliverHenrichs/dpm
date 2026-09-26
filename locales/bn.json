@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "প্যাটার্নটি খোলে",
   "close": "বন্ধ করুন",
   "lookUpList": "তালিকা খুঁজুন",
-  "createTag": "\"{{tag}}\" তৈরি করুন"
+  "createTag": "\"{{tag}}\" তৈরি করুন",
+  "sortAscending": "ঊর্ধ্বক্রম",
+  "sortDescending": "অধঃক্রম",
+  "moreOptions": "আরও বিকল্প"
 }

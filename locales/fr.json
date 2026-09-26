@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "Ouvre la figure",
   "close": "Fermer",
   "lookUpList": "Rechercher la liste",
-  "createTag": "Créer « {{tag}} »"
+  "createTag": "Créer « {{tag}} »",
+  "sortAscending": "croissant",
+  "sortDescending": "décroissant",
+  "moreOptions": "Plus d’options"
 }

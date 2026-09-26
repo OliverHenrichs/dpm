@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "打开该舞步",
   "close": "关闭",
   "lookUpList": "查找列表",
-  "createTag": "创建“{{tag}}”"
+  "createTag": "创建“{{tag}}”",
+  "sortAscending": "升序",
+  "sortDescending": "降序",
+  "moreOptions": "更多选项"
 }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { IconButton } from "@/src/common/ui";
+import { Text, View } from "react-native";
+import { IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
 import { useTranslation } from "react-i18next";
@@ -47,13 +47,11 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
 
   return (
     <View style={[styles.item, isSelected && styles.itemSelected]}>
-      <View style={styles.itemHeader}>
-        <TouchableOpacity
-          onPress={handleToggleSelect}
-          style={styles.itemMeta}
-          accessibilityLabel={modifier.name}
-        >
-          <Text style={styles.name}>{modifier.name}</Text>
+      <ListRow
+        title={modifier.name}
+        expanded={isSelected}
+        onPress={handleToggleSelect}
+        subtitle={
           <View style={styles.badges}>
             <View style={styles.positionBadge}>
               <Text style={styles.positionBadgeText}>{positionLabel}</Text>
@@ -66,32 +64,36 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
               </View>
             )}
           </View>
-        </TouchableOpacity>
-        {!isReadonly && (
-          <View style={styles.actions}>
-            <IconButton
-              icon="pencil"
-              size={theme.iconSize.md}
-              onPress={() => onEdit(modifier)}
-              accessibilityLabel={t("editModifier")}
-            />
-            <IconButton
-              icon="trash-can-outline"
-              size={theme.iconSize.md}
-              color="danger"
-              onPress={() => setShowConfirmDelete(true)}
-              accessibilityLabel={t("deleteModifier")}
-            />
-          </View>
-        )}
-      </View>
+        }
+        trailing={
+          !isReadonly && (
+            <View style={styles.actions}>
+              <IconButton
+                icon="pencil"
+                size={theme.iconSize.md}
+                onPress={() => onEdit(modifier)}
+                accessibilityLabel={t("editModifier")}
+              />
+              <IconButton
+                icon="trash-can-outline"
+                size={theme.iconSize.md}
+                color="danger"
+                onPress={() => setShowConfirmDelete(true)}
+                accessibilityLabel={t("deleteModifier")}
+              />
+            </View>
+          )
+        }
+      />
 
       {isSelected && (
-        <ModifierDetails
-          modifier={modifier}
-          patterns={patterns}
-          patternTypes={patternTypes}
-        />
+        <View style={styles.details}>
+          <ModifierDetails
+            modifier={modifier}
+            patterns={patterns}
+            patternTypes={patternTypes}
+          />
+        </View>
       )}
 
       <AppDialog
@@ -113,29 +115,15 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
 
 const styles = StyleSheet.create((theme) => ({
   item: {
-    paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.md,
-    borderRadius: theme.radius.md,
-    borderWidth: 2,
+    overflow: "hidden",
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
     marginBottom: theme.space.sm,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
   itemSelected: {
     borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.surfaceVariant,
-  },
-  itemHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  itemMeta: {
-    flex: 1,
-  },
-  name: {
-    ...theme.typography.button,
-    fontWeight: "bold",
-    color: theme.colors.text,
   },
   badges: {
     flexDirection: "row",
@@ -162,6 +150,10 @@ const styles = StyleSheet.create((theme) => ({
   universalBadgeText: {
     ...theme.typography.badge,
     color: theme.colors.success,
+  },
+  details: {
+    paddingHorizontal: theme.space.md,
+    paddingBottom: theme.space.md,
   },
   actions: {
     flexDirection: "row",

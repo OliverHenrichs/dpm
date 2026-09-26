@@ -84,7 +84,7 @@ function AppDrawer() {
               // Navigator options, not a view's style prop: read the theme
               // here so a theme switch re-renders them.
               drawerStyle: {
-                width: 180,
+                width: 260,
                 backgroundColor: theme.colors.background,
               },
               drawerActiveTintColor: theme.colors.primary,

@@ -149,7 +149,12 @@ describe("PatternListManager", () => {
     it("counts the modifiers on the tab", async () => {
       await renderManager([], { modifiers: [modifier("a"), modifier("b")] });
 
-      expect(screen.getByText("(2)")).toBeOnTheScreen();
+      // The badge shows the bare number; the tab's name carries it for a
+      // screen reader.
+      expect(
+        screen.getByRole("tab", { name: "Modifiers (2)" }),
+      ).toBeOnTheScreen();
+      expect(screen.getByText("2")).toBeOnTheScreen();
     });
   });
 
@@ -449,7 +454,7 @@ describe("PatternListManager", () => {
       ]);
 
       // Selecting expands the row into its details.
-      fireEvent.press(screen.getByLabelText("Select Pattern"));
+      fireEvent.press(screen.getByHintText("Select Pattern"));
       expect(screen.getByText("The basic")).toBeOnTheScreen();
 
       fireEvent.press(screen.getByLabelText("Delete Pattern"));

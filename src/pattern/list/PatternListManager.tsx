@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, Text, View } from "react-native";
+import { SegmentedControl } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
@@ -301,37 +302,19 @@ const PatternListManager = () => {
         <DeidentifyJobsBanner openAction={openJobPattern} />
 
         {/* Tab strip */}
-        <View style={styles.tabStrip}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "patterns" && styles.tabActive]}
-            onPress={() => setActiveTab("patterns")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "patterns" && styles.tabTextActive,
-              ]}
-            >
-              {t("patternList")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "modifiers" && styles.tabActive]}
-            onPress={() => setActiveTab("modifiers")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "modifiers" && styles.tabTextActive,
-              ]}
-            >
-              {t("modifiersTab")}
-              {modifiers.length > 0 && (
-                <Text style={styles.tabBadge}> ({modifiers.length})</Text>
-              )}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <SegmentedControl
+          segments={[
+            { value: "patterns", label: t("patternList") },
+            {
+              value: "modifiers",
+              label: t("modifiersTab"),
+              count: modifiers.length,
+            },
+          ]}
+          value={activeTab}
+          onChange={setActiveTab}
+          style={styles.tabStrip}
+        />
 
         <View style={styles.contentContainer}>
           {activeTab === "patterns" ? (
@@ -370,36 +353,9 @@ const styles = StyleSheet.create((theme) => ({
     ...getCommonListContainer(theme),
     flex: 1,
   },
-  container: { flex: 1 },
   tabStrip: {
-    flexDirection: "row",
     marginHorizontal: theme.space.sm,
-    marginBottom: theme.space.xs,
-    borderRadius: theme.radius.md,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: theme.space.sm,
-    alignItems: "center",
-    backgroundColor: theme.colors.surface,
-  },
-  tabActive: {
-    backgroundColor: theme.colors.primary,
-  },
-  tabText: {
-    ...theme.typography.bodySmall,
-    fontWeight: "500",
-    color: theme.colors.textMuted,
-  },
-  tabTextActive: {
-    color: theme.colors.onPrimary,
-    fontWeight: "700",
-  },
-  tabBadge: {
-    ...theme.typography.caption,
+    marginBottom: theme.space.sm,
   },
   modalOverlay: {
     flex: 1,

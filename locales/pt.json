@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "Abre o passo",
   "close": "Fechar",
   "lookUpList": "Procurar lista",
-  "createTag": "Criar \"{{tag}}\""
+  "createTag": "Criar \"{{tag}}\"",
+  "sortAscending": "crescente",
+  "sortDescending": "decrescente",
+  "moreOptions": "Mais opções"
 }

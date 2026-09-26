@@ -13,25 +13,39 @@ export interface DrawerRoute {
   href: Href;
   /** i18n key for the menu entry and the header title */
   titleKey: string;
+  /** MaterialCommunityIcons name for the menu entry */
+  icon: string;
   /** Screens that show the active list's name in the header instead of a static title */
   showsActiveListName?: boolean;
 }
 
 export const DRAWER_ROUTES: DrawerRoute[] = [
-  { name: "index", href: "/", titleKey: "patternLists" },
+  {
+    name: "index",
+    href: "/",
+    titleKey: "patternLists",
+    icon: "format-list-bulleted-square",
+  },
   {
     name: "patterns",
     href: "/patterns",
     titleKey: "patternTab",
+    icon: "view-list-outline",
     showsActiveListName: true,
   },
   {
     name: "graph",
     href: "/graph",
     titleKey: "patternGraph",
+    icon: "graph-outline",
     showsActiveListName: true,
   },
-  { name: "settings", href: "/settings", titleKey: "settingsTab" },
+  {
+    name: "settings",
+    href: "/settings",
+    titleKey: "settingsTab",
+    icon: "cog-outline",
+  },
 ];
 
 /**

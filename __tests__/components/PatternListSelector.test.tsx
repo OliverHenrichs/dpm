@@ -121,9 +121,12 @@ describe("PatternListSelector", () => {
         activeListId: active.id,
       });
 
-      await waitFor(() => expect(screen.getByText("✓")).toBeOnTheScreen());
+      const salsa = await screen.findByRole("radio", { name: "Salsa" });
       // Exactly one, so the tick tracks the active list rather than every row.
-      expect(screen.getAllByText("✓")).toHaveLength(1);
+      expect(salsa.props.accessibilityState).toMatchObject({ checked: true });
+      expect(
+        screen.getByRole("radio", { name: "Bachata" }).props.accessibilityState,
+      ).toMatchObject({ checked: false });
     });
   });
 

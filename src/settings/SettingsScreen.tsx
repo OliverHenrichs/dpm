@@ -1,15 +1,10 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Button, Chip } from "@/src/common/ui";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { Button, Chip, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import {
@@ -68,20 +63,25 @@ const SettingsScreen: React.FC = () => {
         </View>
         {/* One row that opens the full list — a button per language stopped
             fitting across a phone once there were more than a few. */}
-        <TouchableOpacity
-          style={styles.languageRow}
+        <ListRow
+          variant="card"
+          title={selectedLanguage.label}
+          meta={
+            selectedLanguage.englishName === selectedLanguage.label
+              ? undefined
+              : selectedLanguage.englishName
+          }
+          icon="translate"
+          trailing={
+            <Icon
+              name="chevron-right"
+              size={theme.iconSize.lg}
+              color={theme.colors.textMuted}
+            />
+          }
           onPress={() => setShowLanguagePicker(true)}
-          accessibilityRole="button"
           accessibilityLabel={`${t("language")}: ${selectedLanguage.label}`}
-        >
-          <Text style={styles.languageValue}>{selectedLanguage.label}</Text>
-          <Text style={styles.languageEnglishName}>
-            {selectedLanguage.englishName === selectedLanguage.label
-              ? ""
-              : selectedLanguage.englishName}
-          </Text>
-          <Text style={styles.languageChevron}>›</Text>
-        </TouchableOpacity>
+        />
 
         {/* Theme Section */}
         <View style={commonStyles.sectionHeaderRow}>
@@ -181,32 +181,6 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.space.xl,
     alignItems: "center",
     justifyContent: "center",
-  },
-  languageRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.space.sm,
-    paddingVertical: theme.space.md,
-    paddingHorizontal: theme.space.lg,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: theme.space.xxl,
-  },
-  languageValue: {
-    ...theme.typography.button,
-    fontWeight: "bold",
-    color: theme.colors.text,
-  },
-  languageEnglishName: {
-    ...theme.typography.bodySmall,
-    flex: 1,
-    color: theme.colors.textMuted,
-  },
-  languageChevron: {
-    fontSize: theme.iconSize.md,
-    color: theme.colors.textMuted,
   },
   themeRow: {
     flexDirection: "row",

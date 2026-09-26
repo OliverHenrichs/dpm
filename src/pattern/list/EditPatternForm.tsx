@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Button, Chip } from "@/src/common/ui";
+import { Button, Chip, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
@@ -541,20 +541,19 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         maxHeight="50%"
       >
         {unattachedModifiers.map((mod) => (
-          <TouchableOpacity
+          <ListRow
             key={mod.id}
-            style={styles.attachPickerItem}
-            onPress={() => handleAttachModifier(mod.id)}
-          >
-            <Text style={styles.attachPickerItemText}>{mod.name}</Text>
-            <Text style={styles.attachPickerPositionText}>
-              {mod.position === "prefix"
+            title={mod.name}
+            meta={
+              mod.position === "prefix"
                 ? t("modifierPositionPrefix")
                 : mod.position === "postfix"
                   ? t("modifierPositionPostfix")
-                  : t("modifierPositionAmends")}
-            </Text>
-          </TouchableOpacity>
+                  : t("modifierPositionAmends")
+            }
+            icon="plus-circle-outline"
+            onPress={() => handleAttachModifier(mod.id)}
+          />
         ))}
       </BottomSheet>
 
@@ -637,23 +636,6 @@ const styles = StyleSheet.create((theme) => {
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: theme.colors.surfaceVariant,
-    },
-    attachPickerItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: theme.space.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    },
-    attachPickerItemText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.text,
-      fontWeight: "500",
-    },
-    attachPickerPositionText: {
-      ...theme.typography.caption,
-      color: theme.colors.textMuted,
     },
   };
 });

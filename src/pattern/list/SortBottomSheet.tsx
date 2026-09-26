@@ -1,6 +1,8 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { View } from "react-native";
+import { ListRow } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -30,6 +32,7 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
   currentSort,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useUnistyles();
 
   const sortOptions: { field: SortField; label: string }[] = [
     { field: "name", label: t("name") },
@@ -61,20 +64,26 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
           const isAsc = isActive && currentSort.order === "asc";
 
           return (
-            <TouchableOpacity
+            <ListRow
               key={field}
-              style={[styles.option, isActive && styles.optionActive]}
+              title={label}
+              selected={isActive}
               onPress={() => handleSort(field)}
-            >
-              <Text
-                style={[styles.optionText, isActive && styles.optionTextActive]}
-              >
-                {label}
-              </Text>
-              {isActive && (
-                <Text style={styles.orderIndicator}>{isAsc ? "↑" : "↓"}</Text>
-              )}
-            </TouchableOpacity>
+              accessibilityLabel={
+                isActive
+                  ? `${label}, ${t(isAsc ? "sortAscending" : "sortDescending")}`
+                  : label
+              }
+              trailing={
+                isActive ? (
+                  <Icon
+                    name={isAsc ? "sort-ascending" : "sort-descending"}
+                    size={theme.iconSize.lg}
+                    color={theme.colors.primary}
+                  />
+                ) : undefined
+              }
+            />
           );
         })}
       </View>
@@ -85,32 +94,6 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
 const styles = StyleSheet.create((theme) => ({
   optionsContainer: {
     gap: theme.space.sm,
-  },
-  option: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: theme.space.lg,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  optionActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.surfaceVariant,
-  },
-  optionText: {
-    ...theme.typography.body,
-    color: theme.colors.text,
-  },
-  optionTextActive: {
-    fontWeight: "bold",
-    color: theme.colors.primary,
-  },
-  orderIndicator: {
-    fontSize: theme.iconSize.md,
-    color: theme.colors.primary,
   },
 }));
 

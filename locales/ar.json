@@ -259,5 +259,8 @@
   "videoJobOpenPattern": "يفتح النمط",
   "close": "إغلاق",
   "lookUpList": "البحث عن القائمة",
-  "createTag": "إنشاء \"{{tag}}\""
+  "createTag": "إنشاء \"{{tag}}\"",
+  "sortAscending": "تصاعدي",
+  "sortDescending": "تنازلي",
+  "moreOptions": "خيارات إضافية"
 }

@@ -1,7 +1,7 @@
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { ListRow } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
-import { alpha } from "@/src/common/theme/tokens";
 import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -33,15 +33,15 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
   const renderItem = (route: DrawerRoute) => {
     const isFocused = pathname === route.href;
     return (
-      <TouchableOpacity
+      <ListRow
         key={route.name}
+        title={t(route.titleKey)}
+        icon={route.icon}
+        iconColor={isFocused ? "primary" : "textMuted"}
+        selected={isFocused}
         onPress={() => go(route)}
-        style={[styles.item, isFocused && styles.itemFocused]}
-        accessibilityRole="button"
-        accessibilityState={{ selected: isFocused }}
-      >
-        <Text style={styles.itemLabel}>{t(route.titleKey)}</Text>
-      </TouchableOpacity>
+        style={styles.item}
+      />
     );
   };
 
@@ -87,21 +87,8 @@ const styles = StyleSheet.create((theme) => {
       letterSpacing: 1,
     },
     item: {
-      marginHorizontal: theme.space.md,
-      marginVertical: theme.space.xs,
-      paddingHorizontal: theme.space.lg,
-      paddingVertical: theme.space.md,
-      borderRadius: theme.radius.xs,
-    },
-    itemFocused: {
-      // Matches the highlight the old react-navigation DrawerItem applied:
-      // the primary colour at 12% opacity.
-      backgroundColor: alpha(theme.colors.primary, 0.12),
-    },
-    itemLabel: {
-      ...theme.typography.body,
-      fontWeight: "500",
-      color: theme.colors.text,
+      marginHorizontal: theme.space.sm,
+      marginBottom: theme.space.xxs,
     },
     divider: {
       height: 1,

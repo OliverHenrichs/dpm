@@ -1,7 +1,15 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
-import { AppText, Button, Card, Chip, IconButton } from "@/src/common/ui";
+import {
+  AppText,
+  Button,
+  Card,
+  Chip,
+  IconButton,
+  ListRow,
+  SegmentedControl,
+} from "@/src/common/ui";
 import { lightTheme } from "@/src/common/theme/tokens";
 import DesignGallery from "@/src/common/ui/DesignGallery";
 import {
@@ -172,5 +180,121 @@ describe("DesignGallery", () => {
     act(() => jest.advanceTimersByTime(1500));
     expect(screen.getByText("Tap to load")).toBeOnTheScreen();
     jest.useRealTimers();
+  });
+});
+
+describe("ListRow", () => {
+  it("is a named button, and not interactive without a handler", () => {
+    const onPress = jest.fn();
+    const { rerender } = render(
+      <ListRow title="Settings" subtitle="App preferences" onPress={onPress} />,
+    );
+    fireEvent.press(screen.getByRole("button", { name: "Settings" }));
+    expect(onPress).toHaveBeenCalled();
+    expect(screen.getByText("App preferences")).toBeOnTheScreen();
+
+    rerender(<ListRow title="Settings" />);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("is a radio in a single choice, and ticks when chosen", () => {
+    render(
+      <>
+        <ListRow
+          title="English"
+          selection="single"
+          selected
+          onPress={jest.fn()}
+        />
+        <ListRow title="Deutsch" selection="single" onPress={jest.fn()} />
+      </>,
+    );
+    expect(
+      screen.getByRole("radio", { name: "English" }).props.accessibilityState,
+    ).toMatchObject({ checked: true, selected: true });
+    expect(
+      screen.getByRole("radio", { name: "Deutsch" }).props.accessibilityState,
+    ).toMatchObject({ checked: false });
+  });
+
+  it("is a checkbox in a multiple choice, with a selection tick on press", () => {
+    const onPress = jest.fn();
+    render(<ListRow title="Salsa" selection="multiple" onPress={onPress} />);
+    fireEvent.press(screen.getByRole("checkbox", { name: "Salsa" }));
+    expect(onPress).toHaveBeenCalled();
+    expect(Haptics.selectionAsync).toHaveBeenCalled();
+  });
+
+  it("announces whether it is expanded", () => {
+    render(<ListRow title="Whip" expanded onPress={jest.fn()} />);
+    expect(
+      screen.getByRole("button", { name: "Whip" }).props.accessibilityState,
+    ).toMatchObject({ expanded: true });
+  });
+
+  it("keeps trailing controls separately pressable", () => {
+    const onRow = jest.fn();
+    const onEdit = jest.fn();
+    render(
+      <ListRow
+        title="Whip"
+        onPress={onRow}
+        trailing={
+          <IconButton
+            icon="pencil"
+            accessibilityLabel="Edit"
+            onPress={onEdit}
+          />
+        }
+      />,
+    );
+    fireEvent.press(screen.getByLabelText("Edit"));
+    expect(onEdit).toHaveBeenCalled();
+    expect(onRow).not.toHaveBeenCalled();
+  });
+});
+
+describe("SegmentedControl", () => {
+  const segments = [
+    { value: "a" as const, label: "Patterns" },
+    { value: "b" as const, label: "Modifiers", count: 3 },
+  ];
+
+  it("announces tabs, with the count in the name", () => {
+    render(
+      <SegmentedControl segments={segments} value="a" onChange={jest.fn()} />,
+    );
+    expect(
+      screen.getByRole("tab", { name: "Patterns" }).props.accessibilityState,
+    ).toMatchObject({ selected: true });
+    expect(
+      screen.getByRole("tab", { name: "Modifiers (3)" }),
+    ).toBeOnTheScreen();
+  });
+
+  it("changes on another segment, and ignores the current one", () => {
+    const onChange = jest.fn();
+    render(
+      <SegmentedControl segments={segments} value="a" onChange={onChange} />,
+    );
+    fireEvent.press(screen.getByRole("tab", { name: "Patterns" }));
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByRole("tab", { name: "Modifiers (3)" }));
+    expect(onChange).toHaveBeenCalledWith("b");
+  });
+
+  it("is a radio group when it sets a value", () => {
+    render(
+      <SegmentedControl
+        kind="choice"
+        segments={segments}
+        value="b"
+        onChange={jest.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("radio", { name: "Modifiers (3)" }).props
+        .accessibilityState,
+    ).toMatchObject({ checked: true });
   });
 });

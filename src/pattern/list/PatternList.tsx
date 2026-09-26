@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  FlatList,
-  ListRenderItemInfo,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { FlatList, ListRenderItemInfo, Text, View } from "react-native";
+import { ListRow } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -50,7 +44,6 @@ type PatternListProps = {
 
 const PatternList: React.FC<PatternListProps> = (props) => {
   const { t } = useTranslation();
-  const { theme } = useUnistyles();
   const isReadonly = props.isReadonly ?? false;
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -206,18 +199,15 @@ const PatternList: React.FC<PatternListProps> = (props) => {
                 action: () => props.onAddFromVideo?.("camera"),
               },
             ].map(({ key, label, icon, action }) => (
-              <TouchableOpacity
+              <ListRow
                 key={key}
-                style={styles.menuOption}
-                accessibilityRole="button"
+                title={label}
+                icon={icon}
                 onPress={() => {
                   setIsAddMenuVisible(false);
                   action();
                 }}
-              >
-                <Icon name={icon} size={22} color={theme.colors.primary} />
-                <Text style={styles.menuText}>{label}</Text>
-              </TouchableOpacity>
+              />
             ))}
           </View>
         </BottomSheet>
@@ -238,17 +228,6 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
   },
   menu: { gap: theme.space.sm },
-  menuOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.space.md,
-    padding: theme.space.lg,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  menuText: { ...theme.typography.body, color: theme.colors.text },
   emptyState: {
     paddingVertical: theme.space.xxxl,
     alignItems: "center",
