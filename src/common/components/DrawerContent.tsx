@@ -1,7 +1,7 @@
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
 import { ListRow } from "@/src/common/ui";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -24,6 +24,9 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  // Re-renders on a theme switch. The drawer's scroll view did not follow
+  // one natively: after switching to light it stayed dark under dark text.
+  const { theme } = useUnistyles();
 
   const go = (route: DrawerRoute) => {
     navigation.closeDrawer();
@@ -50,10 +53,14 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
 
   return (
     <ScrollView
-      style={styles.drawerStyle}
+      style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={[
         styles.drawerContent,
-        { paddingTop: insets.top + 16, paddingBottom: insets.bottom },
+        {
+          backgroundColor: theme.colors.background,
+          paddingTop: insets.top + theme.space.lg,
+          paddingBottom: insets.bottom,
+        },
       ]}
     >
       <View style={styles.drawerHeaderContainer}>
@@ -68,12 +75,8 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
 
 const styles = StyleSheet.create((theme) => {
   return {
-    drawerStyle: {
-      backgroundColor: theme.colors.background,
-    },
     drawerContent: {
       flexGrow: 1,
-      backgroundColor: theme.colors.background,
     },
     drawerHeaderContainer: {
       paddingBottom: theme.space.lg,

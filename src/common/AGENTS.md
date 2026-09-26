@@ -68,6 +68,12 @@ prop (`{...styles.card}`) cuts it off from theme updates.
 - `ThemeProvider` still owns the user's choice (system / light / dark) and its persistence, and
   forwards it to `UnistylesRuntime` (adaptive themes for "system").
 - Unistyles is a native module: adding it, or upgrading it, means rebuilding the dev client.
+- **Native updates do not reach everything.** Unistyles rewrites a view's `style` on a theme switch
+  without re-rendering, but not `contentContainerStyle`, navigator options, or — as it turned out —
+  the drawer's content, which lives beside the screens: after switching to light the drawer stayed
+  dark under dark text. Anything there takes its colours from `useUnistyles()` (which re-renders)
+  instead. Jest cannot see this (the mock has no native side); switch the theme in the design
+  gallery and open the drawer to check.
 - The two Reanimated-driven graph views (`DragOverlay`, `ZoomableCanvas`) keep React Native's
   `StyleSheet` for their theme-free layout.
 
