@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton } from "@/src/common/ui";
 import { useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import PlusButton from "@/src/common/components/PlusButton";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import { useTranslation } from "react-i18next";

@@ -7,12 +7,12 @@ import {
   ViewStyle,
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon, type IconName } from "@/src/common/ui/Icon";
 import { alpha, type ColorTokens } from "@/src/common/theme/tokens";
 
 export interface IconButtonProps {
   /** A MaterialCommunityIcons name. */
-  icon: string;
+  icon: IconName;
   onPress: () => void;
   /** Required: an icon has no text for a screen reader to read. */
   accessibilityLabel: string;

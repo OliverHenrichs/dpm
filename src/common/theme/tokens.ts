@@ -180,7 +180,35 @@ export const motion = {
   spring: { damping: 20, stiffness: 220, mass: 1 },
 } as const;
 
-const base = { space, radius, typography, iconSize, touchTarget, motion };
+/**
+ * The app's typeface on device, embedded by expo-font's config plugin (app.config.ts). The web build
+ * cannot embed it the same way and uses `webFontStack` instead; `theme/unistyles.ts` picks one.
+ */
+export const fontFamily = "Inter";
+export const webFontStack =
+  'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+/** The type scale with a family applied to every style. */
+export function withFontFamily<T extends Record<string, TextStyle>>(
+  scale: T,
+  family: string,
+): { [K in keyof T]: T[K] & { fontFamily: string } } {
+  return Object.fromEntries(
+    Object.entries(scale).map(([name, style]) => [
+      name,
+      { ...style, fontFamily: family },
+    ]),
+  ) as { [K in keyof T]: T[K] & { fontFamily: string } };
+}
+
+const base = {
+  space,
+  radius,
+  typography: withFontFamily(typography, fontFamily),
+  iconSize,
+  touchTarget,
+  motion,
+};
 
 export const lightTheme = {
   ...base,

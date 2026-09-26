@@ -1,4 +1,5 @@
 import type { Href } from "expo-router";
+import type { IconName } from "@/src/common/ui/Icon";
 
 /**
  * The drawer's routes, in the order they appear in the menu.
@@ -14,7 +15,7 @@ export interface DrawerRoute {
   /** i18n key for the menu entry and the header title */
   titleKey: string;
   /** MaterialCommunityIcons name for the menu entry */
-  icon: string;
+  icon: IconName;
   /** Screens that show the active list's name in the header instead of a static title */
   showsActiveListName?: boolean;
 }

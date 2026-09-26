@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";

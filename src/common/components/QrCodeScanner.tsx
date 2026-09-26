@@ -2,7 +2,7 @@ import React from "react";
 import { Modal, Text, TouchableOpacity, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { CameraView } from "expo-camera";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
 import { mediaColors } from "@/src/common/theme/tokens";
 

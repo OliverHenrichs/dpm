@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { IPattern } from "@/src/pattern/types/IPatternList";

@@ -29,6 +29,20 @@ A theme switch updates those styles natively, without re-rendering. A value that
 function inside the sheet (`bottomSheet: (maxHeight) => ({ … })`, called as
 `styles.bottomSheet(maxHeight)`); never build a style object in render.
 
+**Type is Inter**, embedded natively by expo-font's config plugin (`app.config.ts`; the files and
+their OFL licence are in `assets/fonts/`). On Android the five files form one "Inter" family, so
+`fontWeight` picks the right file there as on iOS; every text style in `theme.typography` carries
+`fontFamily`. A text style that sets colour or weight but spreads no `theme.typography.*` falls back
+to the system font — spread one. Web gets a system font stack instead (`theme/unistyles.ts`). A new
+weight needs its file added in both places in `app.config.ts`, and a dev client rebuild.
+
+**Icons come from `@/src/common/ui` (`Icon`, `IconName`)**, one set, MaterialCommunityIcons via
+`@expo/vector-icons`. Every `icon` prop is typed `IconName`, so a misspelt glyph is a type error.
+
+**Colour literals fail lint** (`eslint.config.js`, `no-restricted-syntax`) everywhere in `src/` and
+`app/` except `tokens.ts` and the pattern-type palette, which is data. A literal that is genuinely
+data, like the de-identified video's dancer colours, carries a disable comment saying so.
+
 **Every value comes from a token.** `theme.colors` (roles), `theme.space` (4-point scale),
 `theme.radius`, `theme.typography` (spread a text style, then set its colour), `theme.elevation`,
 `theme.iconSize`, `theme.motion`; `theme.media` for what sits over video and the camera, which does
@@ -170,9 +184,13 @@ the video player's controls stopped responding inside `PatternDetailsModal` whil
 rendered in a list row were fine. A sibling only receives touches where it is the topmost view,
 which is exactly outside the card.
 
-`components/BottomSheet.tsx` still uses the nested-`Pressable` form. That works for ordinary
-touchables, which win the responder over an ancestor, but **do not put a native player inside it**
-without changing it to the sibling shape.
+`components/BottomSheet.tsx` has the sibling shape too: its scrim is a `Pressable` behind the
+sheet. The sheet rises on a spring over a fading scrim (Reanimated, `theme.motion`), and closes from
+its close button, the scrim, the back button, or a swipe down on its handle and header — past a
+quarter of its height or on a flick. The pan is attached to the header only, so a `ScrollView`
+inside the sheet keeps scrolling. It stays mounted through the closing animation, so a parent that
+sets `visible={false}` sees the sheet leave rather than vanish. The scrim is hidden from screen
+readers; the close button and the back button are their way out.
 
 ## Web split
 

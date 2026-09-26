@@ -69,13 +69,34 @@ export function useDerivedValue<T>(factory: () => T): SharedValue<T> {
 
 export function useAnimatedReaction() {}
 
+/**
+ * Knobs a test can turn, reset before every test by `resetReanimatedMock`
+ * (called from jest.setup.components.ts).
+ */
+const knobs = { reducedMotion: false, timingFinishes: true };
+
+/** The system's "reduce motion" setting, as `useReducedMotion` reports it. */
+export function setReducedMotion(reduced: boolean): void {
+  knobs.reducedMotion = reduced;
+}
+
+/** Whether `withTiming` reports its animation as finished — false models an interruption. */
+export function setTimingFinishes(finishes: boolean): void {
+  knobs.timingFinishes = finishes;
+}
+
+export function resetReanimatedMock(): void {
+  knobs.reducedMotion = false;
+  knobs.timingFinishes = true;
+}
+
 /** No animation: land on the target, and run the callback as if complete. */
 export function withTiming<T>(
   target: T,
   _config?: unknown,
   callback?: (finished: boolean) => void,
 ): T {
-  callback?.(true);
+  callback?.(knobs.timingFinishes);
   return target;
 }
 
@@ -103,7 +124,7 @@ export function runOnUI<T extends (...args: never[]) => unknown>(fn: T): T {
 export function cancelAnimation() {}
 
 export function useReducedMotion(): boolean {
-  return false;
+  return knobs.reducedMotion;
 }
 
 export const ReduceMotion = {
@@ -128,6 +149,23 @@ export function createAnimatedComponent<P extends object>(
 ): React.ComponentType<P> {
   return Component;
 }
+
+/**
+ * Layout animations (`entering`, `exiting`) do nothing under jest; the
+ * builders only need to chain, as `FadeIn.duration(200).delay(50)` does.
+ */
+function layoutAnimation(): Record<string, unknown> {
+  const builder: Record<string, unknown> = new Proxy(
+    {},
+    { get: () => () => builder },
+  );
+  return builder;
+}
+export const FadeIn = layoutAnimation();
+export const FadeOut = layoutAnimation();
+export const FadeInDown = layoutAnimation();
+export const FadeOutUp = layoutAnimation();
+export const LinearTransition = layoutAnimation();
 
 const Animated = {
   View,

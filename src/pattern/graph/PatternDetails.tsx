@@ -250,6 +250,7 @@ const styles = StyleSheet.create((theme) => {
       color: theme.colors.text,
     },
     patternDetailsDesc: {
+      ...theme.typography.bodySmall,
       fontStyle: "italic",
       color: theme.colors.textMuted,
       marginBottom: theme.space.sm,

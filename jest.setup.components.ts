@@ -10,6 +10,7 @@ import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/a
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
 import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";
 import { resetGestureMock } from "./__mocks__/react-native-gesture-handler";
+import { resetReanimatedMock } from "./__mocks__/react-native-reanimated";
 
 // `waitFor` defaults to 1s, which is not enough for the first mount of the
 // full provider stack on a cold CI runner — and it would surface as a
@@ -21,6 +22,7 @@ beforeEach(() => {
   resetFileSystemMock();
   resetDeviceLocalesMock();
   resetGestureMock();
+  resetReanimatedMock();
 });
 
 // ---------------------------------------------------------------------------

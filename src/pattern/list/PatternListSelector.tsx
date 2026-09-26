@@ -2,7 +2,7 @@ import React, { useCallback, useState } from "react";
 import { FlatList, Text, View } from "react-native";
 import { IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import { router, useFocusEffect } from "expo-router";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
 import {

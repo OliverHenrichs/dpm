@@ -8,7 +8,7 @@ import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { ImportAction } from "@/src/pattern/data/hooks/useImportDecisions";
 import { ConflictBadge } from "./ConflictBadge";
 import { ImportActionButtons } from "./ImportActionButtons";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 
 interface ImportListItemProps {
   list: PatternListWithPatterns;

@@ -608,6 +608,7 @@ const styles = StyleSheet.create((theme) => {
     buttonRow: { ...getCommonRow(), gap: theme.space.sm },
     footerButton: { flex: 1 },
     buttonText: {
+      ...theme.typography.label,
       color: theme.colors.text,
       fontWeight: "bold",
     },

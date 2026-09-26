@@ -7,6 +7,7 @@ import PageContainer from "@/src/common/components/PageContainer";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import type { ThemeType } from "@/src/settings/types/Themes";
 import type { ColorTokens } from "@/src/common/theme/tokens";
+import { PATTERN_TYPE_COLORS } from "@/src/pattern/types/PatternType";
 import {
   AppText,
   Button,
@@ -199,7 +200,11 @@ const DesignGallery: React.FC = () => {
               />
             ))}
             <Chip label="Tagged" icon="tag-outline" onPress={() => {}} />
-            <Chip label="Push" swatch="#e11d48" onPress={() => {}} />
+            <Chip
+              label="Push"
+              swatch={PATTERN_TYPE_COLORS.rose}
+              onPress={() => {}}
+            />
             <Chip label="Off" disabled onPress={() => {}} />
           </View>
         </Section>

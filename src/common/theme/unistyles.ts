@@ -1,5 +1,12 @@
+import { Platform } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { darkTheme, lightTheme } from "@/src/common/theme/tokens";
+import {
+  darkTheme,
+  fontFamily,
+  lightTheme,
+  webFontStack,
+  withFontFamily,
+} from "@/src/common/theme/tokens";
 
 /**
  * Registers the themes with Unistyles. This must run before any module calls
@@ -7,7 +14,19 @@ import { darkTheme, lightTheme } from "@/src/common/theme/tokens";
  * ahead of expo-router.
  */
 
-const themes = { light: lightTheme, dark: darkTheme };
+// Every text style carries the family, so a spread of `theme.typography.*`
+// is all a style needs. Weights resolve within the family on both platforms.
+const family = Platform.OS === "web" ? webFontStack : fontFamily;
+const themes = {
+  light: {
+    ...lightTheme,
+    typography: withFontFamily(lightTheme.typography, family),
+  },
+  dark: {
+    ...darkTheme,
+    typography: withFontFamily(darkTheme.typography, family),
+  },
+};
 
 /** Width at which a layout may use a second column: tablets, landscape phones, the web. */
 const breakpoints = { xs: 0, md: 600, lg: 1024 };

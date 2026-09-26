@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, ListRenderItemInfo, Text, View } from "react-native";
-import { ListRow } from "@/src/common/ui";
+import { ListRow, type IconName } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
@@ -179,26 +179,33 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           minHeight="25%"
         >
           <View style={styles.menu}>
-            {[
-              {
-                key: "new",
-                label: t("addPatternNew"),
-                icon: "plus",
-                action: props.onAdd,
-              },
-              {
-                key: "video",
-                label: t("addPatternFromVideo"),
-                icon: "video-plus-outline",
-                action: () => props.onAddFromVideo?.("library"),
-              },
-              {
-                key: "camera",
-                label: t("addPatternRecordVideo"),
-                icon: "video-outline",
-                action: () => props.onAddFromVideo?.("camera"),
-              },
-            ].map(({ key, label, icon, action }) => (
+            {(
+              [
+                {
+                  key: "new",
+                  label: t("addPatternNew"),
+                  icon: "plus",
+                  action: props.onAdd,
+                },
+                {
+                  key: "video",
+                  label: t("addPatternFromVideo"),
+                  icon: "video-plus-outline",
+                  action: () => props.onAddFromVideo?.("library"),
+                },
+                {
+                  key: "camera",
+                  label: t("addPatternRecordVideo"),
+                  icon: "video-outline",
+                  action: () => props.onAddFromVideo?.("camera"),
+                },
+              ] as {
+                key: string;
+                label: string;
+                icon: IconName;
+                action: () => void;
+              }[]
+            ).map(({ key, label, icon, action }) => (
               <ListRow
                 key={key}
                 title={label}

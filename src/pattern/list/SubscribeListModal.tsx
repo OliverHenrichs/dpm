@@ -3,7 +3,7 @@ import { ActivityIndicator, Modal, Text, TextInput, View } from "react-native";
 import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
 import { useCameraPermissions } from "expo-camera";
 import QrCodeScanner from "@/src/common/components/QrCodeScanner";

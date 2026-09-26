@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon, type IconName } from "@/src/common/ui/Icon";
 import { alpha } from "@/src/common/theme/tokens";
 import { haptics } from "@/src/common/ui/haptics";
 
@@ -18,7 +18,7 @@ export interface ChipProps {
   onPress: () => void;
   disabled?: boolean;
   /** A MaterialCommunityIcons name. A selected chip shows a check instead. */
-  icon?: string;
+  icon?: IconName;
   /** A colour dot before the label — a pattern type's colour, say. */
   swatch?: string;
   accessibilityLabel?: string;

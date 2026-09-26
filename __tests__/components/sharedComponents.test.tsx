@@ -1,5 +1,13 @@
 import React from "react";
 import { Text, View } from "react-native";
+import {
+  findGesture,
+  peekGestures,
+} from "@/__mocks__/react-native-gesture-handler";
+import {
+  setReducedMotion,
+  setTimingFinishes,
+} from "@/__mocks__/react-native-reanimated";
 import AppDialog from "@/src/common/components/AppDialog";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import VideoCarousel from "@/src/common/components/VideoCarousel";
@@ -495,5 +503,92 @@ describe("PatternDetails", () => {
       expect(screen.getByText("basic")).toBeOnTheScreen();
       expect(screen.getByText("6-count")).toBeOnTheScreen();
     });
+  });
+});
+
+describe("BottomSheet gestures", () => {
+  const renderSheet = () => {
+    const onClose = jest.fn();
+    renderWithProviders(
+      <BottomSheet visible onClose={onClose} title="Sort">
+        <Text>Inside</Text>
+      </BottomSheet>,
+    );
+    // The sheet measures itself; 400px tall.
+    fireEvent(screen.getByText("Inside").parent!.parent!, "layout", {
+      nativeEvent: { layout: { height: 400 } },
+    });
+    const pan = findGesture(peekGestures()[0], "pan")!;
+    return { onClose, pan };
+  };
+
+  it("closes on a tap on the scrim", () => {
+    const { onClose } = renderSheet();
+    // The mock never re-runs animated styles, so the scrim keeps its opening
+    // opacity of 0 — which the queries count as hidden.
+    fireEvent.press(
+      screen.getByTestId("bottom-sheet-scrim", { includeHiddenElements: true }),
+    );
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("closes when dragged down past a quarter of its height", () => {
+    const { onClose, pan } = renderSheet();
+    act(() => {
+      pan.handlers.onChange({ changeY: 150 });
+      pan.handlers.onEnd({ velocityY: 0 });
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("springs back from a short, slow drag", () => {
+    const { onClose, pan } = renderSheet();
+    act(() => {
+      pan.handlers.onChange({ changeY: 40 });
+      pan.handlers.onEnd({ velocityY: 100 });
+    });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes on a flick, however short", () => {
+    const { onClose, pan } = renderSheet();
+    act(() => {
+      pan.handlers.onChange({ changeY: 20 });
+      pan.handlers.onEnd({ velocityY: 1500 });
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("BottomSheet lifecycle", () => {
+  const sheet = (visible: boolean) => (
+    <BottomSheet visible={visible} onClose={jest.fn()} title="Sort">
+      <Text>Inside</Text>
+    </BottomSheet>
+  );
+
+  it("unmounts once its closing animation finishes", () => {
+    const { rerender } = renderWithProviders(sheet(true));
+    expect(screen.getByText("Inside")).toBeOnTheScreen();
+    rerender(sheet(false));
+    expect(screen.queryByText("Inside")).toBeNull();
+  });
+
+  it("stays mounted when the closing animation is interrupted", () => {
+    // Reopened mid-close, say: the animation reports it did not finish.
+    setTimingFinishes(false);
+    const { rerender } = renderWithProviders(sheet(true));
+    rerender(sheet(false));
+    expect(
+      screen.getByText("Inside", { includeHiddenElements: true }),
+    ).toBeTruthy();
+  });
+
+  it("opens and closes without a spring when the system asks for less motion", () => {
+    setReducedMotion(true);
+    const { rerender } = renderWithProviders(sheet(true));
+    expect(screen.getByText("Inside")).toBeOnTheScreen();
+    rerender(sheet(false));
+    expect(screen.queryByText("Inside")).toBeNull();
   });
 });

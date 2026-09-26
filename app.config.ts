@@ -81,15 +81,53 @@ export default (): ExpoConfig => ({
         image: "./assets/images/splash-icon-dark.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        // The themes' `background` tokens (src/common/theme/tokens.ts), so the
+        // splash hands over to the first screen without a flash of another colour.
+        backgroundColor: "#f5f3ff",
         dark: {
           image: "./assets/images/splash-icon-light.png",
-          backgroundColor: "#000000",
+          backgroundColor: "#18181b",
         },
       },
     ],
     "expo-video",
     "expo-localization",
+    // Inter, embedded natively (SIL Open Font License, assets/fonts/Inter-OFL.txt). On Android the
+    // weights form one "Inter" family, so `fontWeight` picks the right file as it does on iOS,
+    // where the family name comes from the files themselves. Only the weights the type scale
+    // uses are shipped. Web uses a system font stack instead (see theme/unistyles.ts).
+    [
+      "expo-font",
+      {
+        ios: {
+          fonts: [
+            "./assets/fonts/Inter_400Regular.ttf",
+            "./assets/fonts/Inter_400Regular_Italic.ttf",
+            "./assets/fonts/Inter_500Medium.ttf",
+            "./assets/fonts/Inter_600SemiBold.ttf",
+            "./assets/fonts/Inter_700Bold.ttf",
+          ],
+        },
+        android: {
+          fonts: [
+            {
+              fontFamily: "Inter",
+              fontDefinitions: [
+                { path: "./assets/fonts/Inter_400Regular.ttf", weight: 400 },
+                {
+                  path: "./assets/fonts/Inter_400Regular_Italic.ttf",
+                  weight: 400,
+                  style: "italic",
+                },
+                { path: "./assets/fonts/Inter_500Medium.ttf", weight: 500 },
+                { path: "./assets/fonts/Inter_600SemiBold.ttf", weight: 600 },
+                { path: "./assets/fonts/Inter_700Bold.ttf", weight: 700 },
+              ],
+            },
+          ],
+        },
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

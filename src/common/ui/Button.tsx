@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon, type IconName } from "@/src/common/ui/Icon";
 import { alpha, type AppTheme } from "@/src/common/theme/tokens";
 import { haptics } from "@/src/common/ui/haptics";
 
@@ -29,7 +29,7 @@ export interface ButtonProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   /** A MaterialCommunityIcons name, shown before the title. */
-  icon?: string;
+  icon?: IconName;
   disabled?: boolean;
   /** Shows a spinner in place of the icon and blocks presses. */
   loading?: boolean;

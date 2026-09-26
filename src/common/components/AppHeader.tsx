@@ -1,7 +1,7 @@
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
 import { router, useNavigation, usePathname } from "expo-router";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";

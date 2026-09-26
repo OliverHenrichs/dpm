@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon, type IconName } from "@/src/common/ui/Icon";
 import { alpha } from "@/src/common/theme/tokens";
 import { haptics } from "@/src/common/ui/haptics";
 
@@ -16,7 +16,7 @@ export interface Segment<T extends string> {
   value: T;
   label: string;
   /** A MaterialCommunityIcons name before the label. */
-  icon?: string;
+  icon?: IconName;
   /** A count shown after the label. Nothing is shown for 0 or undefined. */
   count?: number;
 }

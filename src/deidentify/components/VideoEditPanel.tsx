@@ -41,6 +41,8 @@ type Props = {
 };
 
 /** The output palette's dancer colours, so a marker shows which colour that dancer gets. */
+// Output data, not UI: they must match what the de-identify pipeline paints.
+// eslint-disable-next-line no-restricted-syntax
 const DANCER_COLOURS = ["#F59E0B", "#14B8A6"];
 const MARKER = 28;
 /** Shortest selection worth cutting, in seconds. */
@@ -342,7 +344,7 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.media.black,
   },
   row: { ...getCommonRow(), gap: theme.space.sm, flexWrap: "wrap" },
-  text: { color: theme.colors.text },
+  text: { ...theme.typography.body, color: theme.colors.text },
   hint: { ...theme.typography.bodySmall, color: theme.colors.textMuted },
   button: { flexGrow: 1, alignItems: "center" },
   marker: {
@@ -355,7 +357,11 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     justifyContent: "center",
   },
-  markerText: { color: theme.media.black, fontWeight: "bold" },
+  markerText: {
+    ...theme.typography.label,
+    color: theme.media.black,
+    fontWeight: "bold",
+  },
 }));
 
 export default VideoEditPanel;

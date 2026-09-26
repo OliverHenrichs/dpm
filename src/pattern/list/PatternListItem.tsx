@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
@@ -73,14 +74,18 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
         }
       />
       {isSelected && (
-        <View style={styles.details}>
+        <Animated.View
+          style={styles.details}
+          entering={FadeIn.duration(theme.motion.duration.normal)}
+          exiting={FadeOut.duration(theme.motion.duration.fast)}
+        >
           <PatternDetails
             selectedPattern={pattern}
             patterns={allPatterns}
             patternTypes={patternTypes}
             modifiers={modifiers}
           />
-        </View>
+        </Animated.View>
       )}
       <AppDialog
         visible={showConfirmDelete}

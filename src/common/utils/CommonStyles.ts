@@ -51,6 +51,7 @@ export const getCommonInput = (theme: AppTheme) =>
     ...getCommonBorder(theme),
     borderColor: theme.colors.borderStrong,
     padding: theme.space.sm,
+    fontFamily: theme.typography.body.fontFamily,
     color: theme.colors.text,
     backgroundColor: theme.colors.surfaceVariant,
   }) satisfies ViewStyle & TextStyle;

@@ -1,6 +1,26 @@
-import React from "react";
-import { DimensionValue, Modal, Pressable, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import React, { useEffect, useState } from "react";
+import {
+  DimensionValue,
+  LayoutChangeEvent,
+  Modal,
+  Pressable,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { AppText, IconButton } from "@/src/common/ui";
 
@@ -13,6 +33,20 @@ interface BottomSheetProps {
   minHeight?: DimensionValue;
 }
 
+/** Share of the sheet's height a drag must pass to close it on release. */
+const CLOSE_DISTANCE = 0.25;
+/** Downward speed (px/s) that closes the sheet whatever the distance — a flick. */
+const CLOSE_VELOCITY = 900;
+
+/**
+ * A sheet that rises from the bottom over a fading scrim. It closes from its
+ * close button, a tap on the scrim, the Android back button, or a downward
+ * swipe on its handle and header — the swipe is limited to those, so content
+ * inside can still scroll.
+ *
+ * The scrim is a sibling behind the sheet, not a wrapper around it, so touches
+ * on the sheet's content never reach it (see `src/common/AGENTS.md`).
+ */
 const BottomSheet: React.FC<BottomSheetProps> = ({
   visible,
   onClose,
@@ -22,59 +56,152 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   minHeight = "50%",
 }) => {
   const { t } = useTranslation();
+  const { theme } = useUnistyles();
+  const reduceMotion = useReducedMotion();
+  const { height: screenHeight } = useWindowDimensions();
+
+  // Stays mounted through the closing animation, then unmounts.
+  const [mounted, setMounted] = useState(visible);
+  /** 0 = off screen, 1 = fully up. */
+  const progress = useSharedValue(0);
+  /** How far the sheet is dragged down, in px. */
+  const drag = useSharedValue(0);
+  const sheetHeight = useSharedValue(screenHeight);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      drag.value = 0;
+      progress.value = reduceMotion
+        ? withTiming(1, { duration: 0 })
+        : withSpring(1, theme.motion.spring);
+    } else {
+      progress.value = withTiming(
+        0,
+        { duration: reduceMotion ? 0 : theme.motion.duration.normal },
+        (finished) => {
+          if (finished) runOnJS(setMounted)(false);
+        },
+      );
+    }
+    // Shared values are stable; only a change of `visible` drives this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  const pan = Gesture.Pan()
+    .onChange((event) => {
+      drag.value = Math.max(0, drag.value + event.changeY);
+    })
+    .onEnd((event) => {
+      const far = drag.value > sheetHeight.value * CLOSE_DISTANCE;
+      const flicked = event.velocityY > CLOSE_VELOCITY;
+      if (far || flicked) {
+        runOnJS(onClose)();
+      } else {
+        drag.value = withSpring(0, theme.motion.spring);
+      }
+    });
+
+  const sheetMotion = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: (1 - progress.value) * sheetHeight.value + drag.value,
+      },
+    ],
+  }));
+  const scrimMotion = useAnimatedStyle(() => ({
+    opacity:
+      progress.value *
+      (1 - Math.min(1, drag.value / Math.max(1, sheetHeight.value))),
+  }));
+
   return (
     <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
+      visible={mounted}
+      animationType="none"
+      transparent
+      statusBarTranslucent
       onRequestClose={onClose}
     >
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable
-          style={styles.bottomSheet(maxHeight, minHeight)}
-          onPress={(e) => e?.stopPropagation?.()}
+      <GestureHandlerRootView style={styles.root}>
+        <Animated.View style={[styles.scrim, scrimMotion]}>
+          {/* For touch only: a screen reader closes from the button or back. */}
+          <Pressable
+            style={styles.fill}
+            onPress={onClose}
+            accessible={false}
+            importantForAccessibility="no"
+            testID="bottom-sheet-scrim"
+          />
+        </Animated.View>
+        <Animated.View
+          style={[styles.sheet(maxHeight, minHeight), sheetMotion]}
+          onLayout={(e: LayoutChangeEvent) => {
+            sheetHeight.value = e.nativeEvent.layout.height;
+          }}
+          accessibilityViewIsModal
         >
-          <View style={styles.bottomSheetHeader}>
-            <AppText variant="title" style={styles.bottomSheetTitle}>
-              {title}
-            </AppText>
-            <IconButton
-              icon="close"
-              color="textMuted"
-              accessibilityLabel={t("close")}
-              onPress={onClose}
-            />
-          </View>
+          <GestureDetector gesture={pan}>
+            <View>
+              <View style={styles.handle} />
+              <View style={styles.header}>
+                <AppText variant="title" style={styles.title}>
+                  {title}
+                </AppText>
+                <IconButton
+                  icon="close"
+                  color="textMuted"
+                  accessibilityLabel={t("close")}
+                  onPress={onClose}
+                />
+              </View>
+            </View>
+          </GestureDetector>
           {children}
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
-  modalOverlay: {
+  root: {
     flex: 1,
-    backgroundColor: theme.colors.overlay,
     justifyContent: "flex-end",
   },
-  bottomSheet: (maxHeight: DimensionValue, minHeight: DimensionValue) => ({
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: theme.colors.overlay,
+  },
+  fill: {
+    flex: 1,
+  },
+  sheet: (maxHeight: DimensionValue, minHeight: DimensionValue) => ({
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: theme.radius.xxl,
     borderTopRightRadius: theme.radius.xxl,
-    paddingTop: theme.space.lg,
     paddingHorizontal: theme.space.lg,
     paddingBottom: theme.space.xxxl,
     maxHeight,
     minHeight,
+    ...theme.elevation.lg,
   }),
-  bottomSheetHeader: {
+  handle: {
+    alignSelf: "center",
+    width: 36,
+    height: 4,
+    marginTop: theme.space.sm,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.borderStrong,
+  },
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: theme.space.lg,
+    paddingTop: theme.space.sm,
+    marginBottom: theme.space.md,
   },
-  bottomSheetTitle: {
+  title: {
     flexShrink: 1,
   },
 }));

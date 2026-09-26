@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
-import { Button, Chip, ListRow } from "@/src/common/ui";
+import { Button, Chip, ListRow, type IconName } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import {
@@ -30,7 +30,7 @@ const SettingsScreen: React.FC = () => {
   const selectedLanguage = findLanguage(currentLang);
   const { theme } = useUnistyles();
 
-  const themeOptions = [
+  const themeOptions: { value: ThemeType; label: string; icon: IconName }[] = [
     { value: "system", label: t("themeSystem"), icon: "theme-light-dark" },
     { value: "light", label: t("themeLight"), icon: "white-balance-sunny" },
     { value: "dark", label: t("themeDark"), icon: "weather-night" },

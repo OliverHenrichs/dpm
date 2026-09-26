@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Text, View } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
@@ -87,13 +88,17 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
       />
 
       {isSelected && (
-        <View style={styles.details}>
+        <Animated.View
+          style={styles.details}
+          entering={FadeIn.duration(theme.motion.duration.normal)}
+          exiting={FadeOut.duration(theme.motion.duration.fast)}
+        >
           <ModifierDetails
             modifier={modifier}
             patterns={patterns}
             patternTypes={patternTypes}
           />
-        </View>
+        </Animated.View>
       )}
 
       <AppDialog

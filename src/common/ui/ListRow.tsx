@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon, type IconName } from "@/src/common/ui/Icon";
 import { alpha, type ColorTokens } from "@/src/common/theme/tokens";
 import { haptics } from "@/src/common/ui/haptics";
 
@@ -30,7 +30,7 @@ export interface ListRowProps {
   /** Short muted text at the end of the title line — a count, a gloss. */
   meta?: string;
   /** A MaterialCommunityIcons name before the text. */
-  icon?: string;
+  icon?: IconName;
   /** Colour role of `icon`. */
   iconColor?: keyof ColorTokens;
   /** Anything else to lead with — a colour swatch, an avatar. */

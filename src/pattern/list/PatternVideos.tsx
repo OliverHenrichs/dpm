@@ -10,7 +10,7 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import PlusButton from "@/src/common/components/PlusButton";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Icon } from "@/src/common/ui/Icon";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 
