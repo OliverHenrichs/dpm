@@ -1,5 +1,6 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { Chip } from "@/src/common/ui";
 import { useTranslation } from "react-i18next";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { filterStyles as styles } from "../FilterCommonStyles";
@@ -26,23 +27,12 @@ const TypeFilter: React.FC<TypeFilterProps> = ({
       <Text style={styles.label}>{t("type")}</Text>
       <View style={styles.chipContainer}>
         {availableTypes.map((type) => (
-          <TouchableOpacity
+          <Chip
             key={type.id}
-            style={[
-              styles.chip,
-              selectedTypes.includes(type.id) && styles.chipSelected,
-            ]}
+            label={type.slug}
+            selected={selectedTypes.includes(type.id)}
             onPress={() => onToggle(type.id)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                selectedTypes.includes(type.id) && styles.chipTextSelected,
-              ]}
-            >
-              {type.slug}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </View>
     </View>

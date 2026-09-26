@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -69,26 +69,19 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
         </TouchableOpacity>
         {!isReadonly && (
           <View style={styles.actions}>
-            <TouchableOpacity
-              onPress={(e) => {
-                e?.stopPropagation?.();
-                onEdit(modifier);
-              }}
-              style={styles.iconButton}
+            <IconButton
+              icon="pencil"
+              size={theme.iconSize.md}
+              onPress={() => onEdit(modifier)}
               accessibilityLabel={t("editModifier")}
-            >
-              <Icon name="pencil" size={20} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={(e) => {
-                e?.stopPropagation?.();
-                setShowConfirmDelete(true);
-              }}
-              style={styles.iconButton}
+            />
+            <IconButton
+              icon="trash-can-outline"
+              size={theme.iconSize.md}
+              color="danger"
+              onPress={() => setShowConfirmDelete(true)}
               accessibilityLabel={t("deleteModifier")}
-            >
-              <Text style={styles.deleteIcon}>🗑️</Text>
-            </TouchableOpacity>
+            />
           </View>
         )}
       </View>
@@ -173,14 +166,6 @@ const styles = StyleSheet.create((theme) => ({
   actions: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  iconButton: {
-    paddingHorizontal: theme.space.xs,
-    paddingVertical: theme.space.xxs,
-  },
-  deleteIcon: {
-    fontSize: theme.iconSize.md,
-    marginLeft: theme.space.sm,
   },
 }));
 

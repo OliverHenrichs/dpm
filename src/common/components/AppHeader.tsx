@@ -23,7 +23,12 @@ const HEADER_SLOT_SIZE = 56;
 /** Only the drawer-specific part of the navigation object is needed here. */
 type DrawerNavigation = { openDrawer: () => void };
 
-const AppHeader: React.FC = () => {
+interface AppHeaderProps {
+  /** For a screen outside the drawer, which has no title of its own there. */
+  title?: string;
+}
+
+const AppHeader: React.FC<AppHeaderProps> = ({ title: titleOverride }) => {
   const { t } = useTranslation();
   const navigation = useNavigation<DrawerNavigation>();
   const pathname = usePathname();
@@ -34,7 +39,7 @@ const AppHeader: React.FC = () => {
     route?.name === "index" ? t("appTitle") : route && t(route.titleKey);
   const title = route?.showsActiveListName
     ? (activeList?.name ?? screenTitle)
-    : (screenTitle ?? pathname);
+    : (titleOverride ?? screenTitle ?? pathname);
   return (
     <View style={styles.header}>
       <TouchableOpacity

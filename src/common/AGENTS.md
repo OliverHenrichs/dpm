@@ -53,6 +53,7 @@ Spread the fragments **inside** a `StyleSheet.create`; spreading a Unistyles sty
 prop (`{...styles.card}`) cuts it off from theme updates.
 
 **Setup, and where it breaks.**
+
 - The themes are registered in `theme/unistyles.ts`, which must run before any
   `StyleSheet.create`. The app's entry `index.ts` imports it ahead of expo-router, and
   `app/_layout.tsx` imports it first too, because web's static renderer loads routes directly and
@@ -69,6 +70,38 @@ prop (`{...styles.card}`) cuts it off from theme updates.
 - Unistyles is a native module: adding it, or upgrading it, means rebuilding the dev client.
 - The two Reanimated-driven graph views (`DragOverlay`, `ZoomableCanvas`) keep React Native's
   `StyleSheet` for their theme-free layout.
+
+## UI primitives — `ui/`
+
+Screens compose `AppText`, `Button`, `IconButton`, `Chip` and `Card` from `@/src/common/ui`
+rather than styling `TouchableOpacity` and `Text` by hand. They carry what every hand-rolled
+touchable kept forgetting: pressed feedback (Material ripple on Android, a fade elsewhere), a 44dp
+touch target, `accessibilityRole`/`accessibilityState`, and haptics where they belong.
+
+- **`Button`** — `variant`: `primary` (the one main action), `secondary` (neutral outline — Cancel
+  beside a primary), `outline`, `ghost` (quiet text action), `danger` (confirms a destructive step,
+  with a haptic), `dangerOutline` (leads to one); `size` `sm`/`md`; optional `icon`, `loading`.
+  A footer pair is `secondary` + `primary`, each `flex: 1`, Cancel on the left.
+- **`IconButton`** — an icon with a **required** `accessibilityLabel`. The glyph keeps its size;
+  `hitSlop` grows the target to 44dp, so dense headers keep their layout.
+- **`Chip`** — a selectable pill (filters, types, levels, one-of-several). Selection is shown by
+  colour _and_ a check mark; pressing gives a selection haptic. `swatch` adds a colour dot.
+- **`Card`** — a surface; with `onPress` the whole card is one button.
+- **`AppText`** — `variant` is a text style, `color` a colour role.
+
+`Button` and `Chip` default their `accessibilityLabel` to their visible text, which is what tests
+find them by. `style` on a primitive is for layout (flex, margins); the look comes from its props.
+Haptics go through `ui/haptics.ts` — selection changes and destructive confirmations only, never
+every tap.
+
+**The design gallery** (`ui/DesignGallery.tsx`, route `/gallery`, linked from Settings in
+development builds only) shows every token and primitive in the active theme with a theme switch
+at the top. It is the fast loop for design work: change `theme/tokens.ts` or a primitive, save, look.
+Its strings are not translated on purpose — no user sees it — and release builds redirect it home.
+
+Still hand-rolled, for a later pass: list rows and cards (`PatternListItem`'s row,
+`PatternListSelector`'s list cards, `ModifierPillStrip`), `PatternListManager`'s tabs, the sort
+sheet's options, and the template modal's colour picker.
 
 ## Header layout
 

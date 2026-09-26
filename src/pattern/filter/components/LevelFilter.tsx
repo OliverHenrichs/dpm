@@ -1,5 +1,6 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { Chip } from "@/src/common/ui";
 import { useTranslation } from "react-i18next";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { filterStyles as styles } from "../FilterCommonStyles";
@@ -20,23 +21,12 @@ const LevelFilter: React.FC<LevelFilterProps> = ({
       <Text style={styles.label}>{t("level")}</Text>
       <View style={styles.chipContainer}>
         {Object.values(PatternLevel).map((level) => (
-          <TouchableOpacity
+          <Chip
             key={level}
-            style={[
-              styles.chip,
-              selectedLevels.includes(level) && styles.chipSelected,
-            ]}
+            label={t(level)}
+            selected={selectedLevels.includes(level)}
             onPress={() => onToggle(level)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                selectedLevels.includes(level) && styles.chipTextSelected,
-              ]}
-            >
-              {t(level)}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </View>
     </View>

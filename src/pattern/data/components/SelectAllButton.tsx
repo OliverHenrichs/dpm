@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, TouchableOpacity } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
@@ -14,23 +14,24 @@ export const SelectAllButton: React.FC<SelectAllButtonProps> = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <TouchableOpacity style={styles.selectAllButton} onPress={onToggle}>
-      <Text style={styles.selectAllText}>
-        {allSelected ? t("deselectAll") : t("selectAll")}
-      </Text>
-    </TouchableOpacity>
+    <Button
+      title={allSelected ? t("deselectAll") : t("selectAll")}
+      icon={
+        allSelected
+          ? "checkbox-multiple-blank-outline"
+          : "checkbox-multiple-marked-outline"
+      }
+      variant="ghost"
+      size="sm"
+      onPress={onToggle}
+      style={styles.selectAllButton}
+    />
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
   selectAllButton: {
     alignSelf: "flex-end",
-    paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.md,
     marginBottom: theme.space.md,
-  },
-  selectAllText: {
-    ...theme.typography.label,
-    color: theme.colors.primary,
   },
 }));

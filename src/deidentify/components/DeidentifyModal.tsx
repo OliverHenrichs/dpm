@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, Text, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
@@ -51,13 +52,12 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
                 {t("videoEditTitle")}
                 {target ? ` — ${target.patternName}` : ""}
               </Text>
-              <TouchableOpacity
+              <IconButton
+                icon="close"
+                color="textMuted"
                 onPress={onClose}
-                accessibilityRole="button"
-                accessibilityLabel={t("cancel")}
-              >
-                <Text style={styles.close}>✕</Text>
-              </TouchableOpacity>
+                accessibilityLabel={t("close")}
+              />
             </View>
             <ScrollView>
               {target && (
@@ -124,11 +124,6 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.title,
     flex: 1,
     color: theme.colors.text,
-  },
-  close: {
-    fontSize: theme.iconSize.md,
-    color: theme.colors.textMuted,
-    padding: theme.space.xs,
   },
 }));
 

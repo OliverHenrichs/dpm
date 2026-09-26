@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import {
-  getCommonButton,
   getCommonInput,
   getCommonLabel,
   getCommonRow,
@@ -82,14 +82,11 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
       maxHeight="70%"
     >
       <View style={styles.section}>
-        <TouchableOpacity
-          style={styles.libraryButton}
+        <Button
+          title={t("addFromLibrary")}
+          icon="folder-image"
           onPress={handlePickFromLibrary}
-        >
-          <Text style={styles.libraryButtonText}>
-            {"📁  " + t("addFromLibrary")}
-          </Text>
-        </TouchableOpacity>
+        />
       </View>
 
       <View style={styles.dividerRow}>
@@ -121,16 +118,17 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
           onChangeText={setStartTimeText}
           keyboardType="numbers-and-punctuation"
         />
-        <TouchableOpacity style={styles.addUrlButton} onPress={handleAddUrl}>
-          <Text style={styles.addUrlButtonText}>{"🔗  " + t("addUrl")}</Text>
-        </TouchableOpacity>
+        <Button
+          title={t("addUrl")}
+          icon="link-variant"
+          onPress={handleAddUrl}
+        />
       </View>
     </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create((theme) => {
-  const baseButton = getCommonButton(theme);
   const baseInput = getCommonInput(theme);
   return {
     section: {
@@ -151,24 +149,6 @@ const styles = StyleSheet.create((theme) => {
       ...theme.typography.caption,
       color: theme.colors.danger,
       marginBottom: theme.space.sm,
-    },
-    libraryButton: {
-      ...baseButton,
-      alignItems: "center",
-    },
-    libraryButtonText: {
-      ...theme.typography.label,
-      color: theme.colors.onPrimary,
-      fontWeight: "bold",
-    },
-    addUrlButton: {
-      ...baseButton,
-      alignItems: "center",
-    },
-    addUrlButtonText: {
-      ...theme.typography.label,
-      color: theme.colors.onPrimary,
-      fontWeight: "bold",
     },
     dividerRow: {
       ...getCommonRow(),

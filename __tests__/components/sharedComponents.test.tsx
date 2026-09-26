@@ -148,10 +148,10 @@ describe("BottomSheet", () => {
     expect(screen.queryByText("sheet body")).toBeNull();
   });
 
-  it("closes from the ✕", () => {
+  it("closes from its close button", () => {
     const { onClose } = renderSheet();
 
-    fireEvent.press(screen.getByText("✕"));
+    fireEvent.press(screen.getByLabelText("Close"));
 
     expect(onClose).toHaveBeenCalled();
   });

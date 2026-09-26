@@ -1,8 +1,8 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { getCommonButton } from "@/src/common/utils/CommonStyles";
 import {
   DeidentifyJob,
   useDeidentifyJobs,
@@ -76,13 +76,13 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
         );
       })}
       {!busy && (
-        <TouchableOpacity
+        <Button
+          title={t("deidentifyDismiss")}
+          variant="ghost"
+          size="sm"
           onPress={dismissFinished}
-          accessibilityRole="button"
           style={styles.dismissButton}
-        >
-          <Text style={styles.dismiss}>{t("deidentifyDismiss")}</Text>
-        </TouchableOpacity>
+        />
       )}
     </View>
   );
@@ -101,12 +101,7 @@ const styles = StyleSheet.create((theme) => ({
   line: { ...theme.typography.bodySmall, color: theme.colors.text },
   link: { textDecorationLine: "underline" },
   dismissButton: {
-    ...getCommonButton(theme, theme.colors.border),
     alignSelf: "flex-end",
-  },
-  dismiss: {
-    fontWeight: "bold",
-    color: theme.colors.text,
   },
 }));
 

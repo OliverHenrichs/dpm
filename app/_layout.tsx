@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { Drawer } from "expo-router/drawer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -57,10 +58,13 @@ export default function RootLayout() {
 
 function AppDrawer() {
   const { t } = useTranslation();
-  const { theme } = useUnistyles();
+  const { theme, rt } = useUnistyles();
 
   return (
     <ActivePatternListProvider>
+      {/* The app's theme, not the system's: someone who picked light on a
+          dark phone would otherwise get white icons on a white bar. */}
+      <StatusBar style={rt.themeName === "dark" ? "light" : "dark"} />
       <DeidentifyJobsProvider>
         <SafeAreaView style={styles.flexView}>
           <Drawer

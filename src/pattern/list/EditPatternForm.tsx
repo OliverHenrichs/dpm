@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Button, Chip } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
@@ -36,13 +37,10 @@ import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { canShortenVideos } from "@/src/deidentify/shortenVideo";
 import {
-  getCommon2ndOrderLabel,
   getCommonBorder,
-  getCommonButton,
   getCommonInput,
   getCommonLabel,
   getCommonPrereqContainer,
-  getCommonPrereqItem,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 
@@ -352,40 +350,24 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         <View style={styles.input}>
           <Text style={styles.label}>{t("type")}</Text>
           {patternTypes.map((type) => (
-            <TouchableOpacity
+            <Chip
               key={type.id}
-              style={[
-                styles.prereqItem,
-                newPattern.typeId === type.id && styles.prereqItemSelected,
-                { borderLeftColor: type.color, borderLeftWidth: 4 },
-              ]}
+              label={type.slug.toUpperCase()}
+              swatch={type.color}
+              selected={newPattern.typeId === type.id}
               onPress={() => setNewPattern({ ...newPattern, typeId: type.id })}
-            >
-              <Text
-                style={[
-                  styles.prereqItemText,
-                  newPattern.typeId === type.id &&
-                    styles.prereqItemTextSelected,
-                ]}
-              >
-                {type.slug.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
+            />
           ))}
         </View>
         <View style={styles.input}>
           <Text style={styles.label}>{t("level")}</Text>
           {levels.map((level) => (
-            <TouchableOpacity
+            <Chip
               key={level}
-              style={[
-                styles.prereqItem,
-                newPattern.level === level && styles.prereqItemSelected,
-              ]}
+              label={level}
+              selected={newPattern.level === level}
               onPress={() => setNewPattern({ ...newPattern, level })}
-            >
-              <Text style={styles.otherLabel}>{level}</Text>
-            </TouchableOpacity>
+            />
           ))}
         </View>
       </View>
@@ -422,23 +404,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               // cycle has no valid learning order.
               const wouldCycle = ineligiblePrerequisiteIds.has(p.id);
               return (
-                <TouchableOpacity
+                <Chip
                   key={p.id}
+                  label={p.name}
+                  selected={isSelected}
                   disabled={wouldCycle}
-                  accessibilityRole="button"
-                  accessibilityLabel={p.name}
-                  accessibilityState={{
-                    disabled: wouldCycle,
-                    selected: isSelected,
-                  }}
                   accessibilityHint={
                     wouldCycle ? t("prerequisiteWouldCycle") : undefined
                   }
-                  style={[
-                    styles.prereqItem,
-                    isSelected && styles.prereqItemSelected,
-                    wouldCycle && styles.prereqItemDisabled,
-                  ]}
                   onPress={() => {
                     if (isSelected) {
                       setNewPattern({
@@ -454,16 +427,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                       });
                     }
                   }}
-                >
-                  <Text
-                    style={[
-                      styles.otherLabel,
-                      wouldCycle && styles.prereqItemTextDisabled,
-                    ]}
-                  >
-                    {p.name}
-                  </Text>
-                </TouchableOpacity>
+                />
               );
             })}
         </ScrollView>
@@ -549,17 +513,13 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             </TouchableOpacity>
           ))}
         </View>
-        <TouchableOpacity
+        <Button
+          title={t("deidentifyFromGallery")}
+          icon="image-plus"
+          variant="secondary"
           onPress={pickForDeidentify}
           disabled={activeVideoRefs.length >= 3}
-          style={[
-            styles.buttonCancel,
-            activeVideoRefs.length >= 3 && styles.disabled,
-          ]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.buttonText}>{t("deidentifyFromGallery")}</Text>
-        </TouchableOpacity>
+        />
       </BottomSheet>
       <DeidentifyModal
         target={deidentifyTarget}
@@ -599,30 +559,24 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       </BottomSheet>
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity onPress={handleFinish} style={styles.buttonIndigo}>
-          <Text style={styles.buttonTextOnPrimary}>{t("savePattern")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onCancel} style={styles.buttonCancel}>
-          <Text style={styles.buttonText}>{t("cancel")}</Text>
-        </TouchableOpacity>
+        <Button
+          title={t("cancel")}
+          variant="secondary"
+          onPress={onCancel}
+          style={styles.footerButton}
+        />
+        <Button
+          title={t("savePattern")}
+          onPress={handleFinish}
+          style={styles.footerButton}
+        />
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create((theme) => {
-  const videosRow = {
-    flexDirection: "row",
-    alignItems: "center",
-  } as const;
-  const videosInputRow = {
-    flexDirection: "row",
-    alignItems: "center",
-    minHeight: 64,
-    height: 78,
-  } as const;
   const baseInput = getCommonInput(theme);
-  const baseButton = getCommonButton(theme);
   const commonBorder = getCommonBorder(theme);
   return {
     addPatternContainer: {
@@ -644,48 +598,19 @@ const styles = StyleSheet.create((theme) => {
     input: { flex: 1, height: "100%", ...baseInput },
     textarea: { ...baseInput, minHeight: 48 },
     label: { ...getCommonLabel(theme) },
-    otherLabel: { ...getCommon2ndOrderLabel(theme) },
     prereqContainer: getCommonPrereqContainer(theme),
     filterInput: { ...baseInput, height: 40, marginBottom: theme.space.sm },
-    prereqItem: getCommonPrereqItem(theme),
-    prereqItemSelected: { backgroundColor: theme.colors.primary },
-    prereqItemDisabled: { opacity: 0.35 },
-    prereqItemTextDisabled: {
-      textDecorationLine: "line-through",
-    },
     prereqHint: {
       ...theme.typography.caption,
       color: theme.colors.textMuted,
       fontStyle: "italic",
       marginTop: theme.space.sm,
     },
-    prereqItemText: { ...theme.typography.bodySmall, color: theme.colors.text },
-    prereqItemTextSelected: {
-      color: theme.colors.onPrimary,
-      fontWeight: "bold",
-    },
     buttonRow: { ...getCommonRow(), gap: theme.space.sm },
-    buttonRowWithBorder: { ...getCommonRow(), gap: theme.space.sm },
-    buttonIndigo: { ...baseButton },
-    buttonCancel: {
-      ...baseButton,
-      backgroundColor: theme.colors.border,
-    },
+    footerButton: { flex: 1 },
     buttonText: {
       color: theme.colors.text,
       fontWeight: "bold",
-    },
-    buttonTextOnPrimary: {
-      color: theme.colors.onPrimary,
-      fontWeight: "bold",
-    },
-    videosRow,
-    videosInputRow,
-    addButtonContainer: {
-      justifyContent: "center",
-      alignItems: "center",
-      height: 64,
-      marginLeft: theme.space.sm,
     },
     modifierSection: {
       ...getCommonPrereqContainer(theme),
@@ -713,7 +638,6 @@ const styles = StyleSheet.create((theme) => {
       alignItems: "center",
       backgroundColor: theme.colors.surfaceVariant,
     },
-    disabled: { opacity: 0.5 },
     attachPickerItem: {
       flexDirection: "row",
       alignItems: "center",

@@ -8,7 +8,7 @@ apply wherever you are working. Depth lives next to the code it governs, in a ne
 
 | File | Covers |
 |---|---|
-| `src/common/AGENTS.md` | Theming, `AppHeader`, the Android edge band, dismissal touches, the web split |
+| `src/common/AGENTS.md` | Theming and design tokens, the UI primitives (`Button`, `Chip`, …) and design gallery, `AppHeader`, the Android edge band, dismissal touches, the web split |
 | `src/pattern/data/AGENTS.md` | Storage, pattern ids, migrations, import validation, export format |
 | `src/pattern/graph/AGENTS.md` | Graph model, layouts, gestures, node drag, badges, prerequisite integrity |
 | `src/pattern/list/AGENTS.md` | `usePatternCrud`, modifiers, sorting, always-mounted modals |
@@ -67,6 +67,7 @@ Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pa
 - **Path alias.** `@/` resolves to the **project root** (not `src/`). Use `@/src/...` for source imports and `@/utils/...` for test utilities. The same mapping is configured in `tsconfig.json` and in `jest.config.js` (`moduleNameMapper`).
 - **Read-only lists.** `IPatternList.readonly` is set on imported read-only exports and on subscribed cloud lists. Every mutating path must guard on it (`const isReadonly = !!activeList?.readonly`). The one deliberate exception is dragging a graph node, which is a local view preference.
 - **Translations.** All user-facing strings use `const { t } = useTranslation()`. The app ships **nine** locales — `en`, `zh`, `hi`, `es`, `fr`, `ar`, `bn`, `pt`, `de` — and a key must be added to **every** `locales/*.json` (flat key/value, no nesting), with `en` written first as the source of truth. `__tests__/unit/i18n.test.ts` fails on a key missing from any locale, an empty value, a mismatched `{{placeholder}}` set, or a `t("…")` call with no key behind it.
+- **UI primitives.** Build touchables and text from `@/src/common/ui` (`Button`, `IconButton`, `Chip`, `Card`, `AppText`), not raw `TouchableOpacity`; see `src/common/AGENTS.md`. Try visual changes in the dev-only design gallery (`/gallery`, linked from Settings).
 - **Theming.** Styles are Unistyles sheets declared at module level, `StyleSheet.create((theme) => …)` imported from `react-native-unistyles`, and every colour, spacing step, radius, text style and shadow comes from the design tokens in `src/common/theme/tokens.ts` — never a literal. Non-style values (icon colours, SVG fills) come from `useUnistyles()`. Text on a coloured fill uses that fill's `on*` role. Details, and the setup's traps, in `src/common/AGENTS.md`.
 - **Screen edges.** `SCREEN_EDGE_INSET` is applied once as `PageContainer`'s horizontal padding, to stay clear of the Android system back-gesture band. Do not pad individual scrollers.
 - **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The three that exist are `YouTubeVideoItem`, `PatternNodeGroup` and `ServerStyles` (web's static-render CSS); route node presses through the latter rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.

@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "Permite el acceso a la cámara en los ajustes del teléfono para grabar un vídeo para una figura.",
   "deidentifyOneDancer": "Un bailarín",
   "deidentifyCouple": "Una pareja",
-  "videoJobOpenPattern": "Abre la figura"
+  "videoJobOpenPattern": "Abre la figura",
+  "close": "Cerrar",
+  "lookUpList": "Buscar lista",
+  "createTag": "Crear «{{tag}}»"
 }

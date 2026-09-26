@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Modal, Text, TextInput, View } from "react-native";
+import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -180,31 +174,23 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     returnKeyType="search"
                     onSubmitEditing={handleLookup}
                   />
-                  <TouchableOpacity
-                    style={styles.lookupButton}
+                  <IconButton
+                    icon="qrcode-scan"
+                    variant="filled"
+                    size={theme.iconSize.md}
                     onPress={handleScanPress}
                     accessibilityLabel={t("scanQrCode")}
-                  >
-                    <Icon
-                      name="qrcode-scan"
-                      size={20}
-                      color={theme.colors.onPrimary}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.lookupButton,
-                      code.trim().length !== 8 && styles.lookupButtonDisabled,
-                    ]}
+                    style={styles.lookupButton}
+                  />
+                  <IconButton
+                    icon="magnify"
+                    variant="filled"
+                    size={theme.iconSize.md}
                     onPress={handleLookup}
                     disabled={code.trim().length !== 8 || isLoading}
-                  >
-                    <Icon
-                      name="magnify"
-                      size={20}
-                      color={theme.colors.onPrimary}
-                    />
-                  </TouchableOpacity>
+                    accessibilityLabel={t("lookUpList")}
+                    style={styles.lookupButton}
+                  />
                 </View>
 
                 {error && <Text style={styles.errorText}>{error}</Text>}
@@ -236,25 +222,19 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
             )}
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.cancelButton}
+              <Button
+                title={t("cancel")}
+                variant="secondary"
                 onPress={handleClose}
-              >
-                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-              </TouchableOpacity>
+                style={styles.footerButton}
+              />
               {firebaseAvailable && (
-                <TouchableOpacity
-                  style={[
-                    styles.confirmButton,
-                    !preview && styles.confirmButtonDisabled,
-                  ]}
+                <Button
+                  title={t("subscribeConfirm")}
                   onPress={handleConfirm}
                   disabled={!preview}
-                >
-                  <Text style={styles.confirmButtonText}>
-                    {t("subscribeConfirm")}
-                  </Text>
-                </TouchableOpacity>
+                  style={styles.footerButton}
+                />
               )}
             </View>
           </View>
@@ -315,14 +295,8 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.text,
   },
   lookupButton: {
-    backgroundColor: theme.colors.primary,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.space.lg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  lookupButtonDisabled: {
-    opacity: 0.4,
   },
   errorText: {
     ...theme.typography.bodySmall,
@@ -369,32 +343,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.md,
     marginTop: theme.space.xl,
   },
-  cancelButton: {
-    flex: 1,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  cancelButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.text,
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-  },
-  confirmButtonDisabled: {
-    opacity: 0.4,
-  },
-  confirmButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
+  footerButton: { flex: 1 },
 }));
 
 export default SubscribeListModal;

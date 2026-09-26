@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import {
@@ -477,26 +478,18 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
 
         {/* ── Buttons ───────────────────────────────────────────────────── */}
         <View style={[styles.buttonRow, { marginTop: 24 }]}>
-          <TouchableOpacity
-            style={styles.backButton}
+          <Button
+            title={isEditMode ? t("cancel") : t("back")}
+            variant="secondary"
             onPress={isEditMode ? handleClose : () => setStep("pick")}
-          >
-            <Text style={styles.backButtonText}>
-              {isEditMode ? t("cancel") : t("back")}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.createButton,
-              !canCreate && styles.createButtonDisabled,
-            ]}
+            style={styles.footerButton}
+          />
+          <Button
+            title={isEditMode ? t("saveChanges") : t("create")}
             onPress={handleCreate}
             disabled={!canCreate}
-          >
-            <Text style={styles.createButtonText}>
-              {isEditMode ? t("saveChanges") : t("create")}
-            </Text>
-          </TouchableOpacity>
+            style={styles.footerButton}
+          />
         </View>
       </ScrollView>
     </Pressable>
@@ -749,33 +742,7 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     gap: theme.space.md,
   },
-  backButton: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  backButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.text,
-  },
-  createButton: {
-    flex: 1,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-  },
-  createButtonDisabled: {
-    opacity: 0.5,
-  },
-  createButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
+  footerButton: { flex: 1 },
   cancelButton: {
     marginTop: theme.space.md,
     padding: theme.space.lg,

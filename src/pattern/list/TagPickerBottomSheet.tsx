@@ -1,18 +1,10 @@
 import React, { useMemo, useState } from "react";
-import {
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TextInput, View } from "react-native";
+import { Button, Chip } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import {
-  getCommonBorder,
-  getCommonInput,
-} from "@/src/common/utils/CommonStyles";
+import { getCommonInput } from "@/src/common/utils/CommonStyles";
 import BottomSheet from "@/src/common/components/BottomSheet";
 
 interface TagPickerBottomSheetProps {
@@ -104,14 +96,12 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
       >
         {/* Create new tag option */}
         {isNewTag && (
-          <TouchableOpacity
-            style={styles.createNewTagButton}
+          <Button
+            title={t("createTag", { tag: searchQuery })}
+            icon="plus"
             onPress={handleAddNewTag}
-          >
-            <Text style={styles.createNewTagText}>
-              + Create &quot;{searchQuery}&quot;
-            </Text>
-          </TouchableOpacity>
+            style={styles.createNewTagButton}
+          />
         )}
 
         {/* Existing tags */}
@@ -122,13 +112,12 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
             </Text>
             <View style={styles.tagsGrid}>
               {filteredExistingTags.map((tag, idx) => (
-                <TouchableOpacity
+                <Chip
                   key={idx}
-                  style={styles.existingTagChip}
+                  label={tag}
+                  icon="tag-outline"
                   onPress={() => handleAddTag(tag)}
-                >
-                  <Text style={styles.existingTagText}>{tag}</Text>
-                </TouchableOpacity>
+                />
               ))}
             </View>
           </View>
@@ -159,17 +148,7 @@ const styles = StyleSheet.create((theme) => {
       paddingBottom: theme.space.lg,
     },
     createNewTagButton: {
-      ...getCommonBorder(theme),
-      backgroundColor: theme.colors.primary,
-      padding: theme.space.md,
-      borderRadius: theme.radius.md,
       marginBottom: theme.space.lg,
-      alignItems: "center" as const,
-    },
-    createNewTagText: {
-      ...theme.typography.label,
-      color: theme.colors.onPrimary,
-      fontWeight: "bold" as const,
     },
     existingTagsSection: {
       marginBottom: theme.space.lg,
@@ -184,17 +163,6 @@ const styles = StyleSheet.create((theme) => {
       flexDirection: "row" as const,
       flexWrap: "wrap" as const,
       gap: theme.space.sm,
-    },
-    existingTagChip: {
-      ...getCommonBorder(theme),
-      backgroundColor: theme.colors.surfaceVariant,
-      paddingVertical: theme.space.sm,
-      paddingHorizontal: theme.space.md,
-      borderRadius: theme.radius.xl,
-    },
-    existingTagText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
     },
     emptyState: {
       paddingVertical: theme.space.xxxl,

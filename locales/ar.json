@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "اسمح بالوصول إلى الكاميرا من إعدادات الهاتف لتسجيل فيديو لنمط.",
   "deidentifyOneDancer": "راقص واحد",
   "deidentifyCouple": "ثنائي",
-  "videoJobOpenPattern": "يفتح النمط"
+  "videoJobOpenPattern": "يفتح النمط",
+  "close": "إغلاق",
+  "lookUpList": "البحث عن القائمة",
+  "createTag": "إنشاء \"{{tag}}\""
 }

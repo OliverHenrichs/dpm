@@ -175,7 +175,7 @@ describe("PatternFilterBottomSheet", () => {
         screen.getByPlaceholderText("Search by name..."),
         "changed",
       );
-      fireEvent.press(screen.getByText("✕"));
+      fireEvent.press(screen.getByLabelText("Close"));
 
       expect(onApplyFilter).not.toHaveBeenCalled();
     });
@@ -188,7 +188,7 @@ describe("PatternFilterBottomSheet", () => {
         screen.getByPlaceholderText("Search by name..."),
         "changed",
       );
-      fireEvent.press(screen.getByText("✕"));
+      fireEvent.press(screen.getByLabelText("Close"));
 
       expect(screen.getByPlaceholderText("Search by name...").props.value).toBe(
         "whip",
@@ -346,14 +346,14 @@ describe("TagPickerBottomSheet", () => {
 
       search("footwork");
 
-      expect(screen.getByText('+ Create "footwork"')).toBeOnTheScreen();
+      expect(screen.getByText('Create "footwork"')).toBeOnTheScreen();
     });
 
     it("creates it when tapped", () => {
       const { onAddTag } = renderPicker([]);
 
       search("footwork");
-      fireEvent.press(screen.getByText('+ Create "footwork"'));
+      fireEvent.press(screen.getByText('Create "footwork"'));
 
       expect(onAddTag).toHaveBeenCalledWith("footwork");
     });
@@ -363,7 +363,7 @@ describe("TagPickerBottomSheet", () => {
 
       search("basic");
 
-      expect(screen.queryByText('+ Create "basic"')).toBeNull();
+      expect(screen.queryByText('Create "basic"')).toBeNull();
     });
 
     it("ignores case when deciding it already exists", () => {
@@ -371,7 +371,7 @@ describe("TagPickerBottomSheet", () => {
 
       search("basic");
 
-      expect(screen.queryByText('+ Create "basic"')).toBeNull();
+      expect(screen.queryByText('Create "basic"')).toBeNull();
     });
 
     it("does not offer to create one the pattern already has", () => {
@@ -379,14 +379,14 @@ describe("TagPickerBottomSheet", () => {
 
       search("basic");
 
-      expect(screen.queryByText('+ Create "basic"')).toBeNull();
+      expect(screen.queryByText('Create "basic"')).toBeNull();
     });
 
     it("clears the search after adding, ready for the next", () => {
       renderPicker([]);
 
       search("footwork");
-      fireEvent.press(screen.getByText('+ Create "footwork"'));
+      fireEvent.press(screen.getByText('Create "footwork"'));
 
       expect(screen.getByPlaceholderText("Add tag").props.value).toBe("");
     });
@@ -396,7 +396,7 @@ describe("TagPickerBottomSheet", () => {
     const { onClose } = renderPicker([], [tagged(1, ["basic"])]);
 
     search("zzz");
-    fireEvent.press(screen.getByText("✕"));
+    fireEvent.press(screen.getByLabelText("Close"));
 
     expect(onClose).toHaveBeenCalled();
     expect(screen.getByPlaceholderText("Add tag").props.value).toBe("");

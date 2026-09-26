@@ -1,6 +1,6 @@
 import React from "react";
-import { TouchableOpacity } from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { IconButton } from "@/src/common/ui";
+import { useUnistyles } from "react-native-unistyles";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import PlusButton from "@/src/common/components/PlusButton";
 import SectionHeader from "@/src/common/components/SectionHeader";
@@ -26,28 +26,18 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
 
   const rightActions = (
     <>
-      <TouchableOpacity
+      <IconButton
+        icon="sort"
         onPress={onSort}
-        style={styles.iconButton}
         accessibilityLabel={t("sortPatterns")}
-      >
-        <Icon
-          name="sort"
-          size={theme.iconSize.lg}
-          color={theme.colors.primary}
-        />
-      </TouchableOpacity>
-      <TouchableOpacity
+      />
+      <IconButton
+        icon={hasActiveFilter ? "filter" : "filter-outline"}
+        color={hasActiveFilter ? "success" : "primary"}
+        selected={hasActiveFilter}
         onPress={onFilter}
-        style={styles.iconButton}
         accessibilityLabel={t("filterPatterns")}
-      >
-        <Icon
-          name={hasActiveFilter ? "filter" : "filter-outline"}
-          size={theme.iconSize.lg}
-          color={hasActiveFilter ? theme.colors.success : theme.colors.primary}
-        />
-      </TouchableOpacity>
+      />
       {isReadonly ? (
         <Icon
           name="lock-outline"
@@ -63,12 +53,5 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
 
   return <SectionHeader title={t("patternList")} rightActions={rightActions} />;
 };
-
-const styles = StyleSheet.create((theme) => ({
-  iconButton: {
-    paddingHorizontal: theme.space.xs,
-    paddingVertical: theme.space.xxs,
-  },
-}));
 
 export default PatternListHeader;

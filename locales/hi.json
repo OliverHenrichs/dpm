@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "किसी पैटर्न के लिए वीडियो रिकॉर्ड करने हेतु फ़ोन की सेटिंग में कैमरा एक्सेस की अनुमति दें।",
   "deidentifyOneDancer": "एक नर्तक",
   "deidentifyCouple": "एक जोड़ी",
-  "videoJobOpenPattern": "पैटर्न खोलता है"
+  "videoJobOpenPattern": "पैटर्न खोलता है",
+  "close": "बंद करें",
+  "lookUpList": "सूची खोजें",
+  "createTag": "\"{{tag}}\" बनाएँ"
 }

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -148,12 +149,17 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-          <Text style={styles.resetButtonText}>{t("reset")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-          <Text style={styles.applyButtonText}>{t("apply")}</Text>
-        </TouchableOpacity>
+        <Button
+          title={t("reset")}
+          variant="secondary"
+          onPress={handleReset}
+          style={styles.footerButton}
+        />
+        <Button
+          title={t("apply")}
+          onPress={handleApply}
+          style={styles.footerButton}
+        />
       </View>
     </BottomSheet>
   );
@@ -172,32 +178,7 @@ const styles = StyleSheet.create((theme) => {
       gap: theme.space.md,
       marginTop: theme.space.lg,
     },
-    resetButton: {
-      flex: 1,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: theme.radius.md,
-      backgroundColor: theme.colors.surface,
-      padding: theme.space.md,
-      alignItems: "center" as const,
-    },
-    resetButtonText: {
-      ...theme.typography.button,
-      color: theme.colors.textMuted,
-      fontWeight: "bold" as const,
-    },
-    applyButton: {
-      flex: 1,
-      backgroundColor: theme.colors.primary,
-      padding: theme.space.md,
-      borderRadius: theme.radius.md,
-      alignItems: "center" as const,
-    },
-    applyButtonText: {
-      ...theme.typography.button,
-      color: theme.colors.onPrimary,
-      fontWeight: "bold" as const,
-    },
+    footerButton: { flex: 1 },
   };
 });
 

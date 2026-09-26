@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, Text, View } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { useTranslation } from "react-i18next";
@@ -71,15 +72,18 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
             })}
           </ScrollView>
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.importButton}
+            <Button
+              title={t("cancel")}
+              variant="secondary"
+              onPress={onCancel}
+              style={styles.footerButton}
+            />
+            <Button
+              title={t("import")}
+              icon="import"
               onPress={handleImport}
-            >
-              <Text style={styles.importButtonText}>{t("import")}</Text>
-            </TouchableOpacity>
+              style={styles.footerButton}
+            />
           </View>
         </View>
       </View>
@@ -115,29 +119,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     gap: theme.space.md,
   },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  cancelButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.text,
-  },
-  importButton: {
-    flex: 1,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-  },
-  importButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
+  footerButton: { flex: 1 },
 }));
 export default PatternListImportModal;

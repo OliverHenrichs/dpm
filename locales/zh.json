@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "请在手机设置中允许访问相机，以便为舞步录制视频。",
   "deidentifyOneDancer": "单人",
   "deidentifyCouple": "双人",
-  "videoJobOpenPattern": "打开该舞步"
+  "videoJobOpenPattern": "打开该舞步",
+  "close": "关闭",
+  "lookUpList": "查找列表",
+  "createTag": "创建“{{tag}}”"
 }

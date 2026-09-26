@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "Autorise l’accès à l’appareil photo dans les réglages du téléphone pour enregistrer une vidéo pour une figure.",
   "deidentifyOneDancer": "Un danseur",
   "deidentifyCouple": "Un couple",
-  "videoJobOpenPattern": "Ouvre la figure"
+  "videoJobOpenPattern": "Ouvre la figure",
+  "close": "Fermer",
+  "lookUpList": "Rechercher la liste",
+  "createTag": "Créer « {{tag}} »"
 }

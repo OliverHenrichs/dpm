@@ -4,14 +4,14 @@ import {
   LayoutChangeEvent,
   Pressable,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { Button, Chip } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useEventListener } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useTranslation } from "react-i18next";
-import { getCommonButton, getCommonRow } from "@/src/common/utils/CommonStyles";
+import { getCommonRow } from "@/src/common/utils/CommonStyles";
 import TrimWindowBar from "@/src/deidentify/components/TrimWindowBar";
 import {
   Point,
@@ -170,22 +170,14 @@ const VideoEditPanel: React.FC<Props> = ({
       disabled = false,
     }: { primary?: boolean; disabled?: boolean } = {},
   ) => (
-    <TouchableOpacity
+    <Button
       key={label}
+      title={label}
+      variant={primary ? "primary" : "secondary"}
       onPress={onPress}
       disabled={disabled}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      style={[
-        styles.button,
-        primary ? styles.buttonPrimary : styles.buttonSecondary,
-        disabled && styles.disabled,
-      ]}
-    >
-      <Text style={[styles.buttonText, primary && styles.buttonTextOnPrimary]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
+      style={styles.button}
+    />
   );
   const tapHint = t("deidentifyTapDancers", {
     count: taps.length,
@@ -286,27 +278,16 @@ const VideoEditPanel: React.FC<Props> = ({
               {providers.map((p) => {
                 const selected = p.id === provider.id;
                 return (
-                  <TouchableOpacity
+                  <Chip
                     key={p.id}
+                    label={t(p.labelKey)}
+                    selected={selected}
                     onPress={() => {
                       setProvider(p);
                       setDancers(p.promptCount);
                       setTaps([]);
                     }}
-                    disabled={selected}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    style={[styles.choice, selected && styles.choiceSelected]}
-                  >
-                    <Text
-                      style={[
-                        styles.choiceText,
-                        selected && styles.choiceTextSelected,
-                      ]}
-                    >
-                      {t(p.labelKey)}
-                    </Text>
-                  </TouchableOpacity>
+                  />
                 );
               })}
             </View>
@@ -319,28 +300,19 @@ const VideoEditPanel: React.FC<Props> = ({
                 .map((n) => {
                   const selected = n === dancers;
                   return (
-                    <TouchableOpacity
+                    <Chip
                       key={n}
+                      label={
+                        n === 1
+                          ? t("deidentifyOneDancer")
+                          : t("deidentifyCouple")
+                      }
+                      selected={selected}
                       onPress={() => {
                         setDancers(n);
                         setTaps([]);
                       }}
-                      disabled={selected}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      style={[styles.choice, selected && styles.choiceSelected]}
-                    >
-                      <Text
-                        style={[
-                          styles.choiceText,
-                          selected && styles.choiceTextSelected,
-                        ]}
-                      >
-                        {n === 1
-                          ? t("deidentifyOneDancer")
-                          : t("deidentifyCouple")}
-                      </Text>
-                    </TouchableOpacity>
+                    />
                   );
                 })}
             </View>
@@ -373,31 +345,6 @@ const styles = StyleSheet.create((theme) => ({
   text: { color: theme.colors.text },
   hint: { ...theme.typography.bodySmall, color: theme.colors.textMuted },
   button: { flexGrow: 1, alignItems: "center" },
-  buttonPrimary: getCommonButton(theme),
-  buttonSecondary: getCommonButton(theme, theme.colors.border),
-  buttonText: {
-    color: theme.colors.text,
-    fontWeight: "bold",
-  },
-  buttonTextOnPrimary: { color: theme.colors.onPrimary },
-  disabled: { opacity: 0.5 },
-  choice: {
-    paddingHorizontal: theme.space.md,
-    paddingVertical: theme.space.sm,
-    borderRadius: theme.radius.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  choiceSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.surfaceVariant,
-  },
-  choiceText: { color: theme.colors.text },
-  choiceTextSelected: {
-    color: theme.colors.primary,
-    fontWeight: "bold",
-  },
   marker: {
     position: "absolute",
     width: MARKER,

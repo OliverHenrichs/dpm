@@ -1,13 +1,8 @@
 import React from "react";
-import {
-  DimensionValue,
-  Modal,
-  Pressable,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { DimensionValue, Modal, Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { useTranslation } from "react-i18next";
+import { AppText, IconButton } from "@/src/common/ui";
 
 interface BottomSheetProps {
   visible: boolean;
@@ -25,29 +20,37 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   children,
   maxHeight = "80%",
   minHeight = "50%",
-}) => (
-  <Modal
-    visible={visible}
-    animationType="slide"
-    transparent={true}
-    onRequestClose={onClose}
-  >
-    <Pressable style={styles.modalOverlay} onPress={onClose}>
-      <Pressable
-        style={styles.bottomSheet(maxHeight, minHeight)}
-        onPress={(e) => e?.stopPropagation?.()}
-      >
-        <View style={styles.bottomSheetHeader}>
-          <Text style={styles.bottomSheetTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.closeButton}>✕</Text>
-          </TouchableOpacity>
-        </View>
-        {children}
+}) => {
+  const { t } = useTranslation();
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable
+          style={styles.bottomSheet(maxHeight, minHeight)}
+          onPress={(e) => e?.stopPropagation?.()}
+        >
+          <View style={styles.bottomSheetHeader}>
+            <AppText variant="title" style={styles.bottomSheetTitle}>
+              {title}
+            </AppText>
+            <IconButton
+              icon="close"
+              color="textMuted"
+              accessibilityLabel={t("close")}
+              onPress={onClose}
+            />
+          </View>
+          {children}
+        </Pressable>
       </Pressable>
-    </Pressable>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create((theme) => ({
   modalOverlay: {
@@ -72,13 +75,7 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.space.lg,
   },
   bottomSheetTitle: {
-    ...theme.typography.title,
-    color: theme.colors.text,
-  },
-  closeButton: {
-    fontSize: theme.iconSize.lg,
-    color: theme.colors.textMuted,
-    padding: theme.space.xs,
+    flexShrink: 1,
   },
 }));
 

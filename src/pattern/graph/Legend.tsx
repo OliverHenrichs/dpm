@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -16,12 +17,13 @@ const Legend: React.FC<LegendProps> = ({ patternTypes }) => {
 
   if (!isExpanded) {
     return (
-      <TouchableOpacity
-        style={styles.collapsedButton}
+      <Button
+        title={t("showLegend")}
+        icon="palette-outline"
+        size="sm"
         onPress={() => setIsExpanded(true)}
-      >
-        <Text style={styles.buttonText}>{t("showLegend")}</Text>
-      </TouchableOpacity>
+        style={styles.collapsedButton}
+      />
     );
   }
 
@@ -29,9 +31,12 @@ const Legend: React.FC<LegendProps> = ({ patternTypes }) => {
     <View style={styles.expandedContainer}>
       <View style={styles.header}>
         <Text style={styles.title}>{t("legend")}</Text>
-        <TouchableOpacity onPress={() => setIsExpanded(false)}>
-          <Text style={styles.closeButton}>{t("hideLegend")}</Text>
-        </TouchableOpacity>
+        <Button
+          title={t("hideLegend")}
+          variant="ghost"
+          size="sm"
+          onPress={() => setIsExpanded(false)}
+        />
       </View>
 
       {/* Type Colors */}
@@ -143,16 +148,7 @@ const styles = StyleSheet.create((theme) => ({
     position: "absolute",
     bottom: 10,
     right: 16,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.space.md,
-    paddingVertical: theme.space.sm,
-    borderRadius: theme.radius.md,
     ...theme.elevation.md,
-  },
-  buttonText: {
-    ...theme.typography.caption,
-    color: theme.colors.onPrimary,
-    fontWeight: "600",
   },
   expandedContainer: {
     position: "absolute",
@@ -179,10 +175,6 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.label,
     fontWeight: "bold",
     color: theme.colors.text,
-  },
-  closeButton: {
-    ...theme.typography.caption,
-    color: theme.colors.primary,
   },
   section: {
     marginBottom: theme.space.md,

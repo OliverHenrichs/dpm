@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "প্যাটার্নের জন্য ভিডিও রেকর্ড করতে ফোনের সেটিংসে ক্যামেরা অ্যাক্সেসের অনুমতি দিন।",
   "deidentifyOneDancer": "একজন নৃত্যশিল্পী",
   "deidentifyCouple": "একটি জুটি",
-  "videoJobOpenPattern": "প্যাটার্নটি খোলে"
+  "videoJobOpenPattern": "প্যাটার্নটি খোলে",
+  "close": "বন্ধ করুন",
+  "lookUpList": "তালিকা খুঁজুন",
+  "createTag": "\"{{tag}}\" তৈরি করুন"
 }

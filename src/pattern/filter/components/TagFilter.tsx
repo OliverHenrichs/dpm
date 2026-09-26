@@ -1,5 +1,6 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { Chip } from "@/src/common/ui";
 import { useTranslation } from "react-i18next";
 import { filterStyles as styles } from "../FilterCommonStyles";
 
@@ -21,23 +22,12 @@ const TagFilter: React.FC<TagFilterProps> = ({
       <Text style={styles.label}>{t("tags")}</Text>
       <View style={styles.chipContainer}>
         {allTags.map((tag) => (
-          <TouchableOpacity
+          <Chip
             key={tag}
-            style={[
-              styles.chip,
-              selectedTags.includes(tag) && styles.chipSelected,
-            ]}
+            label={tag}
+            selected={selectedTags.includes(tag)}
             onPress={() => onToggle(tag)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                selectedTags.includes(tag) && styles.chipTextSelected,
-              ]}
-            >
-              {tag}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </View>
     </View>

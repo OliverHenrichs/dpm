@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  ScrollView,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, Switch, Text, View } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { useTranslation } from "react-i18next";
@@ -94,21 +88,19 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
             />
           </View>
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.exportButton,
-                stats.noneSelected && styles.exportButtonDisabled,
-              ]}
+            <Button
+              title={t("cancel")}
+              variant="secondary"
+              onPress={onCancel}
+              style={styles.footerButton}
+            />
+            <Button
+              title={`${t("export")} (${stats.selectedCount})`}
+              icon="export-variant"
               onPress={handleExport}
               disabled={stats.noneSelected}
-            >
-              <Text style={styles.exportButtonText}>
-                {t("export")} ({stats.selectedCount})
-              </Text>
-            </TouchableOpacity>
+              style={styles.footerButton}
+            />
           </View>
         </View>
       </View>
@@ -155,32 +147,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     gap: theme.space.md,
   },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  cancelButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.text,
-  },
-  exportButton: {
-    flex: 1,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-  },
-  exportButtonDisabled: {
-    opacity: 0.5,
-  },
-  exportButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
+  footerButton: { flex: 1 },
 }));
 export default PatternListExportModal;

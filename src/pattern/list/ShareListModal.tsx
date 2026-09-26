@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Clipboard,
-  Modal,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Clipboard, Modal, Text, View } from "react-native";
+import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -115,28 +109,19 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
               <Text style={styles.sectionLabel}>{t("shareCode")}</Text>
               <View style={styles.codeRow}>
                 <Text style={styles.code}>{list.shareCode}</Text>
-                <TouchableOpacity
-                  style={styles.copyButton}
+                <IconButton
+                  icon={copied ? "check" : "content-copy"}
+                  size={theme.iconSize.md}
+                  color={copied ? "success" : "primary"}
                   onPress={handleCopy}
                   accessibilityLabel={t("copyShareCode")}
-                >
-                  <Icon
-                    name={copied ? "check" : "content-copy"}
-                    size={20}
-                    color={copied ? theme.colors.success : theme.colors.primary}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.copyButton}
+                />
+                <IconButton
+                  icon={showQr ? "qrcode-remove" : "qrcode"}
+                  size={theme.iconSize.md}
                   onPress={() => setShowQr((v) => !v)}
                   accessibilityLabel={t(showQr ? "hideQrCode" : "showQrCode")}
-                >
-                  <Icon
-                    name={showQr ? "qrcode-remove" : "qrcode"}
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                </TouchableOpacity>
+                />
               </View>
               {showQr && (
                 <View style={styles.qrContainer}>
@@ -163,38 +148,25 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           ) : (
             <View style={styles.buttonCol}>
               {firebaseAvailable && (
-                <TouchableOpacity
-                  style={styles.primaryButton}
+                <Button
+                  title={isPublished ? t("syncToCloud") : t("publishToCloud")}
+                  icon="cloud-upload-outline"
                   onPress={handlePublish}
-                >
-                  <Icon
-                    name="cloud-upload-outline"
-                    size={18}
-                    color={theme.colors.onPrimary}
-                  />
-                  <Text style={styles.primaryButtonText}>
-                    {isPublished ? t("syncToCloud") : t("publishToCloud")}
-                  </Text>
-                </TouchableOpacity>
+                />
               )}
               {firebaseAvailable && isPublished && (
-                <TouchableOpacity
-                  style={styles.destructiveButton}
+                <Button
+                  title={t("unpublish")}
+                  icon="cloud-off-outline"
+                  variant="dangerOutline"
                   onPress={() => setConfirmUnpublish(true)}
-                >
-                  <Icon
-                    name="cloud-off-outline"
-                    size={18}
-                    color={theme.colors.danger}
-                  />
-                  <Text style={styles.destructiveButtonText}>
-                    {t("unpublish")}
-                  </Text>
-                </TouchableOpacity>
+                />
               )}
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-              </TouchableOpacity>
+              <Button
+                title={t("cancel")}
+                variant="secondary"
+                onPress={onClose}
+              />
             </View>
           )}
         </View>
@@ -282,9 +254,6 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.primary,
     fontVariant: ["tabular-nums"],
   },
-  copyButton: {
-    padding: theme.space.xs,
-  },
   qrContainer: {
     alignItems: "center",
     paddingVertical: theme.space.lg,
@@ -318,44 +287,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   buttonCol: {
     gap: theme.space.md,
-  },
-  primaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.space.sm,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-  },
-  primaryButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
-  destructiveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.space.sm,
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.danger,
-  },
-  destructiveButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.danger,
-  },
-  cancelButton: {
-    borderRadius: theme.radius.md,
-    padding: theme.space.lg,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  cancelButtonText: {
-    ...theme.typography.button,
-    color: theme.colors.text,
   },
 }));
 

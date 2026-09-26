@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
@@ -57,26 +57,19 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
         </TouchableOpacity>
         {!isReadonly && (
           <>
-            <TouchableOpacity
-              onPress={(e) => {
-                e?.stopPropagation?.();
-                onEdit(pattern);
-              }}
-              style={styles.iconButton}
+            <IconButton
+              icon="pencil"
+              size={theme.iconSize.md}
+              onPress={() => onEdit(pattern)}
               accessibilityLabel={t("editPattern")}
-            >
-              <Icon name="pencil" size={20} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={(e) => {
-                e?.stopPropagation?.();
-                setShowConfirmDelete(true);
-              }}
-              style={styles.iconButton}
+            />
+            <IconButton
+              icon="trash-can-outline"
+              size={theme.iconSize.md}
+              color="danger"
+              onPress={() => setShowConfirmDelete(true)}
               accessibilityLabel={t("deletePattern")}
-            >
-              <Text style={styles.deleteIcon}>🗑️</Text>
-            </TouchableOpacity>
+            />
           </>
         )}
       </View>
@@ -128,15 +121,6 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.button,
     fontWeight: "bold",
     color: theme.colors.text,
-  },
-  deleteIcon: {
-    fontSize: theme.iconSize.md,
-    marginLeft: theme.space.sm,
-    color: theme.colors.danger,
-  },
-  iconButton: {
-    paddingHorizontal: theme.space.xs,
-    paddingVertical: theme.space.xxs,
   },
 }));
 

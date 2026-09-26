@@ -1,6 +1,7 @@
 import React from "react";
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { Modal, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { AppText, Button } from "@/src/common/ui";
 
 interface AppDialogProps {
   visible: boolean;
@@ -43,36 +44,27 @@ const AppDialog: React.FC<AppDialogProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-          <View style={[styles.buttonRow, hasConfirm && styles.buttonRowTwo]}>
-            <TouchableOpacity
-              style={[styles.button, styles.closeButton]}
+        <View style={styles.card} accessibilityRole="alert">
+          <AppText variant="title" style={styles.title}>
+            {title}
+          </AppText>
+          <AppText color="textMuted" style={styles.message}>
+            {message}
+          </AppText>
+          <View style={styles.buttonRow}>
+            {/* With a confirm action, dismissing is the quiet option beside
+                it; alone, it is the dialog's one action. */}
+            <Button
+              title={closeLabel}
+              variant={hasConfirm ? "ghost" : "primary"}
               onPress={onClose}
-            >
-              <Text style={styles.closeButtonText}>{closeLabel}</Text>
-            </TouchableOpacity>
+            />
             {hasConfirm && (
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  confirmDestructive
-                    ? styles.destructiveButton
-                    : styles.primaryButton,
-                ]}
+              <Button
+                title={confirmLabel}
+                variant={confirmDestructive ? "danger" : "primary"}
                 onPress={onConfirm}
-              >
-                <Text
-                  style={
-                    confirmDestructive
-                      ? styles.destructiveButtonText
-                      : styles.primaryButtonText
-                  }
-                >
-                  {confirmLabel}
-                </Text>
-              </TouchableOpacity>
+              />
             )}
           </View>
         </View>
@@ -95,53 +87,18 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.space.xxl,
     width: "100%",
     maxWidth: 380,
+    ...theme.elevation.lg,
   },
   title: {
-    ...theme.typography.title,
-    color: theme.colors.text,
-    marginBottom: theme.space.md,
+    marginBottom: theme.space.sm,
   },
   message: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.textMuted,
-    lineHeight: 22,
     marginBottom: theme.space.xxl,
   },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-  },
-  buttonRowTwo: {
-    gap: theme.space.md,
-  },
-  button: {
-    borderRadius: theme.radius.md,
-    paddingVertical: theme.space.md,
-    paddingHorizontal: theme.space.xl,
-    alignItems: "center",
-    minWidth: 80,
-  },
-  closeButton: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  closeButtonText: {
-    ...theme.typography.label,
-    color: theme.colors.text,
-  },
-  primaryButton: {
-    backgroundColor: theme.colors.primary,
-  },
-  primaryButtonText: {
-    ...theme.typography.label,
-    color: theme.colors.onPrimary,
-  },
-  destructiveButton: {
-    backgroundColor: theme.colors.danger,
-  },
-  destructiveButtonText: {
-    ...theme.typography.label,
-    color: theme.colors.onDanger,
+    gap: theme.space.sm,
   },
 }));
 

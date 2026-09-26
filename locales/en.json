@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "Allow camera access in your phone's settings to record a video for a pattern.",
   "deidentifyOneDancer": "One dancer",
   "deidentifyCouple": "A couple",
-  "videoJobOpenPattern": "Opens the pattern"
+  "videoJobOpenPattern": "Opens the pattern",
+  "close": "Close",
+  "lookUpList": "Look up list",
+  "createTag": "Create \"{{tag}}\""
 }

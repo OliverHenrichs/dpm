@@ -256,5 +256,8 @@
   "cameraPermissionDeniedHint": "Erlaube den Kamerazugriff in den Einstellungen deines Telefons, um ein Video für eine Figur aufzunehmen.",
   "deidentifyOneDancer": "Eine Person",
   "deidentifyCouple": "Ein Paar",
-  "videoJobOpenPattern": "Öffnet die Figur"
+  "videoJobOpenPattern": "Öffnet die Figur",
+  "close": "Schließen",
+  "lookUpList": "Liste suchen",
+  "createTag": "„{{tag}}“ anlegen"
 }

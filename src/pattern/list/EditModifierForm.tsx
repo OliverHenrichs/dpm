@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
-import {
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { Button, Chip } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import * as ImagePicker from "expo-image-picker";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
@@ -22,11 +16,9 @@ import AddVideoModal from "@/src/pattern/list/AddVideoModal";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import {
   getCommonBorder,
-  getCommonButton,
   getCommonInput,
   getCommonLabel,
   getCommonPrereqContainer,
-  getCommonPrereqItem,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 
@@ -129,25 +121,14 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
           <Text style={styles.label}>{t("modifierPosition")}</Text>
           <View style={styles.row}>
             {POSITIONS.map((pos) => (
-              <TouchableOpacity
+              <Chip
                 key={pos}
-                style={[
-                  styles.prereqItem,
-                  modifier.position === pos && styles.prereqItemSelected,
-                ]}
+                label={t(
+                  `modifierPosition${pos.charAt(0).toUpperCase()}${pos.slice(1)}`,
+                )}
+                selected={modifier.position === pos}
                 onPress={() => setModifier({ ...modifier, position: pos })}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    modifier.position === pos && styles.pillTextSelected,
-                  ]}
-                >
-                  {t(
-                    `modifierPosition${pos.charAt(0).toUpperCase()}${pos.slice(1)}`,
-                  )}
-                </Text>
-              </TouchableOpacity>
+              />
             ))}
           </View>
         </View>
@@ -189,12 +170,17 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
 
         {/* Buttons */}
         <View style={styles.buttonRow}>
-          <TouchableOpacity onPress={handleFinish} style={styles.buttonSave}>
-            <Text style={styles.buttonTextOnPrimary}>{t("saveModifier")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onCancel} style={styles.buttonCancel}>
-            <Text style={styles.buttonText}>{t("cancel")}</Text>
-          </TouchableOpacity>
+          <Button
+            title={t("cancel")}
+            variant="secondary"
+            onPress={onCancel}
+            style={styles.footerButton}
+          />
+          <Button
+            title={t("saveModifier")}
+            onPress={handleFinish}
+            style={styles.footerButton}
+          />
         </View>
       </View>
     </ScrollView>
@@ -202,7 +188,6 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => {
-  const baseButton = getCommonButton(theme);
   const baseInput = getCommonInput(theme);
   return {
     container: {
@@ -229,19 +214,6 @@ const styles = StyleSheet.create((theme) => {
       gap: theme.space.sm,
       flexWrap: "wrap",
     },
-    prereqItem: getCommonPrereqItem(theme),
-    prereqItemSelected: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
-    },
-    pillText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.text,
-    },
-    pillTextSelected: {
-      color: theme.colors.onPrimary,
-      fontWeight: "600",
-    },
     switchRow: {
       ...getCommonRow(),
       justifyContent: "space-between",
@@ -252,19 +224,7 @@ const styles = StyleSheet.create((theme) => {
       gap: theme.space.sm,
       marginTop: theme.space.sm,
     },
-    buttonSave: { ...baseButton },
-    buttonCancel: {
-      ...baseButton,
-      backgroundColor: theme.colors.border,
-    },
-    buttonText: {
-      color: theme.colors.text,
-      fontWeight: "bold",
-    },
-    buttonTextOnPrimary: {
-      color: theme.colors.onPrimary,
-      fontWeight: "bold",
-    },
+    footerButton: { flex: 1 },
   };
 });
 

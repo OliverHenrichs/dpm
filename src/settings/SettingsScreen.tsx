@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Button,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Button, Chip } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+import { router } from "expo-router";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import {
@@ -35,9 +36,9 @@ const SettingsScreen: React.FC = () => {
   const { theme } = useUnistyles();
 
   const themeOptions = [
-    { value: "system", label: t("themeSystem") },
-    { value: "light", label: t("themeLight") },
-    { value: "dark", label: t("themeDark") },
+    { value: "system", label: t("themeSystem"), icon: "theme-light-dark" },
+    { value: "light", label: t("themeLight"), icon: "white-balance-sunny" },
+    { value: "dark", label: t("themeDark"), icon: "weather-night" },
   ];
 
   // Data transfer logic extracted to custom hook
@@ -88,24 +89,13 @@ const SettingsScreen: React.FC = () => {
         </View>
         <View style={styles.themeRow}>
           {themeOptions.map((opt) => (
-            <View
+            <Chip
               key={opt.value}
-              style={[
-                styles.themeButton,
-                themePreference === opt.value && styles.themeButtonSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.themeButtonText,
-                  themePreference === opt.value &&
-                    styles.themeButtonTextSelected,
-                ]}
-                onPress={() => setTheme(opt.value as ThemeType)}
-              >
-                {opt.label}
-              </Text>
-            </View>
+              label={opt.label}
+              icon={opt.icon}
+              selected={themePreference === opt.value}
+              onPress={() => setTheme(opt.value as ThemeType)}
+            />
           ))}
         </View>
 
@@ -121,18 +111,29 @@ const SettingsScreen: React.FC = () => {
           <View style={[styles.themeRow, styles.indented]}>
             <Button
               title={t("exportPatterns")}
+              icon="export-variant"
+              variant="outline"
               onPress={handleExportButtonPress}
-              color={theme.colors.primary}
             />
             <Button
               title={t("importPatterns")}
+              icon="import"
+              variant="outline"
               onPress={handleImportButtonPress}
-              color={theme.colors.primary}
             />
           </View>
         )}
 
         {/* SPIKE (L3): dev-only, not for merge. */}
+        {__DEV__ && (
+          <Button
+            title="Design gallery"
+            icon="palette-swatch-outline"
+            variant="ghost"
+            onPress={() => router.navigate("/gallery")}
+            style={styles.galleryLink}
+          />
+        )}
       </ScrollView>
 
       <LanguagePickerBottomSheet
@@ -175,6 +176,7 @@ const styles = StyleSheet.create((theme) => ({
     ...getCommonListContainer(theme),
   },
   indented: { marginLeft: theme.space.sm },
+  galleryLink: { alignSelf: "flex-start", marginTop: theme.space.xl },
   loadingContainer: {
     paddingVertical: theme.space.xl,
     alignItems: "center",
@@ -210,25 +212,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     gap: theme.space.md,
     marginBottom: theme.space.xxl,
-  },
-  themeButton: {
-    paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.lg,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  themeButtonSelected: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  themeButtonText: {
-    color: theme.colors.text,
-    fontWeight: "bold",
-  },
-  themeButtonTextSelected: {
-    color: theme.colors.onPrimary,
   },
 }));
 
