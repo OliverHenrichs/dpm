@@ -229,5 +229,18 @@
   "trimWindowA11y": "Parte del vídeo que se procesará",
   "deidentifyProviderTracking": "Seguir a la pareja (beta)",
   "deidentifyTapDancers": "Toca a cada bailarín en este fotograma ({{count}}/{{total}})",
-  "deidentifyResetTaps": "Volver a tocar"
+  "deidentifyResetTaps": "Volver a tocar",
+  "videoBadgeSilhouette": "Silueta",
+  "deidentifyAction": "Anonimizar…",
+  "deidentifyJobQueued": "{{name}}: esperando para anonimizar",
+  "deidentifyJobRunning": "{{name}}: anonimizando … {{percent}} %",
+  "deidentifyJobDone": "{{name}}: el vídeo anonimizado ya está listo",
+  "deidentifyJobFailed": "{{name}}: no se pudo anonimizar — {{error}}",
+  "deidentifyDismiss": "Descartar",
+  "addPatternNew": "Nueva figura",
+  "addPatternFromVideo": "Desde un vídeo",
+  "deidentifyNowTitle": "¿Anonimizar el vídeo?",
+  "deidentifyNowMessage": "Convierte a los bailarines en siluetas y acorta el clip a 30 s como máximo. Se ejecuta en segundo plano y reemplaza el vídeo en esta figura; el original se queda en tu galería.",
+  "deidentifyNowYes": "Anonimizar",
+  "deidentifyLater": "Más tarde"
 }

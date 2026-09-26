@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import { useTranslation } from "react-i18next";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
@@ -74,9 +75,10 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
       selectionLimit: 3 - (modifier.videoRefs?.length ?? 0),
     });
     if (!result.canceled) {
-      const newVideos: IVideoReference[] = result.assets.map((asset) => ({
+      const uris = await persistPickedVideos(result.assets.map((a) => a.uri));
+      const newVideos: IVideoReference[] = uris.map((value) => ({
         type: "local",
-        value: asset.uri,
+        value,
       }));
       setModifier((prev) => ({
         ...prev,

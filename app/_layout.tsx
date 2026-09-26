@@ -11,6 +11,7 @@ import {
 } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { ActivePatternListProvider } from "@/src/pattern/data/components/ActivePatternListContext";
+import { DeidentifyJobsProvider } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import DrawerContent from "@/src/common/components/DrawerContent";
 import { DRAWER_ROUTES } from "@/src/common/components/DrawerRoutes";
 
@@ -60,43 +61,45 @@ function AppDrawer() {
 
   return (
     <ActivePatternListProvider>
-      <SafeAreaView style={styles.flexView}>
-        <Drawer
-          screenOptions={{
-            drawerPosition: "right",
-            headerShown: false,
-            // No swipe-to-open on Android. Android 10+ binds the system back
-            // gesture to *both* screen edges and consumes the outermost band,
-            // so a right-edge swipe is simultaneously "go back" and "open the
-            // drawer" and which one you get depends on how many pixels in you
-            // started. It also stole pans from the network graph. Every screen
-            // renders AppHeader, which has an always-visible menu button, so
-            // nothing is lost. iOS keeps it: the interactive pop gesture there
-            // is left-edge only, and the drawer is on the right.
-            swipeEnabled: Platform.OS !== "android",
-            swipeEdgeWidth: 40,
-            drawerStyle: styles.drawerStyle,
-            drawerActiveTintColor: palette[PaletteColor.Primary],
-            drawerInactiveTintColor: palette[PaletteColor.SecondaryText],
-            drawerLabelStyle: {
-              fontSize: 16,
-              fontWeight: "500",
-              color: palette[PaletteColor.PrimaryText],
-            },
-          }}
-          drawerContent={(props) => (
-            <DrawerContent navigation={props.navigation} />
-          )}
-        >
-          {DRAWER_ROUTES.map((route) => (
-            <Drawer.Screen
-              key={route.name}
-              name={route.name}
-              options={{ title: t(route.titleKey) }}
-            />
-          ))}
-        </Drawer>
-      </SafeAreaView>
+      <DeidentifyJobsProvider>
+        <SafeAreaView style={styles.flexView}>
+          <Drawer
+            screenOptions={{
+              drawerPosition: "right",
+              headerShown: false,
+              // No swipe-to-open on Android. Android 10+ binds the system back
+              // gesture to *both* screen edges and consumes the outermost band,
+              // so a right-edge swipe is simultaneously "go back" and "open the
+              // drawer" and which one you get depends on how many pixels in you
+              // started. It also stole pans from the network graph. Every screen
+              // renders AppHeader, which has an always-visible menu button, so
+              // nothing is lost. iOS keeps it: the interactive pop gesture there
+              // is left-edge only, and the drawer is on the right.
+              swipeEnabled: Platform.OS !== "android",
+              swipeEdgeWidth: 40,
+              drawerStyle: styles.drawerStyle,
+              drawerActiveTintColor: palette[PaletteColor.Primary],
+              drawerInactiveTintColor: palette[PaletteColor.SecondaryText],
+              drawerLabelStyle: {
+                fontSize: 16,
+                fontWeight: "500",
+                color: palette[PaletteColor.PrimaryText],
+              },
+            }}
+            drawerContent={(props) => (
+              <DrawerContent navigation={props.navigation} />
+            )}
+          >
+            {DRAWER_ROUTES.map((route) => (
+              <Drawer.Screen
+                key={route.name}
+                name={route.name}
+                options={{ title: t(route.titleKey) }}
+              />
+            ))}
+          </Drawer>
+        </SafeAreaView>
+      </DeidentifyJobsProvider>
     </ActivePatternListProvider>
   );
 }

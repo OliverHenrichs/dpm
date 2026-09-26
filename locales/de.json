@@ -229,5 +229,18 @@
   "trimWindowA11y": "Zu verarbeitender Teil des Videos",
   "deidentifyProviderTracking": "Paar verfolgen (Beta)",
   "deidentifyTapDancers": "Tippe in diesem Bild auf jede tanzende Person ({{count}}/{{total}})",
-  "deidentifyResetTaps": "Neu tippen"
+  "deidentifyResetTaps": "Neu tippen",
+  "videoBadgeSilhouette": "Silhouette",
+  "deidentifyAction": "Unkenntlich machen …",
+  "deidentifyJobQueued": "{{name}}: wartet auf Unkenntlichmachen",
+  "deidentifyJobRunning": "{{name}}: wird unkenntlich gemacht … {{percent}} %",
+  "deidentifyJobDone": "{{name}}: unkenntliches Video ist eingefügt",
+  "deidentifyJobFailed": "{{name}}: Unkenntlichmachen fehlgeschlagen — {{error}}",
+  "deidentifyDismiss": "Ausblenden",
+  "addPatternNew": "Neue Figur",
+  "addPatternFromVideo": "Aus einem Video",
+  "deidentifyNowTitle": "Video unkenntlich machen?",
+  "deidentifyNowMessage": "Die Tanzenden werden zu Silhouetten und der Clip wird auf höchstens 30 s gekürzt. Das läuft im Hintergrund und ersetzt das Video in dieser Figur; das Original bleibt in deiner Galerie.",
+  "deidentifyNowYes": "Unkenntlich machen",
+  "deidentifyLater": "Später"
 }

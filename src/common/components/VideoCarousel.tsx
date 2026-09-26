@@ -11,11 +11,17 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
 type VideoCarouselProps = {
   videoRefs: IVideoReference[];
   palette: Record<PaletteColor, string>;
+  /** Shown under the video on screen — e.g. an action on that video. */
+  renderFooter?: (videoRef: IVideoReference, index: number) => React.ReactNode;
+  /** Label of the badge on generated (de-identified) videos. */
+  generatedLabel?: string;
 };
 
 const VideoCarousel: React.FC<VideoCarouselProps> = ({
   videoRefs,
   palette,
+  renderFooter,
+  generatedLabel,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -39,7 +45,14 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
         <FlatList
           data={videoRefs}
           renderItem={({ item }) => (
-            <VideoItem videoRef={item} width={containerWidth} />
+            <View>
+              <VideoItem videoRef={item} width={containerWidth} />
+              {item.generated && generatedLabel && (
+                <View style={styles.badge} pointerEvents="none">
+                  <Text style={styles.badgeText}>{generatedLabel}</Text>
+                </View>
+              )}
+            </View>
           )}
           keyExtractor={(_, index) => index.toString()}
           horizontal
@@ -51,6 +64,9 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
           viewabilityConfig={VIEWABILITY_CONFIG}
         />
       )}
+      {renderFooter &&
+        videoRefs[currentIndex] &&
+        renderFooter(videoRefs[currentIndex], currentIndex)}
       {videoRefs.length > 1 && (
         <View style={styles.paginationContainer}>
           <Text style={styles.paginationText}>
@@ -70,6 +86,16 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
     paginationContainer: {
       alignItems: "center",
     },
+    badge: {
+      position: "absolute",
+      top: 6,
+      left: 6,
+      backgroundColor: "rgba(0,0,0,0.65)",
+      borderRadius: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    badgeText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
     paginationText: {
       fontSize: 12,
       color: palette[PaletteColor.SecondaryText],

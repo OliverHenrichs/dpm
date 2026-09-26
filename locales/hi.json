@@ -229,5 +229,18 @@
   "trimWindowA11y": "वीडियो का वह हिस्सा जिसे प्रोसेस करना है",
   "deidentifyProviderTracking": "जोड़ी को ट्रैक करें (बीटा)",
   "deidentifyTapDancers": "इस फ़्रेम पर हर डांसर पर टैप करें ({{count}}/{{total}})",
-  "deidentifyResetTaps": "फिर से टैप करें"
+  "deidentifyResetTaps": "फिर से टैप करें",
+  "videoBadgeSilhouette": "सिल्हूट",
+  "deidentifyAction": "पहचान छिपाएँ…",
+  "deidentifyJobQueued": "{{name}}: पहचान छिपाने की प्रतीक्षा में",
+  "deidentifyJobRunning": "{{name}}: पहचान छिपाई जा रही है … {{percent}} %",
+  "deidentifyJobDone": "{{name}}: पहचान-रहित वीडियो लगा दिया गया",
+  "deidentifyJobFailed": "{{name}}: पहचान छिपाना विफल — {{error}}",
+  "deidentifyDismiss": "हटाएँ",
+  "addPatternNew": "नया पैटर्न",
+  "addPatternFromVideo": "वीडियो से",
+  "deidentifyNowTitle": "वीडियो में पहचान छिपाएँ?",
+  "deidentifyNowMessage": "नर्तकों को सिल्हूट में बदलता है और क्लिप को अधिकतम 30 सेकंड तक छोटा करता है। यह बैकग्राउंड में चलता है और इस पैटर्न का वीडियो बदल देता है; मूल वीडियो आपकी गैलरी में रहता है।",
+  "deidentifyNowYes": "पहचान छिपाएँ",
+  "deidentifyLater": "बाद में"
 }

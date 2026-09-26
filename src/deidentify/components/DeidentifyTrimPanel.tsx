@@ -30,6 +30,7 @@ import {
 import {
   DeidentifyOutcome,
   DeidentifyProvider,
+  DeidentifyRequest,
 } from "@/src/deidentify/providers/DeidentifyProvider";
 import { runDeidentify } from "@/src/deidentify/runDeidentify";
 
@@ -37,7 +38,12 @@ type Props = {
   sourceUri: string;
   /** Providers that can run here; see `availableProviders`. */
   providers: DeidentifyProvider[];
-  onDone: (outcome: DeidentifyOutcome) => void;
+  onDone?: (outcome: DeidentifyOutcome) => void;
+  /**
+   * Hands the configured run to the caller instead of running it here — the app starts it as a
+   * background job (DeidentifyJobsContext) and closes the panel.
+   */
+  onRun?: (provider: DeidentifyProvider, request: DeidentifyRequest) => void;
 };
 
 /** The output palette's dancer colours, so a marker shows which colour that dancer gets. */
@@ -56,6 +62,7 @@ const DeidentifyTrimPanel: React.FC<Props> = ({
   sourceUri,
   providers,
   onDone,
+  onRun,
 }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
@@ -143,6 +150,15 @@ const DeidentifyTrimPanel: React.FC<Props> = ({
   const run = async () => {
     if (!provider) return;
     player.pause();
+    if (onRun) {
+      onRun(provider, {
+        sourceUri,
+        startSeconds: trim.start,
+        endSeconds: trim.end,
+        ...(needsTaps && { prompts: taps }),
+      });
+      return;
+    }
     setError(null);
     setProgress(0);
     try {
@@ -156,7 +172,7 @@ const DeidentifyTrimPanel: React.FC<Props> = ({
         },
         ({ fraction }) => setProgress(fraction),
       );
-      onDone(outcome);
+      onDone?.(outcome);
     } catch (e) {
       setError(
         t("deidentifyFailed", {

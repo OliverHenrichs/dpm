@@ -1,5 +1,7 @@
 import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import { seedBinaryFile } from "@/__mocks__/expo-file-system";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
 import PatternListManager from "@/src/pattern/list/PatternListManager";
 import {
@@ -69,6 +71,16 @@ async function renderManager(
 
 const storedPatterns = async (listId: string): Promise<IPattern[]> =>
   JSON.parse((await AsyncStorage.getItem(`@patterns_${listId}`)) ?? "[]");
+
+const mockedPicker = ImagePicker.launchImageLibraryAsync as jest.MockedFunction<
+  typeof ImagePicker.launchImageLibraryAsync
+>;
+
+/** '+' opens a menu; "New pattern" is the plain add form. */
+const openAddForm = () => {
+  fireEvent.press(screen.getByLabelText("Add Pattern"));
+  fireEvent.press(screen.getByText("New pattern"));
+};
 
 const storedList = async (listId: string): Promise<IPatternList> => {
   const lists: IPatternList[] = JSON.parse(
@@ -147,7 +159,7 @@ describe("PatternListManager", () => {
     it("persists what the form submits", async () => {
       const { list } = await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      openAddForm();
       fireEvent.changeText(
         screen.getByPlaceholderText("Pattern Name"),
         "Sugar Push",
@@ -164,12 +176,58 @@ describe("PatternListManager", () => {
     it("keeps the form open when the name is blank", async () => {
       const { list } = await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      openAddForm();
       fireEvent.press(screen.getByText("Save"));
 
       expect(await storedPatterns(list.id)).toEqual([]);
       // Still showing the form rather than silently discarding the attempt.
       expect(screen.getByPlaceholderText("Pattern Name")).toBeOnTheScreen();
+    });
+  });
+
+  describe("adding a pattern from a video", () => {
+    it("offers both ways to add behind '+'", async () => {
+      await renderManager([]);
+
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+
+      expect(screen.getByText("New pattern")).toBeOnTheScreen();
+      expect(screen.getByText("From a video")).toBeOnTheScreen();
+    });
+
+    it("seeds the new pattern with the picked video, kept in the app's documents", async () => {
+      seedBinaryFile("file:///cache/ImagePicker/clip.mp4", Buffer.from([1]));
+      mockedPicker.mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: "file:///cache/ImagePicker/clip.mp4" }],
+      } as never);
+      const { list } = await renderManager([]);
+
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByText("From a video"));
+      const name = await screen.findByPlaceholderText("Pattern Name");
+      fireEvent.changeText(name, "Sugar Push");
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () => {
+        const [saved] = await storedPatterns(list.id);
+        expect(saved.name).toBe("Sugar Push");
+        expect(saved.videoRefs).toHaveLength(1);
+        expect(saved.videoRefs[0].value).toMatch(
+          /^file:\/\/\/document\/video-/,
+        );
+      });
+    });
+
+    it("opens nothing when the picker is cancelled", async () => {
+      mockedPicker.mockResolvedValue({ canceled: true } as never);
+      await renderManager([]);
+
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByText("From a video"));
+
+      await waitFor(() => expect(mockedPicker).toHaveBeenCalled());
+      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
     });
   });
 
@@ -344,7 +402,7 @@ describe("PatternListManager", () => {
     it("closes the add-pattern form on cancel", async () => {
       await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      openAddForm();
       expect(screen.getByPlaceholderText("Pattern Name")).toBeOnTheScreen();
       fireEvent.press(screen.getByText("Cancel"));
 
@@ -354,7 +412,7 @@ describe("PatternListManager", () => {
     it("closes the add-pattern form on the system back button", async () => {
       await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      openAddForm();
       pressSystemBack();
 
       expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();

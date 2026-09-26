@@ -8,8 +8,11 @@
  */
 export const SUPPORTED_MAJOR = 3;
 
-/** Highest minor version this build understands within `SUPPORTED_MAJOR`. */
-export const SUPPORTED_MINOR = 0;
+/**
+ * Highest minor version this build understands within `SUPPORTED_MAJOR`.
+ * 1: video references may carry `generated` (de-identified videos, L3).
+ */
+export const SUPPORTED_MINOR = 1;
 
 export interface ParsedVersion {
   major: number;

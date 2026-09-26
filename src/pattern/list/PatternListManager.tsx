@@ -10,6 +10,7 @@ import {
 import {
   IModifier,
   IPattern,
+  IVideoReference,
   NewModifier,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
@@ -24,6 +25,16 @@ import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
+import * as ImagePicker from "expo-image-picker";
+import AppDialog from "@/src/common/components/AppDialog";
+import { nextPatternId } from "@/src/pattern/data/patternIds";
+import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
+import DeidentifyModal, {
+  DeidentifyTarget,
+} from "@/src/deidentify/components/DeidentifyModal";
+import DeidentifyJobsBanner from "@/src/deidentify/components/DeidentifyJobsBanner";
+import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
+import { availableProviders } from "@/src/deidentify/providers/registry";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
@@ -56,6 +67,15 @@ const PatternListManager = () => {
   const [selectedModifier, setSelectedModifier] = useState<
     IModifier | undefined
   >(undefined);
+  // "From a video": the picked video seeds the add form, and once the pattern is saved the
+  // user is offered to de-identify it (a background job that replaces the video when done).
+  const [initialVideos, setInitialVideos] = useState<
+    IVideoReference[] | undefined
+  >(undefined);
+  const [deidentifyOffer, setDeidentifyOffer] =
+    useState<DeidentifyTarget | null>(null);
+  const [deidentifyTarget, setDeidentifyTarget] =
+    useState<DeidentifyTarget | null>(null);
   const styles = getStyles(palette);
 
   // The mutations live in usePatternCrud; what is left here is which modal is
@@ -65,9 +85,45 @@ const PatternListManager = () => {
   // These return the outcome as well as acting on it: EditPatternForm keeps
   // what the user typed when the answer is `false`.
   const handleAddPattern = async (pattern: NewPattern) => {
+    // The id addPattern is about to mint, so the offer below can name the new pattern.
+    const id = activeList ? nextPatternId(activeList, patterns) : undefined;
     const accepted = await addPattern(pattern);
-    if (accepted) setIsAddingNew(false);
+    if (!accepted) return accepted;
+    setIsAddingNew(false);
+    const seeded = initialVideos?.[0]?.value;
+    setInitialVideos(undefined);
+    if (
+      activeList &&
+      id !== undefined &&
+      seeded &&
+      pattern.videoRefs.some((v) => v.value === seeded) &&
+      availableProviders(ALL_PROVIDERS).length > 0
+    ) {
+      setDeidentifyOffer({
+        listId: activeList.id,
+        patternId: id,
+        patternName: pattern.name,
+        sourceUri: seeded,
+      });
+    }
     return accepted;
+  };
+
+  const closeAddForm = () => {
+    setIsAddingNew(false);
+    setInitialVideos(undefined);
+  };
+
+  const handleAddFromVideo = async () => {
+    if (isReadonly) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      allowsMultipleSelection: false,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    const [value] = await persistPickedVideos([result.assets[0].uri]);
+    setInitialVideos([{ type: "local", value }]);
+    setIsAddingNew(true);
   };
 
   const handleSavePattern = async (pattern: NewPattern | IPattern) => {
@@ -131,17 +187,20 @@ const PatternListManager = () => {
           visible={isAddingNew}
           animationType="slide"
           transparent
-          onRequestClose={() => setIsAddingNew(false)}
+          onRequestClose={closeAddForm}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <EditPatternForm
+                  // Remount when a picked video seeds the form: it reads initialVideos once.
+                  key={initialVideos?.[0]?.value ?? "new"}
                   patterns={patterns}
                   patternTypes={patternTypes}
                   modifiers={modifiers}
                   onAccepted={handleAddPattern}
-                  onCancel={() => setIsAddingNew(false)}
+                  onCancel={closeAddForm}
+                  initialVideos={initialVideos}
                 />
               </ScrollView>
             </View>
@@ -202,6 +261,25 @@ const PatternListManager = () => {
           </View>
         </Modal>
 
+        <AppDialog
+          visible={deidentifyOffer !== null}
+          title={t("deidentifyNowTitle")}
+          message={t("deidentifyNowMessage")}
+          closeLabel={t("deidentifyLater")}
+          onClose={() => setDeidentifyOffer(null)}
+          confirmLabel={t("deidentifyNowYes")}
+          onConfirm={() => {
+            setDeidentifyTarget(deidentifyOffer);
+            setDeidentifyOffer(null);
+          }}
+        />
+        <DeidentifyModal
+          target={deidentifyTarget}
+          onClose={() => setDeidentifyTarget(null)}
+        />
+
+        <DeidentifyJobsBanner />
+
         {/* Tab strip */}
         <View style={styles.tabStrip}>
           <TouchableOpacity
@@ -245,6 +323,7 @@ const PatternListManager = () => {
               onSelect={(p) => setSelectedPattern(p as IPattern | undefined)}
               onDelete={handleDeletePattern}
               onAdd={() => setIsAddingNew(!isAddingNew)}
+              onAddFromVideo={handleAddFromVideo}
               onEdit={handleEditPattern}
               selectedPattern={selectedPattern}
             />

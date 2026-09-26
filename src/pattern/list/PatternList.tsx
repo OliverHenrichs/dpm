@@ -4,8 +4,11 @@ import {
   ListRenderItemInfo,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import BottomSheet from "@/src/common/components/BottomSheet";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
@@ -31,6 +34,11 @@ type PatternListProps = {
   onSelect: (pattern: IPattern | undefined) => void;
   onDelete: (id?: number) => void;
   onAdd: () => void;
+  /**
+   * Creating a pattern from a video. When given, '+' opens a menu offering it next to a plain
+   * new pattern; without it, '+' adds a pattern directly.
+   */
+  onAddFromVideo?: () => void;
   onEdit: (pattern: IPattern) => void;
 };
 
@@ -50,6 +58,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     tags: [],
   });
 
+  const [isAddMenuVisible, setIsAddMenuVisible] = useState(false);
   const [isSortVisible, setIsSortVisible] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: "name",
@@ -102,7 +111,9 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         isReadonly={isReadonly}
         onSort={() => setIsSortVisible(true)}
         onFilter={() => setIsFilterVisible(true)}
-        onAdd={props.onAdd}
+        onAdd={
+          props.onAddFromVideo ? () => setIsAddMenuVisible(true) : props.onAdd
+        }
       />
 
       <FlatList
@@ -128,6 +139,51 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         patternTypes={props.patternTypes}
       />
 
+      {props.onAddFromVideo && (
+        <BottomSheet
+          visible={isAddMenuVisible}
+          onClose={() => setIsAddMenuVisible(false)}
+          title={t("addPattern")}
+          palette={palette}
+          maxHeight="40%"
+          minHeight="25%"
+        >
+          <View style={styles.menu}>
+            {[
+              {
+                key: "new",
+                label: t("addPatternNew"),
+                icon: "plus",
+                action: props.onAdd,
+              },
+              {
+                key: "video",
+                label: t("addPatternFromVideo"),
+                icon: "video-plus-outline",
+                action: props.onAddFromVideo,
+              },
+            ].map(({ key, label, icon, action }) => (
+              <TouchableOpacity
+                key={key}
+                style={styles.menuOption}
+                accessibilityRole="button"
+                onPress={() => {
+                  setIsAddMenuVisible(false);
+                  action();
+                }}
+              >
+                <Icon
+                  name={icon}
+                  size={22}
+                  color={palette[PaletteColor.Primary]}
+                />
+                <Text style={styles.menuText}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </BottomSheet>
+      )}
+
       <SortBottomSheet
         visible={isSortVisible}
         onClose={() => setIsSortVisible(false)}
@@ -143,6 +199,18 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     scrollView: {
       flex: 1,
     },
+    menu: { gap: 8 },
+    menuOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      padding: 16,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: palette[PaletteColor.Border],
+      backgroundColor: palette[PaletteColor.Surface],
+    },
+    menuText: { fontSize: 16, color: palette[PaletteColor.PrimaryText] },
     emptyState: {
       paddingVertical: 32,
       alignItems: "center",

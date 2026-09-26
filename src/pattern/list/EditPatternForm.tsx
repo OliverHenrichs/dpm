@@ -19,6 +19,7 @@ import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { useTranslation } from "react-i18next";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import * as ImagePicker from "expo-image-picker";
+import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import PatternVideos from "./PatternVideos";
 import PatternTags from "./PatternTags";
 import AddVideoModal from "./AddVideoModal";
@@ -52,6 +53,8 @@ type EditPatternFormProps = {
   ) => void | boolean | Promise<void | boolean>;
   onCancel: () => void;
   existing?: IPattern | null;
+  /** Videos a new pattern starts with — "create a pattern from a video". */
+  initialVideos?: IVideoReference[];
 };
 
 const levels = Object.values(PatternLevel);
@@ -63,6 +66,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   onAccepted,
   onCancel,
   existing,
+  initialVideos,
 }) => {
   const { t } = useTranslation();
 
@@ -74,7 +78,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     prerequisites: [],
     description: "",
     tags: [],
-    videoRefs: [],
+    videoRefs: initialVideos ?? [],
     modifierRefs: [],
   });
 
@@ -156,9 +160,10 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       selectionLimit: 3 - activeVideoRefs.length,
     });
     if (!result.canceled) {
-      const newVideos: IVideoReference[] = result.assets.map((asset) => ({
+      const uris = await persistPickedVideos(result.assets.map((a) => a.uri));
+      const newVideos: IVideoReference[] = uris.map((value) => ({
         type: "local",
-        value: asset.uri,
+        value,
       }));
       applyVideoAdd(newVideos);
     }

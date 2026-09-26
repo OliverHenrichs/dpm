@@ -229,5 +229,18 @@
   "trimWindowA11y": "ভিডিওর যে অংশটি প্রক্রিয়া করা হবে",
   "deidentifyProviderTracking": "জুটিকে ট্র্যাক করুন (বিটা)",
   "deidentifyTapDancers": "এই ফ্রেমে প্রত্যেক নৃত্যশিল্পীর উপর ট্যাপ করুন ({{count}}/{{total}})",
-  "deidentifyResetTaps": "আবার ট্যাপ করুন"
+  "deidentifyResetTaps": "আবার ট্যাপ করুন",
+  "videoBadgeSilhouette": "সিলুয়েট",
+  "deidentifyAction": "পরিচয় গোপন করুন…",
+  "deidentifyJobQueued": "{{name}}: পরিচয় গোপনের অপেক্ষায়",
+  "deidentifyJobRunning": "{{name}}: পরিচয় গোপন করা হচ্ছে … {{percent}} %",
+  "deidentifyJobDone": "{{name}}: পরিচয়-গোপন ভিডিও বসানো হয়েছে",
+  "deidentifyJobFailed": "{{name}}: পরিচয় গোপন ব্যর্থ — {{error}}",
+  "deidentifyDismiss": "সরান",
+  "addPatternNew": "নতুন প্যাটার্ন",
+  "addPatternFromVideo": "ভিডিও থেকে",
+  "deidentifyNowTitle": "ভিডিওতে পরিচয় গোপন করবেন?",
+  "deidentifyNowMessage": "নৃত্যশিল্পীদের সিলুয়েটে রূপান্তর করে এবং ক্লিপটি সর্বোচ্চ 30 সেকেন্ডে ছোট করে। এটি ব্যাকগ্রাউন্ডে চলে এবং এই প্যাটার্নের ভিডিওটি প্রতিস্থাপন করে; মূলটি আপনার গ্যালারিতে থাকে।",
+  "deidentifyNowYes": "পরিচয় গোপন করুন",
+  "deidentifyLater": "পরে"
 }

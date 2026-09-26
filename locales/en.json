@@ -229,5 +229,18 @@
   "trimWindowA11y": "Part of the video to process",
   "deidentifyProviderTracking": "Track the couple (beta)",
   "deidentifyTapDancers": "Tap each dancer on this frame ({{count}}/{{total}})",
-  "deidentifyResetTaps": "Tap again"
+  "deidentifyResetTaps": "Tap again",
+  "videoBadgeSilhouette": "Silhouette",
+  "deidentifyAction": "De-identify…",
+  "deidentifyJobQueued": "{{name}}: waiting to de-identify",
+  "deidentifyJobRunning": "{{name}}: de-identifying … {{percent}} %",
+  "deidentifyJobDone": "{{name}}: de-identified video is in place",
+  "deidentifyJobFailed": "{{name}}: de-identifying failed — {{error}}",
+  "deidentifyDismiss": "Dismiss",
+  "addPatternNew": "New pattern",
+  "addPatternFromVideo": "From a video",
+  "deidentifyNowTitle": "De-identify the video?",
+  "deidentifyNowMessage": "Turn the dancers into silhouettes and shorten the clip to at most 30 s. It runs in the background and replaces the video in this pattern; the original stays in your gallery.",
+  "deidentifyNowYes": "De-identify",
+  "deidentifyLater": "Later"
 }

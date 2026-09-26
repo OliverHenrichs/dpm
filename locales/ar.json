@@ -229,5 +229,18 @@
   "trimWindowA11y": "جزء الفيديو المراد معالجته",
   "deidentifyProviderTracking": "تتبّع الثنائي (تجريبي)",
   "deidentifyTapDancers": "انقر على كل راقص في هذا الإطار ({{count}}/{{total}})",
-  "deidentifyResetTaps": "انقر من جديد"
+  "deidentifyResetTaps": "انقر من جديد",
+  "videoBadgeSilhouette": "صورة ظلية",
+  "deidentifyAction": "إخفاء الهوية…",
+  "deidentifyJobQueued": "{{name}}: في انتظار إخفاء الهوية",
+  "deidentifyJobRunning": "{{name}}: جارٍ إخفاء الهوية … {{percent}}٪",
+  "deidentifyJobDone": "{{name}}: تم وضع الفيديو مخفي الهوية",
+  "deidentifyJobFailed": "{{name}}: فشل إخفاء الهوية — {{error}}",
+  "deidentifyDismiss": "إغلاق",
+  "addPatternNew": "نمط جديد",
+  "addPatternFromVideo": "من فيديو",
+  "deidentifyNowTitle": "إخفاء الهوية في الفيديو؟",
+  "deidentifyNowMessage": "يحوّل الراقصين إلى صور ظلية ويقصّر المقطع إلى 30 ثانية كحد أقصى. يعمل في الخلفية ويستبدل الفيديو في هذا النمط؛ ويبقى الأصل في معرض الصور.",
+  "deidentifyNowYes": "إخفاء الهوية",
+  "deidentifyLater": "لاحقًا"
 }

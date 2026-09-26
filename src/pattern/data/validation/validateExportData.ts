@@ -93,6 +93,20 @@ function normalizeVideoRefs(raw: unknown, where: string, warnings: string[]) {
     ) {
       ref.startTime = entry.startTime;
     }
+    // Provenance is kept only when well-formed; the video itself is fine either way.
+    if (entry.generated !== undefined) {
+      const g = entry.generated;
+      if (
+        isObject(g) &&
+        isNonEmptyString(g.method) &&
+        typeof g.createdAt === "number" &&
+        Number.isFinite(g.createdAt)
+      ) {
+        ref.generated = { method: g.method, createdAt: g.createdAt };
+      } else {
+        warnings.push(`${where}: dropped malformed provenance of a video`);
+      }
+    }
     refs.push(ref);
   }
   return refs;

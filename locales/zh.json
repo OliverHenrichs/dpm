@@ -229,5 +229,18 @@
   "trimWindowA11y": "要处理的视频片段",
   "deidentifyProviderTracking": "跟踪舞伴（测试版）",
   "deidentifyTapDancers": "在此画面上点按每位舞者（{{count}}/{{total}}）",
-  "deidentifyResetTaps": "重新点按"
+  "deidentifyResetTaps": "重新点按",
+  "videoBadgeSilhouette": "剪影",
+  "deidentifyAction": "去识别化…",
+  "deidentifyJobQueued": "{{name}}：等待去识别化",
+  "deidentifyJobRunning": "{{name}}：正在去识别化 … {{percent}}%",
+  "deidentifyJobDone": "{{name}}：去识别化视频已替换",
+  "deidentifyJobFailed": "{{name}}：去识别化失败 — {{error}}",
+  "deidentifyDismiss": "关闭",
+  "addPatternNew": "新舞步",
+  "addPatternFromVideo": "从视频创建",
+  "deidentifyNowTitle": "对视频去识别化？",
+  "deidentifyNowMessage": "把舞者变成剪影，并把片段缩短到最多 30 秒。它会在后台运行，并替换此舞步中的视频；原视频仍保留在你的相册中。",
+  "deidentifyNowYes": "去识别化",
+  "deidentifyLater": "稍后"
 }

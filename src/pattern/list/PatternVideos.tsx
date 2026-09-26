@@ -73,15 +73,24 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
                 </Text>
               </View>
             ) : thumb ? (
-              <Image
-                source={{ uri: thumb }}
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 8,
-                  resizeMode: "cover",
-                }}
-              />
+              <View>
+                <Image
+                  source={{ uri: thumb }}
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 8,
+                    resizeMode: "cover",
+                  }}
+                />
+                {ref.generated && (
+                  <View style={styles.urlBadge}>
+                    <Text style={styles.urlBadgeText}>
+                      {t("videoBadgeSilhouette")}
+                    </Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <Text style={styles.label}>{t("noThumbnail")}</Text>
             )}

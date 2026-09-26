@@ -1,6 +1,7 @@
 import React from "react";
 import * as ImagePicker from "expo-image-picker";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
+import { readFileBytes, seedBinaryFile } from "@/__mocks__/expo-file-system";
 import {
   IModifier,
   IPattern,
@@ -152,11 +153,36 @@ describe("EditPatternForm — videos", () => {
       fireEvent.press(screen.getByText(/Pick from Library/));
 
       await waitFor(() => expect(mockedPicker).toHaveBeenCalled());
+      // Unseeded files cannot be copied into app storage, so the picker's URIs are kept.
+      await waitFor(() => expect(removeButtons()).toHaveLength(2));
       save();
       expect(saved().videoRefs).toEqual([
         localVideo("file:///a.mp4"),
         localVideo("file:///b.mp4"),
       ]);
+    });
+
+    it("copies picked videos out of the picker's cache into app storage", async () => {
+      seedBinaryFile("file:///cache/ImagePicker/a.mp4", Buffer.from([1, 2, 3]));
+      mockedPicker.mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: "file:///cache/ImagePicker/a.mp4" }],
+      } as never);
+      const { saved } = renderForm(
+        createTestPattern(TYPE.id, { id: 1, name: "Whip" }),
+      );
+
+      fireEvent.press(addVideoButton());
+      await waitFor(() =>
+        expect(screen.getByText(/Pick from Library/)).toBeOnTheScreen(),
+      );
+      fireEvent.press(screen.getByText(/Pick from Library/));
+
+      await waitFor(() => expect(removeButtons()).toHaveLength(1));
+      save();
+      const [ref] = saved().videoRefs;
+      expect(ref.value.startsWith("file:///document/")).toBe(true);
+      expect(readFileBytes(ref.value)).toEqual(Buffer.from([1, 2, 3]));
     });
 
     it("adds nothing when the picker is cancelled", async () => {

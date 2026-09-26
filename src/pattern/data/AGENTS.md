@@ -87,13 +87,15 @@ is equally correct. What is not correct is snapshotting once and leaving it.
 
 ## Export / Import format
 
-Version `"3.0.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.1.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
 ```
 
 - `exportPatternLists(lists, includeVideos, exportAsReadonly)` (`exportPatterns.ts`) writes the file to the document directory and hands it to `expo-sharing`. With `includeVideos === false` local refs are stripped instead of embedded (URL refs always survive); with `exportAsReadonly` each list gets `readonly: true`.
+- 3.1 added `IVideoReference.generated` (`{ method, createdAt }`), the provenance of a video the app made — today the de-identified clips from `src/deidentify/`. `validateExportData` keeps it when well-formed and drops only the field, with a warning, when not; `ImportPatterns` spreads the ref when relocating a local video so it survives the trip.
+- Picked videos go through `persistVideo` / `persistPickedVideos` (`videoFiles.ts`), which copy them into the document directory: the picker hands out cache URIs the OS may clear.
 - Videos are keyed in the `videos` map by their **original local path**; pattern videos, universal-modifier videos and per-pattern modifier-combination videos are all embedded.
 - `importPatternLists()` (`ImportPatterns.ts`) picks a file via `expo-document-picker`, decodes base64 videos back to the local filesystem via `expo-file-system`, and returns the lists — collecting non-fatal `warnings` for missing/unreadable videos.
 
