@@ -231,7 +231,6 @@
   "deidentifyTapDancers": "Tap each dancer on this frame ({{count}}/{{total}})",
   "deidentifyResetTaps": "Tap again",
   "videoBadgeSilhouette": "Silhouette",
-  "deidentifyAction": "De-identify…",
   "deidentifyJobQueued": "{{name}}: waiting to de-identify",
   "deidentifyJobRunning": "{{name}}: de-identifying … {{percent}} %",
   "deidentifyJobDone": "{{name}}: de-identified video is in place",
@@ -242,5 +241,11 @@
   "deidentifyNowTitle": "De-identify the video?",
   "deidentifyNowMessage": "Turn the dancers into silhouettes and shorten the clip to at most 30 s. It runs in the background and replaces the video in this pattern; the original stays in your gallery.",
   "deidentifyNowYes": "De-identify",
-  "deidentifyLater": "Later"
+  "deidentifyLater": "Later",
+  "deidentifyVideoA11y": "De-identify a video",
+  "deidentifyChooseVideo": "Which video?",
+  "deidentifyFromGallery": "Choose from gallery…",
+  "deidentifyVideoN": "Video {{n}}",
+  "deidentifyInFormQueued": "A video is waiting to be de-identified",
+  "deidentifyInFormRunning": "De-identifying a video … {{percent}} %"
 }

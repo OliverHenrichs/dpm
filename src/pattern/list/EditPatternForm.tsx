@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,6 +29,15 @@ import BottomSheet from "@/src/common/components/BottomSheet";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
+import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
+import DeidentifyModal, {
+  DeidentifyTarget,
+} from "@/src/deidentify/components/DeidentifyModal";
+import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
+import { jobStore } from "@/src/deidentify/jobs/jobStore";
+import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
+import { availableProviders } from "@/src/deidentify/providers/registry";
 import {
   getCommon2ndOrderLabel,
   getCommonBorder,
@@ -92,6 +102,22 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     null,
   );
   const [showAttachPicker, setShowAttachPicker] = useState(false);
+  const [showDeidentifyPicker, setShowDeidentifyPicker] = useState(false);
+  const [deidentifyTarget, setDeidentifyTarget] =
+    useState<DeidentifyTarget | null>(null);
+  const { activeList } = useActivePatternList();
+  const { jobs } = useDeidentifyJobs();
+
+  // A de-identification job that finishes while this form is open replaced the video in the
+  // stored pattern, not in this draft; swap it here too, so the form shows the result and
+  // saving does not put the original back.
+  useEffect(
+    () =>
+      jobStore.subscribe(() =>
+        setNewPattern((prev) => applyReplacements(prev)),
+      ),
+    [],
+  );
 
   /**
    * Patterns that cannot be prerequisites of this one without closing a cycle.
@@ -194,6 +220,54 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         ),
       }));
     }
+  };
+
+  // De-identifying: one of this draft's own videos, or one picked from the gallery (added to
+  // the draft first). The run is a background job; see DeidentifyJobsContext.
+  const canDeidentify =
+    !!activeList &&
+    !activeList.readonly &&
+    !isActiveVideoReadonly &&
+    availableProviders(ALL_PROVIDERS).length > 0;
+  const deidentifiable = activeVideoRefs
+    .map((ref, index) => ({ ref, index }))
+    .filter(({ ref }) => ref.type === "local" && !ref.generated);
+  const draftUris = new Set(
+    [
+      ...(newPattern.videoRefs ?? []),
+      ...(newPattern.modifierRefs ?? []).flatMap((m) => m.videoRefs),
+    ].map((v) => v.value),
+  );
+  const draftJobs = jobs.filter(
+    (j) => draftUris.has(j.sourceUri) && j.status !== "done",
+  );
+
+  const openDeidentify = (sourceUri: string) => {
+    if (!activeList) return;
+    setShowDeidentifyPicker(false);
+    setDeidentifyTarget({
+      listId: activeList.id,
+      patternName: newPattern.name.trim() || t("addPatternNew"),
+      sourceUri,
+    });
+  };
+
+  const pickForDeidentify = async () => {
+    if (activeVideoRefs.length >= 3) return;
+    setShowDeidentifyPicker(false);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      allowsMultipleSelection: false,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    const [value] = await persistPickedVideos([result.assets[0].uri]);
+    applyVideoAdd([{ type: "local", value }]);
+    openDeidentify(value);
+  };
+
+  const handleDeidentify = () => {
+    if (deidentifiable.length === 0) void pickForDeidentify();
+    else setShowDeidentifyPicker(true);
   };
 
   const handleRemoveVideo = (index: number) => {
@@ -437,8 +511,65 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         thumbnails={thumbnails}
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
+        onDeidentify={canDeidentify ? handleDeidentify : undefined}
         palette={palette}
         disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
+      />
+      {draftJobs.map((job) => (
+        <Text key={job.id} style={styles.jobLine}>
+          {job.status === "queued"
+            ? t("deidentifyInFormQueued")
+            : job.status === "running"
+              ? t("deidentifyInFormRunning", {
+                  percent: Math.round(job.progress * 100),
+                })
+              : t("deidentifyFailed", { message: job.error ?? "" })}
+        </Text>
+      ))}
+      <BottomSheet
+        visible={showDeidentifyPicker}
+        onClose={() => setShowDeidentifyPicker(false)}
+        title={t("deidentifyChooseVideo")}
+        palette={palette}
+        minHeight="25%"
+        maxHeight="50%"
+      >
+        <View style={styles.deidentifyChoices}>
+          {deidentifiable.map(({ ref, index }) => (
+            <TouchableOpacity
+              key={ref.value}
+              onPress={() => openDeidentify(ref.value)}
+              accessibilityRole="button"
+              accessibilityLabel={t("deidentifyVideoN", { n: index + 1 })}
+            >
+              {thumbnails[index] ? (
+                <Image
+                  source={{ uri: thumbnails[index] }}
+                  style={styles.deidentifyThumb}
+                />
+              ) : (
+                <View style={[styles.deidentifyThumb, styles.thumbFallback]}>
+                  <Text style={styles.buttonText}>{index + 1}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity
+          onPress={pickForDeidentify}
+          disabled={activeVideoRefs.length >= 3}
+          style={[
+            styles.buttonCancel,
+            activeVideoRefs.length >= 3 && styles.disabled,
+          ]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>{t("deidentifyFromGallery")}</Text>
+        </TouchableOpacity>
+      </BottomSheet>
+      <DeidentifyModal
+        target={deidentifyTarget}
+        onClose={() => setDeidentifyTarget(null)}
       />
       <AddVideoModal
         visible={showAddVideoModal}
@@ -566,6 +697,24 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       fontStyle: "italic",
       marginTop: 4,
     },
+    jobLine: {
+      fontSize: 12,
+      marginBottom: 8,
+      color: palette[PaletteColor.SecondaryText],
+    },
+    deidentifyChoices: {
+      ...getCommonRow(),
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 16,
+    },
+    deidentifyThumb: { width: 96, height: 96, borderRadius: 8 },
+    thumbFallback: {
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: palette[PaletteColor.TagBg],
+    },
+    disabled: { opacity: 0.5 },
     attachPickerItem: {
       flexDirection: "row",
       alignItems: "center",

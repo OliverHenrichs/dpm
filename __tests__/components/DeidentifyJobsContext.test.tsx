@@ -6,6 +6,7 @@ import {
   useDeidentifyJobs,
 } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import { clearReplacements } from "@/src/deidentify/jobs/replaceVideo";
+import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { DeidentifyProvider } from "@/src/deidentify/providers/DeidentifyProvider";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import {
@@ -49,20 +50,19 @@ function setup(listOverrides: Partial<IPatternList> = {}) {
     name: "Sugar Push",
     videoRefs: [{ type: "local", value: SOURCE }],
   });
-  renderWithProviders(
+  const view = renderWithProviders(
     <DeidentifyJobsProvider>
       <Probe />
     </DeidentifyJobsProvider>,
     { lists: [list], patterns: { [list.id]: [pattern] } },
   );
-  return { list };
+  return { list, view };
 }
 
 const startJob = (listId: string, provider = fakeProvider()) =>
   act(() =>
     jobs.start({
       listId,
-      patternId: 1,
       patternName: "Sugar Push",
       provider,
       request: { sourceUri: SOURCE, startSeconds: 0, endSeconds: 10 },
@@ -70,7 +70,10 @@ const startJob = (listId: string, provider = fakeProvider()) =>
   );
 
 beforeEach(() => seedBinaryFile(OUTPUT, Buffer.from([1, 2])));
-afterEach(clearReplacements);
+afterEach(async () => {
+  await jobStore.reset();
+  clearReplacements();
+});
 
 describe("DeidentifyJobsProvider", () => {
   it("replaces the video in the pattern with the de-identified one, marked as generated", async () => {
@@ -111,6 +114,40 @@ describe("DeidentifyJobsProvider", () => {
 
     await waitFor(() => expect(jobs.jobs[0].status).toBe("failed"));
     expect(run).not.toHaveBeenCalled();
+  });
+
+  it("survives the app's tree being torn down mid-run, and still attaches the video", async () => {
+    const { list, view } = setup();
+    await waitFor(async () =>
+      expect(await storedPatterns(list.id)).toHaveLength(1),
+    );
+    let finish: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (finish = resolve));
+    await startJob(
+      list.id,
+      fakeProvider(async () => {
+        await gate;
+        return { uri: OUTPUT };
+      }),
+    );
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("running"));
+
+    // Android destroyed the activity; React mounts a fresh tree in the same process.
+    view.unmount();
+    renderWithProviders(
+      <DeidentifyJobsProvider>
+        <Probe />
+      </DeidentifyJobsProvider>,
+      { lists: [list] },
+    );
+    expect(jobs.jobs[0].status).toBe("running");
+
+    await act(async () => finish());
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    const [saved] = await storedPatterns(list.id);
+    expect(saved.videoRefs[0].value).toMatch(
+      /^file:\/\/\/document\/deidentified-/,
+    );
   });
 
   it("dismisses finished jobs", async () => {

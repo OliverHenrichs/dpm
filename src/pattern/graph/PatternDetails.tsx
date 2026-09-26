@@ -14,10 +14,6 @@ import {
   getCommonTagText,
 } from "@/src/common/utils/CommonStyles";
 import VideoCarousel from "@/src/common/components/VideoCarousel";
-import DeidentifyModal, {
-  DeidentifyTarget,
-} from "@/src/deidentify/components/DeidentifyModal";
-import DeidentifyVideoAction from "@/src/deidentify/components/DeidentifyVideoAction";
 import ModifierPillStrip from "@/src/pattern/list/ModifierPillStrip";
 
 type PatternDetailsProps = {
@@ -49,8 +45,6 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
     null,
   );
-  const [deidentifyTarget, setDeidentifyTarget] =
-    useState<DeidentifyTarget | null>(null);
 
   // Get type display name
   const getTypeName = () => {
@@ -95,19 +89,8 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
           videoRefs={activeVideoRefs}
           palette={palette}
           generatedLabel={t("videoBadgeSilhouette")}
-          renderFooter={(ref) => (
-            <DeidentifyVideoAction
-              videoRef={ref}
-              pattern={selectedPattern}
-              onOpen={setDeidentifyTarget}
-            />
-          )}
         />
       )}
-      <DeidentifyModal
-        target={deidentifyTarget}
-        onClose={() => setDeidentifyTarget(null)}
-      />
       <View style={styles.patternDetailsRow}>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("counts")}:</Text>

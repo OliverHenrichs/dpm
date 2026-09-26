@@ -11,13 +11,14 @@ import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import DeidentifyTrimPanel from "@/src/deidentify/components/DeidentifyTrimPanel";
-import { useOptionalDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
 import { availableProviders } from "@/src/deidentify/providers/registry";
 
 export type DeidentifyTarget = {
   listId: string;
-  patternId: number;
+  /** For the progress line; the job finds the video by [sourceUri]. */
   patternName: string;
   sourceUri: string;
 };
@@ -36,9 +37,8 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
-  const jobs = useOptionalDeidentifyJobs();
+  const { start } = useDeidentifyJobs();
   const styles = getStyles(palette);
-  if (!jobs) return null;
 
   return (
     <Modal
@@ -69,9 +69,8 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
                 sourceUri={target.sourceUri}
                 providers={availableProviders(ALL_PROVIDERS)}
                 onRun={(provider, request) => {
-                  jobs.start({
+                  start({
                     listId: target.listId,
-                    patternId: target.patternId,
                     patternName: target.patternName,
                     provider,
                     request,
@@ -97,6 +96,9 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
     card: {
       maxHeight: "92%",
       padding: 16,
+      // The trim bar is dragged sideways: keep it out of Android's back-gesture band, which a
+      // full-width sheet does not do on its own (it is not inside PageContainer).
+      paddingHorizontal: SCREEN_EDGE_INSET + 16,
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
       backgroundColor: palette[PaletteColor.Background],

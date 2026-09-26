@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import {
-  Button,
   GestureResponderEvent,
   LayoutChangeEvent,
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useEventListener } from "expo";
@@ -13,6 +13,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { getCommonButton, getCommonRow } from "@/src/common/utils/CommonStyles";
 import TrimWindowBar from "@/src/deidentify/components/TrimWindowBar";
 import {
   Point,
@@ -184,7 +185,31 @@ const DeidentifyTrimPanel: React.FC<Props> = ({
     }
   };
 
+  const styles = getStyles(palette);
   const text = { color: palette[PaletteColor.PrimaryText] };
+  /** The app's button: primary, secondary (border colour) or a selected choice. */
+  const button = (
+    label: string,
+    onPress: () => void,
+    {
+      primary = false,
+      disabled = false,
+    }: { primary?: boolean; disabled?: boolean } = {},
+  ) => (
+    <TouchableOpacity
+      key={label}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      style={[
+        primary ? styles.buttonPrimary : styles.buttonSecondary,
+        disabled && styles.disabled,
+      ]}
+    >
+      <Text style={styles.buttonText}>{label}</Text>
+    </TouchableOpacity>
+  );
   if (!provider || !limits) {
     return <Text style={text}>{t("deidentifyNoProvider")}</Text>;
   }
@@ -260,33 +285,41 @@ const DeidentifyTrimPanel: React.FC<Props> = ({
       {needsTaps && trimmable && (
         <View style={styles.row}>
           <Text style={[text, styles.hint]}>{tapHint}</Text>
-          {taps.length > 0 && (
-            <Button
-              title={t("deidentifyResetTaps")}
-              onPress={() => setTaps([])}
-            />
-          )}
+          {taps.length > 0 &&
+            button(t("deidentifyResetTaps"), () => setTaps([]))}
         </View>
       )}
       {providers.length > 1 && (
         <View style={styles.row}>
           {providers.map((p) => (
-            <Button
+            <TouchableOpacity
               key={p.id}
-              title={t(p.labelKey)}
-              disabled={p.id === provider.id || progress !== null}
               onPress={() => chooseProvider(p)}
-            />
+              disabled={p.id === provider.id || progress !== null}
+              accessibilityRole="button"
+              accessibilityState={{ selected: p.id === provider.id }}
+              style={[
+                styles.choice,
+                p.id === provider.id && styles.choiceSelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.choiceText,
+                  p.id === provider.id && styles.choiceTextSelected,
+                ]}
+              >
+                {t(p.labelKey)}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
       )}
       {progress === null ? (
-        <Button
-          title={t("deidentifyRun")}
-          disabled={!trimmable || !tapsDone}
-          onPress={run}
-          color={palette[PaletteColor.Primary]}
-        />
+        button(t("deidentifyRun"), run, {
+          primary: true,
+          disabled: !trimmable || !tapsDone,
+        })
       ) : (
         <Text style={text}>
           {t("deidentifyProgress", { percent: Math.round(progress * 100) })}
@@ -299,27 +332,55 @@ const DeidentifyTrimPanel: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  panel: { gap: 12 },
-  preview: {
-    width: "100%",
-    aspectRatio: 16 / 9,
-    maxHeight: 420,
-    backgroundColor: "#000",
-  },
-  row: { flexDirection: "row", gap: 8, flexWrap: "wrap", alignItems: "center" },
-  hint: { flex: 1 },
-  marker: {
-    position: "absolute",
-    width: MARKER,
-    height: MARKER,
-    borderRadius: MARKER / 2,
-    borderWidth: 2,
-    borderColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  markerText: { color: "#000", fontWeight: "bold" },
-});
+const getStyles = (palette: Record<PaletteColor, string>) =>
+  StyleSheet.create({
+    buttonPrimary: { ...getCommonButton(palette), alignItems: "center" },
+    buttonSecondary: {
+      ...getCommonButton(palette, palette[PaletteColor.Border]),
+      alignItems: "center",
+    },
+    buttonText: {
+      color: palette[PaletteColor.PrimaryText],
+      fontWeight: "bold",
+    },
+    disabled: { opacity: 0.5 },
+    choice: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: palette[PaletteColor.Border],
+      backgroundColor: palette[PaletteColor.Surface],
+    },
+    choiceSelected: {
+      borderColor: palette[PaletteColor.Primary],
+      backgroundColor: palette[PaletteColor.TagBg],
+    },
+    choiceText: { color: palette[PaletteColor.PrimaryText] },
+    choiceTextSelected: {
+      color: palette[PaletteColor.Primary],
+      fontWeight: "bold",
+    },
+    panel: { gap: 12 },
+    preview: {
+      width: "100%",
+      aspectRatio: 16 / 9,
+      maxHeight: 420,
+      backgroundColor: "#000",
+    },
+    row: { ...getCommonRow(), gap: 8, flexWrap: "wrap" },
+    hint: { flex: 1 },
+    marker: {
+      position: "absolute",
+      width: MARKER,
+      height: MARKER,
+      borderRadius: MARKER / 2,
+      borderWidth: 2,
+      borderColor: "#fff",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    markerText: { color: "#000", fontWeight: "bold" },
+  });
 
 export default DeidentifyTrimPanel;

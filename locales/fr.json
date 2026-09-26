@@ -231,7 +231,6 @@
   "deidentifyTapDancers": "Touchez chaque danseur sur cette image ({{count}}/{{total}})",
   "deidentifyResetTaps": "Recommencer",
   "videoBadgeSilhouette": "Silhouette",
-  "deidentifyAction": "Anonymiser…",
   "deidentifyJobQueued": "{{name}} : en attente d’anonymisation",
   "deidentifyJobRunning": "{{name}} : anonymisation … {{percent}} %",
   "deidentifyJobDone": "{{name}} : la vidéo anonymisée est en place",
@@ -242,5 +241,11 @@
   "deidentifyNowTitle": "Anonymiser la vidéo ?",
   "deidentifyNowMessage": "Transforme les danseurs en silhouettes et raccourcit le clip à 30 s maximum. Cela s’exécute en arrière-plan et remplace la vidéo de cette figure ; l’original reste dans ta galerie.",
   "deidentifyNowYes": "Anonymiser",
-  "deidentifyLater": "Plus tard"
+  "deidentifyLater": "Plus tard",
+  "deidentifyVideoA11y": "Anonymiser une vidéo",
+  "deidentifyChooseVideo": "Quelle vidéo ?",
+  "deidentifyFromGallery": "Choisir dans la galerie…",
+  "deidentifyVideoN": "Vidéo {{n}}",
+  "deidentifyInFormQueued": "Une vidéo attend d’être anonymisée",
+  "deidentifyInFormRunning": "Anonymisation d’une vidéo … {{percent}} %"
 }

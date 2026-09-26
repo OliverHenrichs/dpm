@@ -231,7 +231,6 @@
   "deidentifyTapDancers": "انقر على كل راقص في هذا الإطار ({{count}}/{{total}})",
   "deidentifyResetTaps": "انقر من جديد",
   "videoBadgeSilhouette": "صورة ظلية",
-  "deidentifyAction": "إخفاء الهوية…",
   "deidentifyJobQueued": "{{name}}: في انتظار إخفاء الهوية",
   "deidentifyJobRunning": "{{name}}: جارٍ إخفاء الهوية … {{percent}}٪",
   "deidentifyJobDone": "{{name}}: تم وضع الفيديو مخفي الهوية",
@@ -242,5 +241,11 @@
   "deidentifyNowTitle": "إخفاء الهوية في الفيديو؟",
   "deidentifyNowMessage": "يحوّل الراقصين إلى صور ظلية ويقصّر المقطع إلى 30 ثانية كحد أقصى. يعمل في الخلفية ويستبدل الفيديو في هذا النمط؛ ويبقى الأصل في معرض الصور.",
   "deidentifyNowYes": "إخفاء الهوية",
-  "deidentifyLater": "لاحقًا"
+  "deidentifyLater": "لاحقًا",
+  "deidentifyVideoA11y": "إخفاء الهوية في فيديو",
+  "deidentifyChooseVideo": "أي فيديو؟",
+  "deidentifyFromGallery": "اختيار من المعرض…",
+  "deidentifyVideoN": "فيديو {{n}}",
+  "deidentifyInFormQueued": "فيديو في انتظار إخفاء الهوية",
+  "deidentifyInFormRunning": "جارٍ إخفاء الهوية في فيديو … {{percent}}٪"
 }

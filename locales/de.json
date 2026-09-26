@@ -231,7 +231,6 @@
   "deidentifyTapDancers": "Tippe in diesem Bild auf jede tanzende Person ({{count}}/{{total}})",
   "deidentifyResetTaps": "Neu tippen",
   "videoBadgeSilhouette": "Silhouette",
-  "deidentifyAction": "Unkenntlich machen …",
   "deidentifyJobQueued": "{{name}}: wartet auf Unkenntlichmachen",
   "deidentifyJobRunning": "{{name}}: wird unkenntlich gemacht … {{percent}} %",
   "deidentifyJobDone": "{{name}}: unkenntliches Video ist eingefügt",
@@ -242,5 +241,11 @@
   "deidentifyNowTitle": "Video unkenntlich machen?",
   "deidentifyNowMessage": "Die Tanzenden werden zu Silhouetten und der Clip wird auf höchstens 30 s gekürzt. Das läuft im Hintergrund und ersetzt das Video in dieser Figur; das Original bleibt in deiner Galerie.",
   "deidentifyNowYes": "Unkenntlich machen",
-  "deidentifyLater": "Später"
+  "deidentifyLater": "Später",
+  "deidentifyVideoA11y": "Ein Video unkenntlich machen",
+  "deidentifyChooseVideo": "Welches Video?",
+  "deidentifyFromGallery": "Aus der Galerie wählen …",
+  "deidentifyVideoN": "Video {{n}}",
+  "deidentifyInFormQueued": "Ein Video wartet auf Unkenntlichmachen",
+  "deidentifyInFormRunning": "Video wird unkenntlich gemacht … {{percent}} %"
 }

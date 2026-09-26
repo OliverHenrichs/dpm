@@ -231,7 +231,6 @@
   "deidentifyTapDancers": "在此画面上点按每位舞者（{{count}}/{{total}}）",
   "deidentifyResetTaps": "重新点按",
   "videoBadgeSilhouette": "剪影",
-  "deidentifyAction": "去识别化…",
   "deidentifyJobQueued": "{{name}}：等待去识别化",
   "deidentifyJobRunning": "{{name}}：正在去识别化 … {{percent}}%",
   "deidentifyJobDone": "{{name}}：去识别化视频已替换",
@@ -242,5 +241,11 @@
   "deidentifyNowTitle": "对视频去识别化？",
   "deidentifyNowMessage": "把舞者变成剪影，并把片段缩短到最多 30 秒。它会在后台运行，并替换此舞步中的视频；原视频仍保留在你的相册中。",
   "deidentifyNowYes": "去识别化",
-  "deidentifyLater": "稍后"
+  "deidentifyLater": "稍后",
+  "deidentifyVideoA11y": "对视频去识别化",
+  "deidentifyChooseVideo": "哪个视频？",
+  "deidentifyFromGallery": "从相册选择…",
+  "deidentifyVideoN": "视频 {{n}}",
+  "deidentifyInFormQueued": "有视频正在等待去识别化",
+  "deidentifyInFormRunning": "正在对视频去识别化 … {{percent}}%"
 }

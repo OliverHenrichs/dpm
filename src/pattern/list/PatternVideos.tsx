@@ -16,6 +16,7 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import PlusButton from "@/src/common/components/PlusButton";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 
@@ -24,6 +25,8 @@ export type PatternVideosProps = {
   thumbnails: string[];
   onAddVideo: () => void;
   onRemoveVideo: (index: number) => void;
+  /** Offers de-identifying a video next to '+'; omitted where that cannot run. */
+  onDeidentify?: () => void;
   palette: Record<PaletteColor, string>;
   disabled?: boolean;
 };
@@ -33,6 +36,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   thumbnails,
   onAddVideo,
   onRemoveVideo,
+  onDeidentify,
   palette,
   disabled = false,
 }) => {
@@ -123,6 +127,20 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
         </ScrollView>
       </View>
       <View style={styles.addButtonContainer}>
+        {onDeidentify && (
+          <TouchableOpacity
+            onPress={onDeidentify}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel={t("deidentifyVideoA11y")}
+          >
+            <Icon
+              name="incognito-circle"
+              size={28}
+              color={palette[PaletteColor.Accent]}
+            />
+          </TouchableOpacity>
+        )}
         <PlusButton
           onPress={onAddVideo}
           palette={palette}
@@ -209,7 +227,12 @@ const getStyles = (palette: Record<PaletteColor, string>) => {
       fontSize: 14,
       lineHeight: 18,
     },
-    addButtonContainer: getCommonAddButtonContainer(),
+    addButtonContainer: {
+      ...getCommonAddButtonContainer(),
+      ...getCommonRow(),
+      gap: 4,
+    },
+    iconButton: { padding: 1, borderRadius: 16 },
   });
 };
 

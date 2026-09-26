@@ -3,9 +3,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { getCommonButton } from "@/src/common/utils/CommonStyles";
 import {
   DeidentifyJob,
-  useOptionalDeidentifyJobs,
+  useDeidentifyJobs,
 } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 
 /**
@@ -16,9 +17,8 @@ const DeidentifyJobsBanner: React.FC = () => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
-  const ctx = useOptionalDeidentifyJobs();
-  if (!ctx || ctx.jobs.length === 0) return null;
-  const { jobs, dismissFinished } = ctx;
+  const { jobs, dismissFinished } = useDeidentifyJobs();
+  if (jobs.length === 0) return null;
   const styles = getStyles(palette);
 
   const line = (job: DeidentifyJob) => {
@@ -56,7 +56,11 @@ const DeidentifyJobsBanner: React.FC = () => {
         </Text>
       ))}
       {!busy && (
-        <TouchableOpacity onPress={dismissFinished} accessibilityRole="button">
+        <TouchableOpacity
+          onPress={dismissFinished}
+          accessibilityRole="button"
+          style={styles.dismissButton}
+        >
           <Text style={styles.dismiss}>{t("deidentifyDismiss")}</Text>
         </TouchableOpacity>
       )}
@@ -76,11 +80,13 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       backgroundColor: palette[PaletteColor.Surface],
     },
     line: { fontSize: 13, color: palette[PaletteColor.PrimaryText] },
-    dismiss: {
-      fontSize: 13,
-      fontWeight: "bold",
+    dismissButton: {
+      ...getCommonButton(palette, palette[PaletteColor.Border]),
       alignSelf: "flex-end",
-      color: palette[PaletteColor.Primary],
+    },
+    dismiss: {
+      fontWeight: "bold",
+      color: palette[PaletteColor.PrimaryText],
     },
   });
 

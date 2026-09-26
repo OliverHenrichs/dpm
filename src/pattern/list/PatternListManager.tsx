@@ -27,7 +27,6 @@ import { useTranslation } from "react-i18next";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 import * as ImagePicker from "expo-image-picker";
 import AppDialog from "@/src/common/components/AppDialog";
-import { nextPatternId } from "@/src/pattern/data/patternIds";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import DeidentifyModal, {
   DeidentifyTarget,
@@ -85,8 +84,6 @@ const PatternListManager = () => {
   // These return the outcome as well as acting on it: EditPatternForm keeps
   // what the user typed when the answer is `false`.
   const handleAddPattern = async (pattern: NewPattern) => {
-    // The id addPattern is about to mint, so the offer below can name the new pattern.
-    const id = activeList ? nextPatternId(activeList, patterns) : undefined;
     const accepted = await addPattern(pattern);
     if (!accepted) return accepted;
     setIsAddingNew(false);
@@ -94,14 +91,12 @@ const PatternListManager = () => {
     setInitialVideos(undefined);
     if (
       activeList &&
-      id !== undefined &&
       seeded &&
       pattern.videoRefs.some((v) => v.value === seeded) &&
       availableProviders(ALL_PROVIDERS).length > 0
     ) {
       setDeidentifyOffer({
         listId: activeList.id,
-        patternId: id,
         patternName: pattern.name,
         sourceUri: seeded,
       });

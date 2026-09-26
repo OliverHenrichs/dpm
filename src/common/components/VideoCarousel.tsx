@@ -11,8 +11,6 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
 type VideoCarouselProps = {
   videoRefs: IVideoReference[];
   palette: Record<PaletteColor, string>;
-  /** Shown under the video on screen — e.g. an action on that video. */
-  renderFooter?: (videoRef: IVideoReference, index: number) => React.ReactNode;
   /** Label of the badge on generated (de-identified) videos. */
   generatedLabel?: string;
 };
@@ -20,7 +18,6 @@ type VideoCarouselProps = {
 const VideoCarousel: React.FC<VideoCarouselProps> = ({
   videoRefs,
   palette,
-  renderFooter,
   generatedLabel,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -64,9 +61,6 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
           viewabilityConfig={VIEWABILITY_CONFIG}
         />
       )}
-      {renderFooter &&
-        videoRefs[currentIndex] &&
-        renderFooter(videoRefs[currentIndex], currentIndex)}
       {videoRefs.length > 1 && (
         <View style={styles.paginationContainer}>
           <Text style={styles.paginationText}>
