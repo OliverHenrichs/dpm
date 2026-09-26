@@ -35,19 +35,13 @@ class SilhouetteRenderer(
   private val context: Context,
   private val segmenterKind: String,
   private val prompts: List<PointF> = emptyList(),
-  /** Stop after this many frames (0 = all) — for quick benchmarks. */
-  private val maxFrames: Int = 0,
-  private val cpuGraphs: Set<String> = emptySet(),
-  private val refine: String = "guided",
-  private val fp32Graphs: Set<String> = emptySet(),
-  private val trackEvery: Int = 1,
 ) {
   fun render(src: File, out: File, onProgress: (Double) -> Unit): SilhouetteStats {
     val retriever = MediaMetadataRetriever()
     retriever.setDataSource(src.absolutePath)
     try {
       val totalFrames = retriever.meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)
-      val frameCount = if (maxFrames > 0) minOf(maxFrames, totalFrames) else totalFrames
+      val frameCount = totalFrames
       val durationMs = retriever.meta(MediaMetadataRetriever.METADATA_KEY_DURATION)
       val rotation = retriever.meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
       val rawWidth = retriever.meta(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
@@ -57,7 +51,7 @@ class SilhouetteRenderer(
       val params = MediaMetadataRetriever.BitmapParams().apply {
         preferredConfig = Bitmap.Config.ARGB_8888
       }
-      val segmenter = createSegmenter(context, segmenterKind, prompts, cpuGraphs, refine, fp32Graphs, trackEvery)
+      val segmenter = createSegmenter(context, segmenterKind, prompts)
       var encoder: SurfaceEncoder? = null
       var workW = 0
       var workH = 0

@@ -24,39 +24,18 @@ class DeidentifyOptions : Record {
   /** "edgetam" (EdgeTAM tracking from [prompts]) — the only one left; see Segmenters.kt. */
   @Field val segmenter: String = "edgetam"
 
-  /** EdgeTAM: one normalised [x, y] point per dancer on the first frame. */
-  @Field val prompts: List<List<Double>> = listOf(listOf(0.4, 0.55), listOf(0.6, 0.55))
-
-  /** Stop after this many frames (0 = whole clip) — for benchmarks. */
-  @Field val maxFrames: Int = 0
-
-  /** EdgeTAM graphs to force onto the CPU ("encode", "memcond", ...) — for diagnosis. */
-  @Field val cpuGraphs: List<String> = emptyList()
-
-  /** EdgeTAM mask upscaling: "bilinear" or "guided" (edges snapped to the frame's contours). */
-  @Field val refine: String = "guided"
-
-  /**
-   * EdgeTAM graphs to compute in fp32 on the GPU. Default: the image encoder. With it in fp16
-   * the phone's features drifted from the desktop's and a dancer shrank early at a crossing
-   * (clip 1: 614 vs ~1500 px at frame 114); fp32 there brought it to ~1400. fp32 for the
-   * tracking graphs made no difference and cost +0.7 s/frame.
-   */
-  @Field val fp32Graphs: List<String> = listOf("encode")
-
-  /** EdgeTAM: track every n-th frame and interpolate the frames between (1 = every frame). */
-  @Field val trackEvery: Int = 1
-
-  /** Keep the transcoded intermediate (source footage!) for replaying on a desktop — debug only. */
-  @Field val keepTranscoded: Boolean = false
+  /** Silhouette mode: one normalised [x, y] point per dancer on the first frame. */
+  @Field val prompts: List<List<Double>> = emptyList()
 }
 
 class DeidentifyException(message: String, cause: Throwable? = null) :
   CodedException("ERR_DEIDENTIFY", message, cause)
 
 /**
- * Spike for L3 (AGENT_TASKS.md): trim + downscale a clip with Media3 Transformer, then
- * optionally re-render it as silhouettes built only from a segmentation mask.
+ * L3 (AGENT_TASKS.md): trim — and for silhouettes, downscale — a clip with Media3 Transformer,
+ * then optionally re-render it as silhouettes built only from tracked masks (fail-closed). The
+ * tuning found on the Pixel (fp32 encoder, guided edges, 15 fps tracking) is fixed in the
+ * pipeline, not exposed here.
  */
 class VideoDeidentifyModule : Module() {
   override fun definition() = ModuleDefinition {
@@ -100,14 +79,14 @@ class VideoDeidentifyModule : Module() {
       }
 
       val silhouetteFile = File(outDir, "$stamp-silhouette.mp4")
-      EdgeTamSegmenter.DUMP_ENCODER_INPUT = options.keepTranscoded
+      if (options.prompts.isEmpty()) {
+        transcoded.delete()
+        throw DeidentifyException("Silhouettes need one tapped point per dancer")
+      }
       val stats = try {
         withContext(Dispatchers.Default) {
           val points = options.prompts.map { android.graphics.PointF(it[0].toFloat(), it[1].toFloat()) }
-          SilhouetteRenderer(
-            context, options.segmenter, points, options.maxFrames, options.cpuGraphs.toSet(),
-            options.refine, options.fp32Graphs.toSet(), options.trackEvery.coerceAtLeast(1),
-          )
+          SilhouetteRenderer(context, options.segmenter, points)
             .render(transcoded, silhouetteFile) {
             progress("silhouette", it)
           }
@@ -115,7 +94,7 @@ class VideoDeidentifyModule : Module() {
       } catch (e: Exception) {
         throw DeidentifyException("Silhouette render failed: ${e.message}", e)
       } finally {
-        if (!options.keepTranscoded) transcoded.delete()
+        transcoded.delete() // source footage: never left in the cache
       }
       val totalMs = (System.nanoTime() - started) / 1_000_000
 
@@ -135,7 +114,6 @@ class VideoDeidentifyModule : Module() {
         "avgSegmentMs" to stats.avgSegmentMs,
         "avgEncodeMs" to stats.avgEncodeMs,
         "framesByPeopleFound" to stats.framesByPeopleFound.mapKeys { it.key.toString() },
-        "transcodedFile" to if (options.keepTranscoded) transcoded.name else "",
       ) + stats.extra
     }
   }

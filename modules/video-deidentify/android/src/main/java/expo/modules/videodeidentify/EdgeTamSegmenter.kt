@@ -16,34 +16,24 @@ import java.util.concurrent.Future
  * next frame while the CPU draws the last — drawing then costs no wall time as long as it is
  * faster than tracking. Each drawing job gets a snapshot of its window and its own buffers.
  *
- * With [trackEvery] > 1 only every n-th frame is tracked; the frames between get their masks by
- * linear interpolation of the tracked neighbours' logits, and EdgeTAM's memory counts tracked
- * frames as consecutive so its 6-frame window still holds 6 real frames.
+ * Only every [TRACK_EVERY]-th frame is tracked; the frames between get their masks by linear
+ * interpolation of the tracked neighbours' logits, and EdgeTAM's memory counts tracked frames as
+ * consecutive so its 6-frame window still holds 6 real frames.
  */
 class EdgeTamSegmenter(
   context: Context,
   private val prompts: List<PointF>,
-  cpuGraphs: Set<String> = emptySet(),
-  private val refine: String = "guided",
-  fp32Graphs: Set<String> = emptySet(),
   /** Re-anchor a dancer lost at a crossing with a person detector (see [reanchor]). */
   private val reanchorEnabled: Boolean = true,
   /** Draw a pose skeleton per dancer over the silhouettes (see [PoseSkeletons]). */
   private val skeletonEnabled: Boolean = true,
-  /** Track every n-th frame and interpolate the rest (1 = every frame). */
-  private val trackEvery: Int = 1,
 ) : Segmenter {
   override val name = "edgetam"
-  private val tracker = EdgeTamTracker(context, cpuGraphs, fp32Graphs).also {
-    if (DUMP_ENCODER_INPUT) {
-      it.dumpDir = java.io.File(context.cacheDir, "deidentify/debug").apply { mkdirs() }
-    }
-  }
+  private val tracker = EdgeTamTracker(context)
   override val delegate get() = tracker.accelerator
   override val extraStats: Map<String, Any>
     get() = tracker.timing.toMap() + mapOf(
-      "refine" to refine,
-      "trackEvery" to trackEvery,
+      "trackEvery" to TRACK_EVERY,
       "drawMs" to drawNs / 1_000_000.0 / drawnFrames.coerceAtLeast(1),
       "waitMs" to waitNs / 1_000_000.0 / frameIndex.coerceAtLeast(1),
       // Diagnostics for comparing with the desktop replica frame by frame.
@@ -82,7 +72,7 @@ class EdgeTamSegmenter(
   /** A frame waiting to be drawn. [masks] stays null until an untracked frame is interpolated. */
   private class Pending(
     var masks: List<FloatArray>?,
-    val guide: FloatArray?,
+    val guide: FloatArray,
     /** Per dancer: 33 joints as [x, y, visibility] normalised to the frame, or null. */
     val joints: List<FloatArray?>,
   )
@@ -100,7 +90,7 @@ class EdgeTamSegmenter(
   private val results = ArrayDeque<Future<Drawn>>()
 
   override fun segment(frame: Bitmap, timestampMs: Long, labels: ByteArray): Int {
-    val track = frameIndex % trackEvery == 0
+    val track = frameIndex % TRACK_EVERY == 0
     if (track) {
       val masks = if (trackedCount == 0) {
         tracker.start(frame, prompts)
@@ -119,7 +109,7 @@ class EdgeTamSegmenter(
       w = frame.width
       h = frame.height
     }
-    val guide = if (refine == "guided") FloatArray(w * h).also { luminance(frame, it) } else null
+    val guide = FloatArray(w * h).also { luminance(frame, it) }
     val joints = skeletons?.detect(frame, cropMasks, timestampMs) ?: cropMasks.map { null }
     pending.addLast(Pending(if (track) cropMasks.map { it.copyOf() } else null, guide, joints))
     received++
@@ -154,7 +144,7 @@ class EdgeTamSegmenter(
       }
       val guide = pending[k - first].guide
       val current = k - from
-      if (drawer == null) drawer = SilhouetteDrawer(w, h, prompts.size, refine)
+      if (drawer == null) drawer = SilhouetteDrawer(w, h, prompts.size)
       val d = drawer!!
       results.addLast(worker.submit<Drawn> {
         val t0 = System.nanoTime()
@@ -284,8 +274,11 @@ class EdgeTamSegmenter(
   }
 
   companion object {
-    /** SPIKE: save the encoder's input for a few frames, to compare with a desktop replay. */
-    var DUMP_ENCODER_INPUT = false
+    /**
+     * Track every n-th frame and interpolate the rest. 2 (15 fps) looked the same as every frame
+     * on clips 1 and 4 and takes ~0.64 instead of ~1.08 s per frame on a Pixel 10a.
+     */
+    private const val TRACK_EVERY = 2
     private const val MASK = 256
     const val OUTLINE_BASE = SilhouetteDrawer.OUTLINE_BASE
     /** Frames either side averaged into each drawn frame. */

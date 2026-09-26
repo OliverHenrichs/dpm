@@ -11,20 +11,8 @@ export type DeidentifyOptions = {
   height?: number;
   mode?: DeidentifyMode;
   segmenter?: DeidentifySegmenter;
-  /** EdgeTAM: one normalised [x, y] point per dancer on the first frame. */
+  /** Silhouette mode: one normalised [x, y] point per dancer on the first frame. */
   prompts?: number[][];
-  /** Stop after this many frames (0 = whole clip) — for benchmarks. */
-  maxFrames?: number;
-  /** EdgeTAM graphs to force onto the CPU — for diagnosing GPU numerics. */
-  cpuGraphs?: string[];
-  /** EdgeTAM mask upscaling: "bilinear", or "guided" to snap edges to the frame's contours. */
-  refine?: "bilinear" | "guided";
-  /** EdgeTAM graphs computed in fp32 on the GPU; default the image encoder. */
-  fp32Graphs?: string[];
-  /** EdgeTAM: track every n-th frame and interpolate the rest (1 = every frame). */
-  trackEvery?: number;
-  /** Keep the transcoded intermediate (source footage) for desktop replay — debug only. */
-  keepTranscoded?: boolean;
 };
 
 export type DeidentifyResult = {

@@ -30,17 +30,7 @@ import kotlin.math.sin
  *   decode    [pix_feat | hi0 | hi1 | sparse] -> [masks | iou | ptrs | score]   per object
  *   memorize  [pix_raw | mask_for_mem] -> [spatial_mem | spatial_pos]  per object
  */
-class EdgeTamTracker(
-  context: Context,
-  /** Graphs to run on the CPU even when the GPU works — for diagnosing GPU numerics. */
-  cpuGraphs: Set<String> = emptySet(),
-  /**
-   * Graphs to compute in fp32 on the GPU instead of the default fp16. Tried for a dancer who
-   * vanished while mostly hidden (clip 1): fp32 tracking made no difference and cost +0.7 s per
-   * frame, so fp16 stays the default; kept as a diagnostic.
-   */
-  fp32Graphs: Set<String> = emptySet(),
-) : AutoCloseable {
+class EdgeTamTracker(context: Context) : AutoCloseable {
 
   class Timing {
     var frames = 0
@@ -65,9 +55,6 @@ class EdgeTamTracker(
 
   val timing = Timing()
 
-  /** Debug: when set, the encoder's exact input image is saved here for [dumpFrames]. */
-  var dumpDir: File? = null
-  private val dumpFrames = setOf(0, 60, 108, 114, 120)
   /** Where each graph actually runs, e.g. {encode=GPU, memcond=CPU}. */
   val accelerators = linkedMapOf<String, String>()
   val accelerator get() = accelerators.entries.joinToString(" ") { "${it.key}=${it.value}" }
@@ -111,11 +98,7 @@ class EdgeTamTracker(
     val dir = File(context.filesDir, "edgetam-v$MODEL_VERSION").apply { mkdirs() }
     fun model(name: String): CompiledModel {
       val file = copyAsset(context, "edgetam/$name.tflite", File(dir, "$name.tflite"))
-      if (name in cpuGraphs) {
-        accelerators[name] = "CPU"
-        return CompiledModel.create(file.absolutePath, CompiledModel.Options(Accelerator.CPU))
-      }
-      val fp32 = name in fp32Graphs
+      val fp32 = name in FP32_GRAPHS
       val options = CompiledModel.Options(Accelerator.GPU).apply {
         if (fp32) {
           gpuOptions = CompiledModel.GpuOptions(precision = CompiledModel.GpuOptions.Precision.FP32)
@@ -156,7 +139,7 @@ class EdgeTamTracker(
    */
   fun start(frame: Bitmap, points: List<PointF>): List<FloatArray> {
     objects.clear()
-    val (pixRaw, hi0, hi1) = encodeFrame(frame, 0)
+    val (pixRaw, hi0, hi1) = encodeFrame(frame)
     val t0 = System.nanoTime()
     val pixFeat = FloatArray(IE)
     for (c in 0 until 256) {
@@ -187,7 +170,7 @@ class EdgeTamTracker(
     frame: Bitmap,
     correct: ((List<FloatArray>) -> Map<Int, FloatArray>)? = null,
   ): List<FloatArray> {
-    val (pixRaw, hi0, hi1) = encodeFrame(frame, fi)
+    val (pixRaw, hi0, hi1) = encodeFrame(frame)
     val masks = objects.map { state ->
       val t0 = System.nanoTime()
       val (memory, mpos, keyMask) = assemble(state, fi)
@@ -210,14 +193,9 @@ class EdgeTamTracker(
     return masks.map { it.mask }
   }
 
-  private fun encodeFrame(src: Bitmap, fi: Int): Triple<FloatArray, FloatArray, FloatArray> {
+  private fun encodeFrame(src: Bitmap): Triple<FloatArray, FloatArray, FloatArray> {
     val t0 = System.nanoTime()
     Canvas(canvasBmp).drawBitmap(src, null, RectF(0f, 0f, SIZE.toFloat(), SIZE.toFloat()), paint)
-    dumpDir?.takeIf { fi in dumpFrames }?.let { dir ->
-      File(dir, "encoder-input-$fi.png").outputStream().use {
-        canvasBmp.compress(Bitmap.CompressFormat.PNG, 100, it)
-      }
-    }
     canvasBmp.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
     val plane = SIZE * SIZE
     val px = pixels
@@ -517,6 +495,12 @@ class EdgeTamTracker(
   }
 
   companion object {
+    /**
+     * Graphs computed in fp32 on the GPU; the rest run in fp16. The image encoder in fp16 made a
+     * mostly hidden dancer shrink early at clip 1's crossing (+~0.1 s/frame to fix); fp32 for
+     * the tracking graphs changed nothing and cost +0.7 s/frame.
+     */
+    private val FP32_GRAPHS = setOf("encode")
     /** Conditioning memories kept from corrections, besides the first frame, and for how long. */
     private const val MAX_CORRECTIONS = 2
     private const val CORRECTION_TTL = 15

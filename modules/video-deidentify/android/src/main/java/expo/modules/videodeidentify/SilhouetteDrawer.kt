@@ -7,18 +7,16 @@ package expo.modules.videodeidentify
  * — the frame's pixels steer the edge filter but are never copied (fail-closed).
  *
  * EdgeTAM's masks are 256x256 over the whole frame — a dancer is ~40 mask pixels wide — so how
- * they are brought up to the frame decides how the silhouette looks:
- *  - "bilinear": the logits are interpolated and thresholded at the frame's resolution, as SAM 2
- *    itself does (nearest-neighbour sampling gave 2–3 px staircases);
- *  - "guided": additionally a guided filter (He et al.) with the frame's luminance as guide pulls
- *    the edges onto the real contours — fingers, hems, gaps between legs. It can only add to the
- *    plain mask, never remove from it, so thin limbs survive.
+ * they are brought up to the frame decides how the silhouette looks. The logits are interpolated
+ * bilinearly at the frame's resolution, as SAM 2 itself does (nearest-neighbour sampling gave
+ * 2–3 px staircases), and a guided filter (He et al.) with the frame's luminance as guide pulls
+ * the edges onto the real contours — fingers, hems, gaps between legs. It can only add to the
+ * plain mask, never remove from it, so thin limbs survive.
  */
 class SilhouetteDrawer(
   private val w: Int,
   private val h: Int,
   private val objects: Int,
-  private val refine: String,
 ) {
   /** One frame of the smoothing window: its weight, masks (256x256 logits) and joints. */
   class Entry(val weight: Float, val masks: List<FloatArray>, val joints: List<FloatArray?>)
@@ -33,14 +31,14 @@ class SilhouetteDrawer(
   private val bands = List(objects) { BooleanArray(w * h) }
 
   /**
-   * Draws the frame whose [guide] (luminance, or null for bilinear edges) and window are given;
+   * Draws the frame whose [guide] (luminance) and window are given;
    * [current] is its index in [window]. Writes [labels] and [drawnPx] (pixels per dancer) and
    * returns how many dancers are visible.
    *
    * Masks and joints are averaged over the window (the caller weights 1-2-3-2-1 over ±2 frames):
    * masks near the threshold flickered frame to frame, and the clip is processed offline.
    */
-  fun draw(window: List<Entry>, current: Int, guide: FloatArray?, labels: ByteArray, drawnPx: IntArray): Int {
+  fun draw(window: List<Entry>, current: Int, guide: FloatArray, labels: ByteArray, drawnPx: IntArray): Int {
     val smoothed = List(objects) { FloatArray(MASK * MASK) }
     var weightSum = 0f
     for (e in window) {
@@ -52,21 +50,17 @@ class SilhouetteDrawer(
     }
     for (out in smoothed) for (p in out.indices) out[p] /= weightSum
 
-    if (guide != null) filter.setGuide(guide)
+    filter.setGuide(guide)
     smoothed.forEachIndexed { i, mask ->
       val s = score[i]
-      if (guide != null) {
-        // The filter may only add, never remove: it averaged thin limbs (a raised forearm, a
-        // few px wide) with the background below the threshold and erased them. So a pixel is
-        // body if the guided result or the plain mask says so — the filter still adds detail.
-        upsampler.resample(mask, s, Bilinear.Out.SIGMOID)
-        System.arraycopy(s, 0, plain, 0, s.size)
-        filter.apply(s)
-        val pl = plain
-        parallelFor(h) { y -> for (x in 0 until w) { val q = y * w + x; s[q] = maxOf(s[q], pl[q]) - 0.5f } }
-      } else {
-        upsampler.resample(mask, s, Bilinear.Out.PLAIN)
-      }
+      // The filter may only add, never remove: it averaged thin limbs (a raised forearm, a few
+      // px wide) with the background below the threshold and erased them. So a pixel is body if
+      // the guided result or the plain mask says so — the filter still adds detail.
+      upsampler.resample(mask, s, Bilinear.Out.SIGMOID)
+      System.arraycopy(s, 0, plain, 0, s.size)
+      filter.apply(s)
+      val pl = plain
+      parallelFor(h) { y -> for (x in 0 until w) { val q = y * w + x; s[q] = maxOf(s[q], pl[q]) - 0.5f } }
     }
 
     // Fill: where two dancers overlap, the stronger mask wins. The masks cannot say who is in

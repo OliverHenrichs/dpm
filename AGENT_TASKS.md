@@ -1587,13 +1587,17 @@ frames, 2 re-anchors; one dancer, 13.4 s, 0.49 s/frame, found in all 400 frames,
 the start. Java heap sat at its 256 MB cap during an earlier run while the system killed other
 apps — watch it on clips near 30 s.
 
+**Debug options removed** (2026-09-26): the tuning is now constants in the pipeline —
+`FP32_GRAPHS = {encode}` (EdgeTamTracker), `TRACK_EVERY = 2` and guided edges (EdgeTamSegmenter)
+— and the per-graph CPU forcing, the frame cap, the kept transcode and the encoder-input dump are
+gone. Dev builds still log each run's per-frame stats (`[deidentify]` chunks). Replaying a phone
+run on the desktop replica needs its transcode, so that means temporarily re-adding the keep.
+
 **Open:**
 - **iOS**: the native module is Android-only (Vision person segmentation or a Core ML EdgeTAM port
   would be the route; needs a Mac/EAS build). Today the editor button is simply absent there.
 - **Consent UI and a remote provider** (e.g. Viggle): `runDeidentify` already refuses
   `sendsFootageOffDevice` without a recorded consent; the step that records it does not exist.
-- Remaining debug options in the native module: the GPU/CPU placement and fp32 overrides, the kept
-  transcode, the encoder dump. `onDeviceTracking.ts` still exports their setters.
 - A job lives only as long as the process; if Android kills the app mid-run the job is lost (the
   original video is untouched). A foreground service would fix it.
 - A banner line for a job in another list is plain text; opening would need switching lists.
