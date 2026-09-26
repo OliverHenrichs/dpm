@@ -62,6 +62,7 @@ function setup(listOverrides: Partial<IPatternList> = {}) {
 const startJob = (listId: string, provider = fakeProvider()) =>
   act(() =>
     jobs.start({
+      kind: "deidentify",
       listId,
       patternName: "Sugar Push",
       provider,

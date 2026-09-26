@@ -25,7 +25,7 @@ data class TranscodeResult(val durationMs: Long)
 
 /**
  * Stage A: cut [startSeconds, endSeconds) — never longer than [maxSeconds] — and scale the short
- * side to [shortSide], as H.264.
+ * side to [shortSide], as H.264. A [shortSide] of 0 keeps the source's size (plain shortening).
  */
 class Transcoder(private val context: Context) {
   suspend fun run(
@@ -52,7 +52,12 @@ class Transcoder(private val context: Context) {
       .build()
     val edited = EditedMediaItem.Builder(mediaItem)
       .setRemoveAudio(removeAudio)
-      .setEffects(Effects(listOf(), listOf(Presentation.createForShortSide(shortSide))))
+      .setEffects(
+        Effects(
+          listOf(),
+          if (shortSide > 0) listOf(Presentation.createForShortSide(shortSide)) else listOf(),
+        )
+      )
       .build()
 
     suspendCancellableCoroutine { cont ->

@@ -6,7 +6,11 @@ import {
 } from "@/src/pattern/data/PatternListStorage";
 import { persistVideo } from "@/src/pattern/data/videoFiles";
 import { generateUUID } from "@/src/pattern/types/PatternType";
-import { IVideoReference } from "@/src/pattern/types/IPatternList";
+import {
+  IGeneratedVideo,
+  IVideoReference,
+} from "@/src/pattern/types/IPatternList";
+import { shortenVideo, TrimRequest } from "@/src/deidentify/shortenVideo";
 import {
   DeidentifyProvider,
   DeidentifyRequest,
@@ -19,8 +23,11 @@ import {
 
 export type JobStatus = "queued" | "running" | "done" | "failed";
 
+export type JobKind = "deidentify" | "shorten";
+
 export type DeidentifyJob = {
   id: string;
+  kind: JobKind;
   listId: string;
   /** For the progress line only; the job finds its video by [sourceUri]. */
   patternName: string;
@@ -31,13 +38,26 @@ export type DeidentifyJob = {
   error?: string;
 };
 
-export type StartJob = {
+type JobTarget = {
   listId: string;
   patternName: string;
-  provider: DeidentifyProvider;
-  request: DeidentifyRequest;
-  consent?: Consent;
 };
+
+export type StartJob = JobTarget &
+  (
+    | {
+        kind: "deidentify";
+        provider: DeidentifyProvider;
+        request: DeidentifyRequest;
+        consent?: Consent;
+      }
+    | {
+        kind: "shorten";
+        request: TrimRequest;
+        /** Provenance of the source, carried over: a shortened silhouette is still one. */
+        generated?: IGeneratedVideo;
+      }
+  );
 
 /**
  * Puts a finished video into the list through whoever holds it in memory. Returns false when
@@ -50,7 +70,7 @@ export type AttachHandler = (
 ) => Promise<boolean>;
 
 /**
- * De-identification jobs, held outside React on purpose. Android can destroy the activity while
+ * Video jobs — de-identifying or shortening a pattern's video — held outside React on purpose. Android can destroy the activity while
  * the process — and the native run — carries on; React then mounts a fresh tree. Jobs living in
  * component state were lost with the old tree, while their run kept going and later wrote the
  * old tree's stale pattern snapshot back. Here they survive a remount, the queue stays serial
@@ -97,6 +117,7 @@ export const jobStore = {
       ...jobs,
       {
         id,
+        kind: job.kind,
         listId: job.listId,
         patternName: job.patternName,
         sourceUri: job.request.sourceUri,
@@ -134,27 +155,65 @@ async function attach(listId: string, oldUri: string, ref: IVideoReference) {
   }
 }
 
+/**
+ * Dev builds log each run's stats for the desktop replica (scratchpad/phone_replica.py). logcat
+ * cuts lines at ~4000 characters and the per-frame diagnostics are longer, so they go out in
+ * numbered chunks that `grep '\[deidentify\]'` can reassemble.
+ */
+function logStats(outcome: unknown) {
+  if (!__DEV__) return;
+  const json = JSON.stringify(outcome);
+  const size = 3000;
+  const parts = Math.ceil(json.length / size);
+  for (let i = 0; i < parts; i++) {
+    console.log(
+      `[deidentify] ${i + 1}/${parts} ${json.slice(i * size, (i + 1) * size)}`,
+    );
+  }
+}
+
+/** Runs the job's pass; returns the cache URI of the result and its provenance. */
+async function process(
+  id: string,
+  job: StartJob,
+): Promise<{ uri: string; generated?: IGeneratedVideo }> {
+  const onProgress = (fraction: number) => patch(id, { progress: fraction });
+  if (job.kind === "shorten") {
+    const uri = await shortenVideo(job.request, onProgress);
+    return { uri, generated: job.generated };
+  }
+  const outcome = await runDeidentify(
+    job.provider,
+    job.request,
+    ({ fraction }) => onProgress(fraction),
+    job.consent,
+  );
+  logStats(outcome);
+  return {
+    uri: outcome.uri,
+    generated: { method: job.provider.id, createdAt: Date.now() },
+  };
+}
+
 async function run(id: string, job: StartJob) {
   patch(id, { status: "running" });
   try {
     const list = await getPatternListById(job.listId);
     if (list?.readonly) throw new Error("This list is read-only");
-    const outcome = await runDeidentify(
-      job.provider,
-      job.request,
-      ({ fraction }) => patch(id, { progress: fraction }),
-      job.consent,
+    const { uri, generated } = await process(id, job);
+    const stored = await persistVideo(
+      uri,
+      job.kind === "shorten" ? "shortened" : "deidentified",
     );
-    const stored = await persistVideo(outcome.uri, "deidentified");
     try {
-      new File(outcome.uri).delete(); // the cache copy
+      new File(uri).delete(); // the cache copy
     } catch {
       // best effort — the cache is the OS's to clear anyway
     }
     await attach(job.listId, job.request.sourceUri, {
       type: "local",
       value: stored,
-      generated: { method: job.provider.id, createdAt: Date.now() },
+      ...(generated && { generated }),
     });
     patch(id, { status: "done", progress: 1 });
   } catch (e) {

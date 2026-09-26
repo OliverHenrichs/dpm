@@ -39,12 +39,40 @@ jest.mock("@/src/deidentify/providers/allProviders", () => ({
   },
 }));
 
-// The real panel needs expo-video; the test only needs to see which video it was opened on.
-jest.mock("@/src/deidentify/components/DeidentifyTrimPanel", () => ({
+// The native module is absent under jest; stand in for the cut.
+jest.mock("@/src/deidentify/shortenVideo", () => ({
+  canShortenVideos: () => true,
+  shortenVideo: jest.fn(async () => "file:///cache/deidentified-out.mp4"),
+}));
+
+// The real panel needs expo-video; this one shows which video it was opened on and offers
+// the two hand-overs as plain buttons.
+jest.mock("@/src/deidentify/components/VideoEditPanel", () => ({
   __esModule: true,
-  default: ({ sourceUri }: { sourceUri: string }) => {
+  default: ({
+    sourceUri,
+    providers,
+    onShorten,
+    onDeidentify,
+  }: {
+    sourceUri: string;
+    providers: unknown[];
+    onShorten: (r: object) => void;
+    onDeidentify: (p: unknown, r: object) => void;
+  }) => {
     const { Text: MockText } = jest.requireActual("react-native");
-    return <MockText>{`trim ${sourceUri}`}</MockText>;
+    const window = { sourceUri, startSeconds: 1, endSeconds: 4 };
+    return (
+      <>
+        <MockText>{`trim ${sourceUri}`}</MockText>
+        <MockText onPress={() => onShorten(window)}>mock shorten</MockText>
+        {providers.length > 0 && (
+          <MockText onPress={() => onDeidentify(providers[0], window)}>
+            mock deidentify
+          </MockText>
+        )}
+      </>
+    );
   },
 }));
 
@@ -72,7 +100,7 @@ function renderForm(existing?: IPattern, readonly = false) {
   return { list, saved: () => onAccepted.mock.calls.at(-1)![0] };
 }
 
-const deidentifyButton = () => screen.findByLabelText("De-identify a video");
+const editButton = () => screen.findByLabelText("Edit a video");
 
 beforeEach(() => {
   mockedPicker.mockResolvedValue({ canceled: true } as never);
@@ -83,7 +111,7 @@ afterEach(async () => {
   clearReplacements();
 });
 
-describe("EditPatternForm — de-identifying a video", () => {
+describe("EditPatternForm — editing a video", () => {
   it("offers the pattern's own video, and opens the trim step on it", async () => {
     renderForm(
       createTestPattern(TYPE.id, {
@@ -92,7 +120,7 @@ describe("EditPatternForm — de-identifying a video", () => {
       }),
     );
 
-    fireEvent.press(await deidentifyButton());
+    fireEvent.press(await editButton());
     fireEvent.press(await screen.findByLabelText("Video 1"));
 
     expect(await screen.findByText(`trim ${SOURCE}`)).toBeOnTheScreen();
@@ -106,7 +134,7 @@ describe("EditPatternForm — de-identifying a video", () => {
     } as never);
     const { saved } = renderForm();
 
-    fireEvent.press(await deidentifyButton());
+    fireEvent.press(await editButton());
 
     expect(
       await screen.findByText(/^trim file:\/\/\/document\//),
@@ -126,10 +154,11 @@ describe("EditPatternForm — de-identifying a video", () => {
         videoRefs: [{ type: "local", value: SOURCE }],
       }),
     );
-    await deidentifyButton();
+    await editButton();
 
     await act(async () => {
       jobStore.start({
+        kind: "deidentify",
         listId: list.id,
         patternName: "Whip",
         provider: mockProvider,
@@ -140,6 +169,53 @@ describe("EditPatternForm — de-identifying a video", () => {
 
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() => expect(saved().videoRefs[0].generated).toBeDefined());
+  });
+
+  it("shortens a video as a background job that replaces it in the draft", async () => {
+    const { saved } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        name: "Whip",
+        videoRefs: [{ type: "local", value: SOURCE }],
+      }),
+    );
+
+    fireEvent.press(await editButton());
+    fireEvent.press(await screen.findByLabelText("Video 1"));
+    fireEvent.press(await screen.findByText("mock shorten"));
+
+    await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+    expect(jobStore.getJobs()[0].kind).toBe("shorten");
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(saved().videoRefs[0].value).toMatch(
+        /^file:\/\/\/document\/shortened-/,
+      ),
+    );
+    // Shortening keeps footage as it was: no provenance appears.
+    expect(saved().videoRefs[0].generated).toBeUndefined();
+  });
+
+  it("only shortens a video that is already de-identified, keeping its provenance", async () => {
+    const generated = { method: "on-device-tracking", createdAt: 1 };
+    const { saved } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        videoRefs: [{ type: "local", value: SOURCE, generated }],
+      }),
+    );
+
+    fireEvent.press(await editButton());
+    fireEvent.press(await screen.findByLabelText("Video 1"));
+    await screen.findByText("mock shorten");
+    expect(screen.queryByText("mock deidentify")).toBeNull();
+
+    fireEvent.press(screen.getByText("mock shorten"));
+    await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(saved().videoRefs[0].generated).toEqual(generated),
+    );
   });
 
   it("is not offered on a read-only list", async () => {
@@ -153,7 +229,7 @@ describe("EditPatternForm — de-identifying a video", () => {
 
     await screen.findByLabelText("Add");
     await waitFor(() =>
-      expect(screen.queryByLabelText("De-identify a video")).toBeNull(),
+      expect(screen.queryByLabelText("Edit a video")).toBeNull(),
     );
   });
 });

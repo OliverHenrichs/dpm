@@ -26,8 +26,6 @@ import PatternListExportModal from "@/src/pattern/data/components/PatternListExp
 import PatternListImportModal from "@/src/pattern/data/components/PatternListImportModal";
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
 import AppDialog from "@/src/common/components/AppDialog";
-import { isDeidentifyAvailable } from "@/modules/video-deidentify";
-import DeidentifySpikePanel from "@/src/settings/components/DeidentifySpikePanel";
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -148,7 +146,6 @@ const SettingsScreen: React.FC = () => {
         )}
 
         {/* SPIKE (L3): dev-only, not for merge. */}
-        {__DEV__ && isDeidentifyAvailable && <DeidentifySpikePanel />}
       </ScrollView>
 
       <LanguagePickerBottomSheet

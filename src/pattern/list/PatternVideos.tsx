@@ -25,8 +25,8 @@ export type PatternVideosProps = {
   thumbnails: string[];
   onAddVideo: () => void;
   onRemoveVideo: (index: number) => void;
-  /** Offers de-identifying a video next to '+'; omitted where that cannot run. */
-  onDeidentify?: () => void;
+  /** Offers editing a video (shorten, de-identify) next to '+'; omitted where that cannot run. */
+  onEditVideo?: () => void;
   palette: Record<PaletteColor, string>;
   disabled?: boolean;
 };
@@ -36,7 +36,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   thumbnails,
   onAddVideo,
   onRemoveVideo,
-  onDeidentify,
+  onEditVideo,
   palette,
   disabled = false,
 }) => {
@@ -127,15 +127,15 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
         </ScrollView>
       </View>
       <View style={styles.addButtonContainer}>
-        {onDeidentify && (
+        {onEditVideo && (
           <TouchableOpacity
-            onPress={onDeidentify}
+            onPress={onEditVideo}
             style={styles.iconButton}
             accessibilityRole="button"
-            accessibilityLabel={t("deidentifyVideoA11y")}
+            accessibilityLabel={t("videoEditA11y")}
           >
             <Icon
-              name="incognito-circle"
+              name="movie-edit"
               size={28}
               color={palette[PaletteColor.Accent]}
             />

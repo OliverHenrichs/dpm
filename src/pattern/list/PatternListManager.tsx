@@ -14,7 +14,7 @@ import {
   NewModifier,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
-import PatternList from "@/src/pattern/list/PatternList";
+import PatternList, { VideoSource } from "@/src/pattern/list/PatternList";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
@@ -32,8 +32,8 @@ import DeidentifyModal, {
   DeidentifyTarget,
 } from "@/src/deidentify/components/DeidentifyModal";
 import DeidentifyJobsBanner from "@/src/deidentify/components/DeidentifyJobsBanner";
-import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
-import { availableProviders } from "@/src/deidentify/providers/registry";
+import { canShortenVideos } from "@/src/deidentify/shortenVideo";
+import { jobStore } from "@/src/deidentify/jobs/jobStore";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
@@ -73,6 +73,7 @@ const PatternListManager = () => {
   >(undefined);
   const [deidentifyOffer, setDeidentifyOffer] =
     useState<DeidentifyTarget | null>(null);
+  const [cameraDenied, setCameraDenied] = useState(false);
   const [deidentifyTarget, setDeidentifyTarget] =
     useState<DeidentifyTarget | null>(null);
   const styles = getStyles(palette);
@@ -93,7 +94,9 @@ const PatternListManager = () => {
       activeList &&
       seeded &&
       pattern.videoRefs.some((v) => v.value === seeded) &&
-      availableProviders(ALL_PROVIDERS).length > 0
+      // Already being edited from inside the form — asking again would be redundant.
+      !jobStore.getJobs().some((j) => j.sourceUri === seeded) &&
+      canShortenVideos()
     ) {
       setDeidentifyOffer({
         listId: activeList.id,
@@ -109,12 +112,24 @@ const PatternListManager = () => {
     setInitialVideos(undefined);
   };
 
-  const handleAddFromVideo = async () => {
+  const handleAddFromVideo = async (source: VideoSource) => {
     if (isReadonly) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["videos"],
-      allowsMultipleSelection: false,
-    });
+    if (source === "camera") {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        setCameraDenied(true);
+        return;
+      }
+    }
+    // The camera hands back the recording once it is stopped; it lands in the cache like a
+    // library pick, and persistPickedVideos moves either into the app's documents.
+    const result =
+      source === "camera"
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ["videos"] })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["videos"],
+            allowsMultipleSelection: false,
+          });
     if (result.canceled || result.assets.length === 0) return;
     const [value] = await persistPickedVideos([result.assets[0].uri]);
     setInitialVideos([{ type: "local", value }]);
@@ -258,15 +273,21 @@ const PatternListManager = () => {
 
         <AppDialog
           visible={deidentifyOffer !== null}
-          title={t("deidentifyNowTitle")}
-          message={t("deidentifyNowMessage")}
-          closeLabel={t("deidentifyLater")}
+          title={t("videoEditNowTitle")}
+          message={t("videoEditNowMessage")}
+          closeLabel={t("videoEditLater")}
           onClose={() => setDeidentifyOffer(null)}
-          confirmLabel={t("deidentifyNowYes")}
+          confirmLabel={t("videoEditNowYes")}
           onConfirm={() => {
             setDeidentifyTarget(deidentifyOffer);
             setDeidentifyOffer(null);
           }}
+        />
+        <AppDialog
+          visible={cameraDenied}
+          title={t("cameraPermissionDenied")}
+          message={t("cameraPermissionDeniedHint")}
+          onClose={() => setCameraDenied(false)}
         />
         <DeidentifyModal
           target={deidentifyTarget}

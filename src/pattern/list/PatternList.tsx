@@ -25,6 +25,9 @@ import PatternListItem from "./PatternListItem";
 import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
 
+/** Where "a pattern from a video" takes its video from. */
+export type VideoSource = "library" | "camera";
+
 type PatternListProps = {
   patterns: IPattern[];
   patternTypes?: PatternType[];
@@ -38,7 +41,7 @@ type PatternListProps = {
    * Creating a pattern from a video. When given, '+' opens a menu offering it next to a plain
    * new pattern; without it, '+' adds a pattern directly.
    */
-  onAddFromVideo?: () => void;
+  onAddFromVideo?: (source: VideoSource) => void;
   onEdit: (pattern: IPattern) => void;
 };
 
@@ -160,7 +163,13 @@ const PatternList: React.FC<PatternListProps> = (props) => {
                 key: "video",
                 label: t("addPatternFromVideo"),
                 icon: "video-plus-outline",
-                action: props.onAddFromVideo,
+                action: () => props.onAddFromVideo?.("library"),
+              },
+              {
+                key: "camera",
+                label: t("addPatternRecordVideo"),
+                icon: "video-outline",
+                action: () => props.onAddFromVideo?.("camera"),
               },
             ].map(({ key, label, icon, action }) => (
               <TouchableOpacity

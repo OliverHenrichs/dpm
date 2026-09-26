@@ -17,6 +17,7 @@ class DeidentifyOptions : Record {
   @Field val endSeconds: Double = -1.0
   /** Hard cap on the processed length, applied after the window. */
   @Field val maxSeconds: Double = 30.0
+  /** Target short side in pixels; 0 keeps the source's size. */
   @Field val height: Int = 720
   /** "passthrough" (trim + downscale only) or "silhouette". */
   @Field val mode: String = "passthrough"

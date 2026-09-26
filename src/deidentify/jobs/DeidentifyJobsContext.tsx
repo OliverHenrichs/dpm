@@ -13,7 +13,7 @@ import {
 } from "@/src/deidentify/jobs/jobStore";
 import { replaceVideoInPattern } from "@/src/deidentify/jobs/replaceVideo";
 
-export type { DeidentifyJob, JobStatus, StartJob } from "./jobStore";
+export type { DeidentifyJob, JobKind, JobStatus, StartJob } from "./jobStore";
 
 const KEEP_AWAKE_TAG = "deidentify";
 

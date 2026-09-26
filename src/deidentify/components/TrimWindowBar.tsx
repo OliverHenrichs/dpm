@@ -89,12 +89,16 @@ const TrimWindowBar: React.FC<Props> = ({
     });
 
   const length = window.end - window.start;
-  const label = t("trimSelection", {
+  const range = {
     start: formatSeconds(window.start),
     end: formatSeconds(window.end),
     length: Math.round(length),
-    max: limits.max,
-  });
+  };
+  // A cap below the clip's length is worth stating; "of max. 42 s" on a 42 s clip is not.
+  const label =
+    limits.max < limits.duration
+      ? t("trimSelection", { ...range, max: limits.max })
+      : t("trimSelectionFree", range);
 
   const nudge = (delta: number) => {
     const next = moveWindow(window, delta, limits);

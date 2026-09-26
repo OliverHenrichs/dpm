@@ -7,7 +7,7 @@ export type DeidentifyOptions = {
   endSeconds?: number;
   /** Hard cap on the processed length, applied after the window. */
   maxSeconds?: number;
-  /** Target short side in pixels. */
+  /** Target short side in pixels; 0 keeps the source's size (passthrough only). */
   height?: number;
   mode?: DeidentifyMode;
   segmenter?: DeidentifySegmenter;

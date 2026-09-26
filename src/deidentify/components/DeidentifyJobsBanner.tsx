@@ -23,18 +23,24 @@ const DeidentifyJobsBanner: React.FC = () => {
 
   const line = (job: DeidentifyJob) => {
     const name = job.patternName;
+    const shorten = job.kind === "shorten";
     switch (job.status) {
       case "queued":
-        return t("deidentifyJobQueued", { name });
+        return t(shorten ? "shortenJobQueued" : "deidentifyJobQueued", {
+          name,
+        });
       case "running":
-        return t("deidentifyJobRunning", {
+        return t(shorten ? "shortenJobRunning" : "deidentifyJobRunning", {
           name,
           percent: Math.round(job.progress * 100),
         });
       case "done":
-        return t("deidentifyJobDone", { name });
+        return t(shorten ? "shortenJobDone" : "deidentifyJobDone", { name });
       case "failed":
-        return t("deidentifyJobFailed", { name, error: job.error ?? "" });
+        return t(shorten ? "shortenJobFailed" : "deidentifyJobFailed", {
+          name,
+          error: job.error ?? "",
+        });
     }
   };
   const busy = jobs.some(

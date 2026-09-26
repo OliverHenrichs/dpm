@@ -51,10 +51,13 @@ export default (): ExpoConfig => ({
     [
       "expo-camera",
       {
+        // Both plugins write these iOS strings and this one's win (listed first, its mods run
+        // last), so they carry both uses: QR scanning here, recording in expo-image-picker.
         cameraPermission:
-          "Allow $(PRODUCT_NAME) to use the camera to scan a pattern list share code.",
-        // QR scanning only — no audio is ever recorded.
-        microphonePermission: false,
+          "Allow $(PRODUCT_NAME) to use the camera to scan a pattern list share code or record a video for a pattern.",
+        microphonePermission:
+          "Allow $(PRODUCT_NAME) to record sound with the videos you take for a pattern.",
+        // Android's system camera app records the audio itself; the app never needs it.
         recordAudioAndroid: false,
       },
     ],
@@ -63,8 +66,13 @@ export default (): ExpoConfig => ({
       {
         photosPermission:
           "Allow $(PRODUCT_NAME) to access your videos so you can attach them to a pattern.",
-        // Videos are only ever picked from the library, never recorded in-app.
-        microphonePermission: false,
+        cameraPermission:
+          "Allow $(PRODUCT_NAME) to use the camera to scan a pattern list share code or record a video for a pattern.",
+        // "Record a video" hands over to the system camera. On iOS that capture records sound
+        // and needs this string, or iOS terminates the app. Android's camera app records the
+        // audio itself; RECORD_AUDIO stays blocked by expo-camera's recordAudioAndroid: false.
+        microphonePermission:
+          "Allow $(PRODUCT_NAME) to record sound with the videos you take for a pattern.",
       },
     ],
     [

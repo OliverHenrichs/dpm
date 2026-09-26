@@ -7,31 +7,36 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import DeidentifyTrimPanel from "@/src/deidentify/components/DeidentifyTrimPanel";
-import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
+import VideoEditPanel from "@/src/deidentify/components/VideoEditPanel";
+import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
 import { availableProviders } from "@/src/deidentify/providers/registry";
+import { IGeneratedVideo } from "@/src/pattern/types/IPatternList";
 
 export type DeidentifyTarget = {
   listId: string;
   /** For the progress line; the job finds the video by [sourceUri]. */
   patternName: string;
   sourceUri: string;
+  /** Set when the video is already de-identified: it can then only be shortened. */
+  generated?: IGeneratedVideo;
 };
 
 type Props = {
-  /** What to de-identify; null hides the modal. */
+  /** The video to edit; null hides the modal. */
   target: DeidentifyTarget | null;
   onClose: () => void;
 };
 
 /**
- * Trim, tap the dancers, start. The run itself becomes a background job (it takes minutes), so
- * this closes as soon as it is started; the job replaces the video in the pattern when done.
+ * Edit a pattern's video — shorten it, or de-identify part of it. Either runs as a background
+ * job (de-identifying takes minutes), so this closes as soon as one is started; the job
+ * replaces the video in the pattern when done.
  */
 const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
   const { t } = useTranslation();
@@ -47,47 +52,65 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.title} numberOfLines={1}>
-              {t("deidentifyTitle")}
-              {target ? ` — ${target.patternName}` : ""}
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel={t("cancel")}
-            >
-              <Text style={styles.close}>✕</Text>
-            </TouchableOpacity>
+      {/* A Modal renders outside the drawer's gesture root, and without one of its own the
+          trim bar's pan never activates on Android. See src/pattern/graph/AGENTS.md. */}
+      <GestureHandlerRootView style={styles.root}>
+        <View style={styles.overlay}>
+          <View style={styles.card}>
+            <View style={styles.header}>
+              <Text style={styles.title} numberOfLines={1}>
+                {t("videoEditTitle")}
+                {target ? ` — ${target.patternName}` : ""}
+              </Text>
+              <TouchableOpacity
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel={t("cancel")}
+              >
+                <Text style={styles.close}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {target && (
+                <VideoEditPanel
+                  key={target.sourceUri}
+                  sourceUri={target.sourceUri}
+                  providers={
+                    target.generated ? [] : availableProviders(ALL_PROVIDERS)
+                  }
+                  onShorten={(request) => {
+                    start({
+                      kind: "shorten",
+                      listId: target.listId,
+                      patternName: target.patternName,
+                      request,
+                      generated: target.generated,
+                    });
+                    onClose();
+                  }}
+                  onDeidentify={(provider, request) => {
+                    start({
+                      kind: "deidentify",
+                      listId: target.listId,
+                      patternName: target.patternName,
+                      provider,
+                      request,
+                    });
+                    onClose();
+                  }}
+                />
+              )}
+            </ScrollView>
           </View>
-          <ScrollView>
-            {target && (
-              <DeidentifyTrimPanel
-                key={target.sourceUri}
-                sourceUri={target.sourceUri}
-                providers={availableProviders(ALL_PROVIDERS)}
-                onRun={(provider, request) => {
-                  start({
-                    listId: target.listId,
-                    patternName: target.patternName,
-                    provider,
-                    request,
-                  });
-                  onClose();
-                }}
-              />
-            )}
-          </ScrollView>
         </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 };
 
 const getStyles = (palette: Record<PaletteColor, string>) =>
   StyleSheet.create({
+    root: { flex: 1 },
     overlay: {
       flex: 1,
       justifyContent: "flex-end",

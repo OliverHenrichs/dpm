@@ -36,8 +36,7 @@ import DeidentifyModal, {
 import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
-import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
-import { availableProviders } from "@/src/deidentify/providers/registry";
+import { canShortenVideos } from "@/src/deidentify/shortenVideo";
 import {
   getCommon2ndOrderLabel,
   getCommonBorder,
@@ -222,16 +221,17 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     }
   };
 
-  // De-identifying: one of this draft's own videos, or one picked from the gallery (added to
-  // the draft first). The run is a background job; see DeidentifyJobsContext.
-  const canDeidentify =
+  // Editing a video (shorten, de-identify): one of this draft's own local videos, or one
+  // picked from the gallery (added to the draft first). The run is a background job; see
+  // src/deidentify/jobs/jobStore.ts.
+  const canEditVideos =
     !!activeList &&
     !activeList.readonly &&
     !isActiveVideoReadonly &&
-    availableProviders(ALL_PROVIDERS).length > 0;
-  const deidentifiable = activeVideoRefs
+    canShortenVideos();
+  const editable = activeVideoRefs
     .map((ref, index) => ({ ref, index }))
-    .filter(({ ref }) => ref.type === "local" && !ref.generated);
+    .filter(({ ref }) => ref.type === "local");
   const draftUris = new Set(
     [
       ...(newPattern.videoRefs ?? []),
@@ -242,13 +242,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     (j) => draftUris.has(j.sourceUri) && j.status !== "done",
   );
 
-  const openDeidentify = (sourceUri: string) => {
+  const openEditor = (ref: IVideoReference) => {
     if (!activeList) return;
     setShowDeidentifyPicker(false);
     setDeidentifyTarget({
       listId: activeList.id,
       patternName: newPattern.name.trim() || t("addPatternNew"),
-      sourceUri,
+      sourceUri: ref.value,
+      ...(ref.generated && { generated: ref.generated }),
     });
   };
 
@@ -261,12 +262,13 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     });
     if (result.canceled || result.assets.length === 0) return;
     const [value] = await persistPickedVideos([result.assets[0].uri]);
-    applyVideoAdd([{ type: "local", value }]);
-    openDeidentify(value);
+    const ref: IVideoReference = { type: "local", value };
+    applyVideoAdd([ref]);
+    openEditor(ref);
   };
 
-  const handleDeidentify = () => {
-    if (deidentifiable.length === 0) void pickForDeidentify();
+  const handleEditVideo = () => {
+    if (editable.length === 0) void pickForDeidentify();
     else setShowDeidentifyPicker(true);
   };
 
@@ -511,16 +513,16 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         thumbnails={thumbnails}
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
-        onDeidentify={canDeidentify ? handleDeidentify : undefined}
+        onEditVideo={canEditVideos ? handleEditVideo : undefined}
         palette={palette}
         disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
       />
       {draftJobs.map((job) => (
         <Text key={job.id} style={styles.jobLine}>
           {job.status === "queued"
-            ? t("deidentifyInFormQueued")
+            ? t("videoJobInFormQueued")
             : job.status === "running"
-              ? t("deidentifyInFormRunning", {
+              ? t("videoJobInFormRunning", {
                   percent: Math.round(job.progress * 100),
                 })
               : t("deidentifyFailed", { message: job.error ?? "" })}
@@ -535,10 +537,10 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         maxHeight="50%"
       >
         <View style={styles.deidentifyChoices}>
-          {deidentifiable.map(({ ref, index }) => (
+          {editable.map(({ ref, index }) => (
             <TouchableOpacity
               key={ref.value}
-              onPress={() => openDeidentify(ref.value)}
+              onPress={() => openEditor(ref)}
               accessibilityRole="button"
               accessibilityLabel={t("deidentifyVideoN", { n: index + 1 })}
             >

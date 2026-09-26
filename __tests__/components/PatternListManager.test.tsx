@@ -2,6 +2,7 @@ import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
+import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
 import PatternListManager from "@/src/pattern/list/PatternListManager";
 import {
@@ -22,6 +23,21 @@ import {
   waitFor,
 } from "@/utils/renderWithProviders";
 
+// The video editor needs the native module; pretend it is there so the post-save offer shows.
+jest.mock("@/src/deidentify/shortenVideo", () => ({
+  canShortenVideos: () => true,
+  shortenVideo: jest.fn(async () => {
+    throw new Error("no native module");
+  }),
+}));
+
+// Pin where the picked video lands, so a test can start a job on it.
+const MOCK_SEEDED = "file:///document/video-seeded.mp4";
+jest.mock("@/src/pattern/data/videoFiles", () => ({
+  persistPickedVideos: jest.fn(async () => [MOCK_SEEDED]),
+  persistVideo: jest.fn(async (uri: string) => uri),
+}));
+
 jest.mock("@/src/firebase/FirebaseListService", () => ({
   syncPublishedList: jest.fn(),
   subscribeToSharedList: jest.fn(),
@@ -30,6 +46,8 @@ jest.mock("@/src/firebase/FirebaseListService", () => ({
 beforeEach(() => {
   (subscribeToSharedList as jest.Mock).mockReturnValue(() => {});
 });
+
+afterEach(() => jobStore.reset());
 
 const TYPE = createTestPatternType({ slug: "push" });
 
@@ -217,6 +235,87 @@ describe("PatternListManager", () => {
           /^file:\/\/\/document\/video-/,
         );
       });
+    });
+
+    const createFromVideo = async () => {
+      seedBinaryFile("file:///cache/ImagePicker/clip.mp4", Buffer.from([1]));
+      mockedPicker.mockResolvedValue({
+        canceled: false,
+        assets: [{ uri: "file:///cache/ImagePicker/clip.mp4" }],
+      } as never);
+      const rendered = await renderManager([]);
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByText("From a video"));
+      fireEvent.changeText(
+        await screen.findByPlaceholderText("Pattern Name"),
+        "Sugar Push",
+      );
+      return rendered;
+    };
+
+    it("offers to edit the video once the pattern is saved", async () => {
+      await createFromVideo();
+
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(await screen.findByText("Edit the video?")).toBeOnTheScreen();
+    });
+
+    it("does not ask again when the video is already being edited from the form", async () => {
+      const { list } = await createFromVideo();
+      // What starting a job inside the form amounts to: a job on the seeded video.
+      jobStore.start({
+        kind: "shorten",
+        listId: list.id,
+        patternName: "Sugar Push",
+        request: { sourceUri: MOCK_SEEDED, startSeconds: 0, endSeconds: 1 },
+      });
+
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () =>
+        expect(await storedPatterns(list.id)).toHaveLength(1),
+      );
+      expect(screen.queryByText("Edit the video?")).toBeNull();
+    });
+
+    it("records a video with the camera and seeds the new pattern with it", async () => {
+      (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValueOnce({
+        canceled: false,
+        assets: [{ uri: "file:///cache/Camera/rec.mp4" }],
+      });
+      const { list } = await renderManager([]);
+
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByText("Record a video"));
+      fireEvent.changeText(
+        await screen.findByPlaceholderText("Pattern Name"),
+        "Sugar Push",
+      );
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () =>
+        expect((await storedPatterns(list.id))[0]?.videoRefs).toEqual([
+          { type: "local", value: MOCK_SEEDED },
+        ]),
+      );
+      expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
+    });
+
+    it("explains a denied camera instead of opening the form", async () => {
+      (
+        ImagePicker.requestCameraPermissionsAsync as jest.Mock
+      ).mockResolvedValueOnce({ granted: false });
+      await renderManager([]);
+
+      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByText("Record a video"));
+
+      expect(
+        await screen.findByText("Camera permission denied"),
+      ).toBeOnTheScreen();
+      expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
+      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
     });
 
     it("opens nothing when the picker is cancelled", async () => {
