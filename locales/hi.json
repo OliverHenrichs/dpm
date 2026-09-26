@@ -255,5 +255,6 @@
   "addPatternRecordVideo": "वीडियो रिकॉर्ड करें",
   "cameraPermissionDeniedHint": "किसी पैटर्न के लिए वीडियो रिकॉर्ड करने हेतु फ़ोन की सेटिंग में कैमरा एक्सेस की अनुमति दें।",
   "deidentifyOneDancer": "एक नर्तक",
-  "deidentifyCouple": "एक जोड़ी"
+  "deidentifyCouple": "एक जोड़ी",
+  "videoJobOpenPattern": "पैटर्न खोलता है"
 }

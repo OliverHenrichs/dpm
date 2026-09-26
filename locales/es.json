@@ -255,5 +255,6 @@
   "addPatternRecordVideo": "Grabar un vídeo",
   "cameraPermissionDeniedHint": "Permite el acceso a la cámara en los ajustes del teléfono para grabar un vídeo para una figura.",
   "deidentifyOneDancer": "Un bailarín",
-  "deidentifyCouple": "Una pareja"
+  "deidentifyCouple": "Una pareja",
+  "videoJobOpenPattern": "Abre la figura"
 }

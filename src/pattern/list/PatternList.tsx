@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   ListRenderItemInfo,
@@ -42,6 +42,8 @@ type PatternListProps = {
    * new pattern; without it, '+' adds a pattern directly.
    */
   onAddFromVideo?: (source: VideoSource) => void;
+  /** Scrolls this pattern into view whenever the value changes. */
+  reveal?: { id: number; at: number };
   onEdit: (pattern: IPattern) => void;
 };
 
@@ -73,6 +75,17 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     filter,
   );
   const { sortedPatterns } = usePatternSort(filteredPatterns, sortConfig);
+
+  const listRef = useRef<FlatList<IPattern>>(null);
+  const revealIndex = props.reveal
+    ? sortedPatterns.findIndex((p) => p.id === props.reveal!.id)
+    : -1;
+  useEffect(() => {
+    if (revealIndex < 0) return;
+    listRef.current?.scrollToIndex({ index: revealIndex, viewPosition: 0 });
+    // Only a new reveal scrolls, not every re-sort while one is set.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.reveal]);
 
   const keyExtractor = useCallback(
     (pattern: IPattern) => String(pattern.id),
@@ -120,6 +133,13 @@ const PatternList: React.FC<PatternListProps> = (props) => {
       />
 
       <FlatList
+        ref={listRef}
+        // Rows are not laid out ahead, so a far one first needs an estimated jump.
+        onScrollToIndexFailed={({ index, averageItemLength }) =>
+          listRef.current?.scrollToOffset({
+            offset: index * averageItemLength,
+          })
+        }
         style={styles.scrollView}
         data={sortedPatterns}
         keyExtractor={keyExtractor}

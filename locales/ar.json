@@ -255,5 +255,6 @@
   "addPatternRecordVideo": "تسجيل فيديو",
   "cameraPermissionDeniedHint": "اسمح بالوصول إلى الكاميرا من إعدادات الهاتف لتسجيل فيديو لنمط.",
   "deidentifyOneDancer": "راقص واحد",
-  "deidentifyCouple": "ثنائي"
+  "deidentifyCouple": "ثنائي",
+  "videoJobOpenPattern": "يفتح النمط"
 }

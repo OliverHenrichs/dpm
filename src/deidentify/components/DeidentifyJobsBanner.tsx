@@ -9,11 +9,19 @@ import {
   useDeidentifyJobs,
 } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 
+type Props = {
+  /**
+   * How to open a job's pattern, or undefined when it cannot be found from here (another list,
+   * a pattern never saved). A line with an action is shown as a link.
+   */
+  openAction?: (job: DeidentifyJob) => (() => void) | undefined;
+};
+
 /**
- * Where background de-identification jobs report: one line per job, and a dismiss button once
- * none is still running. Renders nothing when there are no jobs.
+ * Where background video jobs report: one line per job, and a dismiss button once none is
+ * still running. Renders nothing when there are no jobs.
  */
-const DeidentifyJobsBanner: React.FC = () => {
+const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
   const { t } = useTranslation();
   const { colorScheme } = useThemeContext();
   const palette = getPalette(colorScheme);
@@ -49,18 +57,25 @@ const DeidentifyJobsBanner: React.FC = () => {
 
   return (
     <View style={styles.banner} testID="deidentify-jobs">
-      {jobs.map((job) => (
-        <Text
-          key={job.id}
-          style={[
-            styles.line,
-            job.status === "failed" && { color: palette[PaletteColor.Error] },
-            job.status === "done" && { color: palette[PaletteColor.Accent] },
-          ]}
-        >
-          {line(job)}
-        </Text>
-      ))}
+      {jobs.map((job) => {
+        const open = openAction?.(job);
+        return (
+          <Text
+            key={job.id}
+            onPress={open}
+            accessibilityRole={open ? "link" : undefined}
+            accessibilityHint={open ? t("videoJobOpenPattern") : undefined}
+            style={[
+              styles.line,
+              job.status === "failed" && { color: palette[PaletteColor.Error] },
+              job.status === "done" && { color: palette[PaletteColor.Accent] },
+              open && styles.link,
+            ]}
+          >
+            {line(job)}
+          </Text>
+        );
+      })}
       {!busy && (
         <TouchableOpacity
           onPress={dismissFinished}
@@ -86,6 +101,7 @@ const getStyles = (palette: Record<PaletteColor, string>) =>
       backgroundColor: palette[PaletteColor.Surface],
     },
     line: { fontSize: 13, color: palette[PaletteColor.PrimaryText] },
+    link: { textDecorationLine: "underline" },
     dismissButton: {
       ...getCommonButton(palette, palette[PaletteColor.Border]),
       alignSelf: "flex-end",

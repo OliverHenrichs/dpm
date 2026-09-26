@@ -3,6 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
+import { DeidentifyJobsProvider } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import { shortenVideo } from "@/src/deidentify/shortenVideo";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
 import PatternListManager from "@/src/pattern/list/PatternListManager";
 import {
@@ -17,6 +19,7 @@ import {
   createTestPatternType,
 } from "@/utils/testFactories";
 import {
+  act,
   fireEvent,
   renderWithProviders,
   screen,
@@ -70,10 +73,16 @@ async function renderManager(
     patternTypes: [TYPE],
     ...listOverrides,
   });
-  renderWithProviders(<PatternListManager />, {
-    lists: [list],
-    patterns: { [list.id]: patterns },
-  });
+  // With the jobs provider, as in the app: a finished job then updates the loaded patterns.
+  renderWithProviders(
+    <DeidentifyJobsProvider>
+      <PatternListManager />
+    </DeidentifyJobsProvider>,
+    {
+      lists: [list],
+      patterns: { [list.id]: patterns },
+    },
+  );
   // The provider loads storage on mount; wait for the screen to reflect it.
   // Anchor on the sort button: it is present whether or not the list is
   // read-only, and unlike "Pattern List" it appears exactly once (that string
@@ -200,6 +209,50 @@ describe("PatternListManager", () => {
       expect(await storedPatterns(list.id)).toEqual([]);
       // Still showing the form rather than silently discarding the attempt.
       expect(screen.getByPlaceholderText("Pattern Name")).toBeOnTheScreen();
+    });
+  });
+
+  describe("the video jobs banner", () => {
+    const SOURCE = "file:///document/video-a.mp4";
+    const startShorten = (listId: string) =>
+      act(() => {
+        jobStore.start({
+          kind: "shorten",
+          listId,
+          patternName: "Whip",
+          request: { sourceUri: SOURCE, startSeconds: 0, endSeconds: 2 },
+        });
+      });
+
+    it("links a finished job to its pattern, opening it in the list", async () => {
+      (shortenVideo as jest.Mock).mockResolvedValueOnce(
+        "file:///cache/shortened-out.mp4",
+      );
+      const { list } = await renderManager([
+        pattern(1, "Sugar Push"),
+        pattern(2, "Whip", { videoRefs: [{ type: "local", value: SOURCE }] }),
+      ]);
+
+      await startShorten(list.id);
+      const line = await screen.findByText("Whip: shortened video is in place");
+      await waitFor(() => expect(line.props.accessibilityRole).toBe("link"));
+      expect(screen.queryByText(/^Counts/)).toBeNull();
+      fireEvent.press(line);
+
+      // Selecting a row opens its details inline; no row is selected before.
+      expect(await screen.findByText(/^Counts/)).toBeOnTheScreen();
+    });
+
+    it("shows a job whose pattern is not in this list as plain text", async () => {
+      (shortenVideo as jest.Mock).mockResolvedValueOnce(
+        "file:///cache/shortened-out.mp4",
+      );
+      const { list } = await renderManager([pattern(1, "Sugar Push")]);
+
+      await startShorten(list.id);
+      const line = await screen.findByText("Whip: shortened video is in place");
+
+      expect(line.props.accessibilityRole).toBeUndefined();
     });
   });
 

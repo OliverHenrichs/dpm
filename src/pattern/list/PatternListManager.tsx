@@ -33,7 +33,8 @@ import DeidentifyModal, {
 } from "@/src/deidentify/components/DeidentifyModal";
 import DeidentifyJobsBanner from "@/src/deidentify/components/DeidentifyJobsBanner";
 import { canShortenVideos } from "@/src/deidentify/shortenVideo";
-import { jobStore } from "@/src/deidentify/jobs/jobStore";
+import { DeidentifyJob, jobStore } from "@/src/deidentify/jobs/jobStore";
+import { patternHasVideo } from "@/src/deidentify/jobs/replaceVideo";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
@@ -74,6 +75,9 @@ const PatternListManager = () => {
   const [deidentifyOffer, setDeidentifyOffer] =
     useState<DeidentifyTarget | null>(null);
   const [cameraDenied, setCameraDenied] = useState(false);
+  // A pattern to scroll to — set when a job line in the banner is tapped. `at` makes tapping
+  // the same line twice scroll again.
+  const [reveal, setReveal] = useState<{ id: number; at: number }>();
   const [deidentifyTarget, setDeidentifyTarget] =
     useState<DeidentifyTarget | null>(null);
   const styles = getStyles(palette);
@@ -105,6 +109,20 @@ const PatternListManager = () => {
       });
     }
     return accepted;
+  };
+
+  // The banner links a job to its pattern: by the video it produced once done, by the source
+  // until then. Only in the active list — another list's patterns are not loaded here.
+  const openJobPattern = (job: DeidentifyJob) => {
+    if (activeList?.id !== job.listId) return undefined;
+    const uri = job.resultUri ?? job.sourceUri;
+    const pattern = patterns.find((p) => patternHasVideo(p, uri));
+    if (!pattern) return undefined;
+    return () => {
+      setActiveTab("patterns");
+      setSelectedPattern(pattern);
+      setReveal({ id: pattern.id, at: Date.now() });
+    };
   };
 
   const closeAddForm = () => {
@@ -294,7 +312,7 @@ const PatternListManager = () => {
           onClose={() => setDeidentifyTarget(null)}
         />
 
-        <DeidentifyJobsBanner />
+        <DeidentifyJobsBanner openAction={openJobPattern} />
 
         {/* Tab strip */}
         <View style={styles.tabStrip}>
@@ -340,6 +358,7 @@ const PatternListManager = () => {
               onDelete={handleDeletePattern}
               onAdd={() => setIsAddingNew(!isAddingNew)}
               onAddFromVideo={handleAddFromVideo}
+              reveal={reveal}
               onEdit={handleEditPattern}
               selectedPattern={selectedPattern}
             />

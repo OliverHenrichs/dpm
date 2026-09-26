@@ -21,12 +21,8 @@ class DeidentifyOptions : Record {
   @Field val height: Int = 720
   /** "passthrough" (trim + downscale only) or "silhouette". */
   @Field val mode: String = "passthrough"
-  /**
-   * "pose" (MediaPipe PoseLandmarker, per person), "multiclass" (selfie multiclass segmenter),
-   * "deeplab" (DeepLab-v3, general-scene person class) or "edgetam" (EdgeTAM tracking from
-   * [prompts]).
-   */
-  @Field val segmenter: String = "pose"
+  /** "edgetam" (EdgeTAM tracking from [prompts]) — the only one left; see Segmenters.kt. */
+  @Field val segmenter: String = "edgetam"
 
   /** EdgeTAM: one normalised [x, y] point per dancer on the first frame. */
   @Field val prompts: List<List<Double>> = listOf(listOf(0.4, 0.55), listOf(0.6, 0.55))
@@ -137,7 +133,6 @@ class VideoDeidentifyModule : Module() {
         "workWidth" to stats.workWidth,
         "workHeight" to stats.workHeight,
         "avgSegmentMs" to stats.avgSegmentMs,
-        "avgCleanupMs" to stats.avgCleanupMs,
         "avgEncodeMs" to stats.avgEncodeMs,
         "framesByPeopleFound" to stats.framesByPeopleFound.mapKeys { it.key.toString() },
         "transcodedFile" to if (options.keepTranscoded) transcoded.name else "",

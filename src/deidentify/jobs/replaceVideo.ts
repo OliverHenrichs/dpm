@@ -25,6 +25,19 @@ export function replaceVideoInPattern(
   return changed ? { ...pattern, videoRefs, modifierRefs } : pattern;
 }
 
+/** Whether [pattern] references the video at [uri] — its own, or a modifier combination's. */
+export function patternHasVideo(
+  pattern: Pick<IPattern, "videoRefs" | "modifierRefs">,
+  uri: string,
+): boolean {
+  return (
+    (pattern.videoRefs ?? []).some((v) => v.value === uri) ||
+    (pattern.modifierRefs ?? []).some((m) =>
+      m.videoRefs.some((v) => v.value === uri),
+    )
+  );
+}
+
 /**
  * Replacements made by finished jobs, old URI → new reference. An edit form that was open on
  * the pattern while its job finished still holds the old video in its draft; saving it would

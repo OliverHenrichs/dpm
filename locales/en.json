@@ -255,5 +255,6 @@
   "addPatternRecordVideo": "Record a video",
   "cameraPermissionDeniedHint": "Allow camera access in your phone's settings to record a video for a pattern.",
   "deidentifyOneDancer": "One dancer",
-  "deidentifyCouple": "A couple"
+  "deidentifyCouple": "A couple",
+  "videoJobOpenPattern": "Opens the pattern"
 }

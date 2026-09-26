@@ -35,6 +35,8 @@ export type DeidentifyJob = {
   status: JobStatus;
   /** 0..1 while running. */
   progress: number;
+  /** The video that replaced the source, once done — how the job's pattern is found again. */
+  resultUri?: string;
   error?: string;
 };
 
@@ -215,7 +217,7 @@ async function run(id: string, job: StartJob) {
       value: stored,
       ...(generated && { generated }),
     });
-    patch(id, { status: "done", progress: 1 });
+    patch(id, { status: "done", progress: 1, resultUri: stored });
   } catch (e) {
     patch(id, {
       status: "failed",

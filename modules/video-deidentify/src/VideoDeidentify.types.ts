@@ -1,5 +1,5 @@
 export type DeidentifyMode = "passthrough" | "silhouette";
-export type DeidentifySegmenter = "pose" | "multiclass" | "deeplab" | "edgetam";
+export type DeidentifySegmenter = "edgetam";
 
 export type DeidentifyOptions = {
   /** Trim window in the source, in seconds. `endSeconds` defaults to the end of the clip. */
