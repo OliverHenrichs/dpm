@@ -28,6 +28,9 @@ import { usePatternSort } from "./hooks/usePatternSort";
 /** Where "a pattern from a video" takes its video from. */
 export type VideoSource = "library" | "camera";
 
+/** How long a reveal waits for the list to relayout before scrolling anyway. */
+const REVEAL_FALLBACK_MS = 300;
+
 type PatternListProps = {
   patterns: IPattern[];
   patternTypes?: PatternType[];
@@ -80,9 +83,22 @@ const PatternList: React.FC<PatternListProps> = (props) => {
   const revealIndex = props.reveal
     ? sortedPatterns.findIndex((p) => p.id === props.reveal!.id)
     : -1;
+  // Revealing also selects the row, which collapses whichever row was open before. The list
+  // learns the new row heights only from the next layout, so scrolling at once used the old
+  // offsets and overshot when the collapsed row was above. Wait for the relayout (the content
+  // size changes), with a timer for when it does not.
+  const pendingReveal = useRef<number | null>(null);
+  const flushReveal = () => {
+    const index = pendingReveal.current;
+    if (index === null) return;
+    pendingReveal.current = null;
+    listRef.current?.scrollToIndex({ index, viewPosition: 0 });
+  };
   useEffect(() => {
     if (revealIndex < 0) return;
-    listRef.current?.scrollToIndex({ index: revealIndex, viewPosition: 0 });
+    pendingReveal.current = revealIndex;
+    const fallback = setTimeout(flushReveal, REVEAL_FALLBACK_MS);
+    return () => clearTimeout(fallback);
     // Only a new reveal scrolls, not every re-sort while one is set.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.reveal]);
@@ -134,6 +150,9 @@ const PatternList: React.FC<PatternListProps> = (props) => {
 
       <FlatList
         ref={listRef}
+        // A frame later: the cells' own layouts, which the offsets come from, land around the
+        // same time as the content size.
+        onContentSizeChange={() => requestAnimationFrame(flushReveal)}
         // Rows are not laid out ahead, so a far one first needs an estimated jump.
         onScrollToIndexFailed={({ index, averageItemLength }) =>
           listRef.current?.scrollToOffset({
