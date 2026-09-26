@@ -27,7 +27,7 @@ export class TrimOutOfLimitsError extends Error {
 }
 
 export class PromptsRequiredError extends Error {
-  constructor(providerId: string, needed: number, got: number) {
+  constructor(providerId: string, needed: string, got: number) {
     super(
       `Provider "${providerId}" needs ${needed} prompt point(s), got ${got}`,
     );
@@ -67,9 +67,14 @@ export const runDeidentify = (
     );
   }
   const prompts = request.prompts?.length ?? 0;
-  if (prompts !== provider.promptCount) {
+  const fewest = provider.minPromptCount ?? provider.promptCount;
+  if (prompts < fewest || prompts > provider.promptCount) {
+    const needed =
+      fewest === provider.promptCount
+        ? String(fewest)
+        : `${fewest}–${provider.promptCount}`;
     return Promise.reject(
-      new PromptsRequiredError(provider.id, provider.promptCount, prompts),
+      new PromptsRequiredError(provider.id, needed, prompts),
     );
   }
   return provider.run(request, onProgress);

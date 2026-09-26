@@ -254,5 +254,7 @@
   "videoEditNowYes": "Modifier la vidéo",
   "videoEditLater": "Plus tard",
   "addPatternRecordVideo": "Enregistrer une vidéo",
-  "cameraPermissionDeniedHint": "Autorise l’accès à l’appareil photo dans les réglages du téléphone pour enregistrer une vidéo pour une figure."
+  "cameraPermissionDeniedHint": "Autorise l’accès à l’appareil photo dans les réglages du téléphone pour enregistrer une vidéo pour une figure.",
+  "deidentifyOneDancer": "Un danseur",
+  "deidentifyCouple": "Un couple"
 }

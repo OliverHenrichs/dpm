@@ -254,5 +254,7 @@
   "videoEditNowYes": "تعديل الفيديو",
   "videoEditLater": "لاحقًا",
   "addPatternRecordVideo": "تسجيل فيديو",
-  "cameraPermissionDeniedHint": "اسمح بالوصول إلى الكاميرا من إعدادات الهاتف لتسجيل فيديو لنمط."
+  "cameraPermissionDeniedHint": "اسمح بالوصول إلى الكاميرا من إعدادات الهاتف لتسجيل فيديو لنمط.",
+  "deidentifyOneDancer": "راقص واحد",
+  "deidentifyCouple": "ثنائي"
 }

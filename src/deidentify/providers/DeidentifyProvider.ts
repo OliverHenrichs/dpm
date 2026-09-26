@@ -36,9 +36,15 @@ export interface DeidentifyProvider {
   readonly sendsFootageOffDevice: boolean;
   /**
    * How many points the user taps on the first frame (one per dancer) for providers that track
-   * from a prompt; 0 when the provider finds people itself.
+   * from a prompt; 0 when the provider finds people itself. The most it takes when
+   * [minPromptCount] allows fewer.
    */
   readonly promptCount: number;
+  /**
+   * The fewest points it takes, for a provider that can follow fewer people than
+   * [promptCount] — one dancer instead of a couple. Defaults to [promptCount].
+   */
+  readonly minPromptCount?: number;
 
   /** False when the provider cannot run here (no native module, no API key, ...). */
   isAvailable(): boolean;

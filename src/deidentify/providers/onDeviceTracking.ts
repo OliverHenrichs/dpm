@@ -39,8 +39,9 @@ export const setTrackingRefine = (refine: "bilinear" | "guided") => {
 };
 
 /**
- * EdgeTAM tracking on the device: the user taps both dancers on the first frame and each is
- * followed from memory through the clip, drawn as a two-colour silhouette. Nothing leaves the
+ * EdgeTAM tracking on the device: the user taps each dancer on the first frame — a couple, or
+ * one person dancing alone — and each is followed from memory through the clip, drawn as a
+ * silhouette in its own colour. The native side sizes everything by the number of taps. Nothing leaves the
  * phone. Slower than per-frame segmentation — see L3 in AGENT_TASKS.md for the numbers.
  */
 export const onDeviceTracking: DeidentifyProvider = {
@@ -50,6 +51,7 @@ export const onDeviceTracking: DeidentifyProvider = {
   maxSeconds: 30,
   sendsFootageOffDevice: false,
   promptCount: 2,
+  minPromptCount: 1,
 
   isAvailable: () => isDeidentifyAvailable,
 

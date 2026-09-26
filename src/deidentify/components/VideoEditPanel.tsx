@@ -80,6 +80,8 @@ const VideoEditPanel: React.FC<Props> = ({
   const [viewSize, setViewSize] = useState<Size>({ width: 0, height: 0 });
   const [trim, setTrim] = useState<TrimWindow>({ start: 0, end: 0 });
   const [taps, setTaps] = useState<Point[]>([]);
+  // How many dancers to tap, for a provider that can follow fewer than a couple.
+  const [dancers, setDancers] = useState(providers[0]?.promptCount ?? 0);
   const [playhead, setPlayhead] = useState(0);
 
   const limits: TrimLimits = {
@@ -127,7 +129,8 @@ const VideoEditPanel: React.FC<Props> = ({
     length >= provider.minSeconds &&
     length <= provider.maxSeconds + 0.05;
   const needsTaps = (provider?.promptCount ?? 0) > 0;
-  const tapsDone = !needsTaps || taps.length === provider?.promptCount;
+  const tapsDone = !needsTaps || taps.length === dancers;
+  const fewestDancers = provider?.minPromptCount ?? provider?.promptCount ?? 0;
   const request = (): DeidentifyRequest => ({
     sourceUri,
     startSeconds: trim.start,
@@ -155,7 +158,7 @@ const VideoEditPanel: React.FC<Props> = ({
   };
 
   const onTap = (e: GestureResponderEvent) => {
-    if (!provider || !videoSize || taps.length >= provider.promptCount) return;
+    if (!provider || !videoSize || taps.length >= dancers) return;
     const point = tapToVideoPoint(
       { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY },
       viewSize,
@@ -190,7 +193,7 @@ const VideoEditPanel: React.FC<Props> = ({
   );
   const tapHint = t("deidentifyTapDancers", {
     count: taps.length,
-    total: provider?.promptCount ?? 0,
+    total: dancers,
   });
 
   return (
@@ -291,6 +294,7 @@ const VideoEditPanel: React.FC<Props> = ({
                     key={p.id}
                     onPress={() => {
                       setProvider(p);
+                      setDancers(p.promptCount);
                       setTaps([]);
                     }}
                     disabled={selected}
@@ -309,6 +313,40 @@ const VideoEditPanel: React.FC<Props> = ({
                   </TouchableOpacity>
                 );
               })}
+            </View>
+          )}
+          {fewestDancers < provider.promptCount && (
+            <View style={styles.row}>
+              {/* Labels exist for one and two: the most any provider follows today. */}
+              {[1, 2]
+                .filter((n) => n >= fewestDancers && n <= provider.promptCount)
+                .map((n) => {
+                  const selected = n === dancers;
+                  return (
+                    <TouchableOpacity
+                      key={n}
+                      onPress={() => {
+                        setDancers(n);
+                        setTaps([]);
+                      }}
+                      disabled={selected}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      style={[styles.choice, selected && styles.choiceSelected]}
+                    >
+                      <Text
+                        style={[
+                          styles.choiceText,
+                          selected && styles.choiceTextSelected,
+                        ]}
+                      >
+                        {n === 1
+                          ? t("deidentifyOneDancer")
+                          : t("deidentifyCouple")}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
             </View>
           )}
           <View style={styles.row}>

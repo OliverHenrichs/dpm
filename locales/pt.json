@@ -254,5 +254,7 @@
   "videoEditNowYes": "Editar vídeo",
   "videoEditLater": "Mais tarde",
   "addPatternRecordVideo": "Gravar um vídeo",
-  "cameraPermissionDeniedHint": "Permita o acesso à câmera nas configurações do telefone para gravar um vídeo para um passo."
+  "cameraPermissionDeniedHint": "Permita o acesso à câmera nas configurações do telefone para gravar um vídeo para um passo.",
+  "deidentifyOneDancer": "Um dançarino",
+  "deidentifyCouple": "Um casal"
 }

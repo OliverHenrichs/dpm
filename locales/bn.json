@@ -254,5 +254,7 @@
   "videoEditNowYes": "ভিডিও সম্পাদনা",
   "videoEditLater": "পরে",
   "addPatternRecordVideo": "ভিডিও রেকর্ড করুন",
-  "cameraPermissionDeniedHint": "প্যাটার্নের জন্য ভিডিও রেকর্ড করতে ফোনের সেটিংসে ক্যামেরা অ্যাক্সেসের অনুমতি দিন।"
+  "cameraPermissionDeniedHint": "প্যাটার্নের জন্য ভিডিও রেকর্ড করতে ফোনের সেটিংসে ক্যামেরা অ্যাক্সেসের অনুমতি দিন।",
+  "deidentifyOneDancer": "একজন নৃত্যশিল্পী",
+  "deidentifyCouple": "একটি জুটি"
 }

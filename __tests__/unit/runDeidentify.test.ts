@@ -95,6 +95,35 @@ describe("runDeidentify prompts", () => {
     expect(provider.run).not.toHaveBeenCalled();
   });
 
+  it("takes a single dancer from a provider that can follow one", async () => {
+    const provider = remote({
+      sendsFootageOffDevice: false,
+      promptCount: 2,
+      minPromptCount: 1,
+    });
+    await runDeidentify(
+      provider,
+      { ...request, prompts: [dancers[0]] },
+      jest.fn(),
+    );
+    expect(provider.run).toHaveBeenCalled();
+  });
+
+  it("refuses more points than the provider can follow", async () => {
+    const provider = remote({
+      sendsFootageOffDevice: false,
+      promptCount: 2,
+      minPromptCount: 1,
+    });
+    await expect(
+      runDeidentify(
+        provider,
+        { ...request, prompts: [...dancers, { x: 0.5, y: 0.2 }] },
+        jest.fn(),
+      ),
+    ).rejects.toBeInstanceOf(PromptsRequiredError);
+  });
+
   it("passes the points through once there is one per dancer", async () => {
     const provider = tracker();
     await runDeidentify(provider, { ...request, prompts: dancers }, jest.fn());
