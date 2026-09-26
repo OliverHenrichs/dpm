@@ -23,7 +23,7 @@ const OUTPUT = "file:///cache/deidentified-out.mp4";
 
 const mockProvider: DeidentifyProvider = {
   id: "fake",
-  labelKey: "deidentifyProviderOnDevice",
+  labelKey: "deidentifyProviderTracking",
   minSeconds: 1,
   maxSeconds: 30,
   sendsFootageOffDevice: false,

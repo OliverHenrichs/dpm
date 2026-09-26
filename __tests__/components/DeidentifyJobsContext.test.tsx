@@ -25,7 +25,7 @@ const fakeProvider = (
   },
 ): DeidentifyProvider => ({
   id: "fake",
-  labelKey: "deidentifyProviderOnDevice",
+  labelKey: "deidentifyProviderTracking",
   minSeconds: 1,
   maxSeconds: 30,
   sendsFootageOffDevice: false,
