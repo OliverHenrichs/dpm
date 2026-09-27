@@ -1,4 +1,5 @@
 import React from "react";
+import { Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
@@ -600,8 +601,6 @@ describe("PatternListManager", () => {
   });
 
   describe("dismissing the modals", () => {
-    const { Modal } = require("react-native");
-
     /** The Android hardware back button, which each Modal handles itself. */
     const pressSystemBack = () => {
       const open = screen

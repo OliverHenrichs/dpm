@@ -40,7 +40,8 @@ jest.mock("@/src/firebase/FirebaseListService", () => ({
  */
 let mockScanValue = "ABCD1234";
 jest.mock("@/src/common/components/QrCodeScanner", () => {
-  const { Text } = require("react-native");
+  const { Text } =
+    jest.requireActual<typeof import("react-native")>("react-native");
   return {
     __esModule: true,
     default: ({

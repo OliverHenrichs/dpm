@@ -94,8 +94,7 @@ jest.mock("expo-router", () => ({
   usePathname: () => "/patterns",
   useFocusEffect: (callback: () => void | (() => void)) => {
     // The real hook runs on focus; in a test the screen is always focused.
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    require("react").useEffect(callback, []);
+    jest.requireActual<typeof import("react")>("react").useEffect(callback, []);
   },
 }));
 

@@ -47,7 +47,7 @@ evidence.
 
 | # | Item | Size | Status | Why it's here |
 |---|---|---|---|---|
-| [F1](#f1--test-infrastructure-and-ci--in-progress) | Test infrastructure and CI | **L** | ◐ in progress | 3 test files / 529 lines against ~12 900 lines of source; component testing was installed but could not run; no CI at all. Gates every other item. |
+| [F1](#f1--test-infrastructure-and-ci--done) | Test infrastructure and CI | **L** | ✅ done | 3 test files / 529 lines against ~12 900 lines of source; component testing was installed but could not run; no CI at all. Gates every other item. |
 | [F2](#f2--graph-domain-layer) | Graph domain layer | **M–L** | ✅ done | L1 and L2 both need a stable graph model; today the views own the computation and paper over it with `as any`. |
 | [F3](#f3--storage-schema-versioning-and-import-validation--done) | Storage schema versioning + import validation | **M** | ✅ done | No schema version, no migration runner, no validation of imported files, lossy concurrent writes. L2 and L3 both add persisted data. |
 | [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done) | Deleting a pattern leaves dangling prerequisite ids | **M** | ✅ done | Made patterns silently vanish from the network graph, and let a recycled id inherit stale links. |
@@ -67,16 +67,15 @@ evidence.
 ### Suggested sequencing
 
 ```
-Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
+Phase 0  F1✅                                                (tests and CI under everything)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
 ```
 
-**Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
-landed and what is still outstanding. **L1 has landed**, so L2 — moveable nodes — is next, with
-the node set it has to reconcile against now well defined.
+**Phases 0 to 3 are complete.** L3 is in the app on Android with its open items listed in its
+entry; L4 is the next large item.
 
 L1 before L2: filtering changes which nodes exist, and manual node positions have to reconcile
 against a changing node set. Building L2 first means building the reconciliation twice.
@@ -1651,7 +1650,7 @@ and shared), or only used transiently while editing the description. Storing it 
 These are not on the original list. They are prerequisites for doing the large items to a standard
 that holds up over a long-lived, production-installed app.
 
-### F1 — Test infrastructure and CI — IN PROGRESS
+### F1 — Test infrastructure and CI — DONE
 
 **Why this is first.** Every large item above says "and tests". None of them could be tested
 beyond pure functions.
@@ -1810,6 +1809,16 @@ the views hold no computation to test. L1/L2 will rewrite them anyway.
 
 **Final record: eight defects across seventeen suites — every one in code that writes data, in
 layout, or in an event handler; none in read-only rendering.**
+
+#### Closed (2026-09-27)
+
+The last gap was in CI itself. `expo lint` with no path lints only `src/`, `app/` and
+`components/`, so `__tests__/`, `__mocks__/`, `utils/` and the root config files were never linted,
+and a React Compiler error in a test went unnoticed. `npm run lint` is now `expo lint .` (the
+ESLint config still ignores build output and the generated native folders), `format:check` covers
+`__mocks__/` and the root files too, and the root `*.config.js` files get Node's globals. Bringing
+them in turned up nine `require()` calls in tests and mocks, now imports or `jest.requireActual`.
+Coverage stands at 1158 tests across 65 suites, every per-file floor met.
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
    components that rely on the automatic runtime; it printed to stderr without failing the run, so
@@ -2470,5 +2479,5 @@ Observations that are not tasks but that should inform how the tasks above are d
   importer (`src/pattern/list/PatternVideos.tsx:20`, which spells the typo faithfully), so the
   rename is a two-line change today and gets more expensive with every new call site. Do it now.
   Note that it imports fine on a case-insensitive filesystem and breaks on a case-sensitive one
-  the moment someone types the name correctly — CI on Linux ([F1](#f1--test-infrastructure-and-ci--in-progress))
+  the moment someone types the name correctly — CI on Linux ([F1](#f1--test-infrastructure-and-ci--done))
   is where that would surface.

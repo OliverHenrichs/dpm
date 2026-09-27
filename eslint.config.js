@@ -14,6 +14,8 @@ module.exports = defineConfig([
       "utils/**/*.{ts,tsx}",
       "jest.setup.*.ts",
       "jest.config.js",
+      // Node-run config files at the root.
+      "*.config.js",
     ],
     languageOptions: {
       globals: { ...globals.node, ...globals.jest },
@@ -33,8 +35,7 @@ module.exports = defineConfig([
       "no-restricted-syntax": [
         "error",
         {
-          selector:
-            "Literal[value=/^(#[0-9a-fA-F]{3,8}|rgba?\\(|hsla?\\()/]",
+          selector: "Literal[value=/^(#[0-9a-fA-F]{3,8}|rgba?\\(|hsla?\\()/]",
           message:
             "Colour literal: take it from the theme (theme.colors, theme.media) in src/common/theme/tokens.ts.",
         },
