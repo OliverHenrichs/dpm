@@ -1,5 +1,6 @@
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, View } from "react-native";
+import { Tappable } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
@@ -42,30 +43,30 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title: titleOverride }) => {
     : (titleOverride ?? screenTitle ?? pathname);
   return (
     <View style={styles.header}>
-      <TouchableOpacity
+      <Tappable
         onPress={() => router.navigate(HOME_ROUTE.href)}
         style={styles.headerSlot}
         hitSlop={HEADER_BUTTON_HIT_SLOP}
-        accessibilityRole="button"
+        borderless
         accessibilityLabel={t("goHome")}
       >
         <Image
           source={require("@/assets/images/app-icon-in-app.png")}
           style={styles.headerIcon}
         />
-      </TouchableOpacity>
+      </Tappable>
       <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
-      <TouchableOpacity
+      <Tappable
         onPress={() => navigation.openDrawer()}
         style={styles.headerSlot}
         hitSlop={HEADER_BUTTON_HIT_SLOP}
-        accessibilityRole="button"
+        borderless
         accessibilityLabel={t("openMenu")}
       >
         <Icon name="menu" size={28} color={theme.colors.primary} />
-      </TouchableOpacity>
+      </Tappable>
     </View>
   );
 };

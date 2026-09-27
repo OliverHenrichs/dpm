@@ -11,6 +11,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Icon, type IconName } from "@/src/common/ui/Icon";
 import { alpha } from "@/src/common/theme/tokens";
 import { haptics } from "@/src/common/ui/haptics";
+import IconButton from "@/src/common/ui/IconButton";
 
 export interface ChipProps {
   label: string;
@@ -21,6 +22,14 @@ export interface ChipProps {
   icon?: IconName;
   /** A colour dot before the label — a pattern type's colour, say. */
   swatch?: string;
+  /** A small uppercase tag before the label — a modifier's position, say. */
+  badge?: string;
+  /**
+   * Adds a remove button inside the chip, after the label. `removeLabel` names
+   * it for a screen reader, and should say what it removes.
+   */
+  onRemove?: () => void;
+  removeLabel?: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   testID?: string;
@@ -39,6 +48,9 @@ const Chip: React.FC<ChipProps> = ({
   disabled = false,
   icon,
   swatch,
+  badge,
+  onRemove,
+  removeLabel,
   accessibilityLabel,
   accessibilityHint,
   testID,
@@ -71,7 +83,17 @@ const Chip: React.FC<ChipProps> = ({
     >
       {swatch ? <View style={styles.swatch(swatch)} /> : null}
       {glyph ? <Icon name={glyph} size={theme.iconSize.sm} color={fg} /> : null}
+      {badge ? <Text style={styles.badge(selected)}>{badge}</Text> : null}
       <Text style={styles.label(selected)}>{label}</Text>
+      {onRemove ? (
+        <IconButton
+          icon="close"
+          size={theme.iconSize.sm - 2}
+          color={selected ? "onPrimary" : "onSurfaceVariant"}
+          onPress={onRemove}
+          accessibilityLabel={removeLabel ?? label}
+        />
+      ) : null}
     </Pressable>
   );
 };
@@ -103,6 +125,12 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: color,
     borderWidth: 1,
     borderColor: theme.colors.surface,
+  }),
+  badge: (selected: boolean) => ({
+    ...theme.typography.badge,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    color: selected ? theme.colors.onPrimary : theme.colors.textMuted,
   }),
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.4 },

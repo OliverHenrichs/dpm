@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/src/common/ui/Icon";
@@ -48,14 +49,12 @@ const GraphDragHint: React.FC<GraphDragHintProps> = ({ visible }) => {
     <View style={styles.bar}>
       <Icon name="gesture-tap-hold" size={18} color={theme.colors.primary} />
       <Text style={styles.text}>{t("graphDragHint")}</Text>
-      <TouchableOpacity
+      <IconButton
+        icon="close"
+        size={18}
         onPress={dismiss}
-        style={styles.dismissButton}
-        accessibilityRole="button"
         accessibilityLabel={t("dismissHint")}
-      >
-        <Icon name="close" size={18} color={theme.colors.primary} />
-      </TouchableOpacity>
+      />
     </View>
   );
 };
@@ -75,9 +74,6 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.caption,
     flex: 1,
     color: theme.colors.textMuted,
-  },
-  dismissButton: {
-    padding: theme.space.xs,
   },
 }));
 

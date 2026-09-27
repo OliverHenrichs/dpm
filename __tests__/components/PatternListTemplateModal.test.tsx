@@ -62,6 +62,15 @@ function typeRow(index: number): ReactTestInstance {
   return node;
 }
 
+/** Each type's remove button, in row order. */
+const removeTypeButtons = () => screen.getAllByLabelText(/^Remove type:/);
+
+/** The starter patterns that are ticked. */
+const ticked = () =>
+  screen
+    .queryAllByRole("checkbox")
+    .filter((box) => box.props.accessibilityState?.checked);
+
 /** The colour dot is the first child of its row, the open swatch grid the last. */
 const colorDot = (row: ReactTestInstance) =>
   row.children[0] as ReactTestInstance;
@@ -167,7 +176,7 @@ describe("PatternListTemplateModal", () => {
       pickTemplate("West Coast Swing");
 
       expect(screen.getByText("Starting Patterns")).toBeOnTheScreen();
-      expect(screen.getAllByText("✓").length).toBeGreaterThan(0);
+      expect(ticked().length).toBeGreaterThan(0);
     });
 
     it("offers no starter patterns for a blank list", () => {
@@ -207,11 +216,11 @@ describe("PatternListTemplateModal", () => {
       const { created } = renderModal();
 
       pickTemplate("West Coast Swing");
-      const before = screen.getAllByText("✓").length;
-      fireEvent.press(screen.getAllByText("✓")[0]);
+      const before = ticked().length;
+      fireEvent.press(ticked()[0]);
       fireEvent.press(screen.getByText("Create"));
 
-      expect(screen.queryAllByText("✓")).toHaveLength(before - 1);
+      expect(ticked()).toHaveLength(before - 1);
       expect(created().patterns).toHaveLength(before - 1);
     });
 
@@ -334,7 +343,7 @@ describe("PatternListTemplateModal", () => {
 
       pickTemplate("West Coast Swing");
       const before = typeInputs().length;
-      fireEvent.press(screen.getAllByText("✕")[0]);
+      fireEvent.press(removeTypeButtons()[0]);
 
       expect(typeInputs()).toHaveLength(before - 1);
     });
@@ -344,17 +353,17 @@ describe("PatternListTemplateModal", () => {
       renderModal();
 
       pickTemplate("West Coast Swing");
-      const before = screen.getAllByText("✓").length;
-      fireEvent.press(screen.getAllByText("✕")[0]);
+      const before = ticked().length;
+      fireEvent.press(removeTypeButtons()[0]);
 
-      expect(screen.queryAllByText("✓").length).toBeLessThan(before);
+      expect(ticked().length).toBeLessThan(before);
     });
 
     it("never creates a pattern for a type that was removed", () => {
       const { created } = renderModal();
 
       pickTemplate("West Coast Swing");
-      fireEvent.press(screen.getAllByText("✕")[0]);
+      fireEvent.press(removeTypeButtons()[0]);
       fireEvent.press(screen.getByText("Create"));
 
       const typeIds = new Set(created().list.patternTypes.map((t) => t.id));
@@ -365,6 +374,23 @@ describe("PatternListTemplateModal", () => {
   });
 
   describe("picking a type colour", () => {
+    it("names the dot after its type, and each swatch by position", () => {
+      renderModal();
+      pickTemplate("West Coast Swing");
+
+      const dot = colorDot(typeRow(0));
+      expect(dot.props.accessibilityLabel).toMatch(/^Colour of /);
+      fireEvent.press(dot);
+
+      const grid = swatches(typeRow(0));
+      expect(grid[0].props.accessibilityLabel).toBe(
+        `Colour 1 of ${grid.length}`,
+      );
+      expect(
+        grid.filter((swatch) => swatch.props.accessibilityState?.checked),
+      ).toHaveLength(1);
+    });
+
     it("opens the swatches on the dot and closes them again", () => {
       renderModal();
 
@@ -496,7 +522,7 @@ describe("PatternListTemplateModal", () => {
         usedTypeIds: new Set([list.patternTypes[0].id]),
       });
 
-      fireEvent.press(screen.getAllByText("✕")[0]);
+      fireEvent.press(removeTypeButtons()[0]);
 
       expect(typeInputs()).toHaveLength(2);
     });
@@ -508,7 +534,7 @@ describe("PatternListTemplateModal", () => {
         usedTypeIds: new Set([list.patternTypes[0].id]),
       });
 
-      fireEvent.press(screen.getAllByText("✕")[1]);
+      fireEvent.press(removeTypeButtons()[1]);
 
       expect(typeInputs()).toHaveLength(1);
     });

@@ -262,5 +262,9 @@
   "createTag": "\"{{tag}}\" बनाएँ",
   "sortAscending": "आरोही",
   "sortDescending": "अवरोही",
-  "moreOptions": "अधिक विकल्प"
+  "moreOptions": "अधिक विकल्प",
+  "removeTag": "टैग हटाएँ",
+  "removePatternType": "प्रकार हटाएँ",
+  "patternTypeColor": "{{type}} का रंग",
+  "colorSwatch": "{{count}} में से रंग {{n}}"
 }

@@ -13,6 +13,8 @@ export { default as Chip } from "./Chip";
 export type { ChipProps } from "./Chip";
 export { default as IconButton } from "./IconButton";
 export type { IconButtonProps } from "./IconButton";
+export { default as Tappable } from "./Tappable";
+export type { TappableProps } from "./Tappable";
 export { haptics } from "./haptics";
 export { default as ListRow } from "./ListRow";
 export type { ListRowProps, ListRowSelection } from "./ListRow";

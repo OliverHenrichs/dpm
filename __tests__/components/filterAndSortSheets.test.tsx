@@ -424,7 +424,7 @@ describe("PatternTags", () => {
   it("removes one", () => {
     const { updated } = renderTags(["basic", "6-count"]);
 
-    fireEvent.press(screen.getAllByText("×")[0]);
+    fireEvent.press(screen.getByLabelText("Remove tag: basic"));
 
     expect(updated()).toEqual(["6-count"]);
   });

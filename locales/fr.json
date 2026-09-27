@@ -262,5 +262,9 @@
   "createTag": "Créer « {{tag}} »",
   "sortAscending": "croissant",
   "sortDescending": "décroissant",
-  "moreOptions": "Plus d’options"
+  "moreOptions": "Plus d’options",
+  "removeTag": "Retirer l’étiquette",
+  "removePatternType": "Retirer le type",
+  "patternTypeColor": "Couleur de {{type}}",
+  "colorSwatch": "Couleur {{n}} sur {{count}}"
 }

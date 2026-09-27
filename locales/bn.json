@@ -262,5 +262,9 @@
   "createTag": "\"{{tag}}\" তৈরি করুন",
   "sortAscending": "ঊর্ধ্বক্রম",
   "sortDescending": "অধঃক্রম",
-  "moreOptions": "আরও বিকল্প"
+  "moreOptions": "আরও বিকল্প",
+  "removeTag": "ট্যাগ সরান",
+  "removePatternType": "ধরন সরান",
+  "patternTypeColor": "{{type}}-এর রং",
+  "colorSwatch": "{{count}}টির মধ্যে রং {{n}}"
 }

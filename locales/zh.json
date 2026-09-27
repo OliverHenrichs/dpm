@@ -262,5 +262,9 @@
   "createTag": "创建“{{tag}}”",
   "sortAscending": "升序",
   "sortDescending": "降序",
-  "moreOptions": "更多选项"
+  "moreOptions": "更多选项",
+  "removeTag": "移除标签",
+  "removePatternType": "移除类型",
+  "patternTypeColor": "{{type}} 的颜色",
+  "colorSwatch": "第 {{n}} 种颜色，共 {{count}} 种"
 }

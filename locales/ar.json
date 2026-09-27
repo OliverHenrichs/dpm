@@ -262,5 +262,9 @@
   "createTag": "إنشاء \"{{tag}}\"",
   "sortAscending": "تصاعدي",
   "sortDescending": "تنازلي",
-  "moreOptions": "خيارات إضافية"
+  "moreOptions": "خيارات إضافية",
+  "removeTag": "إزالة الوسم",
+  "removePatternType": "إزالة النوع",
+  "patternTypeColor": "لون {{type}}",
+  "colorSwatch": "اللون {{n}} من {{count}}"
 }

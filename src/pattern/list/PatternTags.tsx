@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -48,9 +49,13 @@ const PatternTags: React.FC<PatternTagsProps> = ({
         {tags.map((tag: string, idx: number) => (
           <View key={idx} style={styles.tagItem}>
             <Text style={styles.tagText}>{tag}</Text>
-            <TouchableOpacity onPress={() => removeTag(idx)}>
-              <Text style={styles.tagRemove}>×</Text>
-            </TouchableOpacity>
+            <IconButton
+              icon="close"
+              size={14}
+              color="onSurfaceVariant"
+              onPress={() => removeTag(idx)}
+              accessibilityLabel={`${t("removeTag")}: ${tag}`}
+            />
           </View>
         ))}
       </View>
@@ -95,11 +100,6 @@ const styles = StyleSheet.create((theme) => {
     tagText: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-    },
-    tagRemove: {
-      ...theme.typography.body,
-      color: theme.colors.onSurfaceVariant,
-      marginLeft: theme.space.xs,
     },
     label: { ...getCommonLabel(theme) },
     addButtonContainer: getCommonAddButtonContainer(),

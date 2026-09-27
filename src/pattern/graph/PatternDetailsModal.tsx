@@ -1,14 +1,7 @@
 import React from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { Icon } from "@/src/common/ui/Icon";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
@@ -32,7 +25,6 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
-  const { theme } = useUnistyles();
 
   return (
     <Modal
@@ -56,14 +48,12 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{pattern?.name || ""}</Text>
-            <TouchableOpacity
+            <IconButton
+              icon="close"
+              color="text"
               onPress={onClose}
-              style={styles.closeButton}
-              accessibilityRole="button"
               accessibilityLabel={t("closeDetails")}
-            >
-              <Icon name="close" size={24} color={theme.colors.text} />
-            </TouchableOpacity>
+            />
           </View>
           <ScrollView
             style={styles.modalScroll}
@@ -116,9 +106,6 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.headline,
     color: theme.colors.text,
     flex: 1,
-  },
-  closeButton: {
-    padding: theme.space.xs,
   },
   modalScroll: {
     // React Native's ScrollView puts `flexGrow: 1` on its content container,

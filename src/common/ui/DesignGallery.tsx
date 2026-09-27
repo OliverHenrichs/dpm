@@ -125,6 +125,7 @@ const DesignGallery: React.FC = () => {
               "ghost",
               "danger",
               "dangerOutline",
+              "media",
             ] as ButtonVariant[]
           ).map((variant) => (
             <View key={variant} style={styles.row}>
@@ -181,6 +182,14 @@ const DesignGallery: React.FC = () => {
               onPress={() => {}}
             />
             <IconButton
+              icon="close"
+              variant="filled"
+              color="danger"
+              size={14}
+              accessibilityLabel="Remove"
+              onPress={() => {}}
+            />
+            <IconButton
               icon="pencil"
               disabled
               accessibilityLabel="Edit"
@@ -206,6 +215,13 @@ const DesignGallery: React.FC = () => {
               onPress={() => {}}
             />
             <Chip label="Off" disabled onPress={() => {}} />
+            <Chip
+              label="with a spin"
+              badge="Prefix"
+              onPress={() => {}}
+              onRemove={() => {}}
+              removeLabel="Detach"
+            />
           </View>
         </Section>
 

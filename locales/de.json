@@ -262,5 +262,9 @@
   "createTag": "„{{tag}}“ anlegen",
   "sortAscending": "aufsteigend",
   "sortDescending": "absteigend",
-  "moreOptions": "Weitere Optionen"
+  "moreOptions": "Weitere Optionen",
+  "removeTag": "Schlagwort entfernen",
+  "removePatternType": "Typ entfernen",
+  "patternTypeColor": "Farbe von {{type}}",
+  "colorSwatch": "Farbe {{n}} von {{count}}"
 }

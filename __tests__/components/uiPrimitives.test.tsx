@@ -9,6 +9,7 @@ import {
   IconButton,
   ListRow,
   SegmentedControl,
+  Tappable,
 } from "@/src/common/ui";
 import { lightTheme } from "@/src/common/theme/tokens";
 import DesignGallery from "@/src/common/ui/DesignGallery";
@@ -296,5 +297,78 @@ describe("SegmentedControl", () => {
       screen.getByRole("radio", { name: "Modifiers (3)" }).props
         .accessibilityState,
     ).toMatchObject({ checked: true });
+  });
+});
+
+describe("Chip extras", () => {
+  it("shows a badge, and removes from its own button without selecting", () => {
+    const onPress = jest.fn();
+    const onRemove = jest.fn();
+    render(
+      <Chip
+        label="with a spin"
+        badge="Prefix"
+        onPress={onPress}
+        onRemove={onRemove}
+        removeLabel="Detach modifier: with a spin"
+      />,
+    );
+    expect(screen.getByText("Prefix")).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Detach modifier: with a spin"));
+    expect(onRemove).toHaveBeenCalled();
+    expect(onPress).not.toHaveBeenCalled();
+  });
+});
+
+describe("Tappable", () => {
+  it("is a named button around content that has no text", () => {
+    const onPress = jest.fn();
+    render(
+      <Tappable accessibilityLabel="Go to dances" onPress={onPress}>
+        <AppText>logo</AppText>
+      </Tappable>,
+    );
+    fireEvent.press(screen.getByRole("button", { name: "Go to dances" }));
+    expect(onPress).toHaveBeenCalled();
+  });
+
+  it("says when it is disabled, and does not press", () => {
+    const onPress = jest.fn();
+    render(
+      <Tappable accessibilityLabel="Video 1" onPress={onPress} disabled>
+        <AppText>thumb</AppText>
+      </Tappable>,
+    );
+    const target = screen.getByLabelText("Video 1");
+    fireEvent.press(target);
+    expect(onPress).not.toHaveBeenCalled();
+    expect(target.props.accessibilityState).toMatchObject({ disabled: true });
+  });
+});
+
+describe("variants over media and for removal", () => {
+  it("puts a media button on the scrim, whatever the theme", () => {
+    render(<Button title="Cancel" variant="media" onPress={jest.fn()} />);
+    const style = StyleSheet.flatten(
+      screen.getByRole("button", { name: "Cancel" }).props.style,
+    );
+    expect(style.backgroundColor).toBe(lightTheme.media.scrim);
+  });
+
+  it("fills a danger icon button with the danger colour", () => {
+    render(
+      <IconButton
+        icon="close"
+        variant="filled"
+        color="danger"
+        accessibilityLabel="Remove video"
+        onPress={jest.fn()}
+      />,
+    );
+    const style = StyleSheet.flatten(
+      screen.getByLabelText("Remove video").props.style,
+    );
+    expect(style.backgroundColor).toBe(lightTheme.colors.danger);
   });
 });

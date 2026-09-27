@@ -1,10 +1,9 @@
 import React from "react";
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { Modal, Text, View } from "react-native";
+import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { CameraView } from "expo-camera";
-import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
-import { mediaColors } from "@/src/common/theme/tokens";
 
 interface QrCodeScannerProps {
   visible: boolean;
@@ -38,10 +37,12 @@ const QrCodeScanner: React.FC<QrCodeScannerProps> = ({
         <View style={styles.overlay}>
           <View style={styles.frame} />
           {hint && <Text style={styles.hint}>{hint}</Text>}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Icon name="close" size={24} color={mediaColors.onScrim} />
-            <Text style={styles.closeText}>{t("cancel")}</Text>
-          </TouchableOpacity>
+          <Button
+            title={t("cancel")}
+            icon="close"
+            variant="media"
+            onPress={onClose}
+          />
         </View>
       </View>
     </Modal>
@@ -80,19 +81,6 @@ const styles = StyleSheet.create((theme) => ({
     textShadowColor: theme.media.scrimStrong,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
-  },
-  closeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.space.sm,
-    backgroundColor: theme.media.scrim,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.space.xl,
-    paddingVertical: theme.space.md,
-  },
-  closeText: {
-    ...theme.typography.button,
-    color: theme.media.onScrim,
   },
 }));
 

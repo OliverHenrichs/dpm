@@ -5,10 +5,9 @@ import {
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { Button } from "@/src/common/ui";
+import { Button, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import {
@@ -273,14 +272,19 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     <View style={styles.colorPopover}>
       <View style={styles.colorSwatchGrid}>
         {COLOR_VALUES.map((color, idx) => (
-          <TouchableOpacity
+          <Pressable
             key={COLOR_NAMES[idx]}
             style={[
-              styles.colorSwatch,
-              { backgroundColor: color },
+              styles.colorSwatch(color),
               color === currentColor && styles.colorSwatchSelected,
             ]}
             onPress={() => handleTypeColorChange(typeId, color)}
+            accessibilityRole="radio"
+            accessibilityLabel={t("colorSwatch", {
+              n: idx + 1,
+              count: COLOR_VALUES.length,
+            })}
+            accessibilityState={{ checked: color === currentColor }}
           />
         ))}
       </View>
@@ -288,7 +292,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   );
 
   const renderPickStep = () => (
-    <View style={{ flexShrink: 1 }}>
+    <View style={styles.step}>
       <Text style={styles.title}>{t("chooseTemplate")}</Text>
       <Text style={styles.subtitle}>{t("chooseTemplateHint")}</Text>
       <ScrollView
@@ -296,32 +300,28 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         keyboardShouldPersistTaps="handled"
       >
         {TEMPLATES.map((template) => (
-          <TouchableOpacity
+          <ListRow
             key={template.id}
-            style={[
-              styles.templateCard,
-              template.id === "blank" && styles.templateCardBlank,
-            ]}
+            variant="card"
+            title={t(template.nameKey)}
+            subtitle={t(template.descriptionKey)}
+            icon={template.id === "blank" ? "file-outline" : "music-note"}
+            iconColor={template.id === "blank" ? "textMuted" : "primary"}
             onPress={() => handleSelectTemplate(template)}
-          >
-            <Text style={styles.templateName}>{t(template.nameKey)}</Text>
-            <Text style={styles.templateDescription}>
-              {t(template.descriptionKey)}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </ScrollView>
-      <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
-        <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-      </TouchableOpacity>
+      <Button
+        title={t("cancel")}
+        variant="secondary"
+        onPress={handleClose}
+        style={styles.cancelButton}
+      />
     </View>
   );
 
   const renderConfigureStep = () => (
-    <Pressable
-      style={{ flexShrink: 1 }}
-      onPress={() => setColorPopoverId(null)}
-    >
+    <Pressable style={styles.step} onPress={() => setColorPopoverId(null)}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -344,7 +344,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         />
 
         {/* ── Pattern Types ─────────────────────────────────────────────── */}
-        <Text style={[styles.label, { marginTop: 20 }]}>
+        <Text style={[styles.label, styles.sectionGap]}>
           {t("patternTypes")}
         </Text>
         {draftTypes.map((dt) => {
@@ -356,12 +356,18 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
               style={[styles.typeRow, isPickingColor && styles.typeRowRaised]}
             >
               {/* Color dot → popover, which is rendered last inside the row */}
-              <TouchableOpacity
+              <Pressable
                 onPress={(e) => {
                   e?.stopPropagation?.();
                   setColorPopoverId((prev) => (prev === dt.id ? null : dt.id));
                 }}
-                style={[styles.typeColorDot, { backgroundColor: dt.color }]}
+                hitSlop={theme.space.sm}
+                style={styles.typeColorDot(dt.color)}
+                accessibilityRole="button"
+                accessibilityLabel={t("patternTypeColor", {
+                  type: dt.slug || t("typeName"),
+                })}
+                accessibilityState={{ expanded: isPickingColor }}
               />
 
               <TextInput
@@ -375,26 +381,19 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                 placeholderTextColor={theme.colors.textMuted}
                 onFocus={() => setColorPopoverId(null)}
               />
-              <TouchableOpacity
-                style={[
-                  styles.removeTypeButton,
-                  isInUse && styles.removeTypeButtonDisabled,
-                ]}
-                onPress={() => !isInUse && handleRemoveType(dt.id)}
+              <IconButton
+                icon="close"
+                size={theme.iconSize.md}
+                color="textMuted"
+                onPress={() => handleRemoveType(dt.id)}
                 disabled={isInUse}
-                accessibilityLabel={
+                accessibilityLabel={`${t("removePatternType")}: ${
+                  dt.slug || t("typeName")
+                }`}
+                accessibilityHint={
                   isInUse ? t("cannotRemoveTypeHasPatterns") : undefined
                 }
-              >
-                <Text
-                  style={[
-                    styles.removeTypeButtonText,
-                    isInUse && styles.removeTypeButtonTextDisabled,
-                  ]}
-                >
-                  ✕
-                </Text>
-              </TouchableOpacity>
+              />
               {/* Last child on purpose: it overlays the row's own slug input,
                   and paint order is what decides that where zIndex does not. */}
               {isPickingColor && renderColorPopover(dt.id, dt.color)}
@@ -410,58 +409,34 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           ) : null,
         )}
 
-        <TouchableOpacity style={styles.addTypeButton} onPress={handleAddType}>
-          <Text style={styles.addTypeButtonText}>+ {t("addPatternType")}</Text>
-        </TouchableOpacity>
+        <Button
+          title={t("addPatternType")}
+          icon="plus"
+          variant="ghost"
+          size="sm"
+          onPress={handleAddType}
+          style={styles.addTypeButton}
+        />
 
         {/* ── Foundational Patterns ─────────────────────────────────────── */}
         {draftPatterns.length > 0 && (
-          <View style={{ marginTop: 20 }}>
+          <View style={styles.sectionGap}>
             <Text style={styles.label}>{t("startingPatterns")}</Text>
             <Text style={styles.sectionHint}>{t("startingPatternsHint")}</Text>
             {draftPatterns.map((entry, idx) => {
               const color = getTypeColor(entry.templatePattern.typeSlug);
               const typeRemoved = color === undefined;
               return (
-                <TouchableOpacity
+                <ListRow
                   key={idx}
-                  style={[
-                    styles.patternToggleRow,
-                    (!entry.included || typeRemoved) &&
-                      styles.patternToggleRowOff,
-                  ]}
-                  onPress={() => !typeRemoved && togglePattern(idx)}
+                  title={entry.templatePattern.name}
+                  selection="multiple"
+                  selected={entry.included && !typeRemoved}
                   disabled={typeRemoved}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      entry.included && !typeRemoved && styles.checkboxChecked,
-                    ]}
-                  >
-                    {entry.included && !typeRemoved && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <View style={styles.patternToggleInfo}>
-                    <Text
-                      style={[
-                        styles.patternToggleName,
-                        (!entry.included || typeRemoved) &&
-                          styles.patternToggleNameOff,
-                      ]}
-                    >
-                      {entry.templatePattern.name}
-                    </Text>
+                  onPress={() => togglePattern(idx)}
+                  subtitle={
                     <View style={styles.patternToggleMeta}>
-                      {color && (
-                        <View
-                          style={[
-                            styles.typeColorPip,
-                            { backgroundColor: color },
-                          ]}
-                        />
-                      )}
+                      {color && <View style={styles.typeColorPip(color)} />}
                       <Text style={styles.patternToggleSlug}>
                         {entry.templatePattern.typeSlug}
                       </Text>
@@ -469,15 +444,15 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                         · {entry.templatePattern.counts} {t("counts")}
                       </Text>
                     </View>
-                  </View>
-                </TouchableOpacity>
+                  }
+                />
               );
             })}
           </View>
         )}
 
         {/* ── Buttons ───────────────────────────────────────────────────── */}
-        <View style={[styles.buttonRow, { marginTop: 24 }]}>
+        <View style={[styles.buttonRow, styles.footerGap]}>
           <Button
             title={isEditMode ? t("cancel") : t("back")}
             variant="secondary"
@@ -498,6 +473,15 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
+  step: {
+    flexShrink: 1,
+  },
+  sectionGap: {
+    marginTop: theme.space.xl,
+  },
+  footerGap: {
+    marginTop: theme.space.xxl,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: theme.colors.overlay,
@@ -526,27 +510,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   templateList: {
     maxHeight: 420,
-  },
-  templateCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    padding: theme.space.lg,
-    marginBottom: theme.space.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  templateCardBlank: {
-    borderStyle: "dashed",
-    borderColor: theme.colors.primary,
-  },
-  templateName: {
-    ...theme.typography.button,
-    color: theme.colors.text,
-    marginBottom: theme.space.xs,
-  },
-  templateDescription: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.textMuted,
   },
   label: {
     ...theme.typography.label,
@@ -586,13 +549,14 @@ const styles = StyleSheet.create((theme) => ({
     zIndex: 100,
     elevation: 8,
   },
-  typeColorDot: {
+  typeColorDot: (color: string) => ({
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: theme.radius.pill,
     borderWidth: 2,
     borderColor: theme.colors.border,
-  },
+    backgroundColor: color,
+  }),
   colorPopover: {
     position: "absolute",
     left: 36,
@@ -612,13 +576,14 @@ const styles = StyleSheet.create((theme) => ({
     width: 148,
     gap: theme.space.sm,
   },
-  colorSwatch: {
+  colorSwatch: (color: string) => ({
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: theme.radius.pill,
     borderWidth: 2,
     borderColor: "transparent",
-  },
+    backgroundColor: color,
+  }),
   colorSwatchSelected: {
     borderColor: theme.colors.text,
   },
@@ -642,26 +607,6 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.space.xs,
     marginLeft: 36,
   },
-  removeTypeButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: theme.colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  removeTypeButtonDisabled: {
-    opacity: 0.35,
-  },
-  removeTypeButtonText: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
-  },
-  removeTypeButtonTextDisabled: {
-    color: theme.colors.textMuted,
-  },
   addTypeButton: {
     marginTop: theme.space.xs,
     paddingVertical: theme.space.sm,
@@ -671,63 +616,18 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.primary,
     alignSelf: "flex-start",
   },
-  addTypeButtonText: {
-    ...theme.typography.label,
-    color: theme.colors.primary,
-  },
-  // ── Pattern toggles ────────────────────────────────────────────────────
-  patternToggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.xs,
-    borderRadius: theme.radius.md,
-    marginBottom: theme.space.xs,
-    gap: theme.space.md,
-  },
-  patternToggleRowOff: {
-    opacity: 0.4,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: theme.radius.xs,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  checkmark: {
-    ...theme.typography.label,
-    color: theme.colors.onPrimary,
-    fontWeight: "bold",
-  },
-  patternToggleInfo: {
-    flex: 1,
-  },
-  patternToggleName: {
-    ...theme.typography.bodySmall,
-    fontWeight: "500",
-    color: theme.colors.text,
-  },
-  patternToggleNameOff: {
-    color: theme.colors.textMuted,
-  },
   patternToggleMeta: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: theme.space.xxs,
     gap: theme.space.xs,
   },
-  typeColorPip: {
+  typeColorPip: (color: string) => ({
     width: 8,
     height: 8,
     borderRadius: theme.radius.xs,
-  },
+    backgroundColor: color,
+  }),
   patternToggleSlug: {
     ...theme.typography.micro,
     color: theme.colors.textMuted,
@@ -747,10 +647,6 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: theme.space.md,
     padding: theme.space.lg,
     alignItems: "center",
-  },
-  cancelButtonText: {
-    ...theme.typography.body,
-    color: theme.colors.textMuted,
   },
 }));
 

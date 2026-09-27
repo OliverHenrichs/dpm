@@ -1,8 +1,8 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { Text, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { Icon } from "@/src/common/ui/Icon";
 
 interface GraphFilterSummaryProps {
   visible: boolean;
@@ -27,7 +27,6 @@ const GraphFilterSummary: React.FC<GraphFilterSummaryProps> = ({
   total,
   onClear,
 }) => {
-  const { theme } = useUnistyles();
   const { t } = useTranslation();
   if (!visible) return null;
 
@@ -36,14 +35,12 @@ const GraphFilterSummary: React.FC<GraphFilterSummaryProps> = ({
       <Text style={styles.text} numberOfLines={1}>
         {t("graphFilterSummary", { matched, shown, total })}
       </Text>
-      <TouchableOpacity
+      <IconButton
+        icon="close-circle"
+        size={18}
         onPress={onClear}
-        style={styles.clearButton}
-        accessibilityRole="button"
         accessibilityLabel={t("clearFilter")}
-      >
-        <Icon name="close-circle" size={18} color={theme.colors.primary} />
-      </TouchableOpacity>
+      />
     </View>
   );
 };
@@ -64,9 +61,6 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.caption,
     flex: 1,
     color: theme.colors.textMuted,
-  },
-  clearButton: {
-    padding: theme.space.xs,
   },
 }));
 

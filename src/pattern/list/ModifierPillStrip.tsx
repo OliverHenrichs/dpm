@@ -1,5 +1,6 @@
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { Chip } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import {
@@ -46,15 +47,12 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
     return null;
   }
 
-  const renderPositionBadge = (modifier: IModifier) => {
-    const label =
-      modifier.position === "prefix"
-        ? t("modifierPositionPrefix")
-        : modifier.position === "postfix"
-          ? t("modifierPositionPostfix")
-          : t("modifierPositionAmends");
-    return <Text style={styles.positionBadge}>{label}</Text>;
-  };
+  const positionLabel = (modifier: IModifier) =>
+    modifier.position === "prefix"
+      ? t("modifierPositionPrefix")
+      : modifier.position === "postfix"
+        ? t("modifierPositionPostfix")
+        : t("modifierPositionAmends");
 
   return (
     <View style={styles.container}>
@@ -64,92 +62,50 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.strip}
       >
-        {/* Base pill */}
-        <TouchableOpacity
-          style={[
-            styles.pill,
-            selectedModifierId === null && styles.pillSelected,
-          ]}
+        <Chip
+          label={t("basePattern")}
+          selected={selectedModifierId === null}
           onPress={() => onSelect(null)}
-        >
-          <Text
-            style={[
-              styles.pillText,
-              selectedModifierId === null && styles.pillTextSelected,
-            ]}
-          >
-            {t("basePattern")}
-          </Text>
-        </TouchableOpacity>
+        />
 
-        {/* Non-universal attached modifier pills — before universal */}
+        {/* Non-universal attached modifiers — before the universal ones */}
         {attachedNonUniversal.map((mod) => (
-          <View key={mod.id} style={styles.pillWrapper}>
-            <TouchableOpacity
-              style={[
-                styles.pill,
-                selectedModifierId === mod.id && styles.pillSelected,
-              ]}
-              onPress={() => onSelect(mod.id)}
-            >
-              {renderPositionBadge(mod)}
-              <Text
-                style={[
-                  styles.pillText,
-                  selectedModifierId === mod.id && styles.pillTextSelected,
-                ]}
-              >
-                {mod.name}
-              </Text>
-            </TouchableOpacity>
-            {isEditMode && onDetachModifier && (
-              <TouchableOpacity
-                style={styles.detachButton}
-                onPress={() => onDetachModifier(mod.id)}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                accessibilityRole="button"
+          <Chip
+            key={mod.id}
+            label={mod.name}
+            badge={positionLabel(mod)}
+            selected={selectedModifierId === mod.id}
+            onPress={() => onSelect(mod.id)}
+            {...(isEditMode &&
+              onDetachModifier && {
+                onRemove: () => onDetachModifier(mod.id),
                 // Names the modifier, so the control is distinguishable both
-                // from the other pills' detach buttons and from the identical
-                // "×" that removes a video.
-                accessibilityLabel={`${t("detachModifier")}: ${mod.name}`}
-              >
-                <Text style={styles.detachButtonText}>×</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+                // from the other pills' detach buttons and from the one that
+                // removes a video.
+                removeLabel: `${t("detachModifier")}: ${mod.name}`,
+              })}
+          />
         ))}
 
-        {/* Attach picker trigger (edit mode only) */}
         {isEditMode && onShowAttachPicker && (
-          <TouchableOpacity
-            style={[styles.pill, styles.pillAttach]}
+          <Chip
+            label={t("attachModifier")}
+            icon="plus"
             onPress={onShowAttachPicker}
-          >
-            <Text style={styles.pillAttachText}>{t("attachModifier")}</Text>
-          </TouchableOpacity>
+          />
         )}
 
-        {/* Universal modifier pills — always last */}
+        {/* Universal modifiers — always last, marked by an icon rather than
+            by colour alone */}
         {universalModifiers.map((mod) => (
-          <TouchableOpacity
+          <Chip
             key={mod.id}
-            style={[
-              styles.pill,
-              styles.pillUniversal,
-              selectedModifierId === mod.id && styles.pillSelected,
-            ]}
+            label={mod.name}
+            badge={positionLabel(mod)}
+            icon="all-inclusive"
+            selected={selectedModifierId === mod.id}
             onPress={() => onSelect(mod.id)}
-          >
-            {renderPositionBadge(mod)}
-            <Text
-              style={[
-                styles.pillText,
-                selectedModifierId === mod.id && styles.pillTextSelected,
-              ]}
-            >
-              {mod.name}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </ScrollView>
     </View>
@@ -173,68 +129,6 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     paddingVertical: theme.space.xs,
     gap: theme.space.sm,
-  },
-  pillWrapper: {
-    position: "relative",
-  },
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.space.xs,
-    paddingHorizontal: theme.space.md,
-    paddingVertical: theme.space.xs,
-    borderRadius: theme.radius.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  pillSelected: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  pillUniversal: {
-    borderColor: theme.colors.success,
-  },
-  pillText: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.text,
-  },
-  pillTextSelected: {
-    color: theme.colors.onPrimary,
-    fontWeight: "600",
-  },
-  positionBadge: {
-    ...theme.typography.badge,
-    color: theme.colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  detachButton: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    backgroundColor: theme.colors.danger,
-    borderRadius: 9,
-    width: 18,
-    height: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
-  },
-  detachButtonText: {
-    ...theme.typography.label,
-    color: theme.colors.onDanger,
-    fontWeight: "bold",
-    lineHeight: 16,
-  },
-  pillAttach: {
-    borderStyle: "dashed",
-    borderColor: theme.colors.primary,
-    backgroundColor: "transparent",
-  },
-  pillAttachText: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.primary,
   },
 }));
 

@@ -94,19 +94,21 @@ prop (`{...styles.card}`) cuts it off from theme updates.
 ## UI primitives — `ui/`
 
 Screens compose `AppText`, `Button`, `IconButton`, `Chip`, `Card`, `ListRow` and
-`SegmentedControl` from `@/src/common/ui`
+`SegmentedControl` (and, for what none of those cover, `Tappable`) from `@/src/common/ui`
 rather than styling `TouchableOpacity` and `Text` by hand. They carry what every hand-rolled
 touchable kept forgetting: pressed feedback (Material ripple on Android, a fade elsewhere), a 44dp
 touch target, `accessibilityRole`/`accessibilityState`, and haptics where they belong.
 
 - **`Button`** — `variant`: `primary` (the one main action), `secondary` (neutral outline — Cancel
   beside a primary), `outline`, `ghost` (quiet text action), `danger` (confirms a destructive step,
-  with a haptic), `dangerOutline` (leads to one); `size` `sm`/`md`; optional `icon`, `loading`.
+  with a haptic), `dangerOutline` (leads to one), `media` (over video or the camera); `size` `sm`/`md`; optional `icon`, `loading`.
   A footer pair is `secondary` + `primary`, each `flex: 1`, Cancel on the left.
 - **`IconButton`** — an icon with a **required** `accessibilityLabel`. The glyph keeps its size;
   `hitSlop` grows the target to 44dp, so dense headers keep their layout.
 - **`Chip`** — a selectable pill (filters, types, levels, one-of-several). Selection is shown by
   colour _and_ a check mark; pressing gives a selection haptic. `swatch` adds a colour dot.
+  `badge` adds a small uppercase tag (a modifier's position); `onRemove` with `removeLabel` adds a
+  remove button inside the chip (detaching a modifier).
 - **`Card`** — a surface; with `onPress` the whole card is one button.
 - **`ListRow`** — every row of a list, sheet, menu or drawer: `icon` or `leading`, `title` with
   `meta` and `subtitle` (a string or badges), `trailing` controls (separately pressable).
@@ -120,6 +122,9 @@ touch target, `accessibilityRole`/`accessibilityState`, and haptics where they b
   `kind="tabs"` switches the view below (the list manager's Patterns / Modifiers); `kind="choice"`
   sets a value, announced as radios (import's Skip / Replace).
 - **`AppText`** — `variant` is a text style, `color` a colour role.
+- **`Tappable`** — the same press behaviour around content that is not text or an icon: the
+  header's logo, a video thumbnail. Its `accessibilityLabel` is required, since such content has
+  nothing to read out. Reach for the others first.
 
 `Button` and `Chip` default their `accessibilityLabel` to their visible text, which is what tests
 find them by. `style` on a primitive is for layout (flex, margins); the look comes from its props.
@@ -134,9 +139,11 @@ Its strings are not translated on purpose — no user sees it — and release bu
 A list's actions are never behind a long press alone: `PatternListSelector` shows a "more" button on
 each card, and the long press is only a shortcut to the same sheet.
 
-Still hand-rolled, for a later pass: `ModifierPillStrip` (pills with position badges and a detach
-control), the template modal's pattern toggles and colour picker, the video thumbnails'
-remove badges, and the graph's hint and filter summary.
+Two touch surfaces are deliberately not primitives: the backdrops that dismiss `BottomSheet` and
+`PatternDetailsModal` (siblings behind their cards, see "Dismissal touches"), and the video editor's
+tap-to-mark overlay, which is a canvas rather than a control. The type row's colour dot and swatches
+in `PatternListTemplateModal` stay bespoke too, because they display data colours and their tests
+pin the row's structure; they are labelled and announce their state.
 
 ## Header layout
 

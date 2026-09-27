@@ -13,7 +13,13 @@ import { alpha, type AppTheme } from "@/src/common/theme/tokens";
 import { haptics } from "@/src/common/ui/haptics";
 
 export type ButtonVariant =
-  "primary" | "secondary" | "outline" | "ghost" | "danger" | "dangerOutline";
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "ghost"
+  | "danger"
+  | "dangerOutline"
+  | "media";
 export type ButtonSize = "sm" | "md";
 
 export interface ButtonProps {
@@ -24,7 +30,8 @@ export interface ButtonProps {
    * neutral outline — Cancel beside a primary) and `outline` (primary-tinted)
    * sit beside it; `ghost` is a quiet text action (Cancel);
    * `danger` deletes or discards; `dangerOutline` leads to a destructive
-   * step (it opens the confirmation that then uses `danger`).
+   * step (it opens the confirmation that then uses `danger`); `media` sits
+   * over video or the camera, on a scrim that does not follow the theme.
    */
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -49,6 +56,7 @@ const foreground = (theme: AppTheme, variant: ButtonVariant) =>
     ghost: theme.colors.primary,
     danger: theme.colors.onDanger,
     dangerOutline: theme.colors.danger,
+    media: theme.media.onScrim,
   })[variant];
 
 const Button: React.FC<ButtonProps> = ({
@@ -122,6 +130,7 @@ const styles = StyleSheet.create((theme) => ({
       ghost: theme.colors.primary,
       danger: theme.colors.danger,
       dangerOutline: theme.colors.danger,
+      media: theme.media.scrim,
     }[variant],
     minHeight: size === "sm" ? 36 : theme.touchTarget,
     paddingHorizontal: size === "sm" ? theme.space.md : theme.space.lg,
@@ -132,6 +141,7 @@ const styles = StyleSheet.create((theme) => ({
       ghost: "transparent",
       danger: theme.colors.danger,
       dangerOutline: "transparent",
+      media: theme.media.scrim,
     }[variant],
   }),
   label: (variant: ButtonVariant, size: ButtonSize) => ({

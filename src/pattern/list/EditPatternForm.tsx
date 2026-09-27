@@ -1,13 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Image,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Button, Chip, ListRow } from "@/src/common/ui";
+import { Image, ScrollView, Text, TextInput, View } from "react-native";
+import { Button, Chip, ListRow, Tappable } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
@@ -494,11 +487,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       >
         <View style={styles.deidentifyChoices}>
           {editable.map(({ ref, index }) => (
-            <TouchableOpacity
+            <Tappable
               key={ref.value}
               onPress={() => openEditor(ref)}
-              accessibilityRole="button"
               accessibilityLabel={t("deidentifyVideoN", { n: index + 1 })}
+              style={styles.deidentifyThumbButton}
             >
               {thumbnails[index] ? (
                 <Image
@@ -510,7 +503,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                   <Text style={styles.buttonText}>{index + 1}</Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </Tappable>
           ))}
         </View>
         <Button
@@ -631,6 +624,10 @@ const styles = StyleSheet.create((theme) => {
       flexWrap: "wrap",
       gap: theme.space.sm,
       marginBottom: theme.space.lg,
+    },
+    deidentifyThumbButton: {
+      overflow: "hidden",
+      borderRadius: theme.radius.md,
     },
     deidentifyThumb: { width: 96, height: 96, borderRadius: theme.radius.md },
     thumbFallback: {
