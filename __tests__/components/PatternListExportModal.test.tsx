@@ -103,3 +103,20 @@ describe("PatternListExportModal — transcripts (L4)", () => {
     expect(screen.queryByText("Include transcripts")).toBeNull();
   });
 });
+
+describe("PatternListExportModal — opening", () => {
+  it("selects every list, even when the lists arrived after it was first mounted", () => {
+    // Settings mounts it hidden before the lists have loaded, then shows it.
+    const props = { onExport: jest.fn(), onCancel: jest.fn() };
+    const { rerender } = renderWithProviders(
+      <PatternListExportModal visible={false} patternLists={[]} {...props} />,
+    );
+    const lists = [list("Tango", false), list("Swing", false)];
+
+    rerender(
+      <PatternListExportModal visible patternLists={lists} {...props} />,
+    );
+
+    expect(screen.getByText("Export (2)")).toBeOnTheScreen();
+  });
+});

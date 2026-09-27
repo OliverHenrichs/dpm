@@ -18,8 +18,28 @@ interface PatternListExportModalProps {
   onExport: (selectedLists: IPatternList[], options: ExportOptions) => void;
   onCancel: () => void;
 }
+/**
+ * Settings mounts this permanently and toggles `visible`, so the body is mounted per opening:
+ * the selection is then taken from the lists as they are now — all of them — and the options
+ * start from their defaults. Taken once at the first mount, it saw no lists yet and opened with
+ * nothing selected (see src/pattern/data/AGENTS.md, "Import conflict resolution").
+ */
 const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
   visible,
+  onCancel,
+  ...rest
+}) => (
+  <Modal
+    visible={visible}
+    animationType="slide"
+    transparent={true}
+    onRequestClose={onCancel}
+  >
+    {visible && <ExportSheet onCancel={onCancel} {...rest} />}
+  </Modal>
+);
+
+const ExportSheet: React.FC<Omit<PatternListExportModalProps, "visible">> = ({
   patternLists,
   onExport,
   onCancel,
@@ -52,103 +72,96 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
     });
   };
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onCancel}
-    >
-      <ModalOverlay>
-        <View style={styles.modalContent}>
-          <Text style={styles.title}>{t("selectListsToExport")}</Text>
-          <SelectAllButton
-            allSelected={stats.allSelected}
-            onToggle={toggleSelectAll}
+    <ModalOverlay>
+      <View style={styles.modalContent}>
+        <Text style={styles.title}>{t("selectListsToExport")}</Text>
+        <SelectAllButton
+          allSelected={stats.allSelected}
+          onToggle={toggleSelectAll}
+        />
+        <ScrollView style={styles.listContainer}>
+          {patternLists.map((list) => (
+            <ExportListItem
+              key={list.id}
+              list={list}
+              isSelected={selectedIds.has(list.id)}
+              onToggle={() => toggleSelection(list.id)}
+            />
+          ))}
+        </ScrollView>
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>{t("includeVideosInExport")}</Text>
+          <Switch
+            value={includeVideos}
+            onValueChange={setIncludeVideos}
+            trackColor={{
+              false: theme.colors.textMuted,
+              true: theme.colors.primary,
+            }}
+            thumbColor={theme.colors.border}
           />
-          <ScrollView style={styles.listContainer}>
-            {patternLists.map((list) => (
-              <ExportListItem
-                key={list.id}
-                list={list}
-                isSelected={selectedIds.has(list.id)}
-                onToggle={() => toggleSelection(list.id)}
-              />
-            ))}
-          </ScrollView>
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{t("includeVideosInExport")}</Text>
-            <Switch
-              value={includeVideos}
-              onValueChange={setIncludeVideos}
-              trackColor={{
-                false: theme.colors.textMuted,
-                true: theme.colors.primary,
-              }}
-              thumbColor={theme.colors.border}
-            />
-          </View>
-          {offerTranscripts && (
-            <>
-              <View style={styles.toggleRow}>
-                <Text
-                  style={[
-                    styles.toggleLabel,
-                    !includeVideos && styles.disabledLabel,
-                  ]}
-                >
-                  {t("includeTranscriptsInExport")}
-                </Text>
-                <Switch
-                  value={includeVideos && includeTranscripts}
-                  onValueChange={setIncludeTranscripts}
-                  disabled={!includeVideos}
-                  accessibilityLabel={t("includeTranscriptsInExport")}
-                  trackColor={{
-                    false: theme.colors.textMuted,
-                    true: theme.colors.primary,
-                  }}
-                  thumbColor={theme.colors.border}
-                />
-              </View>
-              <Text style={styles.toggleHint}>
-                {t(
-                  includeVideos
-                    ? "includeTranscriptsHint"
-                    : "includeTranscriptsNeedsVideos",
-                )}
-              </Text>
-            </>
-          )}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{t("exportAsReadonly")}</Text>
-            <Switch
-              value={exportAsReadonly}
-              onValueChange={setExportAsReadonly}
-              trackColor={{
-                false: theme.colors.textMuted,
-                true: theme.colors.primary,
-              }}
-              thumbColor={theme.colors.border}
-            />
-          </View>
-          <View style={styles.buttonRow}>
-            <Button
-              title={t("cancel")}
-              variant="secondary"
-              onPress={onCancel}
-              style={styles.footerButton}
-            />
-            <Button
-              title={`${t("export")} (${stats.selectedCount})`}
-              icon="export-variant"
-              onPress={handleExport}
-              disabled={stats.noneSelected}
-              style={styles.footerButton}
-            />
-          </View>
         </View>
-      </ModalOverlay>
-    </Modal>
+        {offerTranscripts && (
+          <>
+            <View style={styles.toggleRow}>
+              <Text
+                style={[
+                  styles.toggleLabel,
+                  !includeVideos && styles.disabledLabel,
+                ]}
+              >
+                {t("includeTranscriptsInExport")}
+              </Text>
+              <Switch
+                value={includeVideos && includeTranscripts}
+                onValueChange={setIncludeTranscripts}
+                disabled={!includeVideos}
+                accessibilityLabel={t("includeTranscriptsInExport")}
+                trackColor={{
+                  false: theme.colors.textMuted,
+                  true: theme.colors.primary,
+                }}
+                thumbColor={theme.colors.border}
+              />
+            </View>
+            <Text style={styles.toggleHint}>
+              {t(
+                includeVideos
+                  ? "includeTranscriptsHint"
+                  : "includeTranscriptsNeedsVideos",
+              )}
+            </Text>
+          </>
+        )}
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>{t("exportAsReadonly")}</Text>
+          <Switch
+            value={exportAsReadonly}
+            onValueChange={setExportAsReadonly}
+            trackColor={{
+              false: theme.colors.textMuted,
+              true: theme.colors.primary,
+            }}
+            thumbColor={theme.colors.border}
+          />
+        </View>
+        <View style={styles.buttonRow}>
+          <Button
+            title={t("cancel")}
+            variant="secondary"
+            onPress={onCancel}
+            style={styles.footerButton}
+          />
+          <Button
+            title={`${t("export")} (${stats.selectedCount})`}
+            icon="export-variant"
+            onPress={handleExport}
+            disabled={stats.noneSelected}
+            style={styles.footerButton}
+          />
+        </View>
+      </View>
+    </ModalOverlay>
   );
 };
 const styles = StyleSheet.create((theme) => ({
