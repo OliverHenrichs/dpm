@@ -376,7 +376,8 @@ describe("PatternDetails", () => {
 
     expect(screen.getByText("8")).toBeOnTheScreen();
     expect(screen.getByText("push")).toBeOnTheScreen();
-    expect(screen.getByText("beginner")).toBeOnTheScreen();
+    // Translated, not the stored value.
+    expect(screen.getByText("Beginner")).toBeOnTheScreen();
   });
 
   it("falls back to the raw type id when the type is unknown", () => {
