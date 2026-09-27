@@ -32,7 +32,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
-| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | in the app on Android — transcribe a video, read the transcript, add lines to the description; export opt-in and iOS open | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--in-the-app-on-android) |
+| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | in the app on Android — transcribe a video, read the transcript, add lines to the description, export them by choice; iOS open | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--in-the-app-on-android) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -72,7 +72,7 @@ Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wi
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
-Phase 5  L4: spike done (go) → engine✅ → UI✅ → data → iOS
+Phase 5  L4: spike done (go) → engine✅ → UI✅ → data✅ → iOS
 ```
 
 **Phases 0 to 3 are complete.** L3 is in the app on Android with its open items listed in its
@@ -1839,7 +1839,19 @@ landed in the description. After *Delete* in Settings, *Transcribe again* asked 
 downloaded both models (hashes checked on the device, closing the engine phase's open item) and
 transcribed, counting once to 100%.
 
-**Still open:** export opt-in (data phase), iOS, the music clip with VAD in front.
+**Still open:** iOS, the music clip with VAD in front.
+
+#### Data (2026-09-28, branch `feature/l4-data`)
+
+- Export format **3.2.0**; `SUPPORTED_MINOR` 2. `exportPatternLists` takes an options object.
+- **Include transcripts** in the export sheet: offered only when a selected list has one, off each
+  time the sheet opens, needs *Include videos* (a transcript sits on a local video). The file
+  records `includesTranscripts`. Published lists never carry transcripts.
+- Import keeps a well-formed transcript (lines sorted by time), drops malformed lines with a
+  warning, and drops a malformed transcript — never the video. Round-trip, validation and sheet
+  tests.
+- Found on the way: the export sheet opened with **nothing selected** — it snapshotted the lists at
+  its first, hidden mount. Its body now mounts per opening.
 
 #### Phases
 
@@ -1881,9 +1893,22 @@ transcribed, counting once to 100%.
 - Code-switching teachers (English jargon inside Spanish speech): the vocabulary prompt helps;
   the spike will show how much.
 
-**Later, separate:** summarising a transcript into a description needs an LLM. On-device options
-are limited, and a remote one brings back L3's consent flow. Only worth it once transcripts prove
-useful.
+**Later, separate — suggestions from a transcript (assessed 2026-09-28, not started):** a
+suggested pattern name and description, drafted by an LLM from the transcript and the list's own
+vocabulary, always shown for the user to accept or edit, never written on its own.
+- **On-device, llama.rn (llama.cpp, same family as whisper.rn):** a 1–2B instruct model (Qwen3
+  1.7B, Gemma 3 1B; ~1 GB q4) downloaded on first use like Whisper. Enough for "name + two
+  sentences from ≤ 500 words" in English/German/Spanish; weaker in hi/bn. CPU speed on the Pixel
+  unmeasured — expect ~10 s for a description. Private, offline, free, every phone.
+- **On-device, Gemini Nano (ML Kit GenAI Prompt API):** no download, better model, but beta, a
+  device list (Pixel 9/10 series listed, **10a not**), foreground-only, a per-app battery quota,
+  and a Kotlin module of our own.
+- **Cloud, Gemini via Firebase AI Logic:** best quality, no model on the phone. The free tier may
+  not be offered to users in the EEA/UK/CH (Gemini API terms) — so Blaze billing, at fractions of
+  a cent per suggestion; App Check becomes mandatory 2026-11-02; and the transcript leaves the
+  device, which brings back L3's consent step.
+- **Next step if wanted:** a spike on the Pixel with llama.rn — two models, the owner's clip plus a
+  German one — for quality, speed and memory, and a check whether the 10a reports Gemini Nano.
 
 **Size:** **L** overall. The spike decides whether it stays at L or grows.
 
