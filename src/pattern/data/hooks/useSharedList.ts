@@ -10,6 +10,10 @@ import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 /**
  * Maintains a live Firestore subscription for a single shared list.
  *
+ * A subscribed (read-only) copy takes every update. The publisher's own list
+ * ignores them: its local copy is the truth, and a late echo of an older push
+ * would otherwise overwrite newer local changes.
+ *
  * When the publisher unpublishes (document deleted), the local copy is kept,
  * made editable, shareCode cleared, and detachedListName is set so the caller
  * can render a themed AppDialog notification.
@@ -35,7 +39,12 @@ export function useSharedList(
       async (updated: PatternListWithPatterns) => {
         try {
           const existing = await getPatternListById(updated.id);
-          const listToSave = { ...updated, readonly: existing?.readonly };
+          // Only a subscriber takes the cloud's copy. On the publisher's own
+          // device the local list is the source of truth, and what comes back
+          // may be an echo of an older push — writing it over local storage
+          // lost patterns added since.
+          if (!existing?.readonly) return;
+          const listToSave = { ...updated, readonly: existing.readonly };
           await savePatternList(listToSave);
           await savePatterns(updated.id, updated.patterns);
           onUpdatedRef.current();

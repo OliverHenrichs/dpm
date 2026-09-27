@@ -86,7 +86,13 @@ export function usePatternCrud(): PatternCrud {
         nextPatternId(activeList, updatedPatterns),
       );
       if (mark !== activeList.nextPatternId) {
-        await updateActiveList({ ...activeList, nextPatternId: mark });
+        // Hand over the new patterns: for a published list this also pushes,
+        // and without them it pushed the provider's pre-change snapshot —
+        // overwriting the push above, so an added pattern was lost.
+        await updateActiveList(
+          { ...activeList, nextPatternId: mark },
+          updatedPatterns,
+        );
       }
     },
     [updatePatterns, syncIfPublished, activeList, patterns, updateActiveList],
