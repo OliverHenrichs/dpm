@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -121,7 +122,7 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
       transparent={true}
       onRequestClose={bodyProps.onClose}
     >
-      <View style={styles.modalOverlay}>
+      <ModalOverlay>
         <View style={styles.modalContent}>
           {/* Keyed by what the modal is currently open on, so opening it (or
               switching to another list) re-mounts the body with its drafts
@@ -132,7 +133,7 @@ const PatternListTemplateModal: React.FC<PatternListTemplateModalProps> = ({
             {...bodyProps}
           />
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
@@ -412,7 +413,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         <Button
           title={t("addPatternType")}
           icon="plus"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onPress={handleAddType}
           style={styles.addTypeButton}
@@ -481,13 +482,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   footerGap: {
     marginTop: theme.space.xxl,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.space.xl,
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
@@ -609,11 +603,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   addTypeButton: {
     marginTop: theme.space.xs,
-    paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.md,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
     alignSelf: "flex-start",
   },
   patternToggleMeta: {

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Modal, Text, TextInput, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
@@ -138,7 +139,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
         transparent
         onRequestClose={handleClose}
       >
-        <View style={styles.overlay}>
+        <ModalOverlay>
           <View style={styles.card}>
             <Text style={styles.title}>{t("subscribeToList")}</Text>
 
@@ -238,7 +239,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
               )}
             </View>
           </View>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── QR code scanner ───────────────────────────────────────────── */}
@@ -253,13 +254,6 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  overlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.space.xl,
-  },
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xl,

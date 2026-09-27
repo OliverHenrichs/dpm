@@ -172,10 +172,12 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   );
 };
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     justifyContent: "flex-end",
+    // A tall sheet stops below the status bar instead of sliding under it.
+    paddingTop: rt.insets.top,
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
@@ -189,7 +191,11 @@ const styles = StyleSheet.create((theme) => ({
     borderTopLeftRadius: theme.radius.xxl,
     borderTopRightRadius: theme.radius.xxl,
     paddingHorizontal: theme.space.lg,
-    paddingBottom: theme.space.xxxl,
+    // Clear of the gesture bar, with at least the usual room below the content.
+    paddingBottom: Math.max(
+      theme.space.xxxl,
+      rt.insets.bottom + theme.space.lg,
+    ),
     maxHeight,
     minHeight,
     ...theme.elevation.lg,

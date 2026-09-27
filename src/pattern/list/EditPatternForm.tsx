@@ -357,7 +357,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           {levels.map((level) => (
             <Chip
               key={level}
-              label={level}
+              label={t(level)}
               selected={newPattern.level === level}
               onPress={() => setNewPattern({ ...newPattern, level })}
             />

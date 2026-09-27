@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Modal, ScrollView, Switch, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
@@ -46,7 +47,7 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
       transparent={true}
       onRequestClose={onCancel}
     >
-      <View style={styles.modalOverlay}>
+      <ModalOverlay>
         <View style={styles.modalContent}>
           <Text style={styles.title}>{t("selectListsToExport")}</Text>
           <SelectAllButton
@@ -103,18 +104,11 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
             />
           </View>
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
 const styles = StyleSheet.create((theme) => ({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.space.xl,
-  },
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xl,

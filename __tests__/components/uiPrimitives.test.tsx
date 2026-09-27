@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import {
   AppText,
@@ -13,6 +13,7 @@ import {
 } from "@/src/common/ui";
 import { lightTheme } from "@/src/common/theme/tokens";
 import DesignGallery from "@/src/common/ui/DesignGallery";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import {
   act,
   fireEvent,
@@ -370,5 +371,38 @@ describe("variants over media and for removal", () => {
       screen.getByLabelText("Remove video").props.style,
     );
     expect(style.backgroundColor).toBe(lightTheme.colors.danger);
+  });
+});
+
+describe("ModalOverlay", () => {
+  /** The host view painted with the scrim colour. */
+  const overlayOf = () =>
+    screen
+      .UNSAFE_getAllByType(View)
+      .map((node) => StyleSheet.flatten(node.props.style) ?? {})
+      .find((style) => style.backgroundColor === lightTheme.colors.overlay)!;
+
+  it("centres a dialog on the scrim, padded clear of the system bars", () => {
+    render(
+      <ModalOverlay padding="xxxl">
+        <AppText>Dialog</AppText>
+      </ModalOverlay>,
+    );
+    const style = overlayOf();
+    expect(style.backgroundColor).toBe(lightTheme.colors.overlay);
+    expect(style.justifyContent).toBe("center");
+    // The mock's insets are zero, leaving the padding step itself.
+    expect(style.paddingTop).toBe(lightTheme.space.xxxl);
+  });
+
+  it("lays a bottom panel against the bottom edge", () => {
+    render(
+      <ModalOverlay align="bottom" padding="none">
+        <AppText>Panel</AppText>
+      </ModalOverlay>,
+    );
+    const style = overlayOf();
+    expect(style.justifyContent).toBe("flex-end");
+    expect(style.paddingBottom).toBe(0);
   });
 });

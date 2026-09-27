@@ -1,5 +1,6 @@
 import React from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { IconButton } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -45,7 +46,7 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
       {/* A Modal renders outside the drawer's gesture root, and without one of its own the
           trim bar's pan never activates on Android. See src/pattern/graph/AGENTS.md. */}
       <GestureHandlerRootView style={styles.root}>
-        <View style={styles.overlay}>
+        <ModalOverlay align="bottom" padding="none">
           <View style={styles.card}>
             <View style={styles.header}>
               <Text style={styles.title} numberOfLines={1}>
@@ -91,25 +92,22 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
               )}
             </ScrollView>
           </View>
-        </View>
+        </ModalOverlay>
       </GestureHandlerRootView>
     </Modal>
   );
 };
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1 },
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: theme.colors.overlay,
-  },
   card: {
     maxHeight: "92%",
     padding: theme.space.lg,
     // The trim bar is dragged sideways: keep it out of Android's back-gesture band, which a
     // full-width sheet does not do on its own (it is not inside PageContainer).
-    paddingHorizontal: SCREEN_EDGE_INSET + 16,
+    paddingHorizontal: SCREEN_EDGE_INSET + theme.space.lg,
+    // Runs to the screen's bottom edge: its content keeps clear of the gesture bar.
+    paddingBottom: theme.space.lg + rt.insets.bottom,
     borderTopLeftRadius: theme.radius.xl,
     borderTopRightRadius: theme.radius.xl,
     backgroundColor: theme.colors.background,

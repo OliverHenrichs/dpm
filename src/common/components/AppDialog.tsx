@@ -1,5 +1,6 @@
 import React from "react";
 import { Modal, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { StyleSheet } from "react-native-unistyles";
 import { AppText, Button } from "@/src/common/ui";
 
@@ -43,7 +44,7 @@ const AppDialog: React.FC<AppDialogProps> = ({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <ModalOverlay padding="xxxl">
         <View style={styles.card} accessibilityRole="alert">
           <AppText variant="title" style={styles.title}>
             {title}
@@ -68,19 +69,12 @@ const AppDialog: React.FC<AppDialogProps> = ({
             )}
           </View>
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
-  overlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.space.xxxl,
-  },
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xl,

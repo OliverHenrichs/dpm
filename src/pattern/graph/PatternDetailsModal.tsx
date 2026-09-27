@@ -1,5 +1,6 @@
 import React from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { IconButton } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
@@ -33,7 +34,7 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <ModalOverlay padding="none">
         {/* The backdrop sits *behind* the card rather than wrapping it.
             Wrapping it in a press handler — even one that only swallows the
             event — makes that handler claim the touch, and native children
@@ -70,18 +71,12 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
             )}
           </ScrollView>
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,

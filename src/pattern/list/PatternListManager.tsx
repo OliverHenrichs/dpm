@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { SegmentedControl } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
@@ -204,7 +205,7 @@ const PatternListManager = () => {
           transparent
           onRequestClose={closeAddForm}
         >
-          <View style={styles.modalOverlay}>
+          <ModalOverlay padding="none">
             <View style={styles.modalContent}>
               <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <EditPatternForm
@@ -219,7 +220,7 @@ const PatternListManager = () => {
                 />
               </ScrollView>
             </View>
-          </View>
+          </ModalOverlay>
         </Modal>
         <Modal
           visible={isEditing && selectedPattern != null}
@@ -227,7 +228,7 @@ const PatternListManager = () => {
           transparent
           onRequestClose={() => setIsEditing(false)}
         >
-          <View style={styles.modalOverlay}>
+          <ModalOverlay padding="none">
             <View style={styles.modalContent}>
               <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <EditPatternForm
@@ -240,7 +241,7 @@ const PatternListManager = () => {
                 />
               </ScrollView>
             </View>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         {/* Add / Edit Modifier modals */}
@@ -250,14 +251,14 @@ const PatternListManager = () => {
           transparent
           onRequestClose={() => setIsAddingModifier(false)}
         >
-          <View style={styles.modalOverlay}>
+          <ModalOverlay padding="none">
             <View style={styles.modalContent}>
               <EditModifierForm
                 onAccepted={handleAddModifier}
                 onCancel={() => setIsAddingModifier(false)}
               />
             </View>
-          </View>
+          </ModalOverlay>
         </Modal>
         <Modal
           visible={isEditingModifier && selectedModifier != null}
@@ -265,7 +266,7 @@ const PatternListManager = () => {
           transparent
           onRequestClose={() => setIsEditingModifier(false)}
         >
-          <View style={styles.modalOverlay}>
+          <ModalOverlay padding="none">
             <View style={styles.modalContent}>
               <EditModifierForm
                 existing={selectedModifier}
@@ -273,7 +274,7 @@ const PatternListManager = () => {
                 onCancel={() => setIsEditingModifier(false)}
               />
             </View>
-          </View>
+          </ModalOverlay>
         </Modal>
 
         <AppDialog
@@ -356,12 +357,6 @@ const styles = StyleSheet.create((theme) => ({
   tabStrip: {
     marginHorizontal: theme.space.sm,
     marginBottom: theme.space.sm,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
   },
   modalContent: {
     borderRadius: theme.radius.none,

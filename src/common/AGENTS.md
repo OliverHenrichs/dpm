@@ -183,6 +183,17 @@ which has an always-visible menu button. iOS keeps the swipe: its interactive po
 left-edge only and the drawer is on the right. Between the two there is nothing of the app's own
 left in the band.
 
+## Modals and the system bars
+
+Android draws apps edge to edge, and a React Native `Modal` gets no insets of its own: content laid
+out from the top sat under the clock and battery (the edit-pattern dialog's title did). **Every
+`Modal`'s scrim is a `ModalOverlay`** (`components/ModalOverlay.tsx`): it covers the whole screen and
+pads its content by the system bars' insets plus a spacing step (`padding`, default `xl`;
+`align="bottom"` for panels that meet the bottom edge, whose own card then pads by the bottom inset,
+as `DeidentifyModal` does). `BottomSheet` does the same inside itself. The insets come from
+Unistyles' runtime (`StyleSheet.create((theme, rt) => …)`, `rt.insets`), so they follow rotation;
+the Jest mock reports them as zero.
+
 ## Dismissal touches
 
 **A backdrop tap must dismiss via a sibling `Pressable` behind the card, never a wrapper around

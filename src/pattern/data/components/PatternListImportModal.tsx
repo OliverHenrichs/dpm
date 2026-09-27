@@ -1,5 +1,6 @@
 import React from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
@@ -48,7 +49,7 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
       transparent={true}
       onRequestClose={onCancel}
     >
-      <View style={styles.modalOverlay}>
+      <ModalOverlay>
         <View style={styles.modalContent}>
           <Text style={styles.title}>{t("importPatternLists")}</Text>
           <ImportSummary
@@ -86,18 +87,11 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
             />
           </View>
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
 const styles = StyleSheet.create((theme) => ({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.space.xl,
-  },
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xl,

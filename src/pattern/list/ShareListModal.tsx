@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Clipboard, Modal, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
@@ -88,7 +89,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <ModalOverlay>
         <View style={styles.card}>
           <Text style={styles.title}>{t("shareToCloud")}</Text>
           <Text style={styles.listName}>{list.name}</Text>
@@ -170,7 +171,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
             </View>
           )}
         </View>
-      </View>
+      </ModalOverlay>
 
       {/* ── Unpublish confirmation dialog ────────────────────────────── */}
       <AppDialog
@@ -206,13 +207,6 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  overlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: theme.space.xl,
-  },
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.xl,
