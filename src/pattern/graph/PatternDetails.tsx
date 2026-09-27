@@ -101,7 +101,7 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("level")}:</Text>
           <Text style={styles.patternDetailsValue}>
-            {selectedPattern.level}
+            {selectedPattern.level ? t(selectedPattern.level) : ""}
           </Text>
         </View>
       </View>

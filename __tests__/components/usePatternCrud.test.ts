@@ -432,6 +432,67 @@ describe("usePatternCrud", () => {
       );
     });
 
+    /**
+     * The defect this guards: after an add, the high-water mark moved and a
+     * second push went out with the patterns from *before* the add — the
+     * provider's closure had not seen the new state yet. It overwrote the good
+     * push, and the live subscription then wrote that stale copy back over
+     * local storage: the new pattern vanished. Edits never moved the mark, so
+     * only adds were lost, and only on published lists.
+     */
+    it("ends with a push that carries the new pattern", async () => {
+      const { result } = await mountCrud([pattern(1)], {
+        shareCode: "ABCD1234",
+      });
+
+      await act(async () => {
+        await result.current.addPattern(pattern(0, { name: "Whip" }));
+      });
+
+      const lastPush = mockedSync.mock.lastCall![1];
+      expect(lastPush.map((p) => p.name)).toEqual(["P1", "Whip"]);
+    });
+
+    it("keeps a publisher's new pattern when a stale copy comes back from the cloud", async () => {
+      const { result, list } = await mountCrud([pattern(1)], {
+        shareCode: "ABCD1234",
+      });
+      const onRemote = (subscribeToSharedList as jest.Mock).mock.lastCall![1];
+
+      await act(async () => {
+        await result.current.addPattern(pattern(0, { name: "Whip" }));
+      });
+      // What the cloud held before the add, arriving late.
+      await act(async () => {
+        await onRemote({ ...list, patterns: [pattern(1)] });
+      });
+
+      expect((await storedPatterns(list.id)).map((p) => p.name)).toEqual([
+        "P1",
+        "Whip",
+      ]);
+    });
+
+    it("still takes the publisher's updates into a subscribed, read-only list", async () => {
+      const { list } = await mountCrud([pattern(1)], {
+        shareCode: "ABCD1234",
+        readonly: true,
+      });
+      const onRemote = (subscribeToSharedList as jest.Mock).mock.lastCall![1];
+
+      await act(async () => {
+        await onRemote({
+          ...list,
+          patterns: [pattern(1), pattern(2, { name: "From the publisher" })],
+        });
+      });
+
+      expect((await storedPatterns(list.id)).map((p) => p.name)).toEqual([
+        "P1",
+        "From the publisher",
+      ]);
+    });
+
     it("stays local when the list is not published", async () => {
       const { result } = await mountCrud([]);
 
