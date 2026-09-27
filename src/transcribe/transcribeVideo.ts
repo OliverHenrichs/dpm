@@ -24,6 +24,8 @@ export type TranscribeOutcome = {
     /** Audio seconds per wall-clock second of transcription; above 1 is faster than real time. */
     speed: number;
     gpu: boolean;
+    /** whisper.cpp's reason when it fell back to the CPU. */
+    noGpuReason?: string;
   };
 };
 
@@ -39,6 +41,7 @@ export type TranscribeOptions = {
 
 let context: WhisperContext | null = null;
 let contextGpu = false;
+let contextNoGpuReason: string | undefined;
 
 /** Loaded once and kept: loading the model costs about a second. */
 async function whisper(): Promise<{ ctx: WhisperContext; loadMs: number }> {
@@ -47,6 +50,7 @@ async function whisper(): Promise<{ ctx: WhisperContext; loadMs: number }> {
   const started = Date.now();
   context = await initWhisper({ filePath: model.uri });
   contextGpu = context.gpu;
+  contextNoGpuReason = context.reasonNoGPU || undefined;
   return { ctx: context, loadMs: Date.now() - started };
 }
 
@@ -97,6 +101,7 @@ export async function transcribeVideo(
           transcribeMs,
           speed: speech.durationSeconds / Math.max(0.001, transcribeMs / 1000),
           gpu: contextGpu,
+          noGpuReason: contextNoGpuReason,
         },
       };
     })

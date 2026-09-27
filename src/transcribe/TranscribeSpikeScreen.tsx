@@ -191,7 +191,9 @@ const TranscribeSpikeScreen: React.FC = () => {
                     {r.outcome.timing.loadMs} ms · transcribe{" "}
                     {r.outcome.timing.transcribeMs} ms ·{" "}
                     {r.outcome.timing.speed.toFixed(1)}× real time ·{" "}
-                    {r.outcome.timing.gpu ? "GPU" : "CPU"}
+                    {r.outcome.timing.gpu
+                      ? "GPU"
+                      : `CPU (${r.outcome.timing.noGpuReason ?? "no reason given"})`}
                   </AppText>
                   {r.outcome.segments.map((s, j) => (
                     <AppText key={j} variant="bodySmall">
