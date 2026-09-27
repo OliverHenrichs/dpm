@@ -1,16 +1,15 @@
 import { File } from "expo-file-system";
-// The package's `exports` map has no root entry, only "./*": import its index explicitly.
-import {
-  initWhisper,
-  initWhisperVad,
-  WhisperContext,
-  WhisperVadContext,
-} from "whisper.rn/index";
 import { AudioExtractModule } from "@/modules/audio-extract";
 import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
 import { installedModels } from "@/src/transcribe/modelStore";
 import { WHISPER_MODEL } from "@/src/transcribe/models";
 import { speechRegions } from "@/src/transcribe/speechRegions";
+import {
+  initWhisper,
+  initWhisperVad,
+  WhisperContext,
+  WhisperVadContext,
+} from "@/src/transcribe/whisper";
 import {
   splitLongSegments,
   toTranscriptSegments,
