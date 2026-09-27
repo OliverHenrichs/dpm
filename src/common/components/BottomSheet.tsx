@@ -60,28 +60,36 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   const reduceMotion = useReducedMotion();
   const { height: screenHeight } = useWindowDimensions();
 
-  // Stays mounted through the closing animation, then unmounts.
+  // Stays mounted through the closing animation, then unmounts. Mounting on
+  // open is adjusted during render, not in the effect below, so opening does
+  // not cost a second render pass.
   const [mounted, setMounted] = useState(visible);
+  if (visible && !mounted) setMounted(true);
   /** 0 = off screen, 1 = fully up. */
   const progress = useSharedValue(0);
   /** How far the sheet is dragged down, in px. */
   const drag = useSharedValue(0);
   const sheetHeight = useSharedValue(screenHeight);
 
+  // Shared values go through get()/set(), the form the React Compiler can
+  // tell apart from mutating props or state.
   useEffect(() => {
     if (visible) {
-      setMounted(true);
-      drag.value = 0;
-      progress.value = reduceMotion
-        ? withTiming(1, { duration: 0 })
-        : withSpring(1, theme.motion.spring);
+      drag.set(0);
+      progress.set(
+        reduceMotion
+          ? withTiming(1, { duration: 0 })
+          : withSpring(1, theme.motion.spring),
+      );
     } else {
-      progress.value = withTiming(
-        0,
-        { duration: reduceMotion ? 0 : theme.motion.duration.normal },
-        (finished) => {
-          if (finished) runOnJS(setMounted)(false);
-        },
+      progress.set(
+        withTiming(
+          0,
+          { duration: reduceMotion ? 0 : theme.motion.duration.normal },
+          (finished) => {
+            if (finished) runOnJS(setMounted)(false);
+          },
+        ),
       );
     }
     // Shared values are stable; only a change of `visible` drives this.
@@ -90,29 +98,29 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
 
   const pan = Gesture.Pan()
     .onChange((event) => {
-      drag.value = Math.max(0, drag.value + event.changeY);
+      drag.set(Math.max(0, drag.get() + event.changeY));
     })
     .onEnd((event) => {
-      const far = drag.value > sheetHeight.value * CLOSE_DISTANCE;
+      const far = drag.get() > sheetHeight.get() * CLOSE_DISTANCE;
       const flicked = event.velocityY > CLOSE_VELOCITY;
       if (far || flicked) {
         runOnJS(onClose)();
       } else {
-        drag.value = withSpring(0, theme.motion.spring);
+        drag.set(withSpring(0, theme.motion.spring));
       }
     });
 
   const sheetMotion = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: (1 - progress.value) * sheetHeight.value + drag.value,
+        translateY: (1 - progress.get()) * sheetHeight.get() + drag.get(),
       },
     ],
   }));
   const scrimMotion = useAnimatedStyle(() => ({
     opacity:
-      progress.value *
-      (1 - Math.min(1, drag.value / Math.max(1, sheetHeight.value))),
+      progress.get() *
+      (1 - Math.min(1, drag.get() / Math.max(1, sheetHeight.get()))),
   }));
 
   return (
@@ -137,7 +145,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         <Animated.View
           style={[styles.sheet(maxHeight, minHeight), sheetMotion]}
           onLayout={(e: LayoutChangeEvent) => {
-            sheetHeight.value = e.nativeEvent.layout.height;
+            sheetHeight.set(e.nativeEvent.layout.height);
           }}
           accessibilityViewIsModal
         >

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
 import {
@@ -35,8 +35,12 @@ const fakeProvider = (
 });
 
 let jobs: ReturnType<typeof useDeidentifyJobs>;
+/** Hands the hook's latest value to the test — from an effect, not mid-render. */
 const Probe = () => {
-  jobs = useDeidentifyJobs();
+  const current = useDeidentifyJobs();
+  useEffect(() => {
+    jobs = current;
+  });
   return null;
 };
 
