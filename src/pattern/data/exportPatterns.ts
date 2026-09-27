@@ -1,7 +1,7 @@
 import { withoutTranscripts } from "@/src/pattern/data/transcripts";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import { IVideoReference } from "@/src/pattern/types/IPatternList";
+import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
 import {
   exportDataVersion,
   IPatternListExportData,
@@ -12,6 +12,19 @@ interface IVideoList {
   [key: string]: string;
 }
 
+export interface ExportOptions {
+  /** Embed local videos; without them their references are dropped. Default true. */
+  includeVideos?: boolean;
+  /** Mark every list read-only for whoever imports it. Default false. */
+  exportAsReadonly?: boolean;
+  /**
+   * Keep the transcripts of the videos that travel (L4). Default false: a transcript is someone's
+   * words in writing, and sending a list should not pass on what a teacher said off-hand unless
+   * the user chose to. Without videos there is nothing for a transcript to sit on.
+   */
+  includeTranscripts?: boolean;
+}
+
 /**
  * Export selected pattern lists to a JSON file with embedded videos
  * Note: Always returns success=true after sharing dialog is opened, as the native
@@ -19,8 +32,11 @@ interface IVideoList {
  */
 export async function exportPatternLists(
   patternLists: PatternListWithPatterns[],
-  includeVideos: boolean = true,
-  exportAsReadonly: boolean = false,
+  {
+    includeVideos = true,
+    exportAsReadonly = false,
+    includeTranscripts = false,
+  }: ExportOptions = {},
 ): Promise<{ success: boolean; message: string }> {
   try {
     const warnings: string[] = [];
@@ -29,6 +45,7 @@ export async function exportPatternLists(
       warnings,
       includeVideos,
       exportAsReadonly,
+      includeVideos && includeTranscripts,
     );
     const fileUri = await writeExportData(exportData);
 
@@ -52,8 +69,12 @@ async function createExportData(
   warnings: string[],
   includeVideos: boolean,
   exportAsReadonly: boolean,
+  includeTranscripts: boolean,
 ): Promise<IPatternListExportData> {
   const videos: IVideoList = {};
+  const transcripts = <T extends Pick<IPattern, "videoRefs" | "modifierRefs">>(
+    pattern: T,
+  ) => (includeTranscripts ? pattern : withoutTranscripts(pattern));
 
   // Build the lists, optionally embedding videos and stripping local refs
   const exportedLists: PatternListWithPatterns[] = [];
@@ -94,7 +115,7 @@ async function createExportData(
           exportedModifierRefs.push(modRef);
         }
         exportedPatterns.push(
-          withoutTranscripts({
+          transcripts({
             ...pattern,
             modifierRefs: exportedModifierRefs,
           }),
@@ -132,6 +153,7 @@ async function createExportData(
     version: exportDataVersion,
     exportDate: new Date().toISOString(),
     includesVideos: includeVideos,
+    includesTranscripts: includeTranscripts,
     patternLists: exportedLists,
     videos,
   };

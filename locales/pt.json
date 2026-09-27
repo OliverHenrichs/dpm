@@ -293,5 +293,8 @@
   "speechModel": "Modelo de fala",
   "speechModelInstalled": "Neste telemóvel",
   "speechModelMissing": "Não descarregado",
-  "speechModelHint": "Transcreve o que é dito nos vídeos. Descarregado com a primeira transcrição."
+  "speechModelHint": "Transcreve o que é dito nos vídeos. Descarregado com a primeira transcrição.",
+  "includeTranscriptsInExport": "Incluir transcrições",
+  "includeTranscriptsHint": "O que os professores dizem nos vídeos vai com eles. Deixe desligado, a menos que os destinatários devam lê-lo.",
+  "includeTranscriptsNeedsVideos": "As transcrições viajam com os seus vídeos: inclua primeiro os vídeos."
 }

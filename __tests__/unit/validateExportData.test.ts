@@ -74,7 +74,7 @@ describe("canImport", () => {
   it("refuses a newer minor rather than guessing at it", () => {
     // The writer added something this build cannot carry; parsing it anyway
     // would silently drop that data on the next save.
-    expect(canImport("3.2.0")).toEqual({
+    expect(canImport("3.3.0")).toEqual({
       supported: false,
       reason: "tooNew",
     });
@@ -415,6 +415,76 @@ describe("validateExportData", () => {
         { type: "local", value: "/v.mp4" },
       ]);
       expect(result.warnings.join(" ")).toMatch(/provenance/);
+    });
+
+    describe("transcripts (3.2)", () => {
+      const withTranscript = (transcript: unknown) =>
+        validateExportData(
+          fileWithList(
+            baseList({
+              patterns: [
+                {
+                  ...createTestPattern(TYPE.id, { id: 1 }),
+                  videoRefs: [{ type: "local", value: "/v.mp4", transcript }],
+                },
+              ],
+            }),
+          ),
+        );
+      const TRANSCRIPT = {
+        language: "en",
+        model: "whisper-base-q5_1",
+        createdAt: 1,
+        segments: [
+          { start: 4, end: 6, text: "Then the whip." },
+          { start: 0, end: 2, text: "Anchor on five." },
+        ],
+      };
+
+      it("keeps a well-formed transcript, its lines in spoken order", () => {
+        const result = withTranscript(TRANSCRIPT);
+
+        expect(
+          result.data!.patternLists[0].patterns[0].videoRefs[0].transcript,
+        ).toEqual({
+          ...TRANSCRIPT,
+          segments: [TRANSCRIPT.segments[1], TRANSCRIPT.segments[0]],
+        });
+        expect(result.warnings).toEqual([]);
+      });
+
+      it("drops only the lines that are not lines, with a warning", () => {
+        const result = withTranscript({
+          ...TRANSCRIPT,
+          segments: [
+            TRANSCRIPT.segments[1],
+            { start: 3, end: 1, text: "backwards" },
+            { start: "0", end: 1, text: "strings" },
+            { start: 1, end: 2 },
+            "loose text",
+          ],
+        });
+
+        expect(
+          result.data!.patternLists[0].patterns[0].videoRefs[0].transcript!
+            .segments,
+        ).toEqual([TRANSCRIPT.segments[1]]);
+        expect(result.warnings.join(" ")).toMatch(/4 malformed transcript/);
+      });
+
+      it.each([
+        ["not an object", "hello"],
+        ["no language", { ...TRANSCRIPT, language: "" }],
+        ["no segments", { ...TRANSCRIPT, segments: undefined }],
+        ["a bad date", { ...TRANSCRIPT, createdAt: Number.NaN }],
+      ])("drops a transcript with %s but keeps the video", (_, transcript) => {
+        const result = withTranscript(transcript);
+
+        expect(result.data!.patternLists[0].patterns[0].videoRefs).toEqual([
+          { type: "local", value: "/v.mp4" },
+        ]);
+        expect(result.warnings.join(" ")).toMatch(/malformed transcript/);
+      });
     });
 
     it("drops a non-numeric start time without dropping the video", () => {

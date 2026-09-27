@@ -1,7 +1,10 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "expo-router";
-import { exportPatternLists } from "@/src/pattern/data/exportPatterns";
+import {
+  ExportOptions,
+  exportPatternLists,
+} from "@/src/pattern/data/exportPatterns";
 import { importPatternLists } from "@/src/pattern/data/ImportPatterns";
 import { ImportDecision } from "@/src/pattern/data/components/PatternListImportModal";
 import {
@@ -66,18 +69,13 @@ export const useDataTransfer = () => {
   }, [patternLists, t]);
 
   const handleExport = useCallback(
-    async (
-      selectedLists: IPatternList[],
-      includeVideos: boolean,
-      exportAsReadonly: boolean,
-    ) => {
+    async (selectedLists: IPatternList[], options: ExportOptions) => {
       setShowExportModal(false);
       setIsLoading(true);
       try {
         const result = await exportPatternLists(
           selectedLists as PatternListWithPatterns[],
-          includeVideos,
-          exportAsReadonly,
+          options,
         );
         // Only show alert for errors, not success (since native share API doesn't report cancellation)
         if (!result.success) {

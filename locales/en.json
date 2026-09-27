@@ -293,5 +293,8 @@
   "speechModel": "Speech model",
   "speechModelInstalled": "On this phone",
   "speechModelMissing": "Not downloaded",
-  "speechModelHint": "Transcribes what is said in videos. Downloaded with the first transcription."
+  "speechModelHint": "Transcribes what is said in videos. Downloaded with the first transcription.",
+  "includeTranscriptsInExport": "Include transcripts",
+  "includeTranscriptsHint": "What teachers said in the videos goes with them. Leave off unless the recipients should read it.",
+  "includeTranscriptsNeedsVideos": "Transcripts travel with their videos: include videos first."
 }

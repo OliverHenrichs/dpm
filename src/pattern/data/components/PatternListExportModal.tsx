@@ -9,15 +9,13 @@ import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { useExportSelection } from "@/src/pattern/data/hooks/useExportSelection";
 import { SelectAllButton } from "@/src/pattern/data/components/SelectAllButton";
 import { ExportListItem } from "@/src/pattern/data/components/ExportListItem";
+import { ExportOptions } from "@/src/pattern/data/exportPatterns";
+import { hasTranscripts } from "@/src/pattern/data/transcripts";
 
 interface PatternListExportModalProps {
   visible: boolean;
   patternLists: PatternListWithPatterns[];
-  onExport: (
-    selectedLists: IPatternList[],
-    includeVideos: boolean,
-    exportAsReadonly: boolean,
-  ) => void;
+  onExport: (selectedLists: IPatternList[], options: ExportOptions) => void;
   onCancel: () => void;
 }
 const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
@@ -37,8 +35,21 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
   } = useExportSelection({ patternLists });
   const [includeVideos, setIncludeVideos] = useState(true);
   const [exportAsReadonly, setExportAsReadonly] = useState(false);
+  // Off unless chosen, every time (L4): a transcript is someone's words in writing.
+  const [includeTranscripts, setIncludeTranscripts] = useState(false);
+  // Offered only when there is something to include; it rides on the videos, so it needs them.
+  const offerTranscripts = hasTranscripts(
+    patternLists
+      .filter((list) => selectedIds.has(list.id))
+      .flatMap((list) => list.patterns),
+  );
   const handleExport = () => {
-    onExport(getSelectedLists(), includeVideos, exportAsReadonly);
+    onExport(getSelectedLists(), {
+      includeVideos,
+      exportAsReadonly,
+      includeTranscripts:
+        offerTranscripts && includeVideos && includeTranscripts,
+    });
   };
   return (
     <Modal
@@ -76,6 +87,38 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               thumbColor={theme.colors.border}
             />
           </View>
+          {offerTranscripts && (
+            <>
+              <View style={styles.toggleRow}>
+                <Text
+                  style={[
+                    styles.toggleLabel,
+                    !includeVideos && styles.disabledLabel,
+                  ]}
+                >
+                  {t("includeTranscriptsInExport")}
+                </Text>
+                <Switch
+                  value={includeVideos && includeTranscripts}
+                  onValueChange={setIncludeTranscripts}
+                  disabled={!includeVideos}
+                  accessibilityLabel={t("includeTranscriptsInExport")}
+                  trackColor={{
+                    false: theme.colors.textMuted,
+                    true: theme.colors.primary,
+                  }}
+                  thumbColor={theme.colors.border}
+                />
+              </View>
+              <Text style={styles.toggleHint}>
+                {t(
+                  includeVideos
+                    ? "includeTranscriptsHint"
+                    : "includeTranscriptsNeedsVideos",
+                )}
+              </Text>
+            </>
+          )}
           <View style={styles.toggleRow}>
             <Text style={styles.toggleLabel}>{t("exportAsReadonly")}</Text>
             <Switch
@@ -136,6 +179,14 @@ const styles = StyleSheet.create((theme) => ({
   toggleLabel: {
     ...theme.typography.bodySmall,
     color: theme.colors.text,
+  },
+  disabledLabel: { color: theme.colors.textMuted },
+  toggleHint: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    // Belongs to the switch above: pulled up into that row's bottom margin.
+    marginTop: -theme.space.md,
+    marginBottom: theme.space.md,
   },
   buttonRow: {
     flexDirection: "row",
