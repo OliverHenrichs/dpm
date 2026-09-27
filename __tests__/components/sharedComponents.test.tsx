@@ -210,6 +210,26 @@ describe("VideoCarousel", () => {
 
   const scrollTo = (index: number) => reportVisible([{ index }]);
 
+  it("badges a generated video when given a label, and only then", () => {
+    const generated: IVideoReference = {
+      type: "local",
+      value: "file:///s.mp4",
+      generated: { method: "silhouette", createdAt: 0 },
+    };
+    const { rerender } = renderWithProviders(
+      <VideoCarousel
+        videoRefs={[generated, { type: "local", value: "file:///p.mp4" }]}
+        generatedLabel="Silhouette"
+      />,
+      { activeListId: null },
+    );
+    layout();
+    expect(screen.getAllByText("Silhouette")).toHaveLength(1);
+
+    rerender(<VideoCarousel videoRefs={[generated]} />);
+    expect(screen.queryByText("Silhouette")).toBeNull();
+  });
+
   it("renders nothing until it has been measured", () => {
     renderCarousel([
       urlVideo("https://example.com/a.mp4"),

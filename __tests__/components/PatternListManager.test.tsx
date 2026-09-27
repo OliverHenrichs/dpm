@@ -27,6 +27,18 @@ import {
 } from "@/utils/renderWithProviders";
 
 // The video editor needs the native module; pretend it is there so the post-save offer shows.
+// The editor itself is covered by its own suite; here it only has to open, on
+// the right video.
+jest.mock("@/src/deidentify/components/VideoEditPanel", () => {
+  const { Text } = jest.requireActual("react-native");
+  return {
+    __esModule: true,
+    default: ({ sourceUri }: { sourceUri: string }) => (
+      <Text>{`editing ${sourceUri}`}</Text>
+    ),
+  };
+});
+
 jest.mock("@/src/deidentify/shortenVideo", () => ({
   canShortenVideos: () => true,
   shortenVideo: jest.fn(async () => {
@@ -115,6 +127,10 @@ const storedList = async (listId: string): Promise<IPatternList> => {
   );
   return lists.find((l) => l.id === listId)!;
 };
+
+// The editor's title, which is also the offer's confirm label; the stub panel
+// below is what tells the two apart.
+const VIDEO_EDIT_TITLE = "Edit video";
 
 describe("PatternListManager", () => {
   describe("empty state", () => {
@@ -248,6 +264,20 @@ describe("PatternListManager", () => {
       expect(await screen.findByText(/^Counts/)).toBeOnTheScreen();
     });
 
+    it("does not link a job from another list, even to a same-named pattern", async () => {
+      (shortenVideo as jest.Mock).mockResolvedValueOnce(
+        "file:///cache/shortened-out.mp4",
+      );
+      await renderManager([
+        pattern(2, "Whip", { videoRefs: [{ type: "local", value: SOURCE }] }),
+      ]);
+
+      await startShorten("another-list");
+      const line = await screen.findByText("Whip: shortened video is in place");
+
+      expect(line.props.accessibilityRole).toBeUndefined();
+    });
+
     it("shows a job whose pattern is not in this list as plain text", async () => {
       (shortenVideo as jest.Mock).mockResolvedValueOnce(
         "file:///cache/shortened-out.mp4",
@@ -319,6 +349,27 @@ describe("PatternListManager", () => {
       expect(await screen.findByText("Edit the video?")).toBeOnTheScreen();
     });
 
+    it("opens the video editor when the offer is taken", async () => {
+      await createFromVideo();
+      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(await screen.findByText("Edit video"));
+
+      expect(
+        await screen.findByText(`editing ${MOCK_SEEDED}`),
+      ).toBeOnTheScreen();
+      expect(screen.getByText(VIDEO_EDIT_TITLE, { exact: false })).toBeTruthy();
+      expect(screen.queryByText("Edit the video?")).toBeNull();
+    });
+
+    it("leaves the video alone when the offer is put off", async () => {
+      await createFromVideo();
+      fireEvent.press(screen.getByText("Save"));
+      fireEvent.press(await screen.findByText("Later"));
+
+      expect(screen.queryByText("Edit the video?")).toBeNull();
+      expect(screen.queryByText(VIDEO_EDIT_TITLE)).toBeNull();
+    });
+
     it("does not ask again when the video is already being edited from the form", async () => {
       const { list } = await createFromVideo();
       // What starting a job inside the form amounts to: a job on the seeded video.
@@ -374,6 +425,9 @@ describe("PatternListManager", () => {
       ).toBeOnTheScreen();
       expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
       expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+
+      fireEvent.press(screen.getByText("OK"));
+      expect(screen.queryByText("Camera permission denied")).toBeNull();
     });
 
     it("opens nothing when the picker is cancelled", async () => {
