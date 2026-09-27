@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { FlatList, Text, View } from "react-native";
 import {
   findGesture,
   peekGestures,
@@ -176,8 +176,6 @@ describe("BottomSheet", () => {
 });
 
 describe("VideoCarousel", () => {
-  const { FlatList, View } = require("react-native");
-
   const renderCarousel = (videoRefs: IVideoReference[]) => {
     const view = renderWithProviders(<VideoCarousel videoRefs={videoRefs} />, {
       activeListId: null,

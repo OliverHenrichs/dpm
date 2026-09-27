@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint",
+    "lint": "expo lint .",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -16,7 +16,7 @@
     "test:components": "jest --selectProjects components",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\" \"__tests__/**/*.{ts,tsx}\" \"utils/**/*.{ts,tsx}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\" \"__tests__/**/*.{ts,tsx}\" \"__mocks__/**/*.{ts,tsx}\" \"utils/**/*.{ts,tsx}\" \"*.{ts,js}\""
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

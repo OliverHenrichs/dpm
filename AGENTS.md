@@ -90,7 +90,7 @@ npm run test:unit        # pure-logic project only — sub-second feedback loop
 npm run test:components  # rendering project only (jest-expo)
 npm run test:watch       # watch mode
 npm run test:coverage    # coverage over all of src/, with thresholds enforced
-npm run lint             # ESLint via expo lint
+npm run lint             # ESLint over the whole project (expo lint .)
 npm run format:check     # Prettier, same glob CI uses
 npm run format           # Prettier, write
 npm run typecheck        # tsc --noEmit
@@ -118,7 +118,7 @@ Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo ru
 
 `.github/workflows/ci.yml` runs on every push to `master` and every PR, in three jobs:
 
-- **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`.
+- **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`. Lint and the format check cover the tests, mocks and root config files too: `expo lint` with no path would lint only `src/`, `app/` and `components/`, and did, until a lint error in a test went unnoticed.
 - **bundle** — `npx expo export` for **both** `web` and `android`, which is the gate that catches a platform-split import fault.
 - **audit** — fails if `npm audit` drifts from the baseline of exactly three moderate findings. If a change to that baseline is intentional, update both the workflow's `expected` map and this file.
 

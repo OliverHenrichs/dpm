@@ -1,4 +1,5 @@
 import React from "react";
+import { Switch } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
@@ -220,8 +221,7 @@ function renderForm(existing?: IModifier) {
 
 const nameField = () => screen.getByPlaceholderText("Modifier Name");
 const saveModifier = () => fireEvent.press(screen.getByText("Save"));
-const universalSwitch = () =>
-  screen.UNSAFE_getByType(require("react-native").Switch);
+const universalSwitch = () => screen.UNSAFE_getByType(Switch);
 
 describe("EditModifierForm", () => {
   describe("creating", () => {

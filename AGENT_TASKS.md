@@ -32,7 +32,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
-| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **M–L** | idea | [L4](#l4--transcripts-of-what-teachers-say-in-a-video) |
+| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | planned — on-device Whisper via `whisper.rn`; spike first, four decisions open | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--planned) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -47,7 +47,7 @@ evidence.
 
 | # | Item | Size | Status | Why it's here |
 |---|---|---|---|---|
-| [F1](#f1--test-infrastructure-and-ci--in-progress) | Test infrastructure and CI | **L** | ◐ in progress | 3 test files / 529 lines against ~12 900 lines of source; component testing was installed but could not run; no CI at all. Gates every other item. |
+| [F1](#f1--test-infrastructure-and-ci--done) | Test infrastructure and CI | **L** | ✅ done | 3 test files / 529 lines against ~12 900 lines of source; component testing was installed but could not run; no CI at all. Gates every other item. |
 | [F2](#f2--graph-domain-layer) | Graph domain layer | **M–L** | ✅ done | L1 and L2 both need a stable graph model; today the views own the computation and paper over it with `as any`. |
 | [F3](#f3--storage-schema-versioning-and-import-validation--done) | Storage schema versioning + import validation | **M** | ✅ done | No schema version, no migration runner, no validation of imported files, lossy concurrent writes. L2 and L3 both add persisted data. |
 | [B1](#b1--deleting-a-pattern-leaves-dangling-prerequisite-ids--done) | Deleting a pattern leaves dangling prerequisite ids | **M** | ✅ done | Made patterns silently vanish from the network graph, and let a recycled id inherit stale links. |
@@ -67,16 +67,16 @@ evidence.
 ### Suggested sequencing
 
 ```
-Phase 0  F1 ◐ ──────────────────────────────────────────►  (nothing else is safe without it)
+Phase 0  F1✅                                                (tests and CI under everything)
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
+Phase 5  L4: planned — spike (whisper.rn on the Pixel) → engine → UI → data → iOS
 ```
 
-**Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
-landed and what is still outstanding. **L1 has landed**, so L2 — moveable nodes — is next, with
-the node set it has to reconcile against now well defined.
+**Phases 0 to 3 are complete.** L3 is in the app on Android with its open items listed in its
+entry; L4 is the next large item.
 
 L1 before L2: filtering changes which nodes exist, and manual node positions have to reconcile
 against a changing node set. Building L2 first means building the reconciliation twice.
@@ -1605,44 +1605,164 @@ run on the desktop replica needs its transcode, so that means temporarily re-add
 
 ---
 
-### L4 — Transcripts of what teachers say in a video
+### L4 — Transcripts of what teachers say in a video — PLANNED
 
 > *"Dance teachers often say things during their demonstration that could inform the pattern
 > description."*
 
-Not started; this records the idea and the constraints known so far.
+Planned 2026-09-27; nothing built yet. Choices marked **(decide)** are the owner's to make before
+the work starts; everything else is a recommendation with its reason.
 
-**Shape of the feature.**
-- For a pattern's local video, transcribe the speech and show it with timestamps.
-- Let the user pick the sentences worth keeping and add them to the description. Tapping a line
-  seeks the video there.
-- Never write into the description automatically: teachers ramble, count out loud and joke, and
+#### What the user gets
+
+- In **Edit Pattern → Videos → Edit video** (L3's sheet), a third action beside *Shorten* and
+  *De-identify*: **Transcribe speech**. It runs as a background job like the other two.
+- A **transcript view**: the video on top, the transcript below as timestamped lines. Tapping a
+  line seeks the video there; ticking lines and pressing **Add to description** appends them to the
+  open form's description.
+- The description is never written automatically. Teachers ramble, count out loud and joke, and
   the description is the user's.
+- A video that already has a transcript shows a small "transcript" badge next to L3's
+  "Silhouette" one, and opens the view directly.
 
-**Constraints that follow from L3:**
-- **Voices are personal data too.** Transcribe on the device, like the silhouettes. A remote
-  speech-to-text service brings back everything in L3's consent and store-policy notes
-  (Apple 5.1.2(i), GDPR).
-- **Transcribe from the source, not from the de-identified copy.** L3's output drops audio on
-  purpose, since voices identify people. So the transcript should be made before, or
-  independently of, de-identification, and it is only text.
-- **Languages:** the app ships nine; teachers speak whatever they speak, often with dance jargon
-  ("anchor", "sugar push") that general models mangle. The model must be multilingual and
-  detect the language.
+#### Engine: Whisper on the device, through `whisper.rn`
 
-**Candidates to check when this is picked up** (verify the current state then):
-- **Whisper tiny/base** (MIT) on-device. There are LiteRT conversions (e.g. under
-  `litert-community` on Hugging Face) and `whisper.cpp` ports for Android. It's multilingual, has
-  timestamps, and runs faster than real time for tiny/base on a recent phone.
-- **Android's on-device `SpeechRecognizer`:** free and small, but built for live microphone
-  input, not for files; unclear for recorded clips.
+**Recommended:** Whisper, run on the device by [`whisper.rn`](https://github.com/mybigday/whisper.rn)
+(the React Native binding of whisper.cpp, MIT).
 
-A summarising step ("turn this transcript into a description") would need an LLM. On-device
-options are limited; a remote one needs consent. It's a separate, later step.
+- **Multilingual:** it covers all nine app languages with segment timestamps.
+- **On-device:** voices are personal data; see the L3 constraints below.
+- **Maintained:** GPU on by default, experimental Hexagon NPU support on Android (merged
+  2026-09-17), Core ML on iOS.
+- **Built-in voice-activity detection** (Silero), which skips the counting-free silences between
+  demonstrations.
+- **Covers iOS as well.** L3's own native module is Android-only.
 
-**Open questions:** whether the transcript should be stored with the pattern (and so exported
-and shared), or only used transiently while editing the description. Storing it means another
-`IVideoReference` extension and a format bump, like L3's `generated` field.
+Considered and set aside (state as of 2026-09):
+
+| Option | Why not |
+|---|---|
+| Moonshine | Smallest and fastest, but its non-English models are one per language, and German, French, Hindi, Bengali and Portuguese are missing. |
+| Parakeet v3 | Accurate, but covers 25 European languages (no zh/hi/bn/ar) at 0.6B+ parameters. |
+| Android `SpeechRecognizer` | Built for live microphone input, not recorded files, and Android-only. |
+| A LiteRT conversion in our own Kotlin module | Reuses L3's runtime, but means our own decoder loop and no iOS. The LiteRT-LM ASR pipeline only landed in 2026-09; revisit when it settles. |
+
+**Model (decide):**
+- Size: multilingual `base` is the likely balance; `tiny` is faster but weaker on accents and
+  jargon. Quantised (q5), base is ~60 MB and tiny ~30 MB.
+- Recommended delivery: **downloaded on first use**, not bundled. L3 already adds ~130 MB, and
+  most users may never transcribe. That needs a download step with size shown and a Wi-Fi hint.
+
+**Jargon:** Whisper's `prompt` (the initial decoder context) is seeded with the list's own words:
+pattern names, type slugs, modifier names and tags. That biases decoding toward "sugar push" and
+"anchor step" instead of "sugar bush". It is cheap and likely the largest quality gain; the spike
+should measure it.
+
+**Language:** auto-detected by default. The detected language is stored with the transcript,
+and a "Wrong language?" control re-runs the job with one of the nine app languages (or any
+language Whisper knows).
+
+#### Audio: extracted by the app, not by Whisper
+
+whisper.cpp decodes nothing itself. It needs **16 kHz mono 16-bit PCM**, and a pattern's video
+carries AAC (or Opus) in an MP4. The app therefore needs a small native step,
+`extractAudio(videoUri) → wav path`:
+
+- **Android:** `MediaExtractor` + `MediaCodec` to PCM, downmixed and resampled to 16 kHz. Media3's
+  Sonic processor, already a dependency through L3, can do the resampling.
+- **iOS:** `AVAssetReader` with linear-PCM output settings at 16 kHz mono.
+- **Put it in its own small Expo module** (`modules/audio-extract`), not in
+  `modules/video-deidentify`. That module is Android-only and carries ~130 MB of models; this step
+  should work on both platforms from the start.
+
+**Always transcribe the source, never the de-identified copy.** L3's output drops the audio
+deliberately. When de-identifying replaces a video that has a transcript, the transcript moves to
+the replacement, as L3's `generated` provenance does (`replaceVideo.ts`). The editor disables
+*Transcribe* on a silhouette video, with a hint.
+
+#### Where it lives
+
+- `src/transcribe/`, beside `src/deidentify/`:
+  - `transcribeVideo.ts`: extract audio, load the model, run `whisper.rn` with prompt and VAD,
+    map segments.
+  - `modelStore.ts`: download, verify and locate the model file.
+  - `components/TranscriptSheet.tsx`
+- **Jobs:** a third `JobKind`, `"transcribe"`, in L3's `jobStore`. The queue is already serial,
+  which matters: Whisper and the silhouette pipeline together would not fit in memory. The job
+  finds its video by URI, and the result attaches through the mounted tree's handler, as for the
+  other two kinds. The banner reports it like the others.
+- **Cancelling:** `whisper.rn` returns `{ stop, promise }`; the job's cancel calls `stop()`.
+
+#### Data (decide: store it, and whether it travels)
+
+Recommended: store the transcript **on the video reference**, like L3's `generated`:
+
+```ts
+interface IVideoTranscript {
+  language: string;        // detected or chosen, ISO 639-1
+  model: string;           // e.g. "whisper-base-q5_1", to know what re-running would change
+  createdAt: number;
+  segments: { start: number; end: number; text: string }[]; // seconds
+}
+// IVideoReference.transcript?: IVideoTranscript
+```
+
+- **Why store it:** a transcription takes a minute or more, and the user returns to it while
+  editing the description over time.
+- **No migration:** the field is optional, so no migration step is needed.
+- **Export:** export format 3.1.0 → 3.2.0, and `validateExportData` drops only a malformed
+  transcript, as it does for `generated`. Covered by a case in the export/import round-trip suite.
+
+**Privacy (decide):** a transcript is someone's words in writing, if not their voice.
+Recommended: **keep transcripts out of exports and shared lists by default**, with an explicit
+"include transcripts" choice at export. Sharing a list should not publish what a teacher said
+off-hand.
+
+#### Phases
+
+1. **Spike (S–M), on the Pixel.** Add `whisper.rn` to the dev client and check the things its
+   README leaves open:
+   - New Architecture and React Compiler compatibility
+   - whether language auto-detect is exposed
+   - whether there is a progress callback, or only `stop()`
+   
+   Then measure tiny and base (q5) on three real teacher clips (German, English, Spanish, ~1 min
+   each):
+   - speed, as a real-time factor
+   - accuracy on jargon, with and without the vocabulary prompt
+   - memory, with L3's Java-heap ceiling in mind
+   
+   Outcome: model choice, and go or no-go for `whisper.rn`.
+2. **Engine (M):** `modules/audio-extract` (Android), `src/transcribe/`, the `"transcribe"` job
+   kind. Unit-tested with the engine mocked, like L3's providers.
+3. **UI (M):** the *Transcribe speech* action, `TranscriptSheet` (tap to seek, tick, add to
+   description), the badge, the model download step, i18n in all nine locales.
+4. **Data (S):** the type, carrying it through `replaceVideo`, export 3.2.0 with the opt-in,
+   validation, the round-trip test.
+5. **iOS (M):** `AVAssetReader` extraction and `whisper.rn` with Core ML. Needs a Mac or an EAS
+   build, the same gap as L3.
+
+**Tests:**
+- Unit: segment selection → description text; the vocabulary prompt built from a list; the job
+  kind with a mocked engine; transcript carried over on replacement; export/import round trip with
+  and without transcripts.
+- Component: the sheet seeks on tap and appends only ticked lines; *Transcribe* disabled on a
+  silhouette video.
+
+**Risks:**
+- The model download, first-run wait and storage use: a clear progress UI, and a way to delete
+  the model in Settings.
+- Long clips: Whisper works in 30 s windows and handles long audio, but cap it (say 10 min) and
+  say so.
+- Battery on long runs.
+- Code-switching teachers (English jargon inside Spanish speech): the vocabulary prompt helps;
+  the spike will show how much.
+
+**Later, separate:** summarising a transcript into a description needs an LLM. On-device options
+are limited, and a remote one brings back L3's consent flow. Only worth it once transcripts prove
+useful.
+
+**Size:** **L** overall. The spike decides whether it stays at L or grows.
 
 ---
 
@@ -1651,7 +1771,7 @@ and shared), or only used transiently while editing the description. Storing it 
 These are not on the original list. They are prerequisites for doing the large items to a standard
 that holds up over a long-lived, production-installed app.
 
-### F1 — Test infrastructure and CI — IN PROGRESS
+### F1 — Test infrastructure and CI — DONE
 
 **Why this is first.** Every large item above says "and tests". None of them could be tested
 beyond pure functions.
@@ -1810,6 +1930,16 @@ the views hold no computation to test. L1/L2 will rewrite them anyway.
 
 **Final record: eight defects across seventeen suites — every one in code that writes data, in
 layout, or in an event handler; none in read-only rendering.**
+
+#### Closed (2026-09-27)
+
+The last gap was in CI itself. `expo lint` with no path lints only `src/`, `app/` and
+`components/`, so `__tests__/`, `__mocks__/`, `utils/` and the root config files were never linted,
+and a React Compiler error in a test went unnoticed. `npm run lint` is now `expo lint .` (the
+ESLint config still ignores build output and the generated native folders), `format:check` covers
+`__mocks__/` and the root files too, and the root `*.config.js` files get Node's globals. Bringing
+them in turned up nine `require()` calls in tests and mocks, now imports or `jest.requireActual`.
+Coverage stands at 1158 tests across 65 suites, every per-file floor met.
 3. ~~**Verify the workflow on GitHub.**~~ Done — and the first run found two things local runs
    had not. The `jsx: "react"` override in `tsconfig.jest.json` broke coverage collection for three
    components that rely on the automatic runtime; it printed to stderr without failing the run, so
@@ -2470,5 +2600,5 @@ Observations that are not tasks but that should inform how the tasks above are d
   importer (`src/pattern/list/PatternVideos.tsx:20`, which spells the typo faithfully), so the
   rename is a two-line change today and gets more expensive with every new call site. Do it now.
   Note that it imports fine on a case-insensitive filesystem and breaks on a case-sensitive one
-  the moment someone types the name correctly — CI on Linux ([F1](#f1--test-infrastructure-and-ci--in-progress))
+  the moment someone types the name correctly — CI on Linux ([F1](#f1--test-infrastructure-and-ci--done))
   is where that would surface.
