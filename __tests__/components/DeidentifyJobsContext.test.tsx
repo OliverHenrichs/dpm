@@ -13,7 +13,15 @@ import {
   IPatternList,
   IVideoTranscript,
 } from "@/src/pattern/types/IPatternList";
-import { transcribeVideo } from "@/src/transcribe/transcribeVideo";
+import {
+  NoAudioError,
+  transcribeVideo,
+} from "@/src/transcribe/transcribeVideo";
+import {
+  ensureModels,
+  installedModels,
+  ModelDownloadError,
+} from "@/src/transcribe/modelStore";
 import {
   createTestPattern,
   createTestPatternList,
@@ -22,8 +30,19 @@ import { act, renderWithProviders, waitFor } from "@/utils/renderWithProviders";
 
 // The engine has its own suite; here a job only needs its outcome.
 jest.mock("@/src/transcribe/transcribeVideo", () => ({
+  ...jest.requireActual("@/src/transcribe/transcribeVideo"),
   transcribeVideo: jest.fn(),
 }));
+// Installed unless a test says otherwise; the store itself has its own suite.
+jest.mock("@/src/transcribe/modelStore", () => ({
+  ...jest.requireActual("@/src/transcribe/modelStore"),
+  installedModels: jest.fn(),
+  ensureModels: jest.fn(),
+}));
+const mockedInstalled = installedModels as jest.MockedFunction<
+  typeof installedModels
+>;
+const mockedEnsure = ensureModels as jest.MockedFunction<typeof ensureModels>;
 const mockedTranscribe = transcribeVideo as jest.MockedFunction<
   typeof transcribeVideo
 >;
@@ -33,6 +52,14 @@ const TRANSCRIPT: IVideoTranscript = {
   model: "whisper-base-q5_1",
   createdAt: 1,
   segments: [{ start: 0.5, end: 2, text: "Anchor on five and six." }],
+};
+
+const TIMING = {
+  audioSeconds: 3,
+  speechSeconds: 2,
+  regions: 1,
+  extractMs: 1,
+  transcribeMs: 1,
 };
 
 const SOURCE = "file:///document/video-src.mp4";
@@ -94,7 +121,10 @@ const startJob = (listId: string, provider = fakeProvider()) =>
     }),
   );
 
-beforeEach(() => seedBinaryFile(OUTPUT, Buffer.from([1, 2])));
+beforeEach(() => {
+  seedBinaryFile(OUTPUT, Buffer.from([1, 2]));
+  mockedInstalled.mockReturnValue({ whisperUri: "w", vadUri: "v" });
+});
 afterEach(async () => {
   await jobStore.reset();
   clearReplacements();
@@ -232,7 +262,7 @@ describe("transcription jobs (L4)", () => {
 
   it("reports a video without sound, and leaves the pattern alone", async () => {
     mockedTranscribe.mockReturnValue({
-      promise: Promise.reject(new Error("The video has no sound")),
+      promise: Promise.reject(new NoAudioError()),
       stop: jest.fn(),
     });
     const { list } = setup();
@@ -240,11 +270,96 @@ describe("transcription jobs (L4)", () => {
     await startTranscribe(list.id);
 
     await waitFor(() => expect(jobs.jobs[0].status).toBe("failed"));
-    expect(jobs.jobs[0].error).toBe("The video has no sound");
+    expect(jobs.jobs[0].errorKey).toBe("transcribeErrorNoSound");
     expect((await storedPatterns(list.id))[0].videoRefs[0]).toEqual({
       type: "local",
       value: SOURCE,
     });
+  });
+
+  it("downloads missing models first, counting to 100% once", async () => {
+    mockedInstalled.mockReturnValue(null);
+    mockedEnsure.mockImplementation(async (onProgress) => {
+      onProgress?.(0.5);
+      onProgress?.(1);
+      return { whisperUri: "w", vadUri: "v" };
+    });
+    const seen: number[] = [];
+    mockedTranscribe.mockImplementation((_uri, options) => {
+      options?.onProgress?.(0.5);
+      return {
+        promise: Promise.resolve({ transcript: TRANSCRIPT, timing: TIMING }),
+        stop: jest.fn(),
+      };
+    });
+    const unsubscribe = jobStore.subscribe(() => {
+      const job = jobStore.getJobs()[0];
+      if (job?.status === "running") seen.push(job.progress);
+    });
+    const { list } = setup();
+
+    await startTranscribe(list.id);
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    unsubscribe();
+    expect(mockedEnsure).toHaveBeenCalled();
+    expect(seen.map((f) => Math.round(f * 100))).toEqual([0, 15, 30, 65]);
+  });
+
+  it("reports a failed download in words the user can act on", async () => {
+    mockedInstalled.mockReturnValue(null);
+    mockedEnsure.mockRejectedValue(new ModelDownloadError("HTTP 500"));
+    const { list } = setup();
+
+    await startTranscribe(list.id);
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("failed"));
+    expect(jobs.jobs[0].errorKey).toBe("transcribeErrorDownload");
+    expect(mockedTranscribe).not.toHaveBeenCalled();
+  });
+
+  it("stops a running transcription on cancel and forgets the job", async () => {
+    let reject: (e: Error) => void = () => undefined;
+    const stop = jest.fn(() => reject(new Error("Transcription stopped")));
+    mockedTranscribe.mockReturnValue({
+      promise: new Promise((_, r) => (reject = r)),
+      stop,
+    });
+    const { list } = setup();
+    await startTranscribe(list.id);
+    await waitFor(() => expect(jobs.jobs[0]?.status).toBe("running"));
+    await waitFor(() => expect(mockedTranscribe).toHaveBeenCalled());
+    expect(jobs.canCancel(jobs.jobs[0])).toBe(true);
+
+    await act(() => jobs.cancel(jobs.jobs[0].id));
+
+    expect(stop).toHaveBeenCalled();
+    await waitFor(() => expect(jobs.jobs).toEqual([]));
+    expect((await storedPatterns(list.id))[0].videoRefs[0]).toEqual({
+      type: "local",
+      value: SOURCE,
+    });
+  });
+
+  it("never runs a queued job that was cancelled", async () => {
+    let finish: () => void = () => undefined;
+    mockedTranscribe.mockReturnValueOnce({
+      promise: new Promise((resolve) => {
+        finish = () => resolve({ transcript: TRANSCRIPT, timing: TIMING });
+      }),
+      stop: jest.fn(),
+    });
+    const { list } = setup();
+    await startTranscribe(list.id);
+    await startTranscribe(list.id);
+    await waitFor(() => expect(jobs.jobs[1]?.status).toBe("queued"));
+
+    await act(() => jobs.cancel(jobs.jobs[1].id));
+    expect(jobs.jobs).toHaveLength(1);
+    await act(async () => finish());
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    expect(mockedTranscribe).toHaveBeenCalledTimes(1);
   });
 
   it("carries a transcript over when the video is de-identified", async () => {

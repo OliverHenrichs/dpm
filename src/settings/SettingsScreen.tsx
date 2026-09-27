@@ -21,6 +21,7 @@ import PatternListExportModal from "@/src/pattern/data/components/PatternListExp
 import PatternListImportModal from "@/src/pattern/data/components/PatternListImportModal";
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
 import AppDialog from "@/src/common/components/AppDialog";
+import SpeechModelRow from "@/src/transcribe/components/SpeechModelRow";
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -123,6 +124,8 @@ const SettingsScreen: React.FC = () => {
             />
           </View>
         )}
+
+        <SpeechModelRow />
 
         {/* SPIKE (L3): dev-only, not for merge. */}
         {__DEV__ && (

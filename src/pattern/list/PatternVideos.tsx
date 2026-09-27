@@ -10,7 +10,7 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import PlusButton from "@/src/common/components/PlusButton";
-import { Icon, IconButton } from "@/src/common/ui";
+import { Icon, IconButton, Tappable } from "@/src/common/ui";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 
@@ -21,6 +21,8 @@ export type PatternVideosProps = {
   onRemoveVideo: (index: number) => void;
   /** Offers editing a video (shorten, de-identify) next to '+'; omitted where that cannot run. */
   onEditVideo?: () => void;
+  /** Opens a video's transcript (L4); its thumbnail is pressable once it has one. */
+  onOpenTranscript?: (index: number) => void;
   disabled?: boolean;
 };
 
@@ -30,6 +32,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   onAddVideo,
   onRemoveVideo,
   onEditVideo,
+  onOpenTranscript,
   disabled = false,
 }) => {
   const { theme } = useUnistyles();
@@ -40,44 +43,64 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
     return videoRefs.map((ref, idx) => {
       const thumb = thumbnails[idx] ?? "";
       const isUrl = ref.type === "url";
-      return (
-        <View key={idx} style={styles.thumbnailWrapper}>
-          {thumb ? (
-            <View>
-              <Image source={{ uri: thumb }} style={styles.thumbImage} />
-              {isUrl ? (
-                <View style={styles.badge}>
-                  <Icon
-                    name="youtube"
-                    size={theme.iconSize.sm}
-                    color={theme.media.onScrim}
-                  />
-                </View>
-              ) : (
-                ref.generated && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
-                      {t("videoBadgeSilhouette")}
-                    </Text>
-                  </View>
-                )
-              )}
-            </View>
-          ) : isUrl ? (
-            <View style={styles.urlPlaceholder}>
+      const preview = thumb ? (
+        <View>
+          <Image source={{ uri: thumb }} style={styles.thumbImage} />
+          {isUrl ? (
+            <View style={styles.badge}>
               <Icon
-                name="link-variant"
-                size={theme.iconSize.md}
-                color={theme.colors.primary}
+                name="youtube"
+                size={theme.iconSize.sm}
+                color={theme.media.onScrim}
               />
-              <Text style={styles.urlPlaceholderText} numberOfLines={2}>
-                {ref.startTime != null
-                  ? formatTime(ref.startTime)
-                  : t("onlineVideo")}
-              </Text>
             </View>
           ) : (
-            <Text style={styles.label}>{t("noThumbnail")}</Text>
+            ref.generated && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {t("videoBadgeSilhouette")}
+                </Text>
+              </View>
+            )
+          )}
+        </View>
+      ) : isUrl ? (
+        <View style={styles.urlPlaceholder}>
+          <Icon
+            name="link-variant"
+            size={theme.iconSize.md}
+            color={theme.colors.primary}
+          />
+          <Text style={styles.urlPlaceholderText} numberOfLines={2}>
+            {ref.startTime != null
+              ? formatTime(ref.startTime)
+              : t("onlineVideo")}
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.label}>{t("noThumbnail")}</Text>
+      );
+      return (
+        <View key={idx} style={styles.thumbnailWrapper}>
+          {/* A transcribed video (L4) opens its transcript, thumbnail or not. */}
+          {ref.transcript && onOpenTranscript ? (
+            <Tappable
+              onPress={() => onOpenTranscript(idx)}
+              accessibilityLabel={t("transcriptOpenN", { n: idx + 1 })}
+            >
+              {preview}
+            </Tappable>
+          ) : (
+            preview
+          )}
+          {ref.transcript && (
+            <View style={styles.transcriptBadge} pointerEvents="none">
+              <Icon
+                name="text-box-outline"
+                size={theme.iconSize.sm}
+                color={theme.media.onScrim}
+              />
+            </View>
           )}
           {/* A bare "×" told a screen reader nothing about what it removes. */}
           <IconButton
@@ -180,6 +203,14 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.xs,
     paddingHorizontal: theme.space.xs,
     paddingVertical: 1,
+  },
+  transcriptBadge: {
+    position: "absolute",
+    top: theme.space.xs,
+    left: theme.space.xxs,
+    backgroundColor: theme.media.scrim,
+    borderRadius: theme.radius.xs,
+    padding: theme.space.xxs,
   },
   badgeText: {
     ...theme.typography.badge,

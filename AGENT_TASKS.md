@@ -32,7 +32,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
-| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | engine done — on-device transcription runs as a background job; UI next | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--engine-done) |
+| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | in the app on Android — transcribe a video, read the transcript, add lines to the description; export opt-in and iOS open | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--in-the-app-on-android) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -72,7 +72,7 @@ Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wi
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
-Phase 5  L4: spike done (go) → engine✅ → UI → data → iOS
+Phase 5  L4: spike done (go) → engine✅ → UI✅ → data → iOS
 ```
 
 **Phases 0 to 3 are complete.** L3 is in the app on Android with its open items listed in its
@@ -1605,7 +1605,7 @@ run on the desktop replica needs its transcode, so that means temporarily re-add
 
 ---
 
-### L4 — Transcripts of what teachers say in a video — ENGINE DONE
+### L4 — Transcripts of what teachers say in a video — IN THE APP ON ANDROID
 
 > *"Dance teachers often say things during their demonstration that could inform the pattern
 > description."*
@@ -1812,6 +1812,34 @@ that.
 
 **Open for the UI phase:** the bench (`/transcribe-spike`, deep link only) goes; the job's cancel
 is not wired to `stop()` yet; the music clip has not been re-measured with VAD in front.
+
+#### UI (2026-09-27, branch `feature/l4-ui`)
+
+**Built:**
+- **Edit video → Speech** (`TranscribeSection`): *Transcribe speech*; once there is a transcript,
+  *Open transcript* and *Transcribe again* (detects the language afresh). Before the first
+  download it states the size (61 MB) and recommends Wi-Fi; the job then downloads. A silhouette
+  says it has no sound. Hidden where `modules/audio-extract` is absent (web, iOS for now).
+- **`TranscriptSheet`**: the video over timestamped lines. Tapping a line plays from there and
+  the line being said is highlighted. Ticked lines go to the form's description as a paragraph of
+  their own, in spoken order (`excerpt.ts`); nothing is written without the tap. *Wrong
+  language?* re-runs the job in one of the nine app languages.
+- A transcribed video's thumbnail carries a badge and opens the transcript — with or without a
+  thumbnail image.
+- **Jobs:** the model download is part of the transcription job, weighted into one count to 100%
+  (download 30%). Queued jobs and running transcriptions can be cancelled from the banner;
+  de-identify and shorten cannot once running (no native stop). "No sound" and a failed download
+  are reported as sentences (`errorKey`), not exception text.
+- **Settings → Speech model:** whether it is on the phone, and *Delete* to free the space.
+- The dev bench and its route are gone. Strings in all nine locales.
+
+**On the Pixel:** transcribed the owner's clip from Edit video; the badge appeared, the sheet
+showed three lines, tapping 0:06 played from there with the line highlighted, and a ticked line
+landed in the description. After *Delete* in Settings, *Transcribe again* asked first, then
+downloaded both models (hashes checked on the device, closing the engine phase's open item) and
+transcribed, counting once to 100%.
+
+**Still open:** export opt-in (data phase), iOS, the music clip with VAD in front.
 
 #### Phases
 

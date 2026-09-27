@@ -45,6 +45,9 @@ jest.mock("expo-video", () => ({
     currentTime: 0,
     play: jest.fn(),
     pause: jest.fn(),
+    seekBy: jest.fn(),
+    // For `useEventListener` from expo; no events are ever emitted.
+    addListener: jest.fn(() => ({ remove: jest.fn() })),
   })),
   VideoView: "VideoView",
 }));

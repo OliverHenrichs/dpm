@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, View } from "react-native";
-import { Button } from "@/src/common/ui";
+import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import {
@@ -23,28 +23,26 @@ type Props = {
 const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
-  const { jobs, dismissFinished } = useDeidentifyJobs();
+  const { jobs, dismissFinished, cancel, canCancel } = useDeidentifyJobs();
   if (jobs.length === 0) return null;
 
   const line = (job: DeidentifyJob) => {
     const name = job.patternName;
-    const shorten = job.kind === "shorten";
+    const prefix = PREFIX[job.kind];
     switch (job.status) {
       case "queued":
-        return t(shorten ? "shortenJobQueued" : "deidentifyJobQueued", {
-          name,
-        });
+        return t(`${prefix}JobQueued`, { name });
       case "running":
-        return t(shorten ? "shortenJobRunning" : "deidentifyJobRunning", {
+        return t(`${prefix}JobRunning`, {
           name,
           percent: Math.round(job.progress * 100),
         });
       case "done":
-        return t(shorten ? "shortenJobDone" : "deidentifyJobDone", { name });
+        return t(`${prefix}JobDone`, { name });
       case "failed":
-        return t(shorten ? "shortenJobFailed" : "deidentifyJobFailed", {
+        return t(`${prefix}JobFailed`, {
           name,
-          error: job.error ?? "",
+          error: job.errorKey ? t(job.errorKey) : (job.error ?? ""),
         });
     }
   };
@@ -57,22 +55,34 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
       {jobs.map((job) => {
         const open = openAction?.(job);
         return (
-          <Text
-            key={job.id}
-            onPress={open}
-            accessibilityRole={open ? "link" : undefined}
-            accessibilityHint={open ? t("videoJobOpenPattern") : undefined}
-            style={[
-              styles.line,
-              job.status === "failed" && {
-                color: theme.colors.danger,
-              },
-              job.status === "done" && { color: theme.colors.success },
-              open && styles.link,
-            ]}
-          >
-            {line(job)}
-          </Text>
+          <View key={job.id} style={styles.row}>
+            <Text
+              onPress={open}
+              accessibilityRole={open ? "link" : undefined}
+              accessibilityHint={open ? t("videoJobOpenPattern") : undefined}
+              style={[
+                styles.line,
+                job.status === "failed" && {
+                  color: theme.colors.danger,
+                },
+                job.status === "done" && { color: theme.colors.success },
+                open && styles.link,
+              ]}
+            >
+              {line(job)}
+            </Text>
+            {canCancel(job) && (
+              <IconButton
+                icon="close-circle-outline"
+                color="textMuted"
+                size={theme.iconSize.md}
+                onPress={() => cancel(job.id)}
+                accessibilityLabel={t("videoJobCancel", {
+                  name: job.patternName,
+                })}
+              />
+            )}
+          </View>
         );
       })}
       {!busy && (
@@ -88,7 +98,15 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
   );
 };
 
+/** Each kind's i18n keys: `<prefix>JobQueued`, `…Running`, `…Done`, `…Failed`. */
+const PREFIX: Record<DeidentifyJob["kind"], string> = {
+  deidentify: "deidentify",
+  shorten: "shorten",
+  transcribe: "transcribe",
+};
+
 const styles = StyleSheet.create((theme) => ({
+  row: { flexDirection: "row", alignItems: "center", gap: theme.space.xs },
   banner: {
     gap: theme.space.xs,
     padding: theme.space.md,
@@ -98,7 +116,7 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
-  line: { ...theme.typography.bodySmall, color: theme.colors.text },
+  line: { ...theme.typography.bodySmall, color: theme.colors.text, flex: 1 },
   link: { textDecorationLine: "underline" },
   dismissButton: {
     alignSelf: "flex-end",
