@@ -70,6 +70,17 @@ describe("AppHeader", () => {
       );
     });
 
+    it("takes a given title on a screen outside the drawer", () => {
+      const expoRouter = jest.requireMock("expo-router");
+      const pathname = jest
+        .spyOn(expoRouter, "usePathname")
+        .mockReturnValue("/gallery");
+      renderWithProviders(<AppHeader title="Design gallery" />);
+
+      expect(screen.getByText("Design gallery")).toBeOnTheScreen();
+      pathname.mockRestore();
+    });
+
     /**
      * A structural guard, not a behavioural one: RNTL has no layout engine, so
      * no test here can detect that one view covers another.

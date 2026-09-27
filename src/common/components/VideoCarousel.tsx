@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { FlatList, Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { VideoItem } from "@/src/common/components/VideoItem";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 
@@ -10,16 +10,16 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
 
 type VideoCarouselProps = {
   videoRefs: IVideoReference[];
-  palette: Record<PaletteColor, string>;
+  /** Label of the badge on generated (de-identified) videos. */
+  generatedLabel?: string;
 };
 
 const VideoCarousel: React.FC<VideoCarouselProps> = ({
   videoRefs,
-  palette,
+  generatedLabel,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
-  const styles = getStyles(palette);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -39,7 +39,14 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
         <FlatList
           data={videoRefs}
           renderItem={({ item }) => (
-            <VideoItem videoRef={item} width={containerWidth} />
+            <View>
+              <VideoItem videoRef={item} width={containerWidth} />
+              {item.generated && generatedLabel && (
+                <View style={styles.badge} pointerEvents="none">
+                  <Text style={styles.badgeText}>{generatedLabel}</Text>
+                </View>
+              )}
+            </View>
           )}
           keyExtractor={(_, index) => index.toString()}
           horizontal
@@ -62,19 +69,29 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  return {
     videoCarouselContainer: {
-      marginBottom: 4,
+      marginBottom: theme.space.xs,
     },
     paginationContainer: {
       alignItems: "center",
     },
-    paginationText: {
-      fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
+    badge: {
+      position: "absolute",
+      top: 6,
+      left: 6,
+      backgroundColor: theme.media.scrim,
+      borderRadius: theme.radius.xs,
+      paddingHorizontal: theme.space.sm,
+      paddingVertical: theme.space.xxs,
     },
-  });
-};
+    badgeText: { ...theme.typography.micro, color: theme.media.onScrim },
+    paginationText: {
+      ...theme.typography.caption,
+      color: theme.colors.textMuted,
+    },
+  };
+});
 
 export default VideoCarousel;

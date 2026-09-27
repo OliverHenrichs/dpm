@@ -1,16 +1,10 @@
 import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { ListRow } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import {
   DRAWER_ROUTES,
   DrawerRoute,
@@ -28,11 +22,11 @@ interface DrawerContentProps {
 
 export default function DrawerContent({ navigation }: DrawerContentProps) {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const styles = getStyles(palette);
+  // Re-renders on a theme switch. The drawer's scroll view did not follow
+  // one natively: after switching to light it stayed dark under dark text.
+  const { theme } = useUnistyles();
 
   const go = (route: DrawerRoute) => {
     navigation.closeDrawer();
@@ -42,15 +36,15 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
   const renderItem = (route: DrawerRoute) => {
     const isFocused = pathname === route.href;
     return (
-      <TouchableOpacity
+      <ListRow
         key={route.name}
+        title={t(route.titleKey)}
+        icon={route.icon}
+        iconColor={isFocused ? "primary" : "textMuted"}
+        selected={isFocused}
         onPress={() => go(route)}
-        style={[styles.item, isFocused && styles.itemFocused]}
-        accessibilityRole="button"
-        accessibilityState={{ selected: isFocused }}
-      >
-        <Text style={styles.itemLabel}>{t(route.titleKey)}</Text>
-      </TouchableOpacity>
+        style={styles.item}
+      />
     );
   };
 
@@ -59,10 +53,14 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
 
   return (
     <ScrollView
-      style={styles.drawerStyle}
+      style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={[
         styles.drawerContent,
-        { paddingTop: insets.top + 16, paddingBottom: insets.bottom },
+        {
+          backgroundColor: theme.colors.background,
+          paddingTop: insets.top + theme.space.lg,
+          paddingBottom: insets.bottom,
+        },
       ]}
     >
       <View style={styles.drawerHeaderContainer}>
@@ -75,50 +73,32 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
   );
 }
 
-function getStyles(palette: Record<PaletteColor, string>) {
-  return StyleSheet.create({
-    drawerStyle: {
-      backgroundColor: palette[PaletteColor.Background],
-    },
+const styles = StyleSheet.create((theme) => {
+  return {
     drawerContent: {
       flexGrow: 1,
-      backgroundColor: palette[PaletteColor.Background],
     },
     drawerHeaderContainer: {
-      paddingBottom: 16,
-      paddingHorizontal: 16,
+      paddingBottom: theme.space.lg,
+      paddingHorizontal: theme.space.lg,
       alignItems: "center",
-      backgroundColor: palette[PaletteColor.Background],
+      backgroundColor: theme.colors.background,
     },
     drawerHeader: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Primary],
+      ...theme.typography.title,
+      color: theme.colors.primary,
       letterSpacing: 1,
     },
     item: {
-      marginHorizontal: 10,
-      marginVertical: 4,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 4,
-    },
-    itemFocused: {
-      // Matches the highlight the old react-navigation DrawerItem applied:
-      // the primary colour at 12% opacity.
-      backgroundColor: palette[PaletteColor.Primary] + "1F",
-    },
-    itemLabel: {
-      fontSize: 16,
-      fontWeight: "500",
-      color: palette[PaletteColor.PrimaryText],
+      marginHorizontal: theme.space.sm,
+      marginBottom: theme.space.xxs,
     },
     divider: {
       height: 1,
-      marginHorizontal: 16,
-      marginVertical: 8,
-      backgroundColor: palette[PaletteColor.SecondaryText],
+      marginHorizontal: theme.space.lg,
+      marginVertical: theme.space.sm,
+      backgroundColor: theme.colors.textMuted,
       opacity: 0.3,
     },
-  });
-}
+  };
+});

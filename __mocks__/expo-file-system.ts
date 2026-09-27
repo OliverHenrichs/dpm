@@ -80,6 +80,15 @@ class File {
   delete(): void {
     files.delete(this.uri);
   }
+
+  /** Copies the bytes to `destination` (a File); fails like the real one if the source is missing. */
+  async copy(destination: File | Directory): Promise<void> {
+    const contents = files.get(this.uri);
+    if (contents === undefined) {
+      throw new Error(`ENOENT: no such file '${this.uri}'`);
+    }
+    files.set(destination.uri, Buffer.from(contents));
+  }
 }
 
 const Paths = {

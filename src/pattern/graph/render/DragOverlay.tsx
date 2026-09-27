@@ -8,7 +8,6 @@ import Svg from "react-native-svg";
 import PatternNode from "@/src/pattern/graph/PatternNode";
 import { GraphNode } from "@/src/pattern/graph/model/GraphModel";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
 
 /** Room for the node's border and its lift, so neither is clipped. */
@@ -24,7 +23,6 @@ interface DragOverlayProps {
   origin: LayoutPosition;
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
-  palette: Record<PaletteColor, string>;
 }
 
 /**
@@ -45,7 +43,6 @@ const DragOverlay: React.FC<DragOverlayProps> = ({
   origin,
   dragX,
   dragY,
-  palette,
 }) => {
   const style = useAnimatedStyle(() => ({
     transform: [
@@ -65,12 +62,7 @@ const DragOverlay: React.FC<DragOverlayProps> = ({
       ]}
     >
       <Svg width={BOX_WIDTH} height={BOX_HEIGHT}>
-        <PatternNode
-          node={node}
-          x={BOX_WIDTH / 2}
-          y={BOX_HEIGHT / 2}
-          palette={palette}
-        />
+        <PatternNode node={node} x={BOX_WIDTH / 2} y={BOX_HEIGHT / 2} />
       </Svg>
     </Animated.View>
   );

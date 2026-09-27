@@ -7,7 +7,6 @@ import SortBottomSheet, {
 } from "@/src/pattern/list/SortBottomSheet";
 import TagPickerBottomSheet from "@/src/pattern/list/TagPickerBottomSheet";
 import PatternTags from "@/src/pattern/list/PatternTags";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
@@ -20,7 +19,6 @@ import {
   screen,
 } from "@/utils/renderWithProviders";
 
-const palette = getPalette("light");
 const PUSH = createTestPatternType({ slug: "push" });
 const PASS = createTestPatternType({ slug: "pass" });
 
@@ -177,7 +175,7 @@ describe("PatternFilterBottomSheet", () => {
         screen.getByPlaceholderText("Search by name..."),
         "changed",
       );
-      fireEvent.press(screen.getByText("✕"));
+      fireEvent.press(screen.getByLabelText("Close"));
 
       expect(onApplyFilter).not.toHaveBeenCalled();
     });
@@ -190,7 +188,7 @@ describe("PatternFilterBottomSheet", () => {
         screen.getByPlaceholderText("Search by name..."),
         "changed",
       );
-      fireEvent.press(screen.getByText("✕"));
+      fireEvent.press(screen.getByLabelText("Close"));
 
       expect(screen.getByPlaceholderText("Search by name...").props.value).toBe(
         "whip",
@@ -229,13 +227,13 @@ describe("SortBottomSheet", () => {
   it("marks the active field with its direction", () => {
     renderSheet({ field: "name", order: "asc" });
 
-    expect(screen.getByText("↑")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Name, ascending")).toBeOnTheScreen();
   });
 
   it("shows a down arrow when descending", () => {
     renderSheet({ field: "name", order: "desc" });
 
-    expect(screen.getByText("↓")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Name, descending")).toBeOnTheScreen();
   });
 
   it("sorts ascending when a new field is chosen", () => {
@@ -348,14 +346,14 @@ describe("TagPickerBottomSheet", () => {
 
       search("footwork");
 
-      expect(screen.getByText('+ Create "footwork"')).toBeOnTheScreen();
+      expect(screen.getByText('Create "footwork"')).toBeOnTheScreen();
     });
 
     it("creates it when tapped", () => {
       const { onAddTag } = renderPicker([]);
 
       search("footwork");
-      fireEvent.press(screen.getByText('+ Create "footwork"'));
+      fireEvent.press(screen.getByText('Create "footwork"'));
 
       expect(onAddTag).toHaveBeenCalledWith("footwork");
     });
@@ -365,7 +363,7 @@ describe("TagPickerBottomSheet", () => {
 
       search("basic");
 
-      expect(screen.queryByText('+ Create "basic"')).toBeNull();
+      expect(screen.queryByText('Create "basic"')).toBeNull();
     });
 
     it("ignores case when deciding it already exists", () => {
@@ -373,7 +371,7 @@ describe("TagPickerBottomSheet", () => {
 
       search("basic");
 
-      expect(screen.queryByText('+ Create "basic"')).toBeNull();
+      expect(screen.queryByText('Create "basic"')).toBeNull();
     });
 
     it("does not offer to create one the pattern already has", () => {
@@ -381,14 +379,14 @@ describe("TagPickerBottomSheet", () => {
 
       search("basic");
 
-      expect(screen.queryByText('+ Create "basic"')).toBeNull();
+      expect(screen.queryByText('Create "basic"')).toBeNull();
     });
 
     it("clears the search after adding, ready for the next", () => {
       renderPicker([]);
 
       search("footwork");
-      fireEvent.press(screen.getByText('+ Create "footwork"'));
+      fireEvent.press(screen.getByText('Create "footwork"'));
 
       expect(screen.getByPlaceholderText("Add tag").props.value).toBe("");
     });
@@ -398,7 +396,7 @@ describe("TagPickerBottomSheet", () => {
     const { onClose } = renderPicker([], [tagged(1, ["basic"])]);
 
     search("zzz");
-    fireEvent.press(screen.getByText("✕"));
+    fireEvent.press(screen.getByLabelText("Close"));
 
     expect(onClose).toHaveBeenCalled();
     expect(screen.getByPlaceholderText("Add tag").props.value).toBe("");
@@ -426,7 +424,7 @@ describe("PatternTags", () => {
   it("removes one", () => {
     const { updated } = renderTags(["basic", "6-count"]);
 
-    fireEvent.press(screen.getAllByText("×")[0]);
+    fireEvent.press(screen.getByLabelText("Remove tag: basic"));
 
     expect(updated()).toEqual(["6-count"]);
   });

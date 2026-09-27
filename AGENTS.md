@@ -8,7 +8,7 @@ apply wherever you are working. Depth lives next to the code it governs, in a ne
 
 | File | Covers |
 |---|---|
-| `src/common/AGENTS.md` | Theming, `AppHeader`, the Android edge band, dismissal touches, the web split |
+| `src/common/AGENTS.md` | Theming and design tokens, the UI primitives (`Button`, `Chip`, …) and design gallery, `AppHeader`, the Android edge band, dismissal touches, the web split |
 | `src/pattern/data/AGENTS.md` | Storage, pattern ids, migrations, import validation, export format |
 | `src/pattern/graph/AGENTS.md` | Graph model, layouts, gestures, node drag, badges, prerequisite integrity |
 | `src/pattern/list/AGENTS.md` | `usePatternCrud`, modifiers, sorting, always-mounted modals |
@@ -67,9 +67,10 @@ Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pa
 - **Path alias.** `@/` resolves to the **project root** (not `src/`). Use `@/src/...` for source imports and `@/utils/...` for test utilities. The same mapping is configured in `tsconfig.json` and in `jest.config.js` (`moduleNameMapper`).
 - **Read-only lists.** `IPatternList.readonly` is set on imported read-only exports and on subscribed cloud lists. Every mutating path must guard on it (`const isReadonly = !!activeList?.readonly`). The one deliberate exception is dragging a graph node, which is a local view preference.
 - **Translations.** All user-facing strings use `const { t } = useTranslation()`. The app ships **nine** locales — `en`, `zh`, `hi`, `es`, `fr`, `ar`, `bn`, `pt`, `de` — and a key must be added to **every** `locales/*.json` (flat key/value, no nesting), with `en` written first as the source of truth. `__tests__/unit/i18n.test.ts` fails on a key missing from any locale, an empty value, a mismatched `{{placeholder}}` set, or a `t("…")` call with no key behind it.
-- **Theming.** `const { colorScheme } = useThemeContext()` → `getPalette(colorScheme)` → `palette[PaletteColor.Background]`. Styles are built inline per render; reuse the fragments in `src/common/utils/CommonStyles.ts`.
+- **UI primitives.** Build touchables and text from `@/src/common/ui` (`Button`, `IconButton`, `Chip`, `Card`, `AppText`), not raw `TouchableOpacity`; see `src/common/AGENTS.md`. Try visual changes in the dev-only design gallery (`/gallery`, linked from Settings).
+- **Theming.** Styles are Unistyles sheets declared at module level, `StyleSheet.create((theme) => …)` imported from `react-native-unistyles`, and every colour, spacing step, radius, text style and shadow comes from the design tokens in `src/common/theme/tokens.ts` — never a literal. Non-style values (icon colours, SVG fills) come from `useUnistyles()`. Text on a coloured fill uses that fill's `on*` role. Details, and the setup's traps, in `src/common/AGENTS.md`.
 - **Screen edges.** `SCREEN_EDGE_INSET` is applied once as `PageContainer`'s horizontal padding, to stay clear of the Android system back-gesture band. Do not pad individual scrollers.
-- **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The two that exist are `YouTubeVideoItem` and `PatternNodeGroup`; route node presses through the latter rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.
+- **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The three that exist are `YouTubeVideoItem`, `PatternNodeGroup` and `ServerStyles` (web's static-render CSS); route node presses through the latter rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.
 
 ## Filtering & sorting
 
@@ -95,7 +96,7 @@ npm run format           # Prettier, write
 npm run typecheck        # tsc --noEmit
 ```
 
-Stack: Expo SDK ~57 / React Native 0.86 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`).
+Stack: Expo SDK ~57 / React Native 0.86 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`). Styling is Unistyles 3 (a Nitro native module, configured through `babel.config.js` and the `index.ts` entry).
 
 Tests live in `__tests__/`, split into a `unit` project and a `components` project; a test in the wrong directory is silently never run. See `__tests__/AGENTS.md`.
 
@@ -103,7 +104,7 @@ Tests live in `__tests__/`, split into a `unit` project and a `components` proje
 
 Config is **dynamic** — `app.config.ts` (there is no `app.json`) reads credentials from environment variables, so nothing secret is committed. Copy `.env.example` to `.env` (gitignored); the Firebase variables are listed in `src/firebase/AGENTS.md`. Without them the app runs local-only.
 
-**Config plugins are applied only when listed in `app.config.ts` → `plugins`; autolinking does not apply them.** `expo-camera`, `expo-image-picker` and `expo-localization` are listed there for that reason — the first two purely so their iOS usage strings (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`) reach the generated `Info.plist`, which iOS terminates the app without; Android's equivalent arrives via manifest merging regardless, so the omission is invisible until an iOS device runs it. Both pass `microphonePermission: false` (and camera `recordAudioAndroid: false`) because nothing in the app records audio — that also blocks `RECORD_AUDIO` from being merged in by a transitive dependency. `ios.bundleIdentifier` must stay in `app.config.ts` too: there is no `app.json`, so the CLI cannot write it, and without it `expo prebuild --platform ios` and EAS iOS builds both refuse to run.
+**Config plugins are applied only when listed in `app.config.ts` → `plugins`; autolinking does not apply them.** `expo-camera`, `expo-image-picker`, `expo-localization` and `expo-font` (the embedded Inter typeface) are listed there for that reason — the first two purely so their iOS usage strings (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSMicrophoneUsageDescription`) reach the generated `Info.plist`, which iOS terminates the app without; Android's equivalent arrives via manifest merging regardless, so the omission is invisible until an iOS device runs it. "Record a video" hands over to the system camera, which on iOS records sound and so needs the microphone string; **both plugins write these iOS keys and `expo-camera`'s win** (listed first, its mods run last), so both carry the same strings — a `false` in either deletes the key. On Android the camera app records the audio itself, so camera's `recordAudioAndroid: false` keeps `RECORD_AUDIO` blocked, also against a transitive dependency merging it in. Check the resolved result with `npx expo config --type introspect`. `ios.bundleIdentifier` must stay in `app.config.ts` too: there is no `app.json`, so the CLI cannot write it, and without it `expo prebuild --platform ios` and EAS iOS builds both refuse to run.
 
 Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo run:*` — revert that, the project uses the `--dev-client` workflow. Adding a native module means rebuilding the dev client; Metro will happily serve JS the installed client has no native side for.
 

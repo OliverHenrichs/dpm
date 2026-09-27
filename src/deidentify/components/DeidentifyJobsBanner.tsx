@@ -1,0 +1,108 @@
+import React from "react";
+import { Text, View } from "react-native";
+import { Button } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { useTranslation } from "react-i18next";
+import {
+  DeidentifyJob,
+  useDeidentifyJobs,
+} from "@/src/deidentify/jobs/DeidentifyJobsContext";
+
+type Props = {
+  /**
+   * How to open a job's pattern, or undefined when it cannot be found from here (another list,
+   * a pattern never saved). A line with an action is shown as a link.
+   */
+  openAction?: (job: DeidentifyJob) => (() => void) | undefined;
+};
+
+/**
+ * Where background video jobs report: one line per job, and a dismiss button once none is
+ * still running. Renders nothing when there are no jobs.
+ */
+const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
+  const { t } = useTranslation();
+  const { theme } = useUnistyles();
+  const { jobs, dismissFinished } = useDeidentifyJobs();
+  if (jobs.length === 0) return null;
+
+  const line = (job: DeidentifyJob) => {
+    const name = job.patternName;
+    const shorten = job.kind === "shorten";
+    switch (job.status) {
+      case "queued":
+        return t(shorten ? "shortenJobQueued" : "deidentifyJobQueued", {
+          name,
+        });
+      case "running":
+        return t(shorten ? "shortenJobRunning" : "deidentifyJobRunning", {
+          name,
+          percent: Math.round(job.progress * 100),
+        });
+      case "done":
+        return t(shorten ? "shortenJobDone" : "deidentifyJobDone", { name });
+      case "failed":
+        return t(shorten ? "shortenJobFailed" : "deidentifyJobFailed", {
+          name,
+          error: job.error ?? "",
+        });
+    }
+  };
+  const busy = jobs.some(
+    (j) => j.status === "queued" || j.status === "running",
+  );
+
+  return (
+    <View style={styles.banner} testID="deidentify-jobs">
+      {jobs.map((job) => {
+        const open = openAction?.(job);
+        return (
+          <Text
+            key={job.id}
+            onPress={open}
+            accessibilityRole={open ? "link" : undefined}
+            accessibilityHint={open ? t("videoJobOpenPattern") : undefined}
+            style={[
+              styles.line,
+              job.status === "failed" && {
+                color: theme.colors.danger,
+              },
+              job.status === "done" && { color: theme.colors.success },
+              open && styles.link,
+            ]}
+          >
+            {line(job)}
+          </Text>
+        );
+      })}
+      {!busy && (
+        <Button
+          title={t("deidentifyDismiss")}
+          variant="ghost"
+          size="sm"
+          onPress={dismissFinished}
+          style={styles.dismissButton}
+        />
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create((theme) => ({
+  banner: {
+    gap: theme.space.xs,
+    padding: theme.space.md,
+    marginBottom: theme.space.sm,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  line: { ...theme.typography.bodySmall, color: theme.colors.text },
+  link: { textDecorationLine: "underline" },
+  dismissButton: {
+    alignSelf: "flex-end",
+  },
+}));
+
+export default DeidentifyJobsBanner;

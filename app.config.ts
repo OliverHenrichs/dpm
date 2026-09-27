@@ -51,10 +51,13 @@ export default (): ExpoConfig => ({
     [
       "expo-camera",
       {
+        // Both plugins write these iOS strings and this one's win (listed first, its mods run
+        // last), so they carry both uses: QR scanning here, recording in expo-image-picker.
         cameraPermission:
-          "Allow $(PRODUCT_NAME) to use the camera to scan a pattern list share code.",
-        // QR scanning only — no audio is ever recorded.
-        microphonePermission: false,
+          "Allow $(PRODUCT_NAME) to use the camera to scan a pattern list share code or record a video for a pattern.",
+        microphonePermission:
+          "Allow $(PRODUCT_NAME) to record sound with the videos you take for a pattern.",
+        // Android's system camera app records the audio itself; the app never needs it.
         recordAudioAndroid: false,
       },
     ],
@@ -63,8 +66,13 @@ export default (): ExpoConfig => ({
       {
         photosPermission:
           "Allow $(PRODUCT_NAME) to access your videos so you can attach them to a pattern.",
-        // Videos are only ever picked from the library, never recorded in-app.
-        microphonePermission: false,
+        cameraPermission:
+          "Allow $(PRODUCT_NAME) to use the camera to scan a pattern list share code or record a video for a pattern.",
+        // "Record a video" hands over to the system camera. On iOS that capture records sound
+        // and needs this string, or iOS terminates the app. Android's camera app records the
+        // audio itself; RECORD_AUDIO stays blocked by expo-camera's recordAudioAndroid: false.
+        microphonePermission:
+          "Allow $(PRODUCT_NAME) to record sound with the videos you take for a pattern.",
       },
     ],
     [
@@ -73,15 +81,53 @@ export default (): ExpoConfig => ({
         image: "./assets/images/splash-icon-dark.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        // The themes' `background` tokens (src/common/theme/tokens.ts), so the
+        // splash hands over to the first screen without a flash of another colour.
+        backgroundColor: "#f5f3ff",
         dark: {
           image: "./assets/images/splash-icon-light.png",
-          backgroundColor: "#000000",
+          backgroundColor: "#18181b",
         },
       },
     ],
     "expo-video",
     "expo-localization",
+    // Inter, embedded natively (SIL Open Font License, assets/fonts/Inter-OFL.txt). On Android the
+    // weights form one "Inter" family, so `fontWeight` picks the right file as it does on iOS,
+    // where the family name comes from the files themselves. Only the weights the type scale
+    // uses are shipped. Web uses a system font stack instead (see theme/unistyles.ts).
+    [
+      "expo-font",
+      {
+        ios: {
+          fonts: [
+            "./assets/fonts/Inter_400Regular.ttf",
+            "./assets/fonts/Inter_400Regular_Italic.ttf",
+            "./assets/fonts/Inter_500Medium.ttf",
+            "./assets/fonts/Inter_600SemiBold.ttf",
+            "./assets/fonts/Inter_700Bold.ttf",
+          ],
+        },
+        android: {
+          fonts: [
+            {
+              fontFamily: "Inter",
+              fontDefinitions: [
+                { path: "./assets/fonts/Inter_400Regular.ttf", weight: 400 },
+                {
+                  path: "./assets/fonts/Inter_400Regular_Italic.ttf",
+                  weight: 400,
+                  style: "italic",
+                },
+                { path: "./assets/fonts/Inter_500Medium.ttf", weight: 500 },
+                { path: "./assets/fonts/Inter_600SemiBold.ttf", weight: 600 },
+                { path: "./assets/fonts/Inter_700Bold.ttf", weight: 700 },
+              ],
+            },
+          ],
+        },
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

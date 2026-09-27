@@ -1,4 +1,3 @@
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
@@ -10,7 +9,6 @@ export interface IGraphSvgProps {
   /** Nodes, edges and colours, all decided in one place. */
   model: GraphModel;
   positions: IGraphPosition;
-  palette: Record<PaletteColor, string>;
   /**
    * The node being dragged, if any. Only this node and the edges touching it
    * follow a shared value; everything else is drawn statically, so a drag

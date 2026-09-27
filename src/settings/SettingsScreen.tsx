@@ -1,25 +1,20 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Button,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { Button, Chip, ListRow, type IconName } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+import { router } from "expo-router";
+import { Icon } from "@/src/common/ui/Icon";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import {
   getCommonListContainer,
-  getCommonStyles,
+  commonStyles,
 } from "@/src/common/utils/CommonStyles";
 import {
   ThemeType,
   useThemeContext,
 } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { findLanguage } from "@/src/settings/types/Languages";
 import LanguagePickerBottomSheet from "@/src/settings/components/LanguagePickerBottomSheet";
 import PatternListExportModal from "@/src/pattern/data/components/PatternListExportModal";
@@ -30,19 +25,16 @@ import AppDialog from "@/src/common/components/AppDialog";
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
-  const { theme, setTheme, colorScheme } = useThemeContext();
+  const { theme: themePreference, setTheme } = useThemeContext();
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const selectedLanguage = findLanguage(currentLang);
-  const commonStyles = getCommonStyles(colorScheme);
-  const palette = getPalette(colorScheme);
+  const { theme } = useUnistyles();
 
-  const themeOptions = [
-    { value: "system", label: t("themeSystem") },
-    { value: "light", label: t("themeLight") },
-    { value: "dark", label: t("themeDark") },
+  const themeOptions: { value: ThemeType; label: string; icon: IconName }[] = [
+    { value: "system", label: t("themeSystem"), icon: "theme-light-dark" },
+    { value: "light", label: t("themeLight"), icon: "white-balance-sunny" },
+    { value: "dark", label: t("themeDark"), icon: "weather-night" },
   ];
-
-  const styles = getStyles(palette);
 
   // Data transfer logic extracted to custom hook
   const {
@@ -62,36 +54,34 @@ const SettingsScreen: React.FC = () => {
   } = useDataTransfer();
 
   return (
-    <PageContainer
-      style={{ backgroundColor: palette[PaletteColor.Background] }}
-    >
+    <PageContainer>
       <AppHeader />
-      <ScrollView
-        style={{
-          flex: 1,
-          ...getCommonListContainer(palette),
-        }}
-      >
+      <ScrollView style={styles.scroll}>
         {/* Language Section */}
         <View style={commonStyles.sectionHeaderRow}>
           <Text style={commonStyles.sectionTitle}>{t("language")}</Text>
         </View>
         {/* One row that opens the full list — a button per language stopped
             fitting across a phone once there were more than a few. */}
-        <TouchableOpacity
-          style={styles.languageRow}
+        <ListRow
+          variant="card"
+          title={selectedLanguage.label}
+          meta={
+            selectedLanguage.englishName === selectedLanguage.label
+              ? undefined
+              : selectedLanguage.englishName
+          }
+          icon="translate"
+          trailing={
+            <Icon
+              name="chevron-right"
+              size={theme.iconSize.lg}
+              color={theme.colors.textMuted}
+            />
+          }
           onPress={() => setShowLanguagePicker(true)}
-          accessibilityRole="button"
           accessibilityLabel={`${t("language")}: ${selectedLanguage.label}`}
-        >
-          <Text style={styles.languageValue}>{selectedLanguage.label}</Text>
-          <Text style={styles.languageEnglishName}>
-            {selectedLanguage.englishName === selectedLanguage.label
-              ? ""
-              : selectedLanguage.englishName}
-          </Text>
-          <Text style={styles.languageChevron}>›</Text>
-        </TouchableOpacity>
+        />
 
         {/* Theme Section */}
         <View style={commonStyles.sectionHeaderRow}>
@@ -99,23 +89,13 @@ const SettingsScreen: React.FC = () => {
         </View>
         <View style={styles.themeRow}>
           {themeOptions.map((opt) => (
-            <View
+            <Chip
               key={opt.value}
-              style={[
-                styles.themeButton,
-                theme === opt.value && styles.themeButtonSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.themeButtonText,
-                  theme === opt.value && styles.themeButtonTextSelected,
-                ]}
-                onPress={() => setTheme(opt.value as ThemeType)}
-              >
-                {opt.label}
-              </Text>
-            </View>
+              label={opt.label}
+              icon={opt.icon}
+              selected={themePreference === opt.value}
+              onPress={() => setTheme(opt.value as ThemeType)}
+            />
           ))}
         </View>
 
@@ -125,24 +105,34 @@ const SettingsScreen: React.FC = () => {
         </View>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator
-              size="large"
-              color={palette[PaletteColor.Primary]}
-            />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
         ) : (
-          <View style={[styles.themeRow, { marginLeft: 8 }]}>
+          <View style={[styles.themeRow, styles.indented]}>
             <Button
               title={t("exportPatterns")}
+              icon="export-variant"
+              variant="outline"
               onPress={handleExportButtonPress}
-              color={palette[PaletteColor.Primary]}
             />
             <Button
               title={t("importPatterns")}
+              icon="import"
+              variant="outline"
               onPress={handleImportButtonPress}
-              color={palette[PaletteColor.Primary]}
             />
           </View>
+        )}
+
+        {/* SPIKE (L3): dev-only, not for merge. */}
+        {__DEV__ && (
+          <Button
+            title="Design gallery"
+            icon="palette-swatch-outline"
+            variant="ghost"
+            onPress={() => router.navigate("/gallery")}
+            style={styles.galleryLink}
+          />
         )}
       </ScrollView>
 
@@ -180,63 +170,23 @@ const SettingsScreen: React.FC = () => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    loadingContainer: {
-      paddingVertical: 20,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    languageRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      backgroundColor: palette[PaletteColor.Surface],
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      marginBottom: 24,
-    },
-    languageValue: {
-      fontSize: 16,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-    },
-    languageEnglishName: {
-      flex: 1,
-      fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
-    },
-    languageChevron: {
-      fontSize: 20,
-      color: palette[PaletteColor.SecondaryText],
-    },
-    themeRow: {
-      flexDirection: "row",
-      gap: 12,
-      marginBottom: 24,
-    },
-    themeButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      backgroundColor: palette[PaletteColor.Surface],
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    themeButtonSelected: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderColor: palette[PaletteColor.Primary],
-    },
-    themeButtonText: {
-      color: palette[PaletteColor.PrimaryText],
-      fontWeight: "bold",
-    },
-    themeButtonTextSelected: {
-      color: palette[PaletteColor.Surface],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  scroll: {
+    flex: 1,
+    ...getCommonListContainer(theme),
+  },
+  indented: { marginLeft: theme.space.sm },
+  galleryLink: { alignSelf: "flex-start", marginTop: theme.space.xl },
+  loadingContainer: {
+    paddingVertical: theme.space.xl,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  themeRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+    marginBottom: theme.space.xxl,
+  },
+}));
 
 export default SettingsScreen;

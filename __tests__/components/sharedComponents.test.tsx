@@ -1,10 +1,17 @@
 import React from "react";
 import { Text, View } from "react-native";
+import {
+  findGesture,
+  peekGestures,
+} from "@/__mocks__/react-native-gesture-handler";
+import {
+  setReducedMotion,
+  setTimingFinishes,
+} from "@/__mocks__/react-native-reanimated";
 import AppDialog from "@/src/common/components/AppDialog";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import VideoCarousel from "@/src/common/components/VideoCarousel";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import { IModifier, IVideoReference } from "@/src/pattern/types/IPatternList";
 import { generateUUID } from "@/src/pattern/types/PatternType";
 import {
@@ -18,7 +25,6 @@ import {
   screen,
 } from "@/utils/renderWithProviders";
 
-const palette = getPalette("light");
 const TYPE = createTestPatternType({ slug: "push" });
 
 const urlVideo = (value: string, startTime?: number): IVideoReference => ({
@@ -129,12 +135,7 @@ describe("BottomSheet", () => {
   const renderSheet = (visible = true) => {
     const onClose = jest.fn();
     renderWithProviders(
-      <BottomSheet
-        visible={visible}
-        onClose={onClose}
-        title="Filter Patterns"
-        palette={palette}
-      >
+      <BottomSheet visible={visible} onClose={onClose} title="Filter Patterns">
         <Text>sheet body</Text>
       </BottomSheet>,
       { activeListId: null },
@@ -155,10 +156,10 @@ describe("BottomSheet", () => {
     expect(screen.queryByText("sheet body")).toBeNull();
   });
 
-  it("closes from the ✕", () => {
+  it("closes from its close button", () => {
     const { onClose } = renderSheet();
 
-    fireEvent.press(screen.getByText("✕"));
+    fireEvent.press(screen.getByLabelText("Close"));
 
     expect(onClose).toHaveBeenCalled();
   });
@@ -178,10 +179,9 @@ describe("VideoCarousel", () => {
   const { FlatList, View } = require("react-native");
 
   const renderCarousel = (videoRefs: IVideoReference[]) => {
-    const view = renderWithProviders(
-      <VideoCarousel videoRefs={videoRefs} palette={palette} />,
-      { activeListId: null },
-    );
+    const view = renderWithProviders(<VideoCarousel videoRefs={videoRefs} />, {
+      activeListId: null,
+    });
     return view;
   };
 
@@ -209,6 +209,26 @@ describe("VideoCarousel", () => {
     });
 
   const scrollTo = (index: number) => reportVisible([{ index }]);
+
+  it("badges a generated video when given a label, and only then", () => {
+    const generated: IVideoReference = {
+      type: "local",
+      value: "file:///s.mp4",
+      generated: { method: "silhouette", createdAt: 0 },
+    };
+    const { rerender } = renderWithProviders(
+      <VideoCarousel
+        videoRefs={[generated, { type: "local", value: "file:///p.mp4" }]}
+        generatedLabel="Silhouette"
+      />,
+      { activeListId: null },
+    );
+    layout();
+    expect(screen.getAllByText("Silhouette")).toHaveLength(1);
+
+    rerender(<VideoCarousel videoRefs={[generated]} />);
+    expect(screen.queryByText("Silhouette")).toBeNull();
+  });
 
   it("renders nothing until it has been measured", () => {
     renderCarousel([
@@ -319,7 +339,6 @@ describe("PatternDetails", () => {
         })}
         patterns={[]}
         patternTypes={[TYPE]}
-        palette={palette}
         {...props}
       />,
       { activeListId: null },
@@ -504,5 +523,92 @@ describe("PatternDetails", () => {
       expect(screen.getByText("basic")).toBeOnTheScreen();
       expect(screen.getByText("6-count")).toBeOnTheScreen();
     });
+  });
+});
+
+describe("BottomSheet gestures", () => {
+  const renderSheet = () => {
+    const onClose = jest.fn();
+    renderWithProviders(
+      <BottomSheet visible onClose={onClose} title="Sort">
+        <Text>Inside</Text>
+      </BottomSheet>,
+    );
+    // The sheet measures itself; 400px tall.
+    fireEvent(screen.getByText("Inside").parent!.parent!, "layout", {
+      nativeEvent: { layout: { height: 400 } },
+    });
+    const pan = findGesture(peekGestures()[0], "pan")!;
+    return { onClose, pan };
+  };
+
+  it("closes on a tap on the scrim", () => {
+    const { onClose } = renderSheet();
+    // The mock never re-runs animated styles, so the scrim keeps its opening
+    // opacity of 0 — which the queries count as hidden.
+    fireEvent.press(
+      screen.getByTestId("bottom-sheet-scrim", { includeHiddenElements: true }),
+    );
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("closes when dragged down past a quarter of its height", () => {
+    const { onClose, pan } = renderSheet();
+    act(() => {
+      pan.handlers.onChange({ changeY: 150 });
+      pan.handlers.onEnd({ velocityY: 0 });
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("springs back from a short, slow drag", () => {
+    const { onClose, pan } = renderSheet();
+    act(() => {
+      pan.handlers.onChange({ changeY: 40 });
+      pan.handlers.onEnd({ velocityY: 100 });
+    });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes on a flick, however short", () => {
+    const { onClose, pan } = renderSheet();
+    act(() => {
+      pan.handlers.onChange({ changeY: 20 });
+      pan.handlers.onEnd({ velocityY: 1500 });
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("BottomSheet lifecycle", () => {
+  const sheet = (visible: boolean) => (
+    <BottomSheet visible={visible} onClose={jest.fn()} title="Sort">
+      <Text>Inside</Text>
+    </BottomSheet>
+  );
+
+  it("unmounts once its closing animation finishes", () => {
+    const { rerender } = renderWithProviders(sheet(true));
+    expect(screen.getByText("Inside")).toBeOnTheScreen();
+    rerender(sheet(false));
+    expect(screen.queryByText("Inside")).toBeNull();
+  });
+
+  it("stays mounted when the closing animation is interrupted", () => {
+    // Reopened mid-close, say: the animation reports it did not finish.
+    setTimingFinishes(false);
+    const { rerender } = renderWithProviders(sheet(true));
+    rerender(sheet(false));
+    expect(
+      screen.getByText("Inside", { includeHiddenElements: true }),
+    ).toBeTruthy();
+  });
+
+  it("opens and closes without a spring when the system asks for less motion", () => {
+    setReducedMotion(true);
+    const { rerender } = renderWithProviders(sheet(true));
+    expect(screen.getByText("Inside")).toBeOnTheScreen();
+    rerender(sheet(false));
+    expect(screen.queryByText("Inside")).toBeNull();
   });
 });

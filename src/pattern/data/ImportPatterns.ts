@@ -128,7 +128,8 @@ async function tryAddLocalVideoRef(
       const newVideoUri = generateVideoUri(contextId);
       const file = new File(newVideoUri);
       file.write(videoString, { encoding: "base64" });
-      return { type: "local", value: newVideoUri };
+      // Spread, not rebuilt: provenance (`generated`) must survive the trip.
+      return { ...videoRef, type: "local", value: newVideoUri };
     } catch {
       warnings.push(`Failed to restore video for context: ${contextId}`);
     }

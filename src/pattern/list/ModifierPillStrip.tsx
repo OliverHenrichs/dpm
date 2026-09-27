@@ -1,14 +1,8 @@
 import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { Chip } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import {
   IModifier,
   IPatternModifierRef,
@@ -39,9 +33,6 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   onShowAttachPicker,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
 
   const universalModifiers = modifiers.filter((m) => m.universal);
   const attachedNonUniversal = modifiers.filter(
@@ -56,15 +47,12 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
     return null;
   }
 
-  const renderPositionBadge = (modifier: IModifier) => {
-    const label =
-      modifier.position === "prefix"
-        ? t("modifierPositionPrefix")
-        : modifier.position === "postfix"
-          ? t("modifierPositionPostfix")
-          : t("modifierPositionAmends");
-    return <Text style={styles.positionBadge}>{label}</Text>;
-  };
+  const positionLabel = (modifier: IModifier) =>
+    modifier.position === "prefix"
+      ? t("modifierPositionPrefix")
+      : modifier.position === "postfix"
+        ? t("modifierPositionPostfix")
+        : t("modifierPositionAmends");
 
   return (
     <View style={styles.container}>
@@ -74,180 +62,74 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.strip}
       >
-        {/* Base pill */}
-        <TouchableOpacity
-          style={[
-            styles.pill,
-            selectedModifierId === null && styles.pillSelected,
-          ]}
+        <Chip
+          label={t("basePattern")}
+          selected={selectedModifierId === null}
           onPress={() => onSelect(null)}
-        >
-          <Text
-            style={[
-              styles.pillText,
-              selectedModifierId === null && styles.pillTextSelected,
-            ]}
-          >
-            {t("basePattern")}
-          </Text>
-        </TouchableOpacity>
+        />
 
-        {/* Non-universal attached modifier pills — before universal */}
+        {/* Non-universal attached modifiers — before the universal ones */}
         {attachedNonUniversal.map((mod) => (
-          <View key={mod.id} style={styles.pillWrapper}>
-            <TouchableOpacity
-              style={[
-                styles.pill,
-                selectedModifierId === mod.id && styles.pillSelected,
-              ]}
-              onPress={() => onSelect(mod.id)}
-            >
-              {renderPositionBadge(mod)}
-              <Text
-                style={[
-                  styles.pillText,
-                  selectedModifierId === mod.id && styles.pillTextSelected,
-                ]}
-              >
-                {mod.name}
-              </Text>
-            </TouchableOpacity>
-            {isEditMode && onDetachModifier && (
-              <TouchableOpacity
-                style={styles.detachButton}
-                onPress={() => onDetachModifier(mod.id)}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                accessibilityRole="button"
+          <Chip
+            key={mod.id}
+            label={mod.name}
+            badge={positionLabel(mod)}
+            selected={selectedModifierId === mod.id}
+            onPress={() => onSelect(mod.id)}
+            {...(isEditMode &&
+              onDetachModifier && {
+                onRemove: () => onDetachModifier(mod.id),
                 // Names the modifier, so the control is distinguishable both
-                // from the other pills' detach buttons and from the identical
-                // "×" that removes a video.
-                accessibilityLabel={`${t("detachModifier")}: ${mod.name}`}
-              >
-                <Text style={styles.detachButtonText}>×</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+                // from the other pills' detach buttons and from the one that
+                // removes a video.
+                removeLabel: `${t("detachModifier")}: ${mod.name}`,
+              })}
+          />
         ))}
 
-        {/* Attach picker trigger (edit mode only) */}
         {isEditMode && onShowAttachPicker && (
-          <TouchableOpacity
-            style={[styles.pill, styles.pillAttach]}
+          <Chip
+            label={t("attachModifier")}
+            icon="plus"
             onPress={onShowAttachPicker}
-          >
-            <Text style={styles.pillAttachText}>{t("attachModifier")}</Text>
-          </TouchableOpacity>
+          />
         )}
 
-        {/* Universal modifier pills — always last */}
+        {/* Universal modifiers — always last, marked by an icon rather than
+            by colour alone */}
         {universalModifiers.map((mod) => (
-          <TouchableOpacity
+          <Chip
             key={mod.id}
-            style={[
-              styles.pill,
-              styles.pillUniversal,
-              selectedModifierId === mod.id && styles.pillSelected,
-            ]}
+            label={mod.name}
+            badge={positionLabel(mod)}
+            icon="all-inclusive"
+            selected={selectedModifierId === mod.id}
             onPress={() => onSelect(mod.id)}
-          >
-            {renderPositionBadge(mod)}
-            <Text
-              style={[
-                styles.pillText,
-                selectedModifierId === mod.id && styles.pillTextSelected,
-              ]}
-            >
-              {mod.name}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </ScrollView>
     </View>
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    container: {
-      marginVertical: 4,
-    },
-    title: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
-      marginBottom: 4,
-    },
-    strip: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 4,
-      gap: 6,
-    },
-    pillWrapper: {
-      position: "relative",
-    },
-    pill: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Surface],
-    },
-    pillSelected: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderColor: palette[PaletteColor.Primary],
-    },
-    pillUniversal: {
-      borderColor: palette[PaletteColor.Accent],
-    },
-    pillText: {
-      fontSize: 13,
-      color: palette[PaletteColor.PrimaryText],
-    },
-    pillTextSelected: {
-      color: palette[PaletteColor.Surface],
-      fontWeight: "600",
-    },
-    positionBadge: {
-      fontSize: 9,
-      color: palette[PaletteColor.SecondaryText],
-      textTransform: "uppercase",
-      fontWeight: "600",
-      letterSpacing: 0.5,
-    },
-    detachButton: {
-      position: "absolute",
-      top: -6,
-      right: -6,
-      backgroundColor: palette[PaletteColor.Error],
-      borderRadius: 9,
-      width: 18,
-      height: 18,
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 2,
-    },
-    detachButtonText: {
-      color: "#fff",
-      fontSize: 13,
-      fontWeight: "bold",
-      lineHeight: 16,
-    },
-    pillAttach: {
-      borderStyle: "dashed",
-      borderColor: palette[PaletteColor.Primary],
-      backgroundColor: "transparent",
-    },
-    pillAttachText: {
-      fontSize: 13,
-      color: palette[PaletteColor.Primary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    marginVertical: theme.space.xs,
+  },
+  title: {
+    ...theme.typography.caption,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: theme.space.xs,
+  },
+  strip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: theme.space.xs,
+    gap: theme.space.sm,
+  },
+}));
 
 export default ModifierPillStrip;

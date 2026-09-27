@@ -1,12 +1,9 @@
 import React from "react";
 import CycleWarning from "@/src/pattern/graph/CycleWarning";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import { renderWithProviders, screen } from "@/utils/renderWithProviders";
 
-const palette = getPalette("light");
-
 const render = (cycles: number[][]) =>
-  renderWithProviders(<CycleWarning cycles={cycles} palette={palette} />);
+  renderWithProviders(<CycleWarning cycles={cycles} />);
 
 describe("CycleWarning", () => {
   it("says nothing about a healthy graph", () => {

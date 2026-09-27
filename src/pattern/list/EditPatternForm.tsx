@@ -1,12 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, ScrollView, Text, TextInput, View } from "react-native";
+import { Button, Chip, ListRow, Tappable } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
   IPattern,
@@ -17,24 +12,28 @@ import {
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import * as ImagePicker from "expo-image-picker";
+import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import PatternVideos from "./PatternVideos";
 import PatternTags from "./PatternTags";
 import AddVideoModal from "./AddVideoModal";
 import ModifierPillStrip from "./ModifierPillStrip";
 import BottomSheet from "@/src/common/components/BottomSheet";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
+import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
+import DeidentifyModal, {
+  DeidentifyTarget,
+} from "@/src/deidentify/components/DeidentifyModal";
+import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
+import { jobStore } from "@/src/deidentify/jobs/jobStore";
+import { canShortenVideos } from "@/src/deidentify/shortenVideo";
 import {
-  getCommon2ndOrderLabel,
   getCommonBorder,
-  getCommonButton,
   getCommonInput,
   getCommonLabel,
   getCommonPrereqContainer,
-  getCommonPrereqItem,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 
@@ -52,6 +51,8 @@ type EditPatternFormProps = {
   ) => void | boolean | Promise<void | boolean>;
   onCancel: () => void;
   existing?: IPattern | null;
+  /** Videos a new pattern starts with — "create a pattern from a video". */
+  initialVideos?: IVideoReference[];
 };
 
 const levels = Object.values(PatternLevel);
@@ -63,6 +64,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   onAccepted,
   onCancel,
   existing,
+  initialVideos,
 }) => {
   const { t } = useTranslation();
 
@@ -74,7 +76,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     prerequisites: [],
     description: "",
     tags: [],
-    videoRefs: [],
+    videoRefs: initialVideos ?? [],
     modifierRefs: [],
   });
 
@@ -88,6 +90,22 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     null,
   );
   const [showAttachPicker, setShowAttachPicker] = useState(false);
+  const [showDeidentifyPicker, setShowDeidentifyPicker] = useState(false);
+  const [deidentifyTarget, setDeidentifyTarget] =
+    useState<DeidentifyTarget | null>(null);
+  const { activeList } = useActivePatternList();
+  const { jobs } = useDeidentifyJobs();
+
+  // A de-identification job that finishes while this form is open replaced the video in the
+  // stored pattern, not in this draft; swap it here too, so the form shows the result and
+  // saving does not put the original back.
+  useEffect(
+    () =>
+      jobStore.subscribe(() =>
+        setNewPattern((prev) => applyReplacements(prev)),
+      ),
+    [],
+  );
 
   /**
    * Patterns that cannot be prerequisites of this one without closing a cycle.
@@ -101,10 +119,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     () => findIneligiblePrerequisiteIds(patterns, existing?.id),
     [patterns, existing?.id],
   );
-
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   // Resolve which videoRefs are currently active for the selected pill
   const activeVideoRefs: IVideoReference[] = (() => {
@@ -156,9 +171,10 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       selectionLimit: 3 - activeVideoRefs.length,
     });
     if (!result.canceled) {
-      const newVideos: IVideoReference[] = result.assets.map((asset) => ({
+      const uris = await persistPickedVideos(result.assets.map((a) => a.uri));
+      const newVideos: IVideoReference[] = uris.map((value) => ({
         type: "local",
-        value: asset.uri,
+        value,
       }));
       applyVideoAdd(newVideos);
     }
@@ -189,6 +205,57 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         ),
       }));
     }
+  };
+
+  // Editing a video (shorten, de-identify): one of this draft's own local videos, or one
+  // picked from the gallery (added to the draft first). The run is a background job; see
+  // src/deidentify/jobs/jobStore.ts.
+  const canEditVideos =
+    !!activeList &&
+    !activeList.readonly &&
+    !isActiveVideoReadonly &&
+    canShortenVideos();
+  const editable = activeVideoRefs
+    .map((ref, index) => ({ ref, index }))
+    .filter(({ ref }) => ref.type === "local");
+  const draftUris = new Set(
+    [
+      ...(newPattern.videoRefs ?? []),
+      ...(newPattern.modifierRefs ?? []).flatMap((m) => m.videoRefs),
+    ].map((v) => v.value),
+  );
+  const draftJobs = jobs.filter(
+    (j) => draftUris.has(j.sourceUri) && j.status !== "done",
+  );
+
+  const openEditor = (ref: IVideoReference) => {
+    if (!activeList) return;
+    setShowDeidentifyPicker(false);
+    setDeidentifyTarget({
+      listId: activeList.id,
+      patternName: newPattern.name.trim() || t("addPatternNew"),
+      sourceUri: ref.value,
+      ...(ref.generated && { generated: ref.generated }),
+    });
+  };
+
+  const pickForDeidentify = async () => {
+    if (activeVideoRefs.length >= 3) return;
+    setShowDeidentifyPicker(false);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      allowsMultipleSelection: false,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    const [value] = await persistPickedVideos([result.assets[0].uri]);
+    const ref: IVideoReference = { type: "local", value };
+    applyVideoAdd([ref]);
+    openEditor(ref);
+  };
+
+  const handleEditVideo = () => {
+    if (editable.length === 0) void pickForDeidentify();
+    else setShowDeidentifyPicker(true);
   };
 
   const handleRemoveVideo = (index: number) => {
@@ -255,7 +322,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               setNewPattern({ ...newPattern, name: text })
             }
             style={styles.input}
-            placeholderTextColor={palette[PaletteColor.SecondaryText]}
+            placeholderTextColor={theme.colors.textMuted}
           />
         </View>
         <View style={styles.input}>
@@ -268,7 +335,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             }
             keyboardType="numeric"
             style={styles.input}
-            placeholderTextColor={palette[PaletteColor.SecondaryText]}
+            placeholderTextColor={theme.colors.textMuted}
           />
         </View>
       </View>
@@ -276,40 +343,24 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         <View style={styles.input}>
           <Text style={styles.label}>{t("type")}</Text>
           {patternTypes.map((type) => (
-            <TouchableOpacity
+            <Chip
               key={type.id}
-              style={[
-                styles.prereqItem,
-                newPattern.typeId === type.id && styles.prereqItemSelected,
-                { borderLeftColor: type.color, borderLeftWidth: 4 },
-              ]}
+              label={type.slug.toUpperCase()}
+              swatch={type.color}
+              selected={newPattern.typeId === type.id}
               onPress={() => setNewPattern({ ...newPattern, typeId: type.id })}
-            >
-              <Text
-                style={[
-                  styles.prereqItemText,
-                  newPattern.typeId === type.id &&
-                    styles.prereqItemTextSelected,
-                ]}
-              >
-                {type.slug.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
+            />
           ))}
         </View>
         <View style={styles.input}>
           <Text style={styles.label}>{t("level")}</Text>
           {levels.map((level) => (
-            <TouchableOpacity
+            <Chip
               key={level}
-              style={[
-                styles.prereqItem,
-                newPattern.level === level && styles.prereqItemSelected,
-              ]}
+              label={t(level)}
+              selected={newPattern.level === level}
               onPress={() => setNewPattern({ ...newPattern, level })}
-            >
-              <Text style={styles.otherLabel}>{level}</Text>
-            </TouchableOpacity>
+            />
           ))}
         </View>
       </View>
@@ -321,7 +372,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         }
         style={styles.textarea}
         multiline
-        placeholderTextColor={palette[PaletteColor.SecondaryText]}
+        placeholderTextColor={theme.colors.textMuted}
       />
       <View style={styles.prereqContainer}>
         <Text style={styles.label}>{t("prerequisites")}</Text>
@@ -330,7 +381,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           value={prereqFilter}
           onChangeText={setPrereqFilter}
           style={styles.filterInput}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={theme.colors.textMuted}
         />
         <ScrollView horizontal>
           {patterns
@@ -346,23 +397,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               // cycle has no valid learning order.
               const wouldCycle = ineligiblePrerequisiteIds.has(p.id);
               return (
-                <TouchableOpacity
+                <Chip
                   key={p.id}
+                  label={p.name}
+                  selected={isSelected}
                   disabled={wouldCycle}
-                  accessibilityRole="button"
-                  accessibilityLabel={p.name}
-                  accessibilityState={{
-                    disabled: wouldCycle,
-                    selected: isSelected,
-                  }}
                   accessibilityHint={
                     wouldCycle ? t("prerequisiteWouldCycle") : undefined
                   }
-                  style={[
-                    styles.prereqItem,
-                    isSelected && styles.prereqItemSelected,
-                    wouldCycle && styles.prereqItemDisabled,
-                  ]}
                   onPress={() => {
                     if (isSelected) {
                       setNewPattern({
@@ -378,16 +420,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                       });
                     }
                   }}
-                >
-                  <Text
-                    style={[
-                      styles.otherLabel,
-                      wouldCycle && styles.prereqItemTextDisabled,
-                    ]}
-                  >
-                    {p.name}
-                  </Text>
-                </TouchableOpacity>
+                />
               );
             })}
         </ScrollView>
@@ -399,7 +432,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         tags={newPattern.tags}
         setTags={(tags) => setNewPattern({ ...newPattern, tags })}
         allPatterns={patterns}
-        styles={styles}
       />
 
       {/* Modifier pill strip (only shown when modifiers exist) */}
@@ -432,15 +464,65 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         thumbnails={thumbnails}
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
-        palette={palette}
+        onEditVideo={canEditVideos ? handleEditVideo : undefined}
         disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
+      />
+      {draftJobs.map((job) => (
+        <Text key={job.id} style={styles.jobLine}>
+          {job.status === "queued"
+            ? t("videoJobInFormQueued")
+            : job.status === "running"
+              ? t("videoJobInFormRunning", {
+                  percent: Math.round(job.progress * 100),
+                })
+              : t("deidentifyFailed", { message: job.error ?? "" })}
+        </Text>
+      ))}
+      <BottomSheet
+        visible={showDeidentifyPicker}
+        onClose={() => setShowDeidentifyPicker(false)}
+        title={t("deidentifyChooseVideo")}
+        minHeight="25%"
+        maxHeight="50%"
+      >
+        <View style={styles.deidentifyChoices}>
+          {editable.map(({ ref, index }) => (
+            <Tappable
+              key={ref.value}
+              onPress={() => openEditor(ref)}
+              accessibilityLabel={t("deidentifyVideoN", { n: index + 1 })}
+              style={styles.deidentifyThumbButton}
+            >
+              {thumbnails[index] ? (
+                <Image
+                  source={{ uri: thumbnails[index] }}
+                  style={styles.deidentifyThumb}
+                />
+              ) : (
+                <View style={[styles.deidentifyThumb, styles.thumbFallback]}>
+                  <Text style={styles.buttonText}>{index + 1}</Text>
+                </View>
+              )}
+            </Tappable>
+          ))}
+        </View>
+        <Button
+          title={t("deidentifyFromGallery")}
+          icon="image-plus"
+          variant="secondary"
+          onPress={pickForDeidentify}
+          disabled={activeVideoRefs.length >= 3}
+        />
+      </BottomSheet>
+      <DeidentifyModal
+        target={deidentifyTarget}
+        onClose={() => setDeidentifyTarget(null)}
       />
       <AddVideoModal
         visible={showAddVideoModal}
         onClose={() => setShowAddVideoModal(false)}
         onPickFromLibrary={handlePickFromLibrary}
         onAddUrl={handleAddUrlVideo}
-        palette={palette}
       />
 
       {/* Attach modifier picker */}
@@ -448,137 +530,112 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         visible={showAttachPicker}
         onClose={() => setShowAttachPicker(false)}
         title={t("attachModifier")}
-        palette={palette}
         minHeight="20%"
         maxHeight="50%"
       >
         {unattachedModifiers.map((mod) => (
-          <TouchableOpacity
+          <ListRow
             key={mod.id}
-            style={styles.attachPickerItem}
-            onPress={() => handleAttachModifier(mod.id)}
-          >
-            <Text style={styles.attachPickerItemText}>{mod.name}</Text>
-            <Text style={styles.attachPickerPositionText}>
-              {mod.position === "prefix"
+            title={mod.name}
+            meta={
+              mod.position === "prefix"
                 ? t("modifierPositionPrefix")
                 : mod.position === "postfix"
                   ? t("modifierPositionPostfix")
-                  : t("modifierPositionAmends")}
-            </Text>
-          </TouchableOpacity>
+                  : t("modifierPositionAmends")
+            }
+            icon="plus-circle-outline"
+            onPress={() => handleAttachModifier(mod.id)}
+          />
         ))}
       </BottomSheet>
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity onPress={handleFinish} style={styles.buttonIndigo}>
-          <Text style={styles.buttonText}>{t("savePattern")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onCancel} style={styles.buttonCancel}>
-          <Text style={styles.buttonText}>{t("cancel")}</Text>
-        </TouchableOpacity>
+        <Button
+          title={t("cancel")}
+          variant="secondary"
+          onPress={onCancel}
+          style={styles.footerButton}
+        />
+        <Button
+          title={t("savePattern")}
+          onPress={handleFinish}
+          style={styles.footerButton}
+        />
       </View>
     </View>
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  const videosRow: import("react-native").ViewStyle = {
-    flexDirection: "row",
-    alignItems: "center",
-  };
-  const videosInputRow: import("react-native").ViewStyle = {
-    flexDirection: "row",
-    alignItems: "center",
-    minHeight: 64,
-    height: 78,
-  };
-  const baseInput = getCommonInput(palette);
-  const baseButton = getCommonButton(palette);
-  const commonBorder = getCommonBorder(palette);
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  const baseInput = getCommonInput(theme);
+  const commonBorder = getCommonBorder(theme);
+  return {
     addPatternContainer: {
       ...commonBorder,
-      padding: 8,
-      marginBottom: 16,
-      backgroundColor: palette[PaletteColor.Surface],
+      padding: theme.space.sm,
+      marginBottom: theme.space.lg,
+      backgroundColor: theme.colors.surface,
     },
     sectionTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-      marginBottom: 8,
+      ...theme.typography.title,
+      color: theme.colors.text,
+      marginBottom: theme.space.sm,
     },
-    inputRow: { ...getCommonRow(), gap: 8, marginBottom: 8 },
+    inputRow: {
+      ...getCommonRow(),
+      gap: theme.space.sm,
+      marginBottom: theme.space.sm,
+    },
     input: { flex: 1, height: "100%", ...baseInput },
     textarea: { ...baseInput, minHeight: 48 },
-    label: { ...getCommonLabel(palette) },
-    otherLabel: { ...getCommon2ndOrderLabel(palette) },
-    prereqContainer: getCommonPrereqContainer(palette),
-    filterInput: { ...baseInput, height: 40, marginBottom: 8 },
-    prereqItem: getCommonPrereqItem(palette),
-    prereqItemSelected: { backgroundColor: palette[PaletteColor.Primary] },
-    prereqItemDisabled: { opacity: 0.35 },
-    prereqItemTextDisabled: {
-      textDecorationLine: "line-through",
-    },
+    label: { ...getCommonLabel(theme) },
+    prereqContainer: getCommonPrereqContainer(theme),
+    filterInput: { ...baseInput, height: 40, marginBottom: theme.space.sm },
     prereqHint: {
-      color: palette[PaletteColor.SecondaryText],
-      fontSize: 12,
+      ...theme.typography.caption,
+      color: theme.colors.textMuted,
       fontStyle: "italic",
-      marginTop: 6,
+      marginTop: theme.space.sm,
     },
-    prereqItemText: { color: palette[PaletteColor.PrimaryText], fontSize: 14 },
-    prereqItemTextSelected: {
-      color: palette[PaletteColor.Surface],
-      fontWeight: "bold",
-    },
-    buttonRow: { ...getCommonRow(), gap: 8 },
-    buttonRowWithBorder: { ...getCommonRow(), gap: 8 },
-    buttonIndigo: { ...baseButton },
-    buttonCancel: {
-      ...baseButton,
-      backgroundColor: palette[PaletteColor.Border],
-    },
+    buttonRow: { ...getCommonRow(), gap: theme.space.sm },
+    footerButton: { flex: 1 },
     buttonText: {
-      color: palette[PaletteColor.PrimaryText],
+      ...theme.typography.label,
+      color: theme.colors.text,
       fontWeight: "bold",
-    },
-    videosRow,
-    videosInputRow,
-    addButtonContainer: {
-      justifyContent: "center",
-      alignItems: "center",
-      height: 64,
-      marginLeft: 8,
     },
     modifierSection: {
-      ...getCommonPrereqContainer(palette),
+      ...getCommonPrereqContainer(theme),
     },
     readonlyHint: {
-      fontSize: 11,
-      color: palette[PaletteColor.SecondaryText],
+      ...theme.typography.micro,
+      color: theme.colors.textMuted,
       fontStyle: "italic",
-      marginTop: 4,
+      marginTop: theme.space.xs,
     },
-    attachPickerItem: {
-      flexDirection: "row",
+    jobLine: {
+      ...theme.typography.caption,
+      marginBottom: theme.space.sm,
+      color: theme.colors.textMuted,
+    },
+    deidentifyChoices: {
+      ...getCommonRow(),
+      flexWrap: "wrap",
+      gap: theme.space.sm,
+      marginBottom: theme.space.lg,
+    },
+    deidentifyThumbButton: {
+      overflow: "hidden",
+      borderRadius: theme.radius.md,
+    },
+    deidentifyThumb: { width: 96, height: 96, borderRadius: theme.radius.md },
+    thumbFallback: {
+      justifyContent: "center",
       alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: palette[PaletteColor.Border],
+      backgroundColor: theme.colors.surfaceVariant,
     },
-    attachPickerItemText: {
-      fontSize: 15,
-      color: palette[PaletteColor.PrimaryText],
-      fontWeight: "500",
-    },
-    attachPickerPositionText: {
-      fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
-    },
-  });
-};
+  };
+});
 
 export default EditPatternForm;

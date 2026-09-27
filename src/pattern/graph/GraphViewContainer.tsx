@@ -1,8 +1,8 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import TimelineView from "./TimelineView";
 import NetworkGraphView from "./NetworkGraphView";
 import Legend from "./Legend";
@@ -15,7 +15,6 @@ interface GraphViewContainerProps {
   viewMode: ViewMode;
   model: GraphModel;
   patternTypes: PatternType[];
-  palette: Record<PaletteColor, string>;
   /**
    * Remounts the view when it changes, which re-fits the viewport. Includes
    * the drawn node count, so a filter that narrows the graph does not leave
@@ -34,18 +33,15 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   viewMode,
   model,
   patternTypes,
-  palette,
   resetKey,
   hasActiveFilter,
   positions,
   onMoveNode,
   onNodeTap,
 }) => {
-  const styles = getStyles(palette);
-
   return (
     <>
-      <CycleWarning cycles={model.cycles} palette={palette} />
+      <CycleWarning cycles={model.cycles} />
 
       <View style={styles.viewContainer}>
         {viewMode === "timeline" ? (
@@ -53,7 +49,6 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
             key={`timeline-${resetKey}`}
             model={model}
             patternTypes={patternTypes}
-            palette={palette}
             hasActiveFilter={hasActiveFilter}
             onNodeTap={onNodeTap}
           />
@@ -61,7 +56,6 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
           <NetworkGraphView
             key={`graph-${resetKey}`}
             model={model}
-            palette={palette}
             hasActiveFilter={hasActiveFilter}
             positions={positions}
             onMoveNode={onMoveNode}
@@ -70,17 +64,16 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
         )}
       </View>
 
-      <Legend palette={palette} patternTypes={patternTypes} />
+      <Legend patternTypes={patternTypes} />
     </>
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    viewContainer: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  viewContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+}));
 
 export default GraphViewContainer;

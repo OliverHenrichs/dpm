@@ -1,12 +1,11 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 
 interface CycleWarningProps {
   /** The strongly connected components the model found. */
   cycles: number[][];
-  palette: Record<PaletteColor, string>;
 }
 
 /**
@@ -17,11 +16,9 @@ interface CycleWarningProps {
  * quietly laying the looped patterns out on a fallback ring. Now that finding
  * them is O(V + E) and already computed, say so.
  */
-const CycleWarning: React.FC<CycleWarningProps> = ({ cycles, palette }) => {
+const CycleWarning: React.FC<CycleWarningProps> = ({ cycles }) => {
   const { t } = useTranslation();
   if (cycles.length === 0) return null;
-
-  const styles = getStyles(palette);
   const affected = cycles.reduce((total, cycle) => total + cycle.length, 0);
 
   return (
@@ -38,18 +35,17 @@ const CycleWarning: React.FC<CycleWarningProps> = ({ cycles, palette }) => {
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    banner: {
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      backgroundColor: palette[PaletteColor.Error],
-    },
-    text: {
-      color: "#FFFFFF",
-      fontSize: 13,
-      textAlign: "center",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  banner: {
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    backgroundColor: theme.colors.danger,
+  },
+  text: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.onDanger,
+    textAlign: "center",
+  },
+}));
 
 export default CycleWarning;

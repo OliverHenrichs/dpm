@@ -74,6 +74,16 @@ export interface IVideoReference {
   type: "url" | "local";
   value: string; // URL or local file path
   startTime?: number; // Optional start time in seconds (URL-type videos only)
+  /** Set on a video the app made from another — e.g. de-identified silhouettes (L3). */
+  generated?: IGeneratedVideo;
+}
+
+/** Provenance of a video the app generated; shown as a badge, carried through export. */
+export interface IGeneratedVideo {
+  /** How it was made, e.g. the de-identification provider's id. */
+  method: string;
+  /** Epoch milliseconds. */
+  createdAt: number;
 }
 
 /**

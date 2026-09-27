@@ -1,16 +1,9 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, Switch, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
+import { Button } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { useExportSelection } from "@/src/pattern/data/hooks/useExportSelection";
@@ -34,9 +27,7 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
   const {
     selectedIds,
     toggleSelection,
@@ -56,13 +47,12 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
       transparent={true}
       onRequestClose={onCancel}
     >
-      <View style={styles.modalOverlay}>
+      <ModalOverlay>
         <View style={styles.modalContent}>
           <Text style={styles.title}>{t("selectListsToExport")}</Text>
           <SelectAllButton
             allSelected={stats.allSelected}
             onToggle={toggleSelectAll}
-            palette={palette}
           />
           <ScrollView style={styles.listContainer}>
             {patternLists.map((list) => (
@@ -71,7 +61,6 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
                 list={list}
                 isSelected={selectedIds.has(list.id)}
                 onToggle={() => toggleSelection(list.id)}
-                palette={palette}
               />
             ))}
           </ScrollView>
@@ -81,10 +70,10 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               value={includeVideos}
               onValueChange={setIncludeVideos}
               trackColor={{
-                false: palette[PaletteColor.SecondaryText],
-                true: palette[PaletteColor.Primary],
+                false: theme.colors.textMuted,
+                true: theme.colors.primary,
               }}
-              thumbColor={palette[PaletteColor.Border]}
+              thumbColor={theme.colors.border}
             />
           </View>
           <View style={styles.toggleRow}>
@@ -93,104 +82,65 @@ const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
               value={exportAsReadonly}
               onValueChange={setExportAsReadonly}
               trackColor={{
-                false: palette[PaletteColor.SecondaryText],
-                true: palette[PaletteColor.Primary],
+                false: theme.colors.textMuted,
+                true: theme.colors.primary,
               }}
-              thumbColor={palette[PaletteColor.Border]}
+              thumbColor={theme.colors.border}
             />
           </View>
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.exportButton,
-                stats.noneSelected && styles.exportButtonDisabled,
-              ]}
+            <Button
+              title={t("cancel")}
+              variant="secondary"
+              onPress={onCancel}
+              style={styles.footerButton}
+            />
+            <Button
+              title={`${t("export")} (${stats.selectedCount})`}
+              icon="export-variant"
               onPress={handleExport}
               disabled={stats.noneSelected}
-            >
-              <Text style={styles.exportButtonText}>
-                {t("export")} ({stats.selectedCount})
-              </Text>
-            </TouchableOpacity>
+              style={styles.footerButton}
+            />
           </View>
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    modalContent: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 500,
-      maxHeight: "80%",
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-      marginBottom: 16,
-    },
-    listContainer: {
-      maxHeight: 400,
-      marginBottom: 16,
-    },
-    toggleRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingVertical: 10,
-      marginBottom: 12,
-    },
-    toggleLabel: {
-      fontSize: 15,
-      color: palette[PaletteColor.PrimaryText],
-    },
-    buttonRow: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    cancelButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
-    },
-    exportButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-    },
-    exportButtonDisabled: {
-      opacity: 0.5,
-    },
-    exportButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Surface],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 500,
+    maxHeight: "80%",
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.lg,
+  },
+  listContainer: {
+    maxHeight: 400,
+    marginBottom: theme.space.lg,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: theme.space.md,
+    marginBottom: theme.space.md,
+  },
+  toggleLabel: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.text,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+  },
+  footerButton: { flex: 1 },
+}));
 export default PatternListExportModal;

@@ -1,16 +1,19 @@
+// First, before anything that creates styles: web's static renderer loads the
+// routes directly and never runs `index.ts`, which does the same on device.
+import "@/src/common/theme/unistyles";
 import { restoreStoredLanguage } from "@/src/i18n";
 import React, { useEffect, useState } from "react";
-import { Platform, StyleSheet } from "react-native";
+import { Platform } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { Drawer } from "expo-router/drawer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import {
-  ThemeProvider,
-  useThemeContext,
-} from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { ThemeProvider } from "@/src/common/components/ThemeContext";
+import ServerStyles from "@/src/common/theme/ServerStyles";
 import { ActivePatternListProvider } from "@/src/pattern/data/components/ActivePatternListContext";
+import { DeidentifyJobsProvider } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import DrawerContent from "@/src/common/components/DrawerContent";
 import { DRAWER_ROUTES } from "@/src/common/components/DrawerRoutes";
 
@@ -47,6 +50,7 @@ export default function RootLayout() {
   // every pre-rendered route an empty shell.
   return (
     <ThemeProvider onRestored={() => setThemeRestored(true)}>
+      <ServerStyles />
       <AppDrawer />
     </ThemeProvider>
   );
@@ -54,62 +58,64 @@ export default function RootLayout() {
 
 function AppDrawer() {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme, rt } = useUnistyles();
 
   return (
     <ActivePatternListProvider>
-      <SafeAreaView style={styles.flexView}>
-        <Drawer
-          screenOptions={{
-            drawerPosition: "right",
-            headerShown: false,
-            // No swipe-to-open on Android. Android 10+ binds the system back
-            // gesture to *both* screen edges and consumes the outermost band,
-            // so a right-edge swipe is simultaneously "go back" and "open the
-            // drawer" and which one you get depends on how many pixels in you
-            // started. It also stole pans from the network graph. Every screen
-            // renders AppHeader, which has an always-visible menu button, so
-            // nothing is lost. iOS keeps it: the interactive pop gesture there
-            // is left-edge only, and the drawer is on the right.
-            swipeEnabled: Platform.OS !== "android",
-            swipeEdgeWidth: 40,
-            drawerStyle: styles.drawerStyle,
-            drawerActiveTintColor: palette[PaletteColor.Primary],
-            drawerInactiveTintColor: palette[PaletteColor.SecondaryText],
-            drawerLabelStyle: {
-              fontSize: 16,
-              fontWeight: "500",
-              color: palette[PaletteColor.PrimaryText],
-            },
-          }}
-          drawerContent={(props) => (
-            <DrawerContent navigation={props.navigation} />
-          )}
-        >
-          {DRAWER_ROUTES.map((route) => (
-            <Drawer.Screen
-              key={route.name}
-              name={route.name}
-              options={{ title: t(route.titleKey) }}
-            />
-          ))}
-        </Drawer>
-      </SafeAreaView>
+      {/* The app's theme, not the system's: someone who picked light on a
+          dark phone would otherwise get white icons on a white bar. */}
+      <StatusBar style={rt.themeName === "dark" ? "light" : "dark"} />
+      <DeidentifyJobsProvider>
+        <SafeAreaView style={styles.flexView}>
+          <Drawer
+            screenOptions={{
+              drawerPosition: "right",
+              headerShown: false,
+              // No swipe-to-open on Android. Android 10+ binds the system back
+              // gesture to *both* screen edges and consumes the outermost band,
+              // so a right-edge swipe is simultaneously "go back" and "open the
+              // drawer" and which one you get depends on how many pixels in you
+              // started. It also stole pans from the network graph. Every screen
+              // renders AppHeader, which has an always-visible menu button, so
+              // nothing is lost. iOS keeps it: the interactive pop gesture there
+              // is left-edge only, and the drawer is on the right.
+              swipeEnabled: Platform.OS !== "android",
+              swipeEdgeWidth: 40,
+              // Navigator options, not a view's style prop: read the theme
+              // here so a theme switch re-renders them.
+              drawerStyle: {
+                width: 260,
+                backgroundColor: theme.colors.background,
+              },
+              drawerActiveTintColor: theme.colors.primary,
+              drawerInactiveTintColor: theme.colors.textMuted,
+              drawerLabelStyle: {
+                ...theme.typography.body,
+                fontWeight: "500",
+                color: theme.colors.text,
+              },
+            }}
+            drawerContent={(props) => (
+              <DrawerContent navigation={props.navigation} />
+            )}
+          >
+            {DRAWER_ROUTES.map((route) => (
+              <Drawer.Screen
+                key={route.name}
+                name={route.name}
+                options={{ title: t(route.titleKey) }}
+              />
+            ))}
+          </Drawer>
+        </SafeAreaView>
+      </DeidentifyJobsProvider>
     </ActivePatternListProvider>
   );
 }
 
-function getStyles(palette: Record<PaletteColor, string>) {
-  return StyleSheet.create({
-    flexView: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-    },
-    drawerStyle: {
-      width: 180,
-      backgroundColor: palette[PaletteColor.Background],
-    },
-  });
-}
+const styles = StyleSheet.create((theme) => ({
+  flexView: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+}));

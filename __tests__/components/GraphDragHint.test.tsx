@@ -1,19 +1,16 @@
 import React from "react";
 import GraphDragHint from "@/src/pattern/graph/components/GraphDragHint";
 import { dismissDragHint } from "@/src/pattern/graph/data/GraphHintStorage";
-import { getPalette } from "@/src/common/utils/ColorPalette";
 import {
   fireEvent,
   renderWithProviders,
   screen,
 } from "@/utils/renderWithProviders";
 
-const palette = getPalette("light");
-
 const HINT = "Hold a pattern for a moment, then drag to move it.";
 
 const renderHint = (visible = true) =>
-  renderWithProviders(<GraphDragHint visible={visible} palette={palette} />);
+  renderWithProviders(<GraphDragHint visible={visible} />);
 
 /**
  * Long-press-then-drag has no affordance: a node looks the same whether or

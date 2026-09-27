@@ -1,16 +1,10 @@
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Text, TextInput, View } from "react-native";
+import { Button } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import {
-  getCommonButton,
   getCommonInput,
   getCommonLabel,
   getCommonRow,
@@ -21,7 +15,6 @@ export type AddVideoModalProps = {
   onClose: () => void;
   onPickFromLibrary: () => void;
   onAddUrl: (url: string, startTime?: number) => void;
-  palette: Record<PaletteColor, string>;
 };
 
 const AddVideoModal: React.FC<AddVideoModalProps> = ({
@@ -29,10 +22,9 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
   onClose,
   onPickFromLibrary,
   onAddUrl,
-  palette,
 }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
-  const styles = getStyles(palette);
 
   const [url, setUrl] = useState("");
   const [startTimeText, setStartTimeText] = useState("");
@@ -86,19 +78,15 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
       visible={visible}
       onClose={handleClose}
       title={t("addVideo")}
-      palette={palette}
       minHeight="40%"
       maxHeight="70%"
     >
       <View style={styles.section}>
-        <TouchableOpacity
-          style={styles.libraryButton}
+        <Button
+          title={t("addFromLibrary")}
+          icon="folder-image"
           onPress={handlePickFromLibrary}
-        >
-          <Text style={styles.libraryButtonText}>
-            {"📁  " + t("addFromLibrary")}
-          </Text>
-        </TouchableOpacity>
+        />
       </View>
 
       <View style={styles.dividerRow}>
@@ -112,7 +100,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
         <TextInput
           style={[styles.input, urlError ? styles.inputError : null]}
           placeholder={t("videoUrl")}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={theme.colors.textMuted}
           value={url}
           onChangeText={(text) => {
             setUrl(text);
@@ -125,76 +113,59 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
         <TextInput
           style={styles.input}
           placeholder={t("startTimePlaceholder")}
-          placeholderTextColor={palette[PaletteColor.SecondaryText]}
+          placeholderTextColor={theme.colors.textMuted}
           value={startTimeText}
           onChangeText={setStartTimeText}
           keyboardType="numbers-and-punctuation"
         />
-        <TouchableOpacity style={styles.addUrlButton} onPress={handleAddUrl}>
-          <Text style={styles.addUrlButtonText}>{"🔗  " + t("addUrl")}</Text>
-        </TouchableOpacity>
+        <Button
+          title={t("addUrl")}
+          icon="link-variant"
+          onPress={handleAddUrl}
+        />
       </View>
     </BottomSheet>
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  const baseButton = getCommonButton(palette);
-  const baseInput = getCommonInput(palette);
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  const baseInput = getCommonInput(theme);
+  return {
     section: {
-      marginBottom: 8,
+      marginBottom: theme.space.sm,
     },
     label: {
-      ...getCommonLabel(palette),
-      marginBottom: 4,
+      ...getCommonLabel(theme),
+      marginBottom: theme.space.xs,
     },
     input: {
       ...baseInput,
-      marginBottom: 8,
+      marginBottom: theme.space.sm,
     },
     inputError: {
-      borderColor: palette[PaletteColor.Error],
+      borderColor: theme.colors.danger,
     },
     errorText: {
-      color: palette[PaletteColor.Error],
-      fontSize: 12,
-      marginBottom: 8,
-    },
-    libraryButton: {
-      ...baseButton,
-      alignItems: "center",
-    },
-    libraryButtonText: {
-      color: palette[PaletteColor.PrimaryText],
-      fontWeight: "bold",
-      fontSize: 15,
-    },
-    addUrlButton: {
-      ...baseButton,
-      alignItems: "center",
-    },
-    addUrlButtonText: {
-      color: palette[PaletteColor.PrimaryText],
-      fontWeight: "bold",
-      fontSize: 15,
+      ...theme.typography.caption,
+      color: theme.colors.danger,
+      marginBottom: theme.space.sm,
     },
     dividerRow: {
       ...getCommonRow(),
       alignItems: "center",
-      marginVertical: 12,
-      gap: 8,
+      marginVertical: theme.space.md,
+      gap: theme.space.sm,
     },
     dividerLine: {
       flex: 1,
       height: 1,
-      backgroundColor: palette[PaletteColor.Border],
+      backgroundColor: theme.colors.border,
     },
     dividerText: {
-      color: palette[PaletteColor.SecondaryText],
-      fontSize: 13,
+      ...theme.typography.bodySmall,
+      color: theme.colors.textMuted,
     },
-  });
-};
+  };
+});
 
 export default AddVideoModal;

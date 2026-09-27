@@ -1,7 +1,8 @@
 import React from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
+import { Modal, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
+import { StyleSheet } from "react-native-unistyles";
+import { AppText, Button } from "@/src/common/ui";
 
 interface AppDialogProps {
   visible: boolean;
@@ -34,9 +35,6 @@ const AppDialog: React.FC<AppDialogProps> = ({
   confirmDestructive = false,
   onConfirm,
 }) => {
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
   const hasConfirm = !!confirmLabel && !!onConfirm;
 
   return (
@@ -46,112 +44,56 @@ const AppDialog: React.FC<AppDialogProps> = ({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-          <View style={[styles.buttonRow, hasConfirm && styles.buttonRowTwo]}>
-            <TouchableOpacity
-              style={[styles.button, styles.closeButton]}
+      <ModalOverlay padding="xxxl">
+        <View style={styles.card} accessibilityRole="alert">
+          <AppText variant="title" style={styles.title}>
+            {title}
+          </AppText>
+          <AppText color="textMuted" style={styles.message}>
+            {message}
+          </AppText>
+          <View style={styles.buttonRow}>
+            {/* With a confirm action, dismissing is the quiet option beside
+                it; alone, it is the dialog's one action. */}
+            <Button
+              title={closeLabel}
+              variant={hasConfirm ? "ghost" : "primary"}
               onPress={onClose}
-            >
-              <Text style={styles.closeButtonText}>{closeLabel}</Text>
-            </TouchableOpacity>
+            />
             {hasConfirm && (
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  confirmDestructive
-                    ? styles.destructiveButton
-                    : styles.primaryButton,
-                ]}
+              <Button
+                title={confirmLabel}
+                variant={confirmDestructive ? "danger" : "primary"}
                 onPress={onConfirm}
-              >
-                <Text
-                  style={
-                    confirmDestructive
-                      ? styles.destructiveButtonText
-                      : styles.primaryButtonText
-                  }
-                >
-                  {confirmLabel}
-                </Text>
-              </TouchableOpacity>
+              />
             )}
           </View>
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 32,
-    },
-    card: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 380,
-    },
-    title: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-      marginBottom: 10,
-    },
-    message: {
-      fontSize: 15,
-      color: palette[PaletteColor.SecondaryText],
-      lineHeight: 22,
-      marginBottom: 24,
-    },
-    buttonRow: {
-      flexDirection: "row",
-      justifyContent: "flex-end",
-    },
-    buttonRowTwo: {
-      gap: 10,
-    },
-    button: {
-      borderRadius: 8,
-      paddingVertical: 10,
-      paddingHorizontal: 18,
-      alignItems: "center",
-      minWidth: 80,
-    },
-    closeButton: {
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    closeButtonText: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
-    },
-    primaryButton: {
-      backgroundColor: palette[PaletteColor.Primary],
-    },
-    primaryButtonText: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: palette[PaletteColor.Surface],
-    },
-    destructiveButton: {
-      backgroundColor: palette[PaletteColor.Error],
-    },
-    destructiveButtonText: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: "#fff",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 380,
+    ...theme.elevation.lg,
+  },
+  title: {
+    marginBottom: theme.space.sm,
+  },
+  message: {
+    marginBottom: theme.space.xxl,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: theme.space.sm,
+  },
+}));
 
 export default AppDialog;

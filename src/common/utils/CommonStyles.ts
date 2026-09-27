@@ -1,126 +1,121 @@
-import { StyleSheet, TextStyle, ViewStyle } from "react-native";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { TextStyle, ViewStyle } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
+import type { AppTheme } from "@/src/common/theme/tokens";
 
-export const getCommonBorder = (
-  palette: Record<PaletteColor, string>,
-): Pick<ViewStyle, "borderWidth" | "borderRadius" | "borderColor"> => ({
-  borderWidth: 1,
-  borderRadius: 8,
-  borderColor: palette[PaletteColor.Border],
-});
+/**
+ * Style fragments shared across features. Each takes the Unistyles `theme` and is spread into a
+ * `StyleSheet.create((theme) => …)` — spread them there, never at a `style=` prop, where a
+ * spread would cut the style off from theme updates.
+ */
 
-export const getCommonButton = (
-  palette: Record<PaletteColor, string>,
-  bgColor?: string,
-): ViewStyle => ({
-  padding: 8,
-  borderRadius: 8,
-  backgroundColor: bgColor || palette[PaletteColor.Primary],
-});
+export const getCommonBorder = (theme: AppTheme) =>
+  ({
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    borderColor: theme.colors.border,
+  }) satisfies Pick<ViewStyle, "borderWidth" | "borderRadius" | "borderColor">;
+
+export const getCommonButton = (theme: AppTheme, bgColor?: string) =>
+  ({
+    padding: theme.space.sm,
+    borderRadius: theme.radius.md,
+    backgroundColor: bgColor || theme.colors.primary,
+  }) satisfies ViewStyle;
 
 const createCommonLabel = (
-  palette: Record<PaletteColor, string>,
-  defaultColor: PaletteColor,
+  theme: AppTheme,
+  defaultColor: string,
   color?: string,
-): TextStyle => ({
-  fontSize: 14,
-  fontWeight: "500",
-  marginBottom: 4,
-  color: color || palette[defaultColor],
-});
+) =>
+  ({
+    ...theme.typography.label,
+    fontWeight: "500",
+    marginBottom: theme.space.xs,
+    color: color || defaultColor,
+  }) satisfies TextStyle;
 
-export const getCommonLabel = (
-  palette: Record<PaletteColor, string>,
-  color?: string,
-): TextStyle => createCommonLabel(palette, PaletteColor.PrimaryText, color);
+export const getCommonLabel = (theme: AppTheme, color?: string) =>
+  createCommonLabel(theme, theme.colors.text, color);
 
-export const getCommon2ndOrderLabel = (
-  palette: Record<PaletteColor, string>,
-  color?: string,
-): TextStyle => createCommonLabel(palette, PaletteColor.SecondaryText, color);
+export const getCommon2ndOrderLabel = (theme: AppTheme, color?: string) =>
+  createCommonLabel(theme, theme.colors.textMuted, color);
 
-export const getCommonRow = (): ViewStyle => ({
-  flexDirection: "row",
-  alignItems: "center",
-});
+export const getCommonRow = () =>
+  ({
+    flexDirection: "row",
+    alignItems: "center",
+  }) satisfies ViewStyle;
 
-export const getCommonInput = (
-  palette: Record<PaletteColor, string>,
-): ViewStyle & TextStyle => ({
-  ...getCommonBorder(palette),
-  padding: 8,
-  color: palette[PaletteColor.SecondaryText],
-  backgroundColor: palette[PaletteColor.TagBg],
-});
+export const getCommonInput = (theme: AppTheme) =>
+  ({
+    ...getCommonBorder(theme),
+    borderColor: theme.colors.borderStrong,
+    padding: theme.space.sm,
+    fontFamily: theme.typography.body.fontFamily,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.surfaceVariant,
+  }) satisfies ViewStyle & TextStyle;
 
-export const getCommonPrereqContainer = (
-  palette: Record<PaletteColor, string>,
-): ViewStyle => ({
-  ...getCommonBorder(palette),
-  backgroundColor: palette[PaletteColor.TagBg],
-  padding: 8,
-  marginVertical: 8,
-});
+export const getCommonPrereqContainer = (theme: AppTheme) =>
+  ({
+    ...getCommonBorder(theme),
+    backgroundColor: theme.colors.surfaceVariant,
+    padding: theme.space.sm,
+    marginVertical: theme.space.sm,
+  }) satisfies ViewStyle;
 
-export const getCommonPrereqItem = (
-  palette: Record<PaletteColor, string>,
-): ViewStyle => ({
-  ...getCommonBorder(palette),
-  padding: 6,
-  marginRight: 4,
-  backgroundColor: palette[PaletteColor.Surface],
-});
+export const getCommonPrereqItem = (theme: AppTheme) =>
+  ({
+    ...getCommonBorder(theme),
+    padding: theme.space.sm,
+    marginRight: theme.space.xs,
+    backgroundColor: theme.colors.surface,
+  }) satisfies ViewStyle;
 
-export const getCommonTagItem = (
-  palette: Record<PaletteColor, string>,
-): ViewStyle => ({
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: palette[PaletteColor.TagBg],
-  paddingHorizontal: 8,
-  marginRight: 4,
-  marginBottom: 4,
-  ...getCommonBorder(palette),
-});
+export const getCommonTagItem = (theme: AppTheme) =>
+  ({
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.surfaceVariant,
+    paddingHorizontal: theme.space.sm,
+    marginRight: theme.space.xs,
+    marginBottom: theme.space.xs,
+    ...getCommonBorder(theme),
+  }) satisfies ViewStyle;
 
-export const getCommonTagText = (
-  palette: Record<PaletteColor, string>,
-): TextStyle => ({
-  color: palette[PaletteColor.TagText],
-  fontSize: 12,
-});
+export const getCommonTagText = (theme: AppTheme) =>
+  ({
+    ...theme.typography.caption,
+    color: theme.colors.onSurfaceVariant,
+  }) satisfies TextStyle;
 
-export const getCommonListContainer = (
-  palette: Record<PaletteColor, string>,
-): ViewStyle => ({
-  borderRadius: 12,
-  padding: 8,
-  marginBottom: 8,
-  elevation: 2,
-  backgroundColor: palette[PaletteColor.Background],
-});
+export const getCommonListContainer = (theme: AppTheme) =>
+  ({
+    borderRadius: theme.radius.lg,
+    padding: theme.space.sm,
+    marginBottom: theme.space.sm,
+    ...theme.elevation.sm,
+    backgroundColor: theme.colors.background,
+  }) satisfies ViewStyle;
 
-export const getCommonAddButtonContainer = (): ViewStyle => ({
-  position: "absolute",
-  top: 0,
-  right: 0,
-  zIndex: 10,
-});
+export const getCommonAddButtonContainer = () =>
+  ({
+    position: "absolute",
+    top: 0,
+    right: 0,
+    zIndex: 10,
+  }) satisfies ViewStyle;
 
-export const getCommonStyles = (colorScheme: "light" | "dark") => {
-  const palette = getPalette(colorScheme);
-  return StyleSheet.create({
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-    } as TextStyle,
-    sectionHeaderRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 8,
-      minHeight: 39, // Ensures consistent height with + button
-    } as ViewStyle,
-  });
-};
+export const commonStyles = StyleSheet.create((theme) => ({
+  sectionTitle: {
+    ...theme.typography.title,
+    color: theme.colors.text,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: theme.space.sm,
+    minHeight: 39, // Ensures consistent height with + button
+  },
+}));

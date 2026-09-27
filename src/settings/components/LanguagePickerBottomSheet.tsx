@@ -1,9 +1,9 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { ScrollView } from "react-native";
+import { ListRow } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import BottomSheet from "@/src/common/components/BottomSheet";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
 import { LANGUAGES } from "@/src/settings/types/Languages";
 
 interface LanguagePickerBottomSheetProps {
@@ -26,9 +26,6 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
   onSelect,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
 
   const handleSelect = (code: string) => {
     onSelect(code);
@@ -40,7 +37,6 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
       visible={visible}
       onClose={onClose}
       title={t("selectLanguage")}
-      palette={palette}
     >
       <ScrollView contentContainerStyle={styles.listContent}>
         {LANGUAGES.map((language) => {
@@ -50,24 +46,19 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
           const gloss =
             language.englishName === language.label ? "" : language.englishName;
           return (
-            <TouchableOpacity
+            // The endonym alone strands a reader who picked a script by
+            // mistake, so the English name shows beside it.
+            <ListRow
               key={language.code}
-              style={[styles.row, selected && styles.rowSelected]}
+              title={language.label}
+              meta={gloss}
+              selection="single"
+              selected={selected}
               onPress={() => handleSelect(language.code)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
               accessibilityLabel={
                 gloss ? `${language.label} (${gloss})` : language.label
               }
-            >
-              <Text style={[styles.label, selected && styles.labelSelected]}>
-                {language.label}
-              </Text>
-              {/* The endonym alone strands a reader who picked a script by
-                  mistake, so the English name shows beside it. */}
-              <Text style={styles.englishName}>{gloss}</Text>
-              <Text style={styles.check}>{selected ? "✓" : ""}</Text>
-            </TouchableOpacity>
+            />
           );
         })}
       </ScrollView>
@@ -75,45 +66,10 @@ const LanguagePickerBottomSheet: React.FC<LanguagePickerBottomSheetProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    listContent: {
-      paddingBottom: 8,
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      paddingVertical: 14,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: "transparent",
-    },
-    rowSelected: {
-      backgroundColor: palette[PaletteColor.CardBackground],
-      borderColor: palette[PaletteColor.Primary],
-    },
-    label: {
-      fontSize: 16,
-      color: palette[PaletteColor.PrimaryText],
-    },
-    labelSelected: {
-      fontWeight: "bold",
-      color: palette[PaletteColor.Primary],
-    },
-    englishName: {
-      flex: 1,
-      fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
-    },
-    check: {
-      width: 20,
-      textAlign: "right",
-      fontSize: 16,
-      fontWeight: "bold",
-      color: palette[PaletteColor.Primary],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  listContent: {
+    paddingBottom: theme.space.sm,
+  },
+}));
 
 export default LanguagePickerBottomSheet;

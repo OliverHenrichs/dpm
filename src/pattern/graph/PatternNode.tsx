@@ -1,9 +1,9 @@
 import React from "react";
+import { useUnistyles } from "react-native-unistyles";
 import { Rect, Text as SvgText } from "react-native-svg";
 import PatternNodeGroup from "@/src/pattern/graph/PatternNodeGroup";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
 import { GraphNode } from "@/src/pattern/graph/model/GraphModel";
 import { nodeBadges } from "@/src/pattern/graph/model/nodeBadges";
@@ -13,7 +13,6 @@ interface PatternNodeProps {
   node: GraphNode;
   x: number;
   y: number;
-  palette: Record<PaletteColor, string>;
   /** Omit to make the node inert; see `PatternNodeGroup`. */
   onPress?: (pattern: IPattern) => void;
 }
@@ -47,15 +46,10 @@ function backgroundOpacity(level: string | undefined): number {
  * model. It used to declare its own structural prop type — which included a
  * `type?: any` — and every call site cast to `any` to satisfy it.
  */
-const PatternNode: React.FC<PatternNodeProps> = ({
-  node,
-  x,
-  y,
-  palette,
-  onPress,
-}) => {
+const PatternNode: React.FC<PatternNodeProps> = ({ node, x, y, onPress }) => {
+  const { theme } = useUnistyles();
   const { pattern, color, foundational, isContext } = node;
-  const borderColor = color ?? palette[PaletteColor.Primary];
+  const borderColor = color ?? theme.colors.primary;
   const bgOpacity = backgroundOpacity(pattern.level);
   const badges = nodeBadges(pattern);
 
@@ -75,7 +69,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
         y={y - NODE_HEIGHT / 2}
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
-        fill={palette[PaletteColor.PrimaryText]}
+        fill={theme.colors.text}
         fillOpacity={bgOpacity}
         stroke={borderColor}
         strokeWidth={2}
@@ -110,7 +104,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
         y={y - 5}
         fontSize={12}
         fontWeight="bold"
-        fill={palette[PaletteColor.PrimaryText]}
+        fill={theme.colors.text}
         textAnchor="middle"
       >
         {displayName}
@@ -121,7 +115,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({
         x={x}
         y={y + 11}
         fontSize={10}
-        fill={palette[PaletteColor.SecondaryText]}
+        fill={theme.colors.textMuted}
         textAnchor="middle"
       >
         {`${pattern.counts} count`}

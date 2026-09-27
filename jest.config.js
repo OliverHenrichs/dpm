@@ -22,7 +22,7 @@ const tsJestTransform = {
 
 /** Expo and React Native ship untranspiled ESM; Babel has to see it. */
 const transformIgnorePatterns = [
-  "node_modules/(?!(?:jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-vector-icons|@openspacelabs/.*)",
+  "node_modules/(?!(?:jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@openspacelabs/.*)",
 ];
 
 module.exports = {
@@ -239,10 +239,10 @@ module.exports = {
       lines: 90,
     },
     "src/pattern/list/PatternVideos.tsx": {
-      statements: 94,
-      branches: 74,
-      functions: 94,
-      lines: 94,
+      statements: 97,
+      branches: 95,
+      functions: 97,
+      lines: 97,
     },
     "src/pattern/list/AddVideoModal.tsx": {
       statements: 78,
@@ -301,10 +301,10 @@ module.exports = {
     },
     // The screen's modal wiring, the filter/sort sheets and the carousel.
     "src/pattern/list/PatternListManager.tsx": {
-      statements: 94,
-      branches: 84,
+      statements: 95,
+      branches: 88,
       functions: 94,
-      lines: 94,
+      lines: 95,
     },
     "src/pattern/filter/components/PatternFilterBottomSheet.tsx": {
       statements: 86,
@@ -331,10 +331,10 @@ module.exports = {
       lines: 90,
     },
     "src/common/components/VideoCarousel.tsx": {
-      statements: 94,
-      branches: 94,
-      functions: 94,
-      lines: 94,
+      statements: 97,
+      branches: 95,
+      functions: 97,
+      lines: 97,
     },
     // F3: the gate between a picked file and storage, and the schema runner.
     "src/pattern/data/validation/validateExportData.ts": {
@@ -549,10 +549,10 @@ module.exports = {
       lines: 95,
     },
     "src/pattern/list/PatternList.tsx": {
-      statements: 82,
-      branches: 85,
-      functions: 66,
-      lines: 82,
+      statements: 96,
+      branches: 95,
+      functions: 95,
+      lines: 96,
     },
   },
 };

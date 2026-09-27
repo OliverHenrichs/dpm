@@ -1,18 +1,12 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Clipboard,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { ActivityIndicator, Clipboard, Modal, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
+import { Button, IconButton } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
+import { Icon } from "@/src/common/ui/Icon";
 import QRCode from "react-native-qrcode-svg";
 import { useTranslation } from "react-i18next";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPatternList, IPattern } from "@/src/pattern/types/IPatternList";
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
@@ -38,9 +32,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   onUnpublished,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +89,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <ModalOverlay>
         <View style={styles.card}>
           <Text style={styles.title}>{t("shareToCloud")}</Text>
           <Text style={styles.listName}>{list.name}</Text>
@@ -107,7 +99,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
               <Icon
                 name="alert-circle-outline"
                 size={18}
-                color={palette[PaletteColor.Error]}
+                color={theme.colors.danger}
               />
               <Text style={styles.warningText}>{t("sharingNotAvailable")}</Text>
             </View>
@@ -118,40 +110,27 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
               <Text style={styles.sectionLabel}>{t("shareCode")}</Text>
               <View style={styles.codeRow}>
                 <Text style={styles.code}>{list.shareCode}</Text>
-                <TouchableOpacity
-                  style={styles.copyButton}
+                <IconButton
+                  icon={copied ? "check" : "content-copy"}
+                  size={theme.iconSize.md}
+                  color={copied ? "success" : "primary"}
                   onPress={handleCopy}
                   accessibilityLabel={t("copyShareCode")}
-                >
-                  <Icon
-                    name={copied ? "check" : "content-copy"}
-                    size={20}
-                    color={
-                      copied
-                        ? palette[PaletteColor.Accent]
-                        : palette[PaletteColor.Primary]
-                    }
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.copyButton}
+                />
+                <IconButton
+                  icon={showQr ? "qrcode-remove" : "qrcode"}
+                  size={theme.iconSize.md}
                   onPress={() => setShowQr((v) => !v)}
                   accessibilityLabel={t(showQr ? "hideQrCode" : "showQrCode")}
-                >
-                  <Icon
-                    name={showQr ? "qrcode-remove" : "qrcode"}
-                    size={20}
-                    color={palette[PaletteColor.Primary]}
-                  />
-                </TouchableOpacity>
+                />
               </View>
               {showQr && (
                 <View style={styles.qrContainer}>
                   <QRCode
                     value={list.shareCode}
                     size={160}
-                    color={palette[PaletteColor.PrimaryText]}
-                    backgroundColor={palette[PaletteColor.Surface]}
+                    color={theme.colors.text}
+                    backgroundColor={theme.colors.surface}
                   />
                 </View>
               )}
@@ -164,48 +143,35 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           {isLoading ? (
             <ActivityIndicator
               size="large"
-              color={palette[PaletteColor.Primary]}
+              color={theme.colors.primary}
               style={styles.spinner}
             />
           ) : (
             <View style={styles.buttonCol}>
               {firebaseAvailable && (
-                <TouchableOpacity
-                  style={styles.primaryButton}
+                <Button
+                  title={isPublished ? t("syncToCloud") : t("publishToCloud")}
+                  icon="cloud-upload-outline"
                   onPress={handlePublish}
-                >
-                  <Icon
-                    name="cloud-upload-outline"
-                    size={18}
-                    color={palette[PaletteColor.Surface]}
-                  />
-                  <Text style={styles.primaryButtonText}>
-                    {isPublished ? t("syncToCloud") : t("publishToCloud")}
-                  </Text>
-                </TouchableOpacity>
+                />
               )}
               {firebaseAvailable && isPublished && (
-                <TouchableOpacity
-                  style={styles.destructiveButton}
+                <Button
+                  title={t("unpublish")}
+                  icon="cloud-off-outline"
+                  variant="dangerOutline"
                   onPress={() => setConfirmUnpublish(true)}
-                >
-                  <Icon
-                    name="cloud-off-outline"
-                    size={18}
-                    color={palette[PaletteColor.Error]}
-                  />
-                  <Text style={styles.destructiveButtonText}>
-                    {t("unpublish")}
-                  </Text>
-                </TouchableOpacity>
+                />
               )}
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-              </TouchableOpacity>
+              <Button
+                title={t("cancel")}
+                variant="secondary"
+                onPress={onClose}
+              />
             </View>
           )}
         </View>
-      </View>
+      </ModalOverlay>
 
       {/* ── Unpublish confirmation dialog ────────────────────────────── */}
       <AppDialog
@@ -240,136 +206,82 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    card: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 420,
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-      marginBottom: 4,
-    },
-    listName: {
-      fontSize: 15,
-      color: palette[PaletteColor.SecondaryText],
-      marginBottom: 20,
-    },
-    sectionLabel: {
-      fontSize: 12,
-      fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
-      letterSpacing: 1,
-      textTransform: "uppercase",
-      marginBottom: 8,
-    },
-    codeRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      marginBottom: 8,
-    },
-    code: {
-      flex: 1,
-      fontSize: 24,
-      fontWeight: "bold",
-      letterSpacing: 4,
-      color: palette[PaletteColor.Primary],
-      fontVariant: ["tabular-nums"],
-    },
-    copyButton: {
-      padding: 4,
-    },
-    qrContainer: {
-      alignItems: "center",
-      paddingVertical: 16,
-    },
-    hint: {
-      fontSize: 13,
-      color: palette[PaletteColor.SecondaryText],
-      marginBottom: 20,
-    },
-    warningBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      backgroundColor: palette[PaletteColor.Error] + "15",
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 20,
-    },
-    warningText: {
-      flex: 1,
-      fontSize: 13,
-      color: palette[PaletteColor.Error],
-    },
-    errorText: {
-      color: palette[PaletteColor.Error],
-      fontSize: 13,
-      marginBottom: 12,
-    },
-    spinner: {
-      marginVertical: 20,
-    },
-    buttonCol: {
-      gap: 10,
-    },
-    primaryButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-    },
-    primaryButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Surface],
-    },
-    destructiveButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      borderRadius: 8,
-      padding: 14,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Error],
-    },
-    destructiveButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Error],
-    },
-    cancelButton: {
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 420,
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.xs,
+  },
+  listName: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.xl,
+  },
+  sectionLabel: {
+    ...theme.typography.caption,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: theme.space.sm,
+  },
+  codeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+    marginBottom: theme.space.sm,
+  },
+  code: {
+    ...theme.typography.display,
+    flex: 1,
+    letterSpacing: 4,
+    color: theme.colors.primary,
+    fontVariant: ["tabular-nums"],
+  },
+  qrContainer: {
+    alignItems: "center",
+    paddingVertical: theme.space.lg,
+  },
+  hint: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.xl,
+  },
+  warningBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+    backgroundColor: alpha(theme.colors.danger, 0.08),
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    marginBottom: theme.space.xl,
+  },
+  warningText: {
+    ...theme.typography.bodySmall,
+    flex: 1,
+    color: theme.colors.danger,
+  },
+  errorText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.danger,
+    marginBottom: theme.space.md,
+  },
+  spinner: {
+    marginVertical: theme.space.xl,
+  },
+  buttonCol: {
+    gap: theme.space.md,
+  },
+}));
 
 export default ShareListModal;

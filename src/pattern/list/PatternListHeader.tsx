@@ -1,11 +1,10 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { IconButton } from "@/src/common/ui";
+import { useUnistyles } from "react-native-unistyles";
+import { Icon } from "@/src/common/ui/Icon";
 import PlusButton from "@/src/common/components/PlusButton";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 
 interface PatternListHeaderProps {
   hasActiveFilter: boolean;
@@ -23,60 +22,36 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
   onAdd,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles();
+  const { theme } = useUnistyles();
 
   const rightActions = (
     <>
-      <TouchableOpacity
+      <IconButton
+        icon="sort"
         onPress={onSort}
-        style={styles.iconButton}
         accessibilityLabel={t("sortPatterns")}
-      >
-        <Icon name="sort" size={24} color={palette[PaletteColor.Primary]} />
-      </TouchableOpacity>
-      <TouchableOpacity
+      />
+      <IconButton
+        icon={hasActiveFilter ? "filter" : "filter-outline"}
+        color={hasActiveFilter ? "success" : "primary"}
+        selected={hasActiveFilter}
         onPress={onFilter}
-        style={styles.iconButton}
         accessibilityLabel={t("filterPatterns")}
-      >
-        <Icon
-          name={hasActiveFilter ? "filter" : "filter-outline"}
-          size={24}
-          color={
-            hasActiveFilter
-              ? palette[PaletteColor.Accent]
-              : palette[PaletteColor.Primary]
-          }
-        />
-      </TouchableOpacity>
+      />
       {isReadonly ? (
         <Icon
           name="lock-outline"
-          size={24}
-          color={palette[PaletteColor.SecondaryText]}
+          size={theme.iconSize.lg}
+          color={theme.colors.textMuted}
           accessibilityLabel={t("readonlyList")}
         />
       ) : (
-        <PlusButton
-          onPress={onAdd}
-          palette={palette}
-          accessibilityLabel={t("addPattern")}
-        />
+        <PlusButton onPress={onAdd} accessibilityLabel={t("addPattern")} />
       )}
     </>
   );
 
   return <SectionHeader title={t("patternList")} rightActions={rightActions} />;
 };
-
-const getStyles = () =>
-  StyleSheet.create({
-    iconButton: {
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
-  });
 
 export default PatternListHeader;

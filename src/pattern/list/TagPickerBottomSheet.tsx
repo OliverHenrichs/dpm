@@ -1,20 +1,10 @@
 import React, { useMemo, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
+import { ScrollView, Text, TextInput, View } from "react-native";
+import { Button, Chip } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import {
-  getCommonBorder,
-  getCommonInput,
-} from "@/src/common/utils/CommonStyles";
+import { getCommonInput } from "@/src/common/utils/CommonStyles";
 import BottomSheet from "@/src/common/components/BottomSheet";
 
 interface TagPickerBottomSheetProps {
@@ -33,9 +23,7 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
   allPatterns,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -92,18 +80,13 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
   };
 
   return (
-    <BottomSheet
-      visible={visible}
-      onClose={handleClose}
-      title={t("addTag")}
-      palette={palette}
-    >
+    <BottomSheet visible={visible} onClose={handleClose} title={t("addTag")}>
       <TextInput
         placeholder={t("addTag")}
         value={searchQuery}
         onChangeText={setSearchQuery}
         style={styles.searchInput}
-        placeholderTextColor={palette[PaletteColor.SecondaryText]}
+        placeholderTextColor={theme.colors.textMuted}
         autoFocus={true}
       />
 
@@ -113,14 +96,12 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
       >
         {/* Create new tag option */}
         {isNewTag && (
-          <TouchableOpacity
-            style={styles.createNewTagButton}
+          <Button
+            title={t("createTag", { tag: searchQuery })}
+            icon="plus"
             onPress={handleAddNewTag}
-          >
-            <Text style={styles.createNewTagText}>
-              + Create &quot;{searchQuery}&quot;
-            </Text>
-          </TouchableOpacity>
+            style={styles.createNewTagButton}
+          />
         )}
 
         {/* Existing tags */}
@@ -131,13 +112,12 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
             </Text>
             <View style={styles.tagsGrid}>
               {filteredExistingTags.map((tag, idx) => (
-                <TouchableOpacity
+                <Chip
                   key={idx}
-                  style={styles.existingTagChip}
+                  label={tag}
+                  icon="tag-outline"
                   onPress={() => handleAddTag(tag)}
-                >
-                  <Text style={styles.existingTagText}>{tag}</Text>
-                </TouchableOpacity>
+                />
               ))}
             </View>
           </View>
@@ -154,68 +134,46 @@ const TagPickerBottomSheet: React.FC<TagPickerBottomSheetProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  return StyleSheet.create({
+const styles = StyleSheet.create((theme) => {
+  return {
     searchInput: {
-      ...getCommonInput(palette),
-      marginBottom: 16,
-      fontSize: 16,
+      ...theme.typography.body,
+      ...getCommonInput(theme),
+      marginBottom: theme.space.lg,
     },
     tagsScrollView: {
       flex: 1,
     },
     tagsScrollContent: {
-      paddingBottom: 16,
+      paddingBottom: theme.space.lg,
     },
     createNewTagButton: {
-      ...getCommonBorder(palette),
-      backgroundColor: palette[PaletteColor.Primary],
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 16,
-      alignItems: "center" as const,
-    },
-    createNewTagText: {
-      color: palette[PaletteColor.PrimaryText],
-      fontWeight: "bold" as const,
-      fontSize: 14,
+      marginBottom: theme.space.lg,
     },
     existingTagsSection: {
-      marginBottom: 16,
+      marginBottom: theme.space.lg,
     },
     sectionTitle: {
-      fontSize: 14,
-      fontWeight: "600" as const,
-      color: palette[PaletteColor.SecondaryText],
-      marginBottom: 8,
+      ...theme.typography.label,
+      color: theme.colors.textMuted,
+      marginBottom: theme.space.sm,
       textTransform: "uppercase" as const,
     },
     tagsGrid: {
       flexDirection: "row" as const,
       flexWrap: "wrap" as const,
-      gap: 8,
-    },
-    existingTagChip: {
-      ...getCommonBorder(palette),
-      backgroundColor: palette[PaletteColor.TagBg],
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 16,
-    },
-    existingTagText: {
-      color: palette[PaletteColor.TagText],
-      fontSize: 14,
+      gap: theme.space.sm,
     },
     emptyState: {
-      paddingVertical: 32,
+      paddingVertical: theme.space.xxxl,
       alignItems: "center" as const,
     },
     emptyStateText: {
-      color: palette[PaletteColor.SecondaryText],
-      fontSize: 14,
+      ...theme.typography.bodySmall,
+      color: theme.colors.textMuted,
       fontStyle: "italic" as const,
     },
-  });
-};
+  };
+});
 
 export default TagPickerBottomSheet;

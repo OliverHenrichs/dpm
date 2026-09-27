@@ -1,15 +1,9 @@
 import React from "react";
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Modal, ScrollView, Text, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
+import { Button } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import {
@@ -40,9 +34,6 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
   const { decisions, setAction, getImportDecisions, stats } =
     useImportDecisions({
       importedLists,
@@ -58,14 +49,13 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
       transparent={true}
       onRequestClose={onCancel}
     >
-      <View style={styles.modalOverlay}>
+      <ModalOverlay>
         <View style={styles.modalContent}>
           <Text style={styles.title}>{t("importPatternLists")}</Text>
           <ImportSummary
             totalLists={stats.totalLists}
             totalPatterns={stats.totalPatternsCount}
             conflictCount={stats.conflictCount}
-            palette={palette}
           />
           <ScrollView style={styles.listContainer}>
             {importedLists.map((list) => {
@@ -78,83 +68,51 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
                   existingList={existingList}
                   currentAction={currentAction}
                   onActionChange={(action) => setAction(list.id, action)}
-                  palette={palette}
                 />
               );
             })}
           </ScrollView>
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.importButton}
+            <Button
+              title={t("cancel")}
+              variant="secondary"
+              onPress={onCancel}
+              style={styles.footerButton}
+            />
+            <Button
+              title={t("import")}
+              icon="import"
               onPress={handleImport}
-            >
-              <Text style={styles.importButtonText}>{t("import")}</Text>
-            </TouchableOpacity>
+              style={styles.footerButton}
+            />
           </View>
         </View>
-      </View>
+      </ModalOverlay>
     </Modal>
   );
 };
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    modalContent: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 500,
-      maxHeight: "80%",
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-      marginBottom: 8,
-    },
-    listContainer: {
-      maxHeight: 400,
-      marginBottom: 16,
-    },
-    buttonRow: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    cancelButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
-    },
-    importButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-    },
-    importButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Surface],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 500,
+    maxHeight: "80%",
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.sm,
+  },
+  listContainer: {
+    maxHeight: 400,
+    marginBottom: theme.space.lg,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+  },
+  footerButton: { flex: 1 },
+}));
 export default PatternListImportModal;

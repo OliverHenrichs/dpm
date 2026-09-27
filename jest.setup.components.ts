@@ -1,10 +1,16 @@
 // @testing-library/react-native v13 registers its Jest matchers automatically;
 // the separate @testing-library/jest-native package is deprecated and gone.
 import { configure } from "@testing-library/react-native";
+// Unistyles is a native module. Its shipped mock resolves every
+// `StyleSheet.create` against the first registered theme, at import, so the
+// themes are registered here, before any component module loads.
+import "react-native-unistyles/mocks";
+import "@/src/common/theme/unistyles";
 import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/async-storage";
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
 import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";
 import { resetGestureMock } from "./__mocks__/react-native-gesture-handler";
+import { resetReanimatedMock } from "./__mocks__/react-native-reanimated";
 
 // `waitFor` defaults to 1s, which is not enough for the first mount of the
 // full provider stack on a cold CI runner — and it would surface as a
@@ -16,6 +22,7 @@ beforeEach(() => {
   resetFileSystemMock();
   resetDeviceLocalesMock();
   resetGestureMock();
+  resetReanimatedMock();
 });
 
 // ---------------------------------------------------------------------------
@@ -43,6 +50,8 @@ jest.mock("expo-image-picker", () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(async () => ({
     granted: true,
   })),
+  launchCameraAsync: jest.fn(async () => ({ canceled: true })),
+  requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),
   MediaTypeOptions: { Videos: "Videos" },
 }));
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { Defs, Marker, Path, Polygon } from "react-native-svg";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { useUnistyles } from "react-native-unistyles";
+import type { ColorTokens } from "@/src/common/theme/tokens";
 import PatternNode from "@/src/pattern/graph/PatternNode";
 import {
   generateOrthogonalPath,
@@ -44,28 +45,29 @@ function isDragging(
  * now depend on this instead of on each other.
  */
 
-export const ArrowheadMarker: React.FC<{
-  palette: Record<PaletteColor, string>;
-}> = ({ palette }) => (
-  <Defs>
-    <Marker
-      id="arrowhead-graph"
-      markerWidth="5"
-      markerHeight="5"
-      refX="0"
-      refY="3"
-      orient="auto"
-    >
-      <Polygon points="0 0, 10 3, 0 6" fill={palette[PaletteColor.Primary]} />
-    </Marker>
-  </Defs>
-);
+export const ArrowheadMarker: React.FC = () => {
+  const { theme } = useUnistyles();
+  return (
+    <Defs>
+      <Marker
+        id="arrowhead-graph"
+        markerWidth="5"
+        markerHeight="5"
+        refX="0"
+        refY="3"
+        orient="auto"
+      >
+        <Polygon points="0 0, 10 3, 0 6" fill={theme.colors.primary} />
+      </Marker>
+    </Defs>
+  );
+};
 
 /** Edges whose endpoints are both laid out; the rest are skipped silently. */
 export function drawEdges(
   edges: GraphEdge[],
   positions: Map<number, LayoutPosition>,
-  palette: Record<PaletteColor, string>,
+  colors: ColorTokens,
   drag?: DragRender,
 ) {
   return (
@@ -90,7 +92,6 @@ export function drawEdges(
               dragY={drag.dragY}
               draggingFrom={movingFrom}
               elided={elided}
-              palette={palette}
             />
           );
         }
@@ -99,7 +100,7 @@ export function drawEdges(
           <Path
             key={`edge-${index}`}
             d={generateOrthogonalPath(fromPos, toPos)}
-            stroke={palette[PaletteColor.Primary]}
+            stroke={colors.primary}
             strokeWidth={2}
             strokeDasharray={elided ? ELIDED_DASH : undefined}
             fill="none"
@@ -115,7 +116,6 @@ export function drawEdges(
 export function drawNodes(
   nodes: GraphNode[],
   positions: Map<number, LayoutPosition>,
-  palette: Record<PaletteColor, string>,
   onNodeTap: ((pattern: IPattern) => void) | undefined,
   drag?: DragRender,
 ) {
@@ -135,7 +135,6 @@ export function drawNodes(
         node={node}
         x={pos.x}
         y={pos.y}
-        palette={palette}
         onPress={onNodeTap}
       />
     );

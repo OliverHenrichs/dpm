@@ -1,9 +1,9 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 import {
   getCommon2ndOrderLabel,
   getCommonLabel,
@@ -16,16 +16,13 @@ type ModifierDetailsProps = {
   modifier: IModifier;
   patterns: IPattern[];
   patternTypes?: PatternType[];
-  palette: Record<PaletteColor, string>;
 };
 
 const ModifierDetails: React.FC<ModifierDetailsProps> = ({
   modifier,
   patterns,
-  palette,
 }) => {
   const { t } = useTranslation();
-  const styles = getStyles(palette);
 
   // Patterns that have this modifier in their modifierRefs (non-universal only)
   const appliedPatterns = modifier.universal
@@ -38,7 +35,7 @@ const ModifierDetails: React.FC<ModifierDetailsProps> = ({
     <View style={styles.container}>
       {/* Videos — only for universal modifiers */}
       {modifier.universal && (modifier.videoRefs ?? []).length > 0 && (
-        <VideoCarousel videoRefs={modifier.videoRefs} palette={palette} />
+        <VideoCarousel videoRefs={modifier.videoRefs} />
       )}
 
       {/* Connected patterns — only for non-universal modifiers */}
@@ -62,25 +59,24 @@ const ModifierDetails: React.FC<ModifierDetailsProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    container: {
-      borderTopWidth: 1,
-      borderTopColor: palette[PaletteColor.Border],
-      paddingTop: 8,
-      marginTop: 6,
-    },
-    section: {
-      ...getCommonPrereqContainer(palette),
-      marginTop: 0,
-    },
-    label: getCommonLabel(palette),
-    emptyText: {
-      ...getCommon2ndOrderLabel(palette),
-      fontStyle: "italic",
-    },
-    patternPill: getCommonPrereqItem(palette),
-    patternPillText: getCommon2ndOrderLabel(palette),
-  });
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: theme.space.sm,
+    marginTop: theme.space.sm,
+  },
+  section: {
+    ...getCommonPrereqContainer(theme),
+    marginTop: theme.space.none,
+  },
+  label: getCommonLabel(theme),
+  emptyText: {
+    ...getCommon2ndOrderLabel(theme),
+    fontStyle: "italic",
+  },
+  patternPill: getCommonPrereqItem(theme),
+  patternPillText: getCommon2ndOrderLabel(theme),
+}));
 
 export default ModifierDetails;

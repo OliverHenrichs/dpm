@@ -1,23 +1,20 @@
 import React from "react";
-import { StyleSheet, Text } from "react-native";
+import { Text } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
 
 interface ImportSummaryProps {
   totalLists: number;
   totalPatterns: number;
   conflictCount: number;
-  palette: Record<PaletteColor, string>;
 }
 
 export const ImportSummary: React.FC<ImportSummaryProps> = ({
   totalLists,
   totalPatterns,
   conflictCount,
-  palette,
 }) => {
   const { t } = useTranslation();
-  const styles = getStyles(palette);
   return (
     <Text style={styles.subtitle}>
       {t("foundListsToImport", { count: totalLists })}
@@ -27,12 +24,11 @@ export const ImportSummary: React.FC<ImportSummaryProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    subtitle: {
-      fontSize: 14,
-      color: palette[PaletteColor.SecondaryText],
-      marginBottom: 16,
-      lineHeight: 20,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  subtitle: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.lg,
+    lineHeight: 20,
+  },
+}));

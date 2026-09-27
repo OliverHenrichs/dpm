@@ -1,8 +1,8 @@
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { Chip } from "@/src/common/ui";
 import { useTranslation } from "react-i18next";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
-import { getFilterCommonStyles } from "@/src/pattern/filter/FilterCommonStyles";
+import { filterStyles as styles } from "@/src/pattern/filter/FilterCommonStyles";
 import { ChainMode } from "@/src/pattern/graph/model/selectSubgraph";
 import {
   CHAIN_MODE_LABELS,
@@ -12,7 +12,6 @@ import {
 interface ChainModeFilterProps {
   chainMode: ChainMode;
   onChange: (mode: ChainMode) => void;
-  palette: Record<PaletteColor, string>;
 }
 
 /**
@@ -24,10 +23,8 @@ interface ChainModeFilterProps {
 const ChainModeFilter: React.FC<ChainModeFilterProps> = ({
   chainMode,
   onChange,
-  palette,
 }) => {
   const { t } = useTranslation();
-  const styles = getFilterCommonStyles(palette);
 
   return (
     <View style={styles.filterSection}>
@@ -36,20 +33,12 @@ const ChainModeFilter: React.FC<ChainModeFilterProps> = ({
         {OFFERED_CHAIN_MODES.map((mode) => {
           const selected = chainMode === mode;
           return (
-            <TouchableOpacity
+            <Chip
               key={mode}
-              style={[styles.chip, selected && styles.chipSelected]}
+              label={t(CHAIN_MODE_LABELS[mode])}
+              selected={selected}
               onPress={() => onChange(mode)}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              accessibilityLabel={t(CHAIN_MODE_LABELS[mode])}
-            >
-              <Text
-                style={[styles.chipText, selected && styles.chipTextSelected]}
-              >
-                {t(CHAIN_MODE_LABELS[mode])}
-              </Text>
-            </TouchableOpacity>
+            />
           );
         })}
       </View>

@@ -1,15 +1,10 @@
 import React, { useMemo } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import type { ColorTokens } from "@/src/common/theme/tokens";
 import {
   generateOrthogonalPath,
   generateSkipLevelPath,
@@ -36,7 +31,6 @@ import { GraphEdge, GraphModel } from "@/src/pattern/graph/model/GraphModel";
 interface TimelineViewProps {
   model: GraphModel;
   patternTypes: PatternType[];
-  palette: Record<PaletteColor, string>;
   /** Distinguishes "nothing matched" from "this list is empty". */
   hasActiveFilter: boolean;
   onNodeTap: (pattern: IPattern) => void;
@@ -45,14 +39,13 @@ interface TimelineViewProps {
 const TimelineView: React.FC<TimelineViewProps> = ({
   model,
   patternTypes,
-  palette,
   hasActiveFilter,
   onNodeTap,
 }) => {
   const patterns = model.patterns;
   const { t } = useTranslation();
+  const { theme } = useUnistyles();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
-  const styles = getStyles(palette);
 
   const { positions, svgWidth, svgHeight, swimlanes, skipLevelEdges } =
     useMemo(() => {
@@ -107,10 +100,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({
           height={svgHeight}
           {...rasterizeLargeGraph(patterns.length)}
         >
-          <ArrowheadMarker palette={palette} />
+          <ArrowheadMarker />
           {drawSwimlanes(swimlanes, svgWidth)}
-          {drawTimelineEdges(model.edges, positions, skipLevelEdges, palette)}
-          {drawNodes(model.nodes, positions, palette, onNodeTap)}
+          {drawTimelineEdges(
+            model.edges,
+            positions,
+            skipLevelEdges,
+            theme.colors,
+          )}
+          {drawNodes(model.nodes, positions, onNodeTap)}
         </Svg>
       </ScrollView>
     </ScrollView>
@@ -125,7 +123,7 @@ function drawTimelineEdges(
   edges: GraphEdge[],
   positions: Map<number, LayoutPosition>,
   skipLevelEdges: SkipLevelEdgeInfo[],
-  palette: Record<PaletteColor, string>,
+  colors: ColorTokens,
 ) {
   // Create a map of skip-level edges for quick lookup
   const skipLevelEdgeMap = new Map<string, SkipLevelEdgeInfo>();
@@ -169,7 +167,7 @@ function drawTimelineEdges(
           <Path
             key={`edge-${index}`}
             d={pathData}
-            stroke={palette[PaletteColor.Primary]}
+            stroke={colors.primary}
             strokeWidth={2}
             strokeDasharray={elided ? ELIDED_DASH : undefined}
             fill="none"
@@ -211,24 +209,23 @@ function drawSwimlanes(swimlanes: SwimlaneInfo[], svgWidth: number) {
   );
 }
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Background],
-    },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: palette[PaletteColor.Background],
-      padding: 32,
-    },
-    emptyText: {
-      fontSize: 16,
-      color: palette[PaletteColor.SecondaryText],
-      textAlign: "center",
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: theme.colors.background,
+    padding: theme.space.xxxl,
+  },
+  emptyText: {
+    ...theme.typography.body,
+    color: theme.colors.textMuted,
+    textAlign: "center",
+  },
+}));
 
 export default TimelineView;

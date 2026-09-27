@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { Image, ScrollView, Text, View } from "react-native";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
 import { useTranslation } from "react-i18next";
 import {
   getCommonAddButtonContainer,
@@ -16,6 +10,7 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import PlusButton from "@/src/common/components/PlusButton";
+import { Icon, IconButton } from "@/src/common/ui";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 
@@ -24,7 +19,8 @@ export type PatternVideosProps = {
   thumbnails: string[];
   onAddVideo: () => void;
   onRemoveVideo: (index: number) => void;
-  palette: Record<PaletteColor, string>;
+  /** Offers editing a video (shorten, de-identify) next to '+'; omitted where that cannot run. */
+  onEditVideo?: () => void;
   disabled?: boolean;
 };
 
@@ -33,11 +29,11 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   thumbnails,
   onAddVideo,
   onRemoveVideo,
-  palette,
+  onEditVideo,
   disabled = false,
 }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
-  const styles = getStyles(palette);
 
   const renderThumbnails = () => {
     if (videoRefs.length === 0) return null;
@@ -46,56 +42,53 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
       const isUrl = ref.type === "url";
       return (
         <View key={idx} style={styles.thumbnailWrapper}>
-          <View style={styles.thumbnailContainer}>
-            {isUrl && thumb ? (
-              // YouTube (or other URL) with a generated thumbnail image
-              <View style={styles.thumbnailContainer}>
-                <Image
-                  source={{ uri: thumb }}
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 8,
-                    resizeMode: "cover",
-                  }}
-                />
-                <View style={styles.urlBadge}>
-                  <Text style={styles.urlBadgeText}>▶ YT</Text>
+          {thumb ? (
+            <View>
+              <Image source={{ uri: thumb }} style={styles.thumbImage} />
+              {isUrl ? (
+                <View style={styles.badge}>
+                  <Icon
+                    name="youtube"
+                    size={theme.iconSize.sm}
+                    color={theme.media.onScrim}
+                  />
                 </View>
-              </View>
-            ) : isUrl ? (
-              <View style={styles.urlPlaceholder}>
-                <Text style={styles.urlPlaceholderIcon}>🔗</Text>
-                <Text style={styles.urlPlaceholderText} numberOfLines={2}>
-                  {ref.startTime != null
-                    ? `${formatTime(ref.startTime)}`
-                    : t("onlineVideo")}
-                </Text>
-              </View>
-            ) : thumb ? (
-              <Image
-                source={{ uri: thumb }}
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 8,
-                  resizeMode: "cover",
-                }}
+              ) : (
+                ref.generated && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {t("videoBadgeSilhouette")}
+                    </Text>
+                  </View>
+                )
+              )}
+            </View>
+          ) : isUrl ? (
+            <View style={styles.urlPlaceholder}>
+              <Icon
+                name="link-variant"
+                size={theme.iconSize.md}
+                color={theme.colors.primary}
               />
-            ) : (
-              <Text style={styles.label}>{t("noThumbnail")}</Text>
-            )}
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => onRemoveVideo(idx)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              // A bare "×" tells a screen reader nothing about what it removes.
-              accessibilityLabel={t("removeVideo")}
-            >
-              <Text style={styles.removeButtonText}>×</Text>
-            </TouchableOpacity>
-          </View>
+              <Text style={styles.urlPlaceholderText} numberOfLines={2}>
+                {ref.startTime != null
+                  ? formatTime(ref.startTime)
+                  : t("onlineVideo")}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.label}>{t("noThumbnail")}</Text>
+          )}
+          {/* A bare "×" told a screen reader nothing about what it removes. */}
+          <IconButton
+            icon="close"
+            variant="filled"
+            color="danger"
+            size={theme.iconSize.sm - 2}
+            onPress={() => onRemoveVideo(idx)}
+            accessibilityLabel={t("removeVideo")}
+            style={styles.removeButton}
+          />
         </View>
       );
     });
@@ -114,9 +107,17 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
         </ScrollView>
       </View>
       <View style={styles.addButtonContainer}>
+        {onEditVideo && (
+          <IconButton
+            icon="movie-edit"
+            color="success"
+            size={28}
+            onPress={onEditVideo}
+            accessibilityLabel={t("videoEditA11y")}
+          />
+        )}
         <PlusButton
           onPress={onAddVideo}
-          palette={palette}
           accessibilityLabel={t("add")}
           disabled={disabled}
         />
@@ -125,83 +126,77 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) => {
-  return StyleSheet.create({
-    prereqContainer: {
-      ...getCommonPrereqContainer(palette),
-      position: "relative",
-    },
-    label: { ...getCommonLabel(palette) },
-    videosRow: { ...getCommonRow(), gap: 4 },
-    videosInputRow: {
-      ...getCommonRow(),
-      minHeight: 64,
-      height: 78,
-    },
-    thumbnailWrapper: {
-      position: "relative",
-      marginTop: 8,
-    },
-    thumbnailContainer: {
-      position: "relative",
-      justifyContent: "center",
-      alignItems: "center",
-      width: 64,
-    },
-    urlPlaceholder: {
-      width: 64,
-      height: 64,
-      borderRadius: 8,
-      backgroundColor: palette[PaletteColor.Primary] + "33",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Primary],
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 4,
-    },
-    urlPlaceholderIcon: {
-      fontSize: 20,
-    },
-    urlPlaceholderText: {
-      fontSize: 9,
-      color: palette[PaletteColor.PrimaryText],
-      textAlign: "center",
-      marginTop: 2,
-    },
-    urlBadge: {
-      position: "absolute",
-      bottom: 4,
-      right: 0,
-      backgroundColor: "rgba(0,0,0,0.65)",
-      borderRadius: 4,
-      paddingHorizontal: 3,
-      paddingVertical: 1,
-    },
-    urlBadgeText: {
-      color: "#fff",
-      fontSize: 8,
-      fontWeight: "bold",
-    },
-    removeButton: {
-      position: "absolute",
-      top: -8,
-      right: -8,
-      backgroundColor: palette[PaletteColor.Error],
-      borderRadius: 10,
-      width: 20,
-      height: 20,
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 2,
-    },
-    removeButtonText: {
-      color: "#fff",
-      fontWeight: "bold",
-      fontSize: 14,
-      lineHeight: 18,
-    },
-    addButtonContainer: getCommonAddButtonContainer(),
-  });
-};
+/** Thumbnail edge, in dp: small enough for three in a row beside the add button. */
+const THUMB = 64;
+
+const styles = StyleSheet.create((theme) => ({
+  prereqContainer: {
+    ...getCommonPrereqContainer(theme),
+    position: "relative",
+  },
+  label: { ...getCommonLabel(theme) },
+  videosRow: { ...getCommonRow(), gap: theme.space.xs },
+  videosInputRow: {
+    ...getCommonRow(),
+    minHeight: THUMB,
+    height: THUMB + theme.space.md + 2,
+  },
+  thumbnailWrapper: {
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+    width: THUMB,
+    marginTop: theme.space.sm,
+    marginRight: theme.space.xs,
+  },
+  thumbImage: {
+    width: THUMB,
+    height: THUMB,
+    borderRadius: theme.radius.md,
+    resizeMode: "cover",
+  },
+  urlPlaceholder: {
+    width: THUMB,
+    height: THUMB,
+    borderRadius: theme.radius.md,
+    backgroundColor: alpha(theme.colors.primary, 0.2),
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.space.xs,
+  },
+  urlPlaceholderText: {
+    ...theme.typography.badge,
+    color: theme.colors.text,
+    textAlign: "center",
+    marginTop: theme.space.xxs,
+  },
+  badge: {
+    position: "absolute",
+    bottom: theme.space.xs,
+    right: theme.space.xxs,
+    backgroundColor: theme.media.scrim,
+    borderRadius: theme.radius.xs,
+    paddingHorizontal: theme.space.xs,
+    paddingVertical: 1,
+  },
+  badgeText: {
+    ...theme.typography.badge,
+    color: theme.media.onScrim,
+    fontWeight: "bold",
+  },
+  removeButton: {
+    position: "absolute",
+    top: -theme.space.sm,
+    right: -theme.space.sm,
+    zIndex: 2,
+  },
+  addButtonContainer: {
+    ...getCommonAddButtonContainer(),
+    ...getCommonRow(),
+    gap: theme.space.xs,
+  },
+}));
 
 export default PatternVideos;

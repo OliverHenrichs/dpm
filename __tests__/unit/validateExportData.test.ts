@@ -74,7 +74,7 @@ describe("canImport", () => {
   it("refuses a newer minor rather than guessing at it", () => {
     // The writer added something this build cannot carry; parsing it anyway
     // would silently drop that data on the next save.
-    expect(canImport("3.1.0")).toEqual({
+    expect(canImport("3.2.0")).toEqual({
       supported: false,
       reason: "tooNew",
     });
@@ -373,6 +373,48 @@ describe("validateExportData", () => {
       expect(result.data!.patternLists[0].patterns[0].videoRefs).toEqual([
         { type: "url", value: "https://example.com/a.mp4" },
       ]);
+    });
+
+    it("keeps well-formed provenance of a generated video", () => {
+      const generated = { method: "on-device-tracking", createdAt: 1 };
+      const result = validateExportData(
+        fileWithList(
+          baseList({
+            patterns: [
+              {
+                ...createTestPattern(TYPE.id, { id: 1 }),
+                videoRefs: [{ type: "local", value: "/v.mp4", generated }],
+              },
+            ],
+          }),
+        ),
+      );
+
+      expect(result.data!.patternLists[0].patterns[0].videoRefs).toEqual([
+        { type: "local", value: "/v.mp4", generated },
+      ]);
+    });
+
+    it("drops malformed provenance but keeps the video, with a warning", () => {
+      const result = validateExportData(
+        fileWithList(
+          baseList({
+            patterns: [
+              {
+                ...createTestPattern(TYPE.id, { id: 1 }),
+                videoRefs: [
+                  { type: "local", value: "/v.mp4", generated: { method: 3 } },
+                ],
+              },
+            ],
+          }),
+        ),
+      );
+
+      expect(result.data!.patternLists[0].patterns[0].videoRefs).toEqual([
+        { type: "local", value: "/v.mp4" },
+      ]);
+      expect(result.warnings.join(" ")).toMatch(/provenance/);
     });
 
     it("drops a non-numeric start time without dropping the video", () => {

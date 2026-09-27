@@ -31,7 +31,8 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
-| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | open | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **M–L** | idea | [L4](#l4--transcripts-of-what-teachers-say-in-a-video) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -70,7 +71,7 @@ Phase 0  F1 ◐ ─────────────────────�
 Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wins + data safety)
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
-Phase 4  L3 (spike first) ─────────────────────►           (F3 done; independent of L1/L2)
+Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
 ```
 
 **Phases 1 and 2 are complete.** Phase 0 (F1) has its infrastructure in place — see the F1 entry for what
@@ -1259,6 +1260,389 @@ exactly rather than inventing a second pattern.
 
 **15–25 days**, plus the 2-day spike that sets which end of that range applies. Phase 1 alone is
 ~4–5 days and is the part with the clearest value-to-risk ratio.
+
+#### Spike result (2026-09-23/24) — no-go as scoped
+
+Code: branch `spike/l3-silhouette`, not for merge. It holds the local Expo module
+`modules/video-deidentify/` (Android only) and a `__DEV__` panel at the bottom of Settings.
+The models are gitignored, so run `modules/video-deidentify/scripts/fetch-models.sh` before
+building. Tested on a Pixel 10a with four real teaching clips (13–19 s):
+1. Professional couple in black, closed position with turns, spectators at the right and the
+   bottom edge.
+2. Two teachers, open figure.
+3. Two teachers, open figure, poor light.
+4. Two teachers, roll-in/roll-out.
+
+**The premise changed first.** Talking the item through gave these corrections, which stand
+regardless of the verdict:
+- **Audience.** The intended audience is *public* (YouTube). Once footage is published the
+  GDPR household exemption ends, and KUG §22 needs consent to publish someone's image. So
+  de-identification has to be real, and on-device.
+- **Silhouettes are the primary strategy.** They keep the movement and drop identity.
+- **The AI comic path is an optional later phase.** A video-to-video render keeps likeness,
+  so it is not anonymisation, and it sends identifiable third-party footage to a paid
+  provider. That triggers Apple 5.1.2(i) (Nov 2025: name the AI provider, get explicit
+  consent before the first transmission), Google Play's AI-content rules, and EU AI Act
+  Art. 50 labelling (applies since 2 Aug 2026).
+- **Phases 0 and 1 are one piece of work.** Any local effect needs the same
+  decode → per-frame effect → encode pipeline that transcoding does.
+- **Fail closed.** Output frames are drawn *only* from segmentation labels as flat colour on
+  a flat background, never composited from source pixels, and audio is dropped. A
+  segmentation miss then shows as a missing limb, never a face. This held in every output:
+  a frame-by-frame palette check found only compression fringes at shape edges. Keep this
+  rule in any real feature.
+
+**What worked:**
+- **Transcoding (the original blocking unknown) is solved and cheap.** Media3 Transformer
+  1.9.0, pinned to expo-video's version, cuts and downscales to 720p in about 2 s for a 15 s
+  clip. No ffmpeg is needed.
+- **The fail-closed renderer and encoder work.** `MediaMetadataRetriever.getFramesAtIndex`
+  reads batches of frames, a canvas draws onto the `MediaCodec` input surface, and B-frames
+  are off so that timestamps can be rewritten on output. Encoding costs about 4 ms per frame.
+- **Rendering the selfie model's categories reads well on good footage.** Hair, skin and
+  clothes get shades of one colour, with contour lines where they meet, and face skin is drawn
+  like body skin. Clip 2 came out clean and stable, and the figure could be followed through
+  closed position.
+
+**What failed — segmentation quality, on the footage that matters:**
+
+| Model | Result |
+|---|---|
+| MediaPipe PoseLandmarker (`numPoses=2`, masks) | Found both dancers in 47 / 11 / 0 / 0 % of frames across the four clips. It detects people from the face and upper body, which disappear in turns and closed position. Its masks also rendered as outlines only; that cause is unresolved (a byte-order fix changed nothing). **Dropped.** |
+| Selfie multiclass (256×256) | Good on clip 2, acceptable on clip 4 with some background mislabelled. Clip 1: mostly torsos (small figures in black clothes against a busy background). Clip 3: blobs blinking in and out in poor light; the figure cannot be read. |
+| DeepLab-v3 (PASCAL VOC person) | Far too coarse everywhere, blobs only. |
+
+Post-processing helps only where the model is already decent:
+- a ±2-frame majority vote
+- hole filling
+- keeping only the connected blobs picked by a centre preference and followed from frame to frame
+
+It cannot restore limbs the model missed. On clip 1 it kept following a spectator's head at
+the bottom edge. A fix that stops edge blobs being *picked* changed the kept-blob counts by
+one frame, so the head is being *followed*, probably after touching the dancers' blob. Not
+investigated further.
+
+**Speed.** The target was at most 2× the clip length.
+
+| Model | Delegate | Segment ms per frame | Total |
+|---|---|---|---|
+| Selfie multiclass | CPU: the GPU delegate fails in `CalculatorGraph` Open | ~225 (at 640×360) | ~10× clip length |
+| PoseLandmarker | GPU | ~160 | ~7× |
+| DeepLab-v3 | GPU | ~47 | ~3.5× |
+
+Cleanup adds ~30 ms per frame. The GPU numbers show that ~2× is reachable *if* a good model
+runs on the GPU.
+
+**Size.** The arm64 debug APK grew from 109 MB to 146 MB with all three models. One model
+plus `libmediapipe_tasks_jni.so` (10.5 MB) is roughly +13–27 MB.
+
+**Verdict.** The pipeline is sound, but no off-the-shelf MediaPipe model segments full-body
+dancers reliably enough for footage that is not bright, close and uncluttered. Shipping on
+top of it would mean de-identified videos that are unreadable exactly when they matter:
+turns, closed position, shows, low light. **Do not build the feature on these models.**
+
+Options, if L3 is picked up again:
+1. **A real multi-person instance-segmentation model.** Detecting each person by the whole
+   body also gives two colours, lead and follow. Check the licence first: the popular
+   Ultralytics YOLO-seg models are AGPL-3.0, which would force the app open. Apache-2.0
+   candidates such as RTMDet-Ins need converting to TFLite/LiteRT. Several days, with
+   another quality spike on the same four clips before committing.
+2. **Ship narrowly on the current pipeline.** Multiclass with the cleanup, labelled "works
+   best on bright, close, uncluttered video", plus a preview before saving. It is honest,
+   but it is only useful for clip-2-like footage, and the speed stays at ~10× unless the GPU
+   delegate is made to work.
+3. **Park L3.** Transcoding and the fail-closed renderer are the reusable part, and they
+   live on the spike branch.
+
+#### Model search and desktop comparison (2026-09-24) — go for detect-then-track
+
+The search followed option 1. Requirements:
+- whole-body and multi-person
+- a permissive licence
+- an Android path
+- stable over time, because flicker was the main complaint
+
+Quality was the open question, so it was settled **on the desktop in Python** before any
+Android porting. The same four clips were used, with the same fail-closed two-colour
+renderer. The clips were copied off the phone with the user's consent and only silhouette
+outputs were inspected. Scripts: `deid.py`, `edgetam_eval.py`, `agree.py` in the session
+scratch folder. They are not in the repo; recreate them from this description if needed.
+
+**Ruled out before testing:**
+- **ML Kit Subject Segmentation** merges touching subjects, which fails closed position,
+  and takes ~200 ms per frame.
+- **Ultralytics YOLO-seg** is AGPL-3.0, which would force the app open.
+- **YOLO-NAS** weights are licensed for non-commercial use only.
+
+**Tested:**
+
+| Approach | Clip 1 | Clip 2 | Clip 3 | Clip 4 |
+|---|---|---|---|---|
+| A: RF-DETR-Seg Small per frame + two-slot tracker (IoU follow, centre-prior acquire, ±2-frame vote) | 94% of frames show both dancers. The colours swap in closed position, and later the follow is hidden behind the lead, so the tracker takes a spectator blob. | 99.5% | 96% | 96% |
+| **B: RF-DETR-Seg picks the couple once on frame 0, EdgeTAM tracks both** | **100%, identities stable, no spectators** | **100%** | **100%** | **100%** |
+
+- [RF-DETR-Seg](https://github.com/roboflow/rf-detr) is Apache-2.0 and detects people by
+  the whole body, each as its own instance. Clip 1 has a median of 11 people per frame, and
+  the centre prior still picks the couple.
+- [EdgeTAM](https://github.com/facebookresearch/EdgeTAM) is Meta's on-device SAM 2,
+  Apache-2.0. Its memory across frames is what fixes identity through overlaps: on clips
+  2-4 it agrees with A on who's who in every frame where A shows both dancers, and it also
+  fills the frames A dropped.
+- Low light (clip 3), which defeated every MediaPipe model, is solid with both approaches.
+- **Setup note:** EdgeTAM on PyTorch 2.14 needs `.view` → `.reshape` in
+  `sam2/modeling/perceiver.py:298` for more than one tracked object.
+
+**Decision: port B (RF-DETR once + EdgeTAM every frame) to Android.**
+- RF-DETR has a proven LiteRT GPU path: a community Nano port runs at ~110 ms per frame on
+  a Pixel 8a, and it only runs once per clip anyway.
+- EdgeTAM is the risk. It is three networks (1024×1024 image encoder, memory encoder,
+  decoder with memory attention) plus the memory bank in Kotlin. Meta reports 16 fps on an
+  iPhone 15 Pro Max; the ready-made Qualcomm AI Hub exports target Snapdragon, not the
+  Pixel's Tensor chip.
+- **First milestone: convert EdgeTAM to LiteRT and measure per-frame latency on the Pixel
+  before building anything around it.**
+- Fallback if EdgeTAM cannot be made fast enough on the phone: port A alone, accepting
+  occasional identity swaps.
+
+**Also requested:**
+- A trim UI: a draggable window of at most 30 s over the seek bar, which replaces the fixed
+  "first 30 s".
+- A provider seam, so an external service (for example Viggle) can sit beside the
+  on-device pipeline. Any external provider brings back the consent, cost and store-policy
+  requirements described above.
+
+#### On-device port (2026-09-24/25): works on a Pixel 10a
+
+Branch `spike/l3-silhouette`, commits `1c8ec35`, `c1352a7` and `c4a60f3`.
+
+**Pipeline:**
+1. The user taps both dancers on the first frame of a trim window of at most 30 s.
+2. EdgeTAM tracks them on the GPU.
+3. While a dancer is lost at a crossing, RF-DETR-Seg re-anchors her (CPU, occasional).
+4. Output is a two-colour 720p silhouette, drawn only from masks (fail-closed), with
+   guided-filter edges and ±2-frame smoothing.
+
+On clip 1's crossing, the phone's dancer mask area now follows the desktop PyTorch
+reference closely.
+
+**Where the models come from:**
+- EdgeTAM's LiteRT graphs are converted with an adapted copy of john-rocky/LiteRT-Models'
+  script (MIT), in `modules/video-deidentify/scripts/convert_edgetam_video.py`. The port's
+  published model files are no longer public.
+- RF-DETR is exported with `rfdetr`'s own TFLite export (`scripts/export_rfdetr.py`).
+- Both are gitignored.
+
+**Pitfalls found.** Each looked plausible and was wrong until it was *measured*. The measuring
+tools:
+- The phone logs per-frame mask areas, in chunks because logcat truncates at ~4000 chars.
+- A Python replica of the phone pipeline on the same `.tflite` files reproduces a run from its
+  taps and its kept transcode.
+
+| Symptom on the phone | Cause | Fix |
+|---|---|---|
+| Correct first frame, then noise | After the transformers-5 rope fix, memcond had ops with only constant inputs, which the GPU delegate computes wrongly without rejecting them | Bake the finished rope tables in the conversion |
+| A hidden dancer never came back; the other track grew over both | The port wrote hard 0/1 masks into memory on every frame; SAM 2 writes soft masks on tracking frames | Soft memory masks |
+| After a crossing the dancer came back unsteadily | The front dancer's track learned the hidden one's body | SAM 2's `non_overlap_masks_for_mem_enc` |
+| She shrank early at the crossing | The image encoder in fp16 on the GPU. The phone's encoder input matched the desktop's (mean diff 0.6/255), so it was arithmetic, not pixels | Encoder in fp32 (+~0.1 s/frame). fp32 for the tracking graphs changed nothing (+0.7 s/frame) |
+| She still came back ~0.6 s late | Re-finding her from memory alone is slow and chaotic at a crossing; tiny numeric differences decided it | Re-anchoring with RF-DETR (see below) |
+| Limbs blinked near the threshold | Frame-to-frame jitter | ±2-frame weighted average when drawing (memory untouched) |
+
+Also tried, and without effect: the model's "occlusion" embedding (absent in this checkpoint),
+keeping only good frames in memory (the dancer is never declared absent once the fixes above
+are in), and a mask start instead of a tap (~14% closer to the reference on the desktop; not
+worth it on its own).
+
+**Re-anchoring (detect then track):**
+- A dancer counts as *weak* while her mask is under 50% of her usual area.
+- While she's weak, every 3 frames, a person near her last clear position, at least 40% of her
+  size and less than 30% covered by the other dancer is handed to EdgeTAM as a correction.
+  This is SAM 2's `add_new_mask` on a tracked frame, which makes it a conditioning memory.
+- On clip 1 it fired exactly twice: at the early drop and at the re-emergence.
+
+**Cost on a Pixel 10a:** ~1.5 s per frame, so ~22 min for 30 s. Of that:
+- ~0.7 s is the models: encode 0.19, memcond 0.31, decode 0.10, memorize 0.11
+- **~0.75 s is Kotlin glue**: edge refinement, resampling, memory assembly
+- RF-DETR costs ~2.9 s per call, but only during weak phases (6 calls in 190 frames)
+
+The debug APK carries every model tried; a release needs only EdgeTAM plus RF-DETR,
+about 125 MB of fp16 weights.
+
+This section's cost and open items are superseded by the next section.
+
+#### Arms and speed (2026-09-25/26)
+
+Commits `cfb6446` to `f4fdbb7`.
+
+**Arms.** A silhouette cannot show an arm in front of the same body: it's the same colour. At
+overlaps, the masks cannot say who is in front, because EdgeTAM "completes" a body behind an
+occluding arm, so both masks claim the arm. What was tried, and what stayed:
+
+| Tried | Result |
+|---|---|
+| "Whoever moves onto the other's area is in front" | Removed: fails when a dancer passes *behind* |
+| Outlines per dancer, pale colours, 3 px, over both fills | Kept: shapes stay readable whoever wins the fill |
+| Re-anchoring corrections as permanent conditioning frames | Changed: a correction whose 96×96 RF-DETR mask held a sliver of the partner made the leader swallow the follower's arm for the rest of the clip. Corrections now expire after 15 frames and exclude the partner's current pixels |
+| Guided edge filter replacing the mask | Changed: it averaged thin limbs (a raised forearm) away. It may now only add to the plain mask |
+| **Pose skeleton per dancer** | Kept; see below |
+
+How the pose skeleton works (`PoseSkeletons.kt`):
+- MediaPipe PoseLandmarker, already in the app, runs one VIDEO-mode tracker per dancer.
+- Each dancer's input is a cut-out from her tracked mask with 25% margin, with pixels only the
+  partner claims greyed out. Without the greying, the follower's skeleton jumped onto the leader
+  in closed position.
+- The previous frame's arms arbitrate where masks overlap: never grey near her own arms, always
+  grey near the partner's. Without this, the leader's model took her arm as his second.
+- Drawing: along every clearly visible upper arm or forearm, an arm-width band (derived from
+  shoulder width) is filled in the dancer's colour and outlined. Over the partner the arm shows
+  in front; over the own torso its outline does. Bones and wrist/ankle dots are drawn in the
+  outline colour, with joints averaged over ±2 frames like the masks.
+
+On clip 1 the follower's arm to the joined hands now shows over the leader. At the moment her
+hand is on his shoulder, neither is visible in the original either, so nothing is drawn there,
+which is correct.
+
+**Speed on a Pixel 10a** (ms per frame, clip 1):
+
+| Stage | Before | Loops fixed | + worker thread | + 15 fps |
+|---|---|---|---|---|
+| Models | 764 | 722 | 724 | per tracked frame |
+| Kotlin glue | 385 | 150 | 154 | ½ of frames |
+| Drawing | 831 | 293 | 260 (hidden) | hidden |
+| Pose, 2 dancers | 184 | 83 | 87 | 104–152 |
+| **Total per frame** | **2,080** | **1,244** | **1,077** | **~640** |
+| 30 s clip | ~31 min | ~21 min | ~18 min | **~12 min** |
+
+What the columns changed:
+- **Loops fixed:** `parallelFor` over rows and columns, a sigmoid lookup table, ImageNet
+  normalisation by lookup table, precomputed bilinear resampling, the guided filter in its fast
+  form (coefficients at half resolution), outlines by separable erosion, arm bands limited to
+  their bounding box, and reused buffers.
+- **Worker thread:** `SilhouetteDrawer` draws frame *n* on a worker thread while the GPU tracks
+  frame *n+1*. Each job gets a snapshot of its window and its own buffers; at most 3 are in
+  flight.
+- **15 fps:** `trackEvery = 2`, now the default. The frames between two tracked frames get
+  linearly interpolated logits, and EdgeTAM's memory counts tracked frames as consecutive. The
+  user saw the same quality on clips 1 and 4.
+
+Further levers, each smaller than those above:
+- pose on every second frame, with joints interpolated
+- converting the tracking graphs with batch 2, so both dancers go in one call
+
+The open items moved to the next section.
+
+#### In the app (2026-09-26)
+
+Commits `fb22189` to `0a6feb4`. The dev panel is gone; the feature lives in a pattern's videos.
+
+**Where it is:**
+- **Edit Pattern → Videos → "Edit video"** (the button next to '+'). Pick one of the pattern's
+  local videos, or one from the gallery (it is added to the pattern first). A sheet shows the
+  video with a trim bar over the whole clip.
+  - **Shorten** cuts the selection at the source's size, audio kept. It needs no taps and has no
+    length cap: a separate feature that happens to share the Media3 pass (`shortenVideo.ts`,
+    `height: 0` keeps the size).
+  - **De-identify** is enabled once the selection fits the provider (1–30 s). The tap step then
+    offers **one dancer or a couple** (`minPromptCount: 1`); the native side was already sized by
+    the number of taps. A video that already is a silhouette can only be shortened, and keeps its
+    provenance.
+- **Pattern list → '+'**: *New pattern*, *From a video* (gallery) and *Record a video* (system
+  camera, via `ImagePicker.launchCameraAsync`). The video seeds the new pattern's form; after
+  saving, "Edit the video?" opens the same sheet — unless a job on that video was already started
+  from the form.
+- A **banner** on the pattern list reports each job; a line links to its pattern (select, open
+  details, scroll to it) when that pattern is in the active list.
+
+**Data:** `IVideoReference.generated = { method, createdAt }` marks a video the app made; export
+format 3.1.0 carries it, and `validateExportData` drops only a malformed field. Generated videos
+show a "Silhouette" badge. A finished job **replaces** the source in the pattern; the original
+stays in the gallery. Picked and recorded videos are now copied into the document directory
+(`persistVideo`) — the picker's cache URIs could vanish, a latent bug for every picked video.
+
+**Background jobs** (`src/deidentify/jobs/jobStore.ts`):
+- A module-level store, not component state. On the phone Android destroyed and recreated the
+  activity mid-run, in the same process: jobs held in React state vanished with the old tree,
+  while the native run carried on and would have written that tree's stale pattern snapshot back.
+- One job at a time (two pipelines do not fit in memory), screen kept awake (`expo-keep-awake`).
+- A job finds its video **by URI** across the list, so it works for a pattern not yet saved. A
+  finished result goes through the attach handler of the *currently mounted* tree
+  (`DeidentifyJobsProvider`, merging with the active list in memory), or straight to storage for
+  another list. `applyReplacements` swaps it into drafts saved later, and an open edit form swaps
+  it in live.
+
+**Pitfalls found:**
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| The trim bar could not be dragged | A React Native `Modal` renders outside the drawer's `GestureHandlerRootView`; an RNGH pan inside never activates on Android | The sheet mounts its own root (noted in `src/pattern/graph/AGENTS.md`) |
+| Dragging near the sheet's edge went "back" | The sheet is not inside `PageContainer`, so its content reached Android's 20 dp back-gesture band | Horizontal padding `SCREEN_EDGE_INSET + 16` |
+| A job "was cancelled", the app "crashed" | The activity was destroyed and recreated four times in one process; the final crash was LogBox dismissing on the dead activity after Metro hot-reloaded half-edited files mid-test | The job store above; don't edit while the user tests |
+| Recording would terminate the app on iOS | `expo-camera`'s `microphonePermission: false` deletes `NSMicrophoneUsageDescription`, and its mods run after `expo-image-picker`'s | Both plugins carry the strings; Android keeps `RECORD_AUDIO` blocked (the camera app records the audio) — see root `AGENTS.md` |
+
+**Removed:** the spike's per-frame method ("On this device": selfie-multiclass, DeepLab, pose
+masks, `MaskCleanup`) and its two models (~18 MB). It lost dancers in closed position. Tracking is
+the only provider; with one, the editor shows no method picker.
+
+**Runs on a Pixel 10a** with these defaults: a couple, 7 s, 0.74 s/frame, both dancers in all 212
+frames, 2 re-anchors; one dancer, 13.4 s, 0.49 s/frame, found in all 400 frames, 2 re-anchors at
+the start. Java heap sat at its 256 MB cap during an earlier run while the system killed other
+apps — watch it on clips near 30 s.
+
+**Debug options removed** (2026-09-26): the tuning is now constants in the pipeline —
+`FP32_GRAPHS = {encode}` (EdgeTamTracker), `TRACK_EVERY = 2` and guided edges (EdgeTamSegmenter)
+— and the per-graph CPU forcing, the frame cap, the kept transcode and the encoder-input dump are
+gone. Dev builds still log each run's per-frame stats (`[deidentify]` chunks). Replaying a phone
+run on the desktop replica needs its transcode, so that means temporarily re-adding the keep.
+
+**Open:**
+- **iOS**: the native module is Android-only (Vision person segmentation or a Core ML EdgeTAM port
+  would be the route; needs a Mac/EAS build). Today the editor button is simply absent there.
+- **Consent UI and a remote provider** (e.g. Viggle): `runDeidentify` already refuses
+  `sendsFootageOffDevice` without a recorded consent; the step that records it does not exist.
+- A job lives only as long as the process; if Android kills the app mid-run the job is lost (the
+  original video is untouched). A foreground service would fix it.
+- A banner line for a job in another list is plain text; opening would need switching lists.
+- Release size: only EdgeTAM, RF-DETR and the pose model are packaged now (~130 MB of weights).
+
+---
+
+### L4 — Transcripts of what teachers say in a video
+
+> *"Dance teachers often say things during their demonstration that could inform the pattern
+> description."*
+
+Not started; this records the idea and the constraints known so far.
+
+**Shape of the feature.**
+- For a pattern's local video, transcribe the speech and show it with timestamps.
+- Let the user pick the sentences worth keeping and add them to the description. Tapping a line
+  seeks the video there.
+- Never write into the description automatically: teachers ramble, count out loud and joke, and
+  the description is the user's.
+
+**Constraints that follow from L3:**
+- **Voices are personal data too.** Transcribe on the device, like the silhouettes. A remote
+  speech-to-text service brings back everything in L3's consent and store-policy notes
+  (Apple 5.1.2(i), GDPR).
+- **Transcribe from the source, not from the de-identified copy.** L3's output drops audio on
+  purpose, since voices identify people. So the transcript should be made before, or
+  independently of, de-identification, and it is only text.
+- **Languages:** the app ships nine; teachers speak whatever they speak, often with dance jargon
+  ("anchor", "sugar push") that general models mangle. The model must be multilingual and
+  detect the language.
+
+**Candidates to check when this is picked up** (verify the current state then):
+- **Whisper tiny/base** (MIT) on-device. There are LiteRT conversions (e.g. under
+  `litert-community` on Hugging Face) and `whisper.cpp` ports for Android. It's multilingual, has
+  timestamps, and runs faster than real time for tiny/base on a recent phone.
+- **Android's on-device `SpeechRecognizer`:** free and small, but built for live microphone
+  input, not for files; unclear for recorded clips.
+
+A summarising step ("turn this transcript into a description") would need an LLM. On-device
+options are limited; a remote one needs consent. It's a separate, later step.
+
+**Open questions:** whether the transcript should be stored with the pattern (and so exported
+and shared), or only used transiently while editing the description. Storing it means another
+`IVideoReference` extension and a format bump, like L3's `generated` field.
 
 ---
 

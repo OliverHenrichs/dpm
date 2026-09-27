@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
+import { IconButton } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { PaletteColor } from "@/src/common/utils/ColorPalette";
+import { Icon } from "@/src/common/ui/Icon";
 import {
   dismissDragHint,
   isDragHintDismissed,
@@ -11,7 +12,6 @@ import {
 interface GraphDragHintProps {
   /** Only the network view can be rearranged; the timeline is algorithmic. */
   visible: boolean;
-  palette: Record<PaletteColor, string>;
 }
 
 /**
@@ -23,7 +23,8 @@ interface GraphDragHintProps {
  * items?". Dismissible, and the dismissal sticks, because it only needs
  * saying once.
  */
-const GraphDragHint: React.FC<GraphDragHintProps> = ({ visible, palette }) => {
+const GraphDragHint: React.FC<GraphDragHintProps> = ({ visible }) => {
+  const { theme } = useUnistyles();
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(true);
 
@@ -39,8 +40,6 @@ const GraphDragHint: React.FC<GraphDragHintProps> = ({ visible, palette }) => {
 
   if (!visible || dismissed) return null;
 
-  const styles = getStyles(palette);
-
   const dismiss = () => {
     setDismissed(true);
     void dismissDragHint();
@@ -48,44 +47,34 @@ const GraphDragHint: React.FC<GraphDragHintProps> = ({ visible, palette }) => {
 
   return (
     <View style={styles.bar}>
-      <Icon
-        name="gesture-tap-hold"
-        size={18}
-        color={palette[PaletteColor.Primary]}
-      />
+      <Icon name="gesture-tap-hold" size={18} color={theme.colors.primary} />
       <Text style={styles.text}>{t("graphDragHint")}</Text>
-      <TouchableOpacity
+      <IconButton
+        icon="close"
+        size={18}
         onPress={dismiss}
-        style={styles.dismissButton}
-        accessibilityRole="button"
         accessibilityLabel={t("dismissHint")}
-      >
-        <Icon name="close" size={18} color={palette[PaletteColor.Primary]} />
-      </TouchableOpacity>
+      />
     </View>
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    bar: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      backgroundColor: palette[PaletteColor.Surface],
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: palette[PaletteColor.Border],
-    },
-    text: {
-      flex: 1,
-      fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
-    },
-    dismissButton: {
-      padding: 4,
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  bar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.md,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+  },
+  text: {
+    ...theme.typography.caption,
+    flex: 1,
+    color: theme.colors.textMuted,
+  },
+}));
 
 export default GraphDragHint;

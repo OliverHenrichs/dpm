@@ -265,6 +265,24 @@ describe("export → import round trip", () => {
       expect(readFileBytes(restored.value)).toEqual(videoBytes(1));
     });
 
+    it("keeps a generated video's provenance through the trip", async () => {
+      seedBinaryFile(VIDEO_A, videoBytes(1));
+      const generated = {
+        method: "on-device-tracking",
+        createdAt: 1_790_000_000_000,
+      };
+      const pattern = createTestPattern(TYPE.id, {
+        id: 1,
+        videoRefs: [{ ...localRef(VIDEO_A), generated }],
+      });
+
+      const { importResult } = await roundTrip([listWith([pattern])]);
+
+      const [restored] = importResult.patternLists![0].patterns[0].videoRefs;
+      expect(restored.generated).toEqual(generated);
+      expect(readFileBytes(restored.value)).toEqual(videoBytes(1));
+    });
+
     it("leaves URL videos untouched, start time included", async () => {
       const refs = [
         urlRef("https://youtu.be/abc123", 42),

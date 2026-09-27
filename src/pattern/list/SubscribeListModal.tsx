@@ -1,18 +1,12 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { ActivityIndicator, Modal, Text, TextInput, View } from "react-native";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
+import { Button, IconButton } from "@/src/common/ui";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { alpha } from "@/src/common/theme/tokens";
+import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
 import { useCameraPermissions } from "expo-camera";
-import { getPalette, PaletteColor } from "@/src/common/utils/ColorPalette";
-import { useThemeContext } from "@/src/common/components/ThemeContext";
 import QrCodeScanner from "@/src/common/components/QrCodeScanner";
 import { fetchSharedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
@@ -34,9 +28,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
   onSubscribe,
 }) => {
   const { t } = useTranslation();
-  const { colorScheme } = useThemeContext();
-  const palette = getPalette(colorScheme);
-  const styles = getStyles(palette);
+  const { theme } = useUnistyles();
 
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -147,7 +139,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
         transparent
         onRequestClose={handleClose}
       >
-        <View style={styles.overlay}>
+        <ModalOverlay>
           <View style={styles.card}>
             <Text style={styles.title}>{t("subscribeToList")}</Text>
 
@@ -156,7 +148,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                 <Icon
                   name="alert-circle-outline"
                   size={18}
-                  color={palette[PaletteColor.Error]}
+                  color={theme.colors.danger}
                 />
                 <Text style={styles.warningText}>
                   {t("sharingNotAvailable")}
@@ -177,37 +169,29 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                       setPreview(null);
                     }}
                     placeholder="ABC12345"
-                    placeholderTextColor={palette[PaletteColor.SecondaryText]}
+                    placeholderTextColor={theme.colors.textMuted}
                     autoCapitalize="characters"
                     maxLength={8}
                     returnKeyType="search"
                     onSubmitEditing={handleLookup}
                   />
-                  <TouchableOpacity
-                    style={styles.lookupButton}
+                  <IconButton
+                    icon="qrcode-scan"
+                    variant="filled"
+                    size={theme.iconSize.md}
                     onPress={handleScanPress}
                     accessibilityLabel={t("scanQrCode")}
-                  >
-                    <Icon
-                      name="qrcode-scan"
-                      size={20}
-                      color={palette[PaletteColor.Surface]}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.lookupButton,
-                      code.trim().length !== 8 && styles.lookupButtonDisabled,
-                    ]}
+                    style={styles.lookupButton}
+                  />
+                  <IconButton
+                    icon="magnify"
+                    variant="filled"
+                    size={theme.iconSize.md}
                     onPress={handleLookup}
                     disabled={code.trim().length !== 8 || isLoading}
-                  >
-                    <Icon
-                      name="magnify"
-                      size={20}
-                      color={palette[PaletteColor.Surface]}
-                    />
-                  </TouchableOpacity>
+                    accessibilityLabel={t("lookUpList")}
+                    style={styles.lookupButton}
+                  />
                 </View>
 
                 {error && <Text style={styles.errorText}>{error}</Text>}
@@ -215,7 +199,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                 {isLoading && (
                   <ActivityIndicator
                     size="small"
-                    color={palette[PaletteColor.Primary]}
+                    color={theme.colors.primary}
                     style={styles.spinner}
                   />
                 )}
@@ -225,7 +209,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     <Icon
                       name="cloud-check-outline"
                       size={20}
-                      color={palette[PaletteColor.Accent]}
+                      color={theme.colors.success}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.previewName}>{preview.name}</Text>
@@ -239,29 +223,23 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
             )}
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.cancelButton}
+              <Button
+                title={t("cancel")}
+                variant="secondary"
                 onPress={handleClose}
-              >
-                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-              </TouchableOpacity>
+                style={styles.footerButton}
+              />
               {firebaseAvailable && (
-                <TouchableOpacity
-                  style={[
-                    styles.confirmButton,
-                    !preview && styles.confirmButtonDisabled,
-                  ]}
+                <Button
+                  title={t("subscribeConfirm")}
                   onPress={handleConfirm}
                   disabled={!preview}
-                >
-                  <Text style={styles.confirmButtonText}>
-                    {t("subscribeConfirm")}
-                  </Text>
-                </TouchableOpacity>
+                  style={styles.footerButton}
+                />
               )}
             </View>
           </View>
-        </View>
+        </ModalOverlay>
       </Modal>
 
       {/* ── QR code scanner ───────────────────────────────────────────── */}
@@ -275,136 +253,91 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
   );
 };
 
-const getStyles = (palette: Record<PaletteColor, string>) =>
-  StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    card: {
-      backgroundColor: palette[PaletteColor.Surface],
-      borderRadius: 16,
-      padding: 24,
-      width: "100%",
-      maxWidth: 420,
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: palette[PaletteColor.PrimaryText],
-      marginBottom: 16,
-    },
-    label: {
-      fontSize: 13,
-      fontWeight: "600",
-      color: palette[PaletteColor.SecondaryText],
-      marginBottom: 8,
-    },
-    inputRow: {
-      flexDirection: "row",
-      gap: 10,
-      marginBottom: 8,
-    },
-    input: {
-      flex: 1,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-      backgroundColor: palette[PaletteColor.Background],
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      fontSize: 20,
-      fontWeight: "bold",
-      letterSpacing: 3,
-      color: palette[PaletteColor.PrimaryText],
-    },
-    lookupButton: {
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      paddingHorizontal: 14,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    lookupButtonDisabled: {
-      opacity: 0.4,
-    },
-    errorText: {
-      color: palette[PaletteColor.Error],
-      fontSize: 13,
-      marginBottom: 8,
-    },
-    spinner: {
-      marginVertical: 8,
-    },
-    previewBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      backgroundColor: palette[PaletteColor.TagBg],
-      borderRadius: 8,
-      padding: 12,
-      marginTop: 8,
-      marginBottom: 4,
-    },
-    previewName: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
-    },
-    previewMeta: {
-      fontSize: 12,
-      color: palette[PaletteColor.SecondaryText],
-    },
-    warningBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      backgroundColor: palette[PaletteColor.Error] + "15",
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 16,
-    },
-    warningText: {
-      flex: 1,
-      fontSize: 13,
-      color: palette[PaletteColor.Error],
-    },
-    buttonRow: {
-      flexDirection: "row",
-      gap: 10,
-      marginTop: 20,
-    },
-    cancelButton: {
-      flex: 1,
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: palette[PaletteColor.Border],
-    },
-    cancelButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.PrimaryText],
-    },
-    confirmButton: {
-      flex: 1,
-      backgroundColor: palette[PaletteColor.Primary],
-      borderRadius: 8,
-      padding: 14,
-      alignItems: "center",
-    },
-    confirmButtonDisabled: {
-      opacity: 0.4,
-    },
-    confirmButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: palette[PaletteColor.Surface],
-    },
-  });
+const styles = StyleSheet.create((theme) => ({
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+    maxWidth: 420,
+  },
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+    marginBottom: theme.space.lg,
+  },
+  label: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+  },
+  inputRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+    marginBottom: theme.space.sm,
+  },
+  input: {
+    ...theme.typography.headline,
+    flex: 1,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+    letterSpacing: 3,
+    color: theme.colors.text,
+  },
+  lookupButton: {
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.lg,
+  },
+  errorText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.danger,
+    marginBottom: theme.space.sm,
+  },
+  spinner: {
+    marginVertical: theme.space.sm,
+  },
+  previewBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.md,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    marginTop: theme.space.sm,
+    marginBottom: theme.space.xs,
+  },
+  previewName: {
+    ...theme.typography.label,
+    color: theme.colors.text,
+  },
+  previewMeta: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+  },
+  warningBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+    backgroundColor: alpha(theme.colors.danger, 0.08),
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    marginBottom: theme.space.lg,
+  },
+  warningText: {
+    ...theme.typography.bodySmall,
+    flex: 1,
+    color: theme.colors.danger,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: theme.space.md,
+    marginTop: theme.space.xl,
+  },
+  footerButton: { flex: 1 },
+}));
 
 export default SubscribeListModal;

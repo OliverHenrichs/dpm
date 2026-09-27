@@ -1,3 +1,4 @@
+import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
 import { useCallback, useMemo } from "react";
 import {
   IModifier,
@@ -95,7 +96,7 @@ export function usePatternCrud(): PatternCrud {
     async (pattern: NewPattern) => {
       if (isReadonly || !pattern.name.trim()) return false;
       const newPattern: IPattern = {
-        ...pattern,
+        ...applyReplacements(pattern),
         id: nextPatternId(activeList, patterns),
       };
       await commitPatterns([...patterns, newPattern]);
@@ -111,8 +112,11 @@ export function usePatternCrud(): PatternCrud {
         console.error("Cannot edit pattern without id");
         return false;
       }
+      // A draft opened before a de-identification job finished still holds the original
+      // video; saving it must not put the original back.
+      const updated = applyReplacements(pattern as IPattern);
       await commitPatterns(
-        patterns.map((p) => (p.id === pattern.id ? (pattern as IPattern) : p)),
+        patterns.map((p) => (p.id === updated.id ? updated : p)),
       );
       return true;
     },
