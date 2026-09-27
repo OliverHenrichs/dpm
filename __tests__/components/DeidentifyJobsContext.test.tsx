@@ -8,12 +8,32 @@ import {
 import { clearReplacements } from "@/src/deidentify/jobs/replaceVideo";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { DeidentifyProvider } from "@/src/deidentify/providers/DeidentifyProvider";
-import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
+import {
+  IPattern,
+  IPatternList,
+  IVideoTranscript,
+} from "@/src/pattern/types/IPatternList";
+import { transcribeVideo } from "@/src/transcribe/transcribeVideo";
 import {
   createTestPattern,
   createTestPatternList,
 } from "@/utils/testFactories";
 import { act, renderWithProviders, waitFor } from "@/utils/renderWithProviders";
+
+// The engine has its own suite; here a job only needs its outcome.
+jest.mock("@/src/transcribe/transcribeVideo", () => ({
+  transcribeVideo: jest.fn(),
+}));
+const mockedTranscribe = transcribeVideo as jest.MockedFunction<
+  typeof transcribeVideo
+>;
+
+const TRANSCRIPT: IVideoTranscript = {
+  language: "en",
+  model: "whisper-base-q5_1",
+  createdAt: 1,
+  segments: [{ start: 0.5, end: 2, text: "Anchor on five and six." }],
+};
 
 const SOURCE = "file:///document/video-src.mp4";
 const OUTPUT = "file:///cache/deidentified-out.mp4";
@@ -163,5 +183,93 @@ describe("DeidentifyJobsProvider", () => {
     act(() => jobs.dismissFinished());
 
     expect(jobs.jobs).toEqual([]);
+  });
+});
+
+describe("transcription jobs (L4)", () => {
+  const startTranscribe = (listId: string) =>
+    act(() =>
+      jobs.start({
+        kind: "transcribe",
+        listId,
+        patternName: "Sugar Push",
+        request: { sourceUri: SOURCE, vocabulary: "Sugar Push." },
+      }),
+    );
+
+  it("puts the transcript on the same video, keeping the video", async () => {
+    mockedTranscribe.mockReturnValue({
+      promise: Promise.resolve({
+        transcript: TRANSCRIPT,
+        timing: {
+          audioSeconds: 3,
+          speechSeconds: 2,
+          regions: 1,
+          extractMs: 1,
+          transcribeMs: 1,
+        },
+      }),
+      stop: jest.fn(),
+    });
+    const { list } = setup();
+    await waitFor(async () =>
+      expect(await storedPatterns(list.id)).toHaveLength(1),
+    );
+
+    await startTranscribe(list.id);
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    expect(jobs.jobs[0].resultUri).toBe(SOURCE);
+    expect(mockedTranscribe).toHaveBeenCalledWith(
+      SOURCE,
+      expect.objectContaining({ prompt: "Sugar Push." }),
+    );
+    const [saved] = await storedPatterns(list.id);
+    expect(saved.videoRefs).toEqual([
+      { type: "local", value: SOURCE, transcript: TRANSCRIPT },
+    ]);
+  });
+
+  it("reports a video without sound, and leaves the pattern alone", async () => {
+    mockedTranscribe.mockReturnValue({
+      promise: Promise.reject(new Error("The video has no sound")),
+      stop: jest.fn(),
+    });
+    const { list } = setup();
+
+    await startTranscribe(list.id);
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("failed"));
+    expect(jobs.jobs[0].error).toBe("The video has no sound");
+    expect((await storedPatterns(list.id))[0].videoRefs[0]).toEqual({
+      type: "local",
+      value: SOURCE,
+    });
+  });
+
+  it("carries a transcript over when the video is de-identified", async () => {
+    const list = createTestPatternList();
+    const pattern = createTestPattern("t", {
+      id: 1,
+      name: "Sugar Push",
+      videoRefs: [{ type: "local", value: SOURCE, transcript: TRANSCRIPT }],
+    });
+    renderWithProviders(
+      <DeidentifyJobsProvider>
+        <Probe />
+      </DeidentifyJobsProvider>,
+      { lists: [list], patterns: { [list.id]: [pattern] } },
+    );
+    await waitFor(async () =>
+      expect(await storedPatterns(list.id)).toHaveLength(1),
+    );
+
+    await startJob(list.id);
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    const [saved] = await storedPatterns(list.id);
+    expect(saved.videoRefs[0].value).toMatch(/deidentified-/);
+    // What was said is still what was said, though a silhouette has no sound.
+    expect(saved.videoRefs[0].transcript).toEqual(TRANSCRIPT);
   });
 });

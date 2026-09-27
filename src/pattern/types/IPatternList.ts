@@ -76,6 +76,30 @@ export interface IVideoReference {
   startTime?: number; // Optional start time in seconds (URL-type videos only)
   /** Set on a video the app made from another — e.g. de-identified silhouettes (L3). */
   generated?: IGeneratedVideo;
+  /**
+   * What is said in the video, transcribed on the device (L4). Kept out of exports and shared
+   * lists: it is someone's words, often said off-hand.
+   */
+  transcript?: IVideoTranscript;
+}
+
+/** A transcript of a video's speech (L4). */
+export interface IVideoTranscript {
+  /** ISO 639-1 code, as detected or chosen. */
+  language: string;
+  /** Which model made it, e.g. "whisper-base-q5_1" — to know what re-running would change. */
+  model: string;
+  /** Epoch milliseconds. */
+  createdAt: number;
+  /** In playback order. Empty when the video has sound but no speech. */
+  segments: ITranscriptSegment[];
+}
+
+export interface ITranscriptSegment {
+  /** Seconds from the start of the video. */
+  start: number;
+  end: number;
+  text: string;
 }
 
 /** Provenance of a video the app generated; shown as a badge, carried through export. */

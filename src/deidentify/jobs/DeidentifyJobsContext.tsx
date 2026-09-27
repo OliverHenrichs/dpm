@@ -37,11 +37,11 @@ export const DeidentifyJobsProvider: React.FC<PropsWithChildren> = ({
 
   useEffect(
     () =>
-      jobStore.setAttachHandler(async (listId, oldUri, ref) => {
+      jobStore.setAttachHandler(async (listId, oldUri, update) => {
         const now = latest.current;
         if (now.activeList?.id !== listId) return false;
         await now.updatePatterns(
-          now.patterns.map((p) => replaceVideoInPattern(p, oldUri, ref)),
+          now.patterns.map((p) => replaceVideoInPattern(p, oldUri, update)),
         );
         return true;
       }),
