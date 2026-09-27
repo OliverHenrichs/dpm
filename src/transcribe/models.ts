@@ -35,3 +35,8 @@ export const TRANSCRIPTION_DOWNLOAD_BYTES = TRANSCRIPTION_MODELS.reduce(
   (sum, m) => sum + m.bytes,
   0,
 );
+
+/** The download in whole megabytes, for the size notice. */
+export const TRANSCRIPTION_DOWNLOAD_MB = Math.round(
+  TRANSCRIPTION_DOWNLOAD_BYTES / 1_000_000,
+);

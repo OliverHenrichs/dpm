@@ -67,6 +67,9 @@ export type JobsApi = {
   start: (job: StartJob) => void;
   /** Removes finished and failed jobs from the list. */
   dismissFinished: () => void;
+  /** Cancels a queued job or a running transcription; see `jobStore.cancel`. */
+  cancel: (id: string) => void;
+  canCancel: (job: DeidentifyJob) => boolean;
 };
 
 /** The jobs, live. Works without the provider; the provider only adds attach and keep-awake. */
@@ -80,5 +83,7 @@ export const useDeidentifyJobs = (): JobsApi => {
     jobs,
     start: jobStore.start,
     dismissFinished: jobStore.dismissFinished,
+    cancel: jobStore.cancel,
+    canCancel: jobStore.canCancel,
   };
 };

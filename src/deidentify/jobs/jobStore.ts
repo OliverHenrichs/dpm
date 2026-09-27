@@ -18,7 +18,15 @@ import {
   replaceVideoInPattern,
   VideoUpdate,
 } from "@/src/deidentify/jobs/replaceVideo";
-import { transcribeVideo } from "@/src/transcribe/transcribeVideo";
+import {
+  NoAudioError,
+  transcribeVideo,
+} from "@/src/transcribe/transcribeVideo";
+import {
+  ensureModels,
+  installedModels,
+  ModelDownloadError,
+} from "@/src/transcribe/modelStore";
 
 export type JobStatus = "queued" | "running" | "done" | "failed";
 
@@ -37,6 +45,8 @@ export type DeidentifyJob = {
   /** The video that replaced the source, once done — how the job's pattern is found again. */
   resultUri?: string;
   error?: string;
+  /** An i18n key for a failure the user can act on, shown instead of [error]. */
+  errorKey?: string;
 };
 
 type JobTarget = {
@@ -99,6 +109,10 @@ let jobs: DeidentifyJob[] = [];
 const listeners = new Set<() => void>();
 let queue: Promise<void> = Promise.resolve();
 let attachHandler: AttachHandler | null = null;
+/** Jobs the user cancelled before they ran; `run` skips them. */
+const cancelled = new Set<string>();
+/** How to stop the running job early, when its kind can be stopped. */
+let stopRunning: { id: string; stop: () => void } | null = null;
 
 const emit = () => listeners.forEach((l) => l());
 
@@ -144,6 +158,30 @@ export const jobStore = {
     return id;
   },
 
+  /**
+   * Cancels a job: a queued one never runs, and a running transcription stops. The other kinds
+   * cannot be stopped once running (the native pipeline has no stop), so they are left be.
+   * A cancelled job leaves the list at once.
+   */
+  cancel(id: string) {
+    const job = jobs.find((j) => j.id === id);
+    if (!job || !jobStore.canCancel(job)) return;
+    cancelled.add(id);
+    // A transcription still downloading its models has nothing to stop yet; it checks before
+    // it starts transcribing.
+    if (stopRunning?.id === id) stopRunning.stop();
+    jobs = jobs.filter((j) => j.id !== id);
+    emit();
+  },
+
+  /** Whether `cancel` would do anything for this job. */
+  canCancel(job: DeidentifyJob): boolean {
+    return (
+      job.status === "queued" ||
+      (job.status === "running" && job.kind === "transcribe")
+    );
+  },
+
   /** Removes finished and failed jobs. */
   dismissFinished() {
     jobs = jobs.filter((j) => j.status === "queued" || j.status === "running");
@@ -154,6 +192,7 @@ export const jobStore = {
   async reset() {
     await queue;
     jobs = [];
+    cancelled.clear();
     attachHandler = null;
     emit();
   },
@@ -210,16 +249,37 @@ async function process(
 }
 
 /**
+ * Share of a transcription job's progress that downloading the models takes, when they are
+ * missing: ~60 MB is seconds on Wi-Fi and a minute on a slow line. One count to 100% for the
+ * whole job — the user waits for the transcript, not for a stage.
+ */
+const DOWNLOAD_SHARE = 0.3;
+
+/**
  * Transcribes the job's video and puts the transcript on it — the same video, so nothing is
- * stored or replaced; whatever the reference already carries is kept.
+ * stored or replaced; whatever the reference already carries is kept. Downloads the models
+ * first when they are not on the device (the user agreed to that before starting the job).
  */
 async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
-  const { promise } = transcribeVideo(job.request.sourceUri, {
+  let base = 0;
+  if (!installedModels()) {
+    await ensureModels((f) => patch(id, { progress: f * DOWNLOAD_SHARE }));
+    base = DOWNLOAD_SHARE;
+  }
+  if (cancelled.delete(id)) return;
+  const { promise, stop } = transcribeVideo(job.request.sourceUri, {
     language: job.request.language,
     prompt: job.request.vocabulary,
-    onProgress: (fraction) => patch(id, { progress: fraction }),
+    onProgress: (fraction) =>
+      patch(id, { progress: base + fraction * (1 - base) }),
   });
-  const { transcript } = await promise;
+  stopRunning = { id, stop };
+  let transcript;
+  try {
+    ({ transcript } = await promise);
+  } finally {
+    stopRunning = null;
+  }
   await attach(job.listId, job.request.sourceUri, (ref) => ({
     ...ref,
     transcript,
@@ -232,6 +292,7 @@ async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
 }
 
 async function run(id: string, job: StartJob) {
+  if (cancelled.delete(id)) return;
   patch(id, { status: "running" });
   try {
     const list = await getPatternListById(job.listId);
@@ -257,9 +318,14 @@ async function run(id: string, job: StartJob) {
     }));
     patch(id, { status: "done", progress: 1, resultUri: stored });
   } catch (e) {
+    if (cancelled.delete(id)) return; // stopped on request; the job is already gone
     patch(id, {
       status: "failed",
       error: e instanceof Error ? e.message : String(e),
+      ...(e instanceof NoAudioError && { errorKey: "transcribeErrorNoSound" }),
+      ...(e instanceof ModelDownloadError && {
+        errorKey: "transcribeErrorDownload",
+      }),
     });
   }
 }

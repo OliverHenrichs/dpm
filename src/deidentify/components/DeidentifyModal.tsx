@@ -10,7 +10,11 @@ import VideoEditPanel from "@/src/deidentify/components/VideoEditPanel";
 import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import { ALL_PROVIDERS } from "@/src/deidentify/providers/allProviders";
 import { availableProviders } from "@/src/deidentify/providers/registry";
-import { IGeneratedVideo } from "@/src/pattern/types/IPatternList";
+import {
+  IGeneratedVideo,
+  IVideoTranscript,
+} from "@/src/pattern/types/IPatternList";
+import TranscribeSection from "@/src/transcribe/components/TranscribeSection";
 
 export type DeidentifyTarget = {
   listId: string;
@@ -19,20 +23,28 @@ export type DeidentifyTarget = {
   sourceUri: string;
   /** Set when the video is already de-identified: it can then only be shortened. */
   generated?: IGeneratedVideo;
+  /** What was said in it, when it has been transcribed (L4). */
+  transcript?: IVideoTranscript;
 };
 
 type Props = {
   /** The video to edit; null hides the modal. */
   target: DeidentifyTarget | null;
   onClose: () => void;
+  /** Opens the target's transcript; omitted where there is nowhere to show it. */
+  onOpenTranscript?: (target: DeidentifyTarget) => void;
 };
 
 /**
- * Edit a pattern's video — shorten it, or de-identify part of it. Either runs as a background
- * job (de-identifying takes minutes), so this closes as soon as one is started; the job
- * replaces the video in the pattern when done.
+ * Edit a pattern's video — shorten it, de-identify part of it, or transcribe what is said in
+ * it. Each runs as a background job (de-identifying takes minutes), so this closes as soon as
+ * one is started; the job replaces the video in the pattern, or annotates it, when done.
  */
-const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
+const DeidentifyModal: React.FC<Props> = ({
+  target,
+  onClose,
+  onOpenTranscript,
+}) => {
   const { t } = useTranslation();
   const { start } = useDeidentifyJobs();
 
@@ -88,6 +100,16 @@ const DeidentifyModal: React.FC<Props> = ({ target, onClose }) => {
                     });
                     onClose();
                   }}
+                />
+              )}
+              {target && (
+                <TranscribeSection
+                  key={`speech-${target.sourceUri}`}
+                  target={target}
+                  onStarted={onClose}
+                  onOpenTranscript={
+                    onOpenTranscript && (() => onOpenTranscript(target))
+                  }
                 />
               )}
             </ScrollView>

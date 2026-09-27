@@ -29,6 +29,10 @@ import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { canShortenVideos } from "@/src/deidentify/shortenVideo";
+import TranscriptSheet, {
+  TranscriptTarget,
+} from "@/src/transcribe/components/TranscriptSheet";
+import { useStartTranscription } from "@/src/transcribe/hooks/useStartTranscription";
 import {
   getCommonBorder,
   getCommonInput,
@@ -93,8 +97,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   const [showDeidentifyPicker, setShowDeidentifyPicker] = useState(false);
   const [deidentifyTarget, setDeidentifyTarget] =
     useState<DeidentifyTarget | null>(null);
+  const [transcriptTarget, setTranscriptTarget] =
+    useState<TranscriptTarget | null>(null);
   const { activeList } = useActivePatternList();
   const { jobs } = useDeidentifyJobs();
+  const startTranscription = useStartTranscription();
 
   // A de-identification job that finishes while this form is open replaced the video in the
   // stored pattern, not in this draft; swap it here too, so the form shows the result and
@@ -236,6 +243,20 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       patternName: newPattern.name.trim() || t("addPatternNew"),
       sourceUri: ref.value,
       ...(ref.generated && { generated: ref.generated }),
+      ...(ref.transcript && { transcript: ref.transcript }),
+    });
+  };
+
+  // What was said in a video (L4): opened from its thumbnail, or from Edit video.
+  const openTranscript = (ref: IVideoReference) => {
+    if (!activeList || !ref.transcript) return;
+    setDeidentifyTarget(null);
+    setTranscriptTarget({
+      listId: activeList.id,
+      patternName: newPattern.name.trim() || t("addPatternNew"),
+      sourceUri: ref.value,
+      transcript: ref.transcript,
+      hasSound: !ref.generated,
     });
   };
 
@@ -465,6 +486,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
         onEditVideo={canEditVideos ? handleEditVideo : undefined}
+        onOpenTranscript={(index) => openTranscript(activeVideoRefs[index])}
         disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
       />
       {draftJobs.map((job) => (
@@ -517,6 +539,30 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <DeidentifyModal
         target={deidentifyTarget}
         onClose={() => setDeidentifyTarget(null)}
+        onOpenTranscript={(target) =>
+          openTranscript(
+            activeVideoRefs.find((ref) => ref.value === target.sourceUri) ?? {
+              type: "local",
+              value: target.sourceUri,
+              transcript: target.transcript,
+            },
+          )
+        }
+      />
+      <TranscriptSheet
+        target={transcriptTarget}
+        onClose={() => setTranscriptTarget(null)}
+        onDescriptionChange={(append) =>
+          setNewPattern((prev) => ({
+            ...prev,
+            description: append(prev.description ?? ""),
+          }))
+        }
+        onRetranscribe={
+          canEditVideos && transcriptTarget
+            ? (language) => startTranscription(transcriptTarget, language)
+            : undefined
+        }
       />
       <AddVideoModal
         visible={showAddVideoModal}
