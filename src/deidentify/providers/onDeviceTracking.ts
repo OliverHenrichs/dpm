@@ -13,6 +13,21 @@ import {
  * silhouette in its own colour. The native side sizes everything by the number of taps.
  * Nothing leaves the phone. ~0.5–0.75 s per frame on a Pixel 10a — see L3 in AGENT_TASKS.md.
  */
+/**
+ * The native side reports each stage from 0 to 1: a transcode that takes seconds, then the
+ * silhouette render that takes minutes. The user only cares when the whole run is done, so the
+ * stages are weighted into one count to 100% — by their share of a typical run's time.
+ */
+const STAGE_SHARE: Record<string, [start: number, share: number]> = {
+  transcode: [0, 0.03],
+  silhouette: [0.03, 0.97],
+};
+
+export function overallFraction(stage: string, fraction: number): number {
+  const [start, share] = STAGE_SHARE[stage] ?? [0, 1];
+  return start + share * Math.min(Math.max(fraction, 0), 1);
+}
+
 export const onDeviceTracking: DeidentifyProvider = {
   id: "on-device-tracking",
   labelKey: "deidentifyProviderTracking",
@@ -29,7 +44,10 @@ export const onDeviceTracking: DeidentifyProvider = {
       throw new Error("On-device de-identification is unavailable");
     }
     const subscription = VideoDeidentifyModule.addListener("onProgress", (e) =>
-      onProgress({ stage: e.stage, fraction: e.progress }),
+      onProgress({
+        stage: e.stage,
+        fraction: overallFraction(e.stage, e.progress),
+      }),
     );
     try {
       const { uri, ...stats } = await VideoDeidentifyModule.deidentify(

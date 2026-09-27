@@ -305,7 +305,11 @@ const PatternListManager = () => {
         {/* Tab strip */}
         <SegmentedControl
           segments={[
-            { value: "patterns", label: t("patternList") },
+            {
+              value: "patterns",
+              label: t("patternList"),
+              count: patterns.length,
+            },
             {
               value: "modifiers",
               label: t("modifiersTab"),
