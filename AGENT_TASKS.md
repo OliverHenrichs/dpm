@@ -32,7 +32,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
-| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | spiked — whisper.rn + base model is a go (accurate, ~5× real time on CPU); engine next | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--spiked) |
+| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | engine done — on-device transcription runs as a background job; UI next | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--engine-done) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -72,7 +72,7 @@ Phase 1  S1✅ S2✅ B3✅ B4✅ B5✅ B6✅ B7✅        F3✅        (quick wi
 Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the graph model)
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
-Phase 5  L4: spike done (go) → engine → UI → data → iOS
+Phase 5  L4: spike done (go) → engine✅ → UI → data → iOS
 ```
 
 **Phases 0 to 3 are complete.** L3 is in the app on Android with its open items listed in its
@@ -1605,7 +1605,7 @@ run on the desktop replica needs its transcode, so that means temporarily re-add
 
 ---
 
-### L4 — Transcripts of what teachers say in a video — SPIKED
+### L4 — Transcripts of what teachers say in a video — ENGINE DONE
 
 > *"Dance teachers often say things during their demonstration that could inform the pattern
 > description."*
@@ -1779,6 +1779,39 @@ cloud push followed by the live subscription writing it back. Fixed separately i
 **Verdict: go.** whisper.rn and the base model meet the bar on the one real speech sample:
 accurate, ~5× real time on the CPU, auto-detects the language. Phase 2 (engine) can start. VAD
 before transcription and a shorter prompt are now part of it.
+
+#### Engine (2026-09-27, branch `feature/l4-engine`)
+
+**Built:**
+- `src/transcribe/models.ts` + `modelStore.ts`: Whisper base q5_1 and Silero VAD v6.2.0 (0.9 MB,
+  MIT), downloaded on first use through `createDownloadResumable` with progress over both files.
+  Each goes to a `.part` file and is moved into place only when HTTP status, size and SHA-256
+  match; the hash comes from a new native `sha256File` in `modules/audio-extract`.
+- `transcribeVideo.ts`: extract audio → VAD → Whisper per speech region (`offset`/`duration`;
+  timestamps come back absolute) → segments. The language is detected on the first region and
+  fixed for the rest; no speech at all gives an empty transcript in `"und"`. Returns
+  `{ promise, stop }`; `ModelsMissingError` and `NoAudioError` are distinct.
+- `speechRegions.ts`: VAD output is in **centiseconds**, whatever the README says. Blips under
+  0.4 s are dropped, regions padded by 0.25 s and joined across gaps up to 1.5 s.
+- `segments.ts`: annotations (`[MUSIC]`, `(laughs)`, `♪`) dropped; lines split at sentence ends,
+  then commas, to ~110 characters, times shared out by length.
+- The vocabulary prompt is capped at 224 characters.
+- Jobs: `"transcribe"` in `jobStore`; the transcript is put on the same video reference through
+  a `VideoUpdate` function. De-identify and shorten carry an existing transcript to the
+  replacement.
+- Data: `IVideoReference.transcript?: IVideoTranscript`. `withoutTranscripts` strips it from
+  exports and published lists — for now unconditionally; the opt-in is the data phase.
+- Tests: whisper.rn and the legacy download are mocked globally. jest-expo's setup mocks
+  `expo-file-system/legacy` itself, so `jest.setup.components.ts` re-registers ours.
+
+**On the Pixel:** the VAD model downloaded and verified in 1.3 s. The 23.4 s English clip came back
+as one region, transcribed in 4.6 s (5× real time), as four segments of 5–8 s; with the
+vocabulary prompt, three. The Whisper model already on the phone from the spike was kept by size,
+so its hash has not been checked on the device yet — "Delete models" and downloading again does
+that.
+
+**Open for the UI phase:** the bench (`/transcribe-spike`, deep link only) goes; the job's cancel
+is not wired to `stop()` yet; the music clip has not been re-measured with VAD in front.
 
 #### Phases
 
