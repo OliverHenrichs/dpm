@@ -20,6 +20,8 @@ const CACHE_URI = "file:///cache/";
 
 /** uri -> raw contents, as bytes. */
 let files = new Map<string, Buffer>();
+/** Directories created explicitly; a directory with files in it exists regardless. */
+let directories = new Set<string>();
 
 function join(parts: (string | { uri: string })[]): string {
   return parts
@@ -33,8 +35,20 @@ function join(parts: (string | { uri: string })[]): string {
 class Directory {
   readonly uri: string;
 
-  constructor(uri: string) {
-    this.uri = uri;
+  constructor(...uris: (string | File | Directory)[]) {
+    const joined = join(uris as (string | { uri: string })[]);
+    this.uri = joined.endsWith("/") ? joined : `${joined}/`;
+  }
+
+  get exists(): boolean {
+    return (
+      directories.has(this.uri) ||
+      [...files.keys()].some((uri) => uri.startsWith(this.uri))
+    );
+  }
+
+  create(_options?: { intermediates?: boolean }): void {
+    directories.add(this.uri);
   }
 }
 
@@ -77,7 +91,25 @@ class File {
     files.set(this.uri, Buffer.from(contents, encoding));
   }
 
+  get size(): number {
+    const contents = files.get(this.uri);
+    if (contents === undefined) {
+      throw new Error(`ENOENT: no such file '${this.uri}'`);
+    }
+    return contents.length;
+  }
+
   delete(): void {
+    files.delete(this.uri);
+  }
+
+  /** Moves the bytes to `destination` (a File); this File keeps its now-dangling uri. */
+  move(destination: File | Directory): void {
+    const contents = files.get(this.uri);
+    if (contents === undefined) {
+      throw new Error(`ENOENT: no such file '${this.uri}'`);
+    }
+    files.set(destination.uri, contents);
     files.delete(this.uri);
   }
 
@@ -107,6 +139,32 @@ const Paths = {
 /** Empty the filesystem. Call from `beforeEach`. */
 export function resetFileSystemMock(): void {
   files = new Map<string, Buffer>();
+  directories = new Set<string>();
+  respond = EMPTY_DOWNLOAD;
+}
+
+// ---------------------------------------------------------------------------
+// Downloads, served by `expo-file-system/legacy` (see __mocks__/expo-file-system/legacy.ts).
+// The state lives here so that one reset clears the filesystem and the downloads together.
+// ---------------------------------------------------------------------------
+
+export type DownloadResponse = { status: number; body: Buffer };
+const EMPTY_DOWNLOAD = (): DownloadResponse => ({
+  status: 200,
+  body: Buffer.alloc(0),
+});
+let respond: (url: string) => DownloadResponse = EMPTY_DOWNLOAD;
+
+/** What every download returns until the next reset. */
+export function setDownloadResponse(
+  fn: (url: string) => DownloadResponse,
+): void {
+  respond = fn;
+}
+
+/** The legacy mock's view of the current download behaviour. */
+export function downloadResponse(url: string): DownloadResponse {
+  return respond(url);
 }
 
 /** Create a file with the given text contents. */

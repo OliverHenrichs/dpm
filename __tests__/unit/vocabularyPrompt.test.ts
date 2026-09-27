@@ -59,7 +59,7 @@ describe("vocabularyPrompt", () => {
 
     const prompt = vocabularyPrompt(list(), patterns);
 
-    expect(prompt.length).toBeLessThanOrEqual(601);
+    expect(prompt.length).toBeLessThanOrEqual(225);
     expect(prompt).toMatch(/Pattern number \d+\.$/);
   });
 

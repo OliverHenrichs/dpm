@@ -134,16 +134,6 @@ const SettingsScreen: React.FC = () => {
             style={styles.galleryLink}
           />
         )}
-        {/* SPIKE (L4): dev-only, not for merge. */}
-        {__DEV__ && (
-          <Button
-            title="Transcribe spike"
-            icon="account-voice"
-            variant="ghost"
-            onPress={() => router.navigate("/transcribe-spike")}
-            style={styles.galleryLink}
-          />
-        )}
       </ScrollView>
 
       <LanguagePickerBottomSheet

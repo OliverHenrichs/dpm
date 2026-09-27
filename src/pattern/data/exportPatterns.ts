@@ -1,3 +1,4 @@
+import { withoutTranscripts } from "@/src/pattern/data/transcripts";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
@@ -92,10 +93,12 @@ async function createExportData(
           );
           exportedModifierRefs.push(modRef);
         }
-        exportedPatterns.push({
-          ...pattern,
-          modifierRefs: exportedModifierRefs,
-        });
+        exportedPatterns.push(
+          withoutTranscripts({
+            ...pattern,
+            modifierRefs: exportedModifierRefs,
+          }),
+        );
       } else {
         const portableRefs = (pattern.videoRefs ?? []).filter(
           (ref) => ref.type !== "local",
@@ -108,11 +111,13 @@ async function createExportData(
             ),
           }),
         );
-        exportedPatterns.push({
-          ...pattern,
-          videoRefs: portableRefs,
-          modifierRefs: portableModifierRefs,
-        });
+        exportedPatterns.push(
+          withoutTranscripts({
+            ...pattern,
+            videoRefs: portableRefs,
+            modifierRefs: portableModifierRefs,
+          }),
+        );
       }
     }
     exportedLists.push({

@@ -11,6 +11,7 @@ import { resetFileSystemMock } from "./__mocks__/expo-file-system";
 import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";
 import { resetGestureMock } from "./__mocks__/react-native-gesture-handler";
 import { resetReanimatedMock } from "./__mocks__/react-native-reanimated";
+import { resetWhisperMock } from "./__mocks__/whisper.rn/index";
 
 // `waitFor` defaults to 1s, which is not enough for the first mount of the
 // full provider stack on a cold CI runner — and it would surface as a
@@ -23,7 +24,14 @@ beforeEach(() => {
   resetDeviceLocalesMock();
   resetGestureMock();
   resetReanimatedMock();
+  resetWhisperMock();
 });
+
+// jest-expo's own setup mocks the legacy file system with stubs, which would
+// shadow the root `__mocks__` one — so it is named here, where the last mock wins.
+jest.mock("expo-file-system/legacy", () =>
+  jest.requireActual("./__mocks__/expo-file-system/legacy"),
+);
 
 // ---------------------------------------------------------------------------
 // Native modules with no usable JS implementation under jest.

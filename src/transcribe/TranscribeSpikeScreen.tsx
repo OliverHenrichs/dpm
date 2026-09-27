@@ -7,11 +7,14 @@ import PageContainer from "@/src/common/components/PageContainer";
 import { AppText, Button, Card, Chip, ListRow } from "@/src/common/ui";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
-  deleteModel,
-  ensureModel,
-  installedModel,
-  WHISPER_MODEL,
+  deleteModels,
+  ensureModels,
+  installedModels,
 } from "@/src/transcribe/modelStore";
+import {
+  TRANSCRIPTION_DOWNLOAD_BYTES,
+  WHISPER_MODEL,
+} from "@/src/transcribe/models";
 import {
   transcribeVideo,
   TranscribeOutcome,
@@ -19,23 +22,20 @@ import {
 import { vocabularyPrompt } from "@/src/transcribe/vocabulary";
 
 /**
- * L4 spike bench (AGENT_TASKS.md): transcribe the active list's videos and see what Whisper makes
- * of them — speed, detected language, and what the list's vocabulary prompt changes. Development
- * builds only; its strings are not translated on purpose. Every run is also logged under
- * `[transcribe-spike]`, for collecting the measurements from logcat.
+ * L4 bench (AGENT_TASKS.md): transcribe the active list's videos and see what the engine makes of
+ * them. Development builds only, and not part of the feature — the UI phase replaces it. Its
+ * strings are not translated on purpose. Every run is logged under `[transcribe-spike]`.
  */
 
-type Run = {
-  label: string;
-  outcome?: TranscribeOutcome;
-  error?: string;
-};
+type Run = { label: string; outcome?: TranscribeOutcome; error?: string };
 
 const LANGUAGES = ["auto", "en", "de", "es"] as const;
 
 const TranscribeSpikeScreen: React.FC = () => {
   const { activeList, patterns } = useActivePatternList();
-  const [modelReady, setModelReady] = useState(() => installedModel() !== null);
+  const [modelsReady, setModelsReady] = useState(
+    () => installedModels() !== null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [language, setLanguage] = useState<(typeof LANGUAGES)[number]>("auto");
@@ -51,13 +51,14 @@ const TranscribeSpikeScreen: React.FC = () => {
   const prompt = activeList ? vocabularyPrompt(activeList, patterns) : "";
 
   const download = async () => {
-    setBusy("Downloading the model…");
+    setBusy("Downloading the models…");
+    setProgress(0);
     const started = Date.now();
     try {
-      await ensureModel();
-      setModelReady(true);
+      await ensureModels(setProgress);
+      setModelsReady(true);
       console.log(
-        `[transcribe-spike] model ready in ${Date.now() - started} ms`,
+        `[transcribe-spike] models ready in ${Date.now() - started} ms`,
       );
     } catch (e) {
       setRuns((r) => [{ label: "download", error: String(e) }, ...r]);
@@ -71,15 +72,14 @@ const TranscribeSpikeScreen: React.FC = () => {
     setBusy(`Transcribing ${label}`);
     setProgress(0);
     try {
-      const { promise } = await transcribeVideo(uri, {
-        language,
+      const outcome = await transcribeVideo(uri, {
+        language: language === "auto" ? undefined : language,
         prompt: withPrompt ? prompt : undefined,
         onProgress: setProgress,
-      });
-      const outcome = await promise;
+      }).promise;
       console.log(
-        `[transcribe-spike] ${label}\n${JSON.stringify(outcome.timing)} lang=${outcome.language}\n` +
-          outcome.segments
+        `[transcribe-spike] ${label}\n${JSON.stringify(outcome.timing)} lang=${outcome.transcript.language}\n` +
+          outcome.transcript.segments
             .map((s) => `${s.start.toFixed(1)}–${s.end.toFixed(1)} ${s.text}`)
             .join("\n"),
       );
@@ -99,23 +99,22 @@ const TranscribeSpikeScreen: React.FC = () => {
 
   return (
     <PageContainer>
-      <AppHeader title="Transcribe spike" />
+      <AppHeader title="Transcribe bench" />
       <ScrollView contentContainerStyle={styles.content}>
         <Card>
-          <AppText variant="title">Model</AppText>
+          <AppText variant="title">Models</AppText>
           <AppText color="textMuted">
-            {WHISPER_MODEL.id} · {(WHISPER_MODEL.bytes / 1_000_000).toFixed(1)}{" "}
-            MB · {modelReady ? "installed" : "not downloaded"}
+            {`${WHISPER_MODEL.id} + VAD · ${(TRANSCRIPTION_DOWNLOAD_BYTES / 1_000_000).toFixed(1)} MB · ${modelsReady ? "installed" : "not downloaded"}`}
           </AppText>
           <View style={styles.row}>
-            {modelReady ? (
+            {modelsReady ? (
               <Button
-                title="Delete model"
+                title="Delete models"
                 variant="dangerOutline"
                 size="sm"
                 onPress={() => {
-                  deleteModel();
-                  setModelReady(false);
+                  deleteModels();
+                  setModelsReady(false);
                 }}
               />
             ) : (
@@ -143,7 +142,7 @@ const TranscribeSpikeScreen: React.FC = () => {
             ))}
           </View>
           <AppText variant="caption" color="textMuted">
-            Vocabulary prompt: {prompt || "(empty)"}
+            {`Vocabulary prompt: ${prompt || "(empty)"}`}
           </AppText>
         </Card>
 
@@ -151,13 +150,13 @@ const TranscribeSpikeScreen: React.FC = () => {
           <Card>
             <AppText>{busy}</AppText>
             <AppText variant="caption" color="textMuted">
-              {Math.round(progress * 100)}%
+              {`${Math.round(progress * 100)}%`}
             </AppText>
           </Card>
         )}
 
         <AppText variant="label" color="textMuted">
-          VIDEOS IN {activeList?.name?.toUpperCase() ?? "—"}
+          {`VIDEOS IN ${activeList?.name?.toUpperCase() ?? "—"}`}
         </AppText>
         {videos.length === 0 && (
           <AppText color="textMuted">No local videos in this list.</AppText>
@@ -168,9 +167,13 @@ const TranscribeSpikeScreen: React.FC = () => {
             variant="card"
             title={pattern.name}
             subtitle={
-              ref.generated ? "silhouette — no audio" : ref.value.slice(-40)
+              ref.transcript
+                ? `transcript: ${ref.transcript.segments.length} lines, ${ref.transcript.language}`
+                : ref.generated
+                  ? "silhouette — no audio"
+                  : ref.value.slice(-40)
             }
-            disabled={busy !== null || !modelReady}
+            disabled={busy !== null || !modelsReady}
             onPress={() => compare(ref.value, pattern.name)}
             accessibilityHint="Transcribes without and then with the vocabulary prompt"
           />
@@ -182,31 +185,30 @@ const TranscribeSpikeScreen: React.FC = () => {
             {r.error ? (
               <AppText color="danger">{r.error}</AppText>
             ) : (
-              r.outcome && (
-                <>
-                  <AppText variant="caption" color="textMuted">
-                    {r.outcome.language} ·{" "}
-                    {r.outcome.timing.audioSeconds.toFixed(1)} s audio · extract{" "}
-                    {r.outcome.timing.extractMs} ms · load{" "}
-                    {r.outcome.timing.loadMs} ms · transcribe{" "}
-                    {r.outcome.timing.transcribeMs} ms ·{" "}
-                    {r.outcome.timing.speed.toFixed(1)}× real time ·{" "}
-                    {r.outcome.timing.gpu
-                      ? "GPU"
-                      : `CPU (${r.outcome.timing.noGpuReason ?? "no reason given"})`}
-                  </AppText>
-                  {r.outcome.segments.map((s, j) => (
-                    <AppText key={j} variant="bodySmall">
-                      {s.start.toFixed(1)}s {s.text}
-                    </AppText>
-                  ))}
-                </>
-              )
+              r.outcome && <RunDetails outcome={r.outcome} />
             )}
           </Card>
         ))}
       </ScrollView>
     </PageContainer>
+  );
+};
+
+const RunDetails: React.FC<{ outcome: TranscribeOutcome }> = ({ outcome }) => {
+  const { timing, transcript } = outcome;
+  const speed =
+    timing.speechSeconds / Math.max(timing.transcribeMs / 1000, 0.001);
+  return (
+    <>
+      <AppText variant="caption" color="textMuted">
+        {`${transcript.language} · ${timing.audioSeconds.toFixed(1)} s audio, ${timing.speechSeconds.toFixed(1)} s speech in ${timing.regions} regions · extract ${timing.extractMs} ms · transcribe ${timing.transcribeMs} ms · ${speed.toFixed(1)}× speech time · ${timing.noGpuReason ? `CPU (${timing.noGpuReason})` : "GPU"}`}
+      </AppText>
+      {transcript.segments.map((s, j) => (
+        <AppText key={j} variant="bodySmall">
+          {`${s.start.toFixed(1)}s ${s.text}`}
+        </AppText>
+      ))}
+    </>
   );
 };
 

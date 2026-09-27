@@ -6,10 +6,7 @@ import {
 } from "@/src/pattern/data/PatternListStorage";
 import { persistVideo } from "@/src/pattern/data/videoFiles";
 import { generateUUID } from "@/src/pattern/types/PatternType";
-import {
-  IGeneratedVideo,
-  IVideoReference,
-} from "@/src/pattern/types/IPatternList";
+import { IGeneratedVideo } from "@/src/pattern/types/IPatternList";
 import { shortenVideo, TrimRequest } from "@/src/deidentify/shortenVideo";
 import {
   DeidentifyProvider,
@@ -19,11 +16,13 @@ import { Consent, runDeidentify } from "@/src/deidentify/runDeidentify";
 import {
   recordReplacement,
   replaceVideoInPattern,
+  VideoUpdate,
 } from "@/src/deidentify/jobs/replaceVideo";
+import { transcribeVideo } from "@/src/transcribe/transcribeVideo";
 
 export type JobStatus = "queued" | "running" | "done" | "failed";
 
-export type JobKind = "deidentify" | "shorten";
+export type JobKind = "deidentify" | "shorten" | "transcribe";
 
 export type DeidentifyJob = {
   id: string;
@@ -59,7 +58,20 @@ export type StartJob = JobTarget &
         /** Provenance of the source, carried over: a shortened silhouette is still one. */
         generated?: IGeneratedVideo;
       }
+    | {
+        kind: "transcribe";
+        request: TranscribeRequest;
+      }
   );
+
+/** L4: transcribe what is said in a video; the transcript lands on the same video. */
+export type TranscribeRequest = {
+  sourceUri: string;
+  /** ISO 639-1, or omitted to detect it. */
+  language?: string;
+  /** Whisper's initial prompt — the list's own words (see vocabularyPrompt). */
+  vocabulary?: string;
+};
 
 /**
  * Puts a finished video into the list through whoever holds it in memory. Returns false when
@@ -68,7 +80,7 @@ export type StartJob = JobTarget &
 export type AttachHandler = (
   listId: string,
   oldUri: string,
-  ref: IVideoReference,
+  update: VideoUpdate,
 ) => Promise<boolean>;
 
 /**
@@ -147,11 +159,11 @@ export const jobStore = {
   },
 };
 
-async function attach(listId: string, oldUri: string, ref: IVideoReference) {
-  recordReplacement(oldUri, ref);
-  if (attachHandler && (await attachHandler(listId, oldUri, ref))) return;
+async function attach(listId: string, oldUri: string, update: VideoUpdate) {
+  recordReplacement(oldUri, update);
+  if (attachHandler && (await attachHandler(listId, oldUri, update))) return;
   const patterns = await loadPatterns(listId);
-  const swapped = patterns.map((p) => replaceVideoInPattern(p, oldUri, ref));
+  const swapped = patterns.map((p) => replaceVideoInPattern(p, oldUri, update));
   if (swapped.some((p, i) => p !== patterns[i])) {
     await savePatterns(listId, swapped);
   }
@@ -177,7 +189,7 @@ function logStats(outcome: unknown) {
 /** Runs the job's pass; returns the cache URI of the result and its provenance. */
 async function process(
   id: string,
-  job: StartJob,
+  job: StartJob & { kind: "deidentify" | "shorten" },
 ): Promise<{ uri: string; generated?: IGeneratedVideo }> {
   const onProgress = (fraction: number) => patch(id, { progress: fraction });
   if (job.kind === "shorten") {
@@ -197,11 +209,34 @@ async function process(
   };
 }
 
+/**
+ * Transcribes the job's video and puts the transcript on it — the same video, so nothing is
+ * stored or replaced; whatever the reference already carries is kept.
+ */
+async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
+  const { promise } = transcribeVideo(job.request.sourceUri, {
+    language: job.request.language,
+    prompt: job.request.vocabulary,
+    onProgress: (fraction) => patch(id, { progress: fraction }),
+  });
+  const { transcript } = await promise;
+  await attach(job.listId, job.request.sourceUri, (ref) => ({
+    ...ref,
+    transcript,
+  }));
+  patch(id, {
+    status: "done",
+    progress: 1,
+    resultUri: job.request.sourceUri,
+  });
+}
+
 async function run(id: string, job: StartJob) {
   patch(id, { status: "running" });
   try {
     const list = await getPatternListById(job.listId);
     if (list?.readonly) throw new Error("This list is read-only");
+    if (job.kind === "transcribe") return await transcribe(id, job);
     const { uri, generated } = await process(id, job);
     const stored = await persistVideo(
       uri,
@@ -212,11 +247,14 @@ async function run(id: string, job: StartJob) {
     } catch {
       // best effort — the cache is the OS's to clear anyway
     }
-    await attach(job.listId, job.request.sourceUri, {
+    // A new video in place of the old; what was said in the old one is still what was said
+    // (L4) — the transcript moves over, though a silhouette has no sound of its own.
+    await attach(job.listId, job.request.sourceUri, (previous) => ({
       type: "local",
       value: stored,
       ...(generated && { generated }),
-    });
+      ...(previous.transcript && { transcript: previous.transcript }),
+    }));
     patch(id, { status: "done", progress: 1, resultUri: stored });
   } catch (e) {
     patch(id, {

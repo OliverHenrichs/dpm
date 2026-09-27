@@ -1,3 +1,4 @@
+import { withoutTranscripts } from "@/src/pattern/data/transcripts";
 import {
   deleteDoc,
   doc,
@@ -75,7 +76,9 @@ export async function publishList(
 
   const payload: SharedListDocument = {
     list: { ...listBase, shareCode },
-    patterns,
+    // Transcripts stay on the device (L4): subscribers get the patterns, not
+    // what a teacher said while demonstrating them.
+    patterns: patterns.map(withoutTranscripts),
     publisherVersion: Date.now(),
     publishedAt: new Date().toISOString(),
     appToken: APP_TOKEN,

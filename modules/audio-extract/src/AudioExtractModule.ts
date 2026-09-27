@@ -18,6 +18,8 @@ declare class AudioExtractModule extends NativeModule {
     srcUri: string,
     maxSeconds: number,
   ): Promise<ExtractedSpeech>;
+  /** Lower-case hex SHA-256 of a file:// URI, computed natively. */
+  sha256File(fileUri: string): Promise<string>;
 }
 
 // Optional so that web, iOS (not implemented yet) and Jest load without the native side.

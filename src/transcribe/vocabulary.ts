@@ -1,7 +1,11 @@
 import { IPatternList, IPattern } from "@/src/pattern/types/IPatternList";
 
-/** whisper.cpp keeps the prompt short; past this the oldest words would be cut anyway. */
-const MAX_PROMPT_CHARS = 600;
+/**
+ * Short on purpose: whisper.cpp spends decoder context on the prompt, and the L4 spike found a
+ * long one slows and merges segments. Pattern names and type slugs come first, so they are what
+ * survives the cut.
+ */
+const MAX_PROMPT_CHARS = 224;
 
 /**
  * Whisper's initial prompt, made from the list's own words — pattern names, type slugs, modifier

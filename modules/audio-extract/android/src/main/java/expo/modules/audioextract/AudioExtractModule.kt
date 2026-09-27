@@ -16,6 +16,7 @@ import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.security.MessageDigest
 
 class NoAudioException :
   CodedException("ERR_NO_AUDIO", "The video has no audio track", null)
@@ -37,6 +38,23 @@ class AudioExtractModule : Module() {
     AsyncFunction("extractSpeechWav") Coroutine { srcUri: String, maxSeconds: Double ->
       val context = appContext.reactContext ?: throw AudioExtractException("React context lost")
       withContext(Dispatchers.IO) { extract(context, Uri.parse(srcUri), maxSeconds) }
+    }
+
+    /** Hex SHA-256 of a file, streamed — for checking a downloaded model against its hash. */
+    AsyncFunction("sha256File") Coroutine { fileUri: String ->
+      withContext(Dispatchers.IO) {
+        val path = Uri.parse(fileUri).path ?: throw AudioExtractException("Not a file URI: $fileUri")
+        val digest = MessageDigest.getInstance("SHA-256")
+        File(path).inputStream().use { input ->
+          val buffer = ByteArray(1 shl 16)
+          while (true) {
+            val read = input.read(buffer)
+            if (read < 0) break
+            digest.update(buffer, 0, read)
+          }
+        }
+        digest.digest().joinToString("") { "%02x".format(it) }
+      }
     }
   }
 
