@@ -109,10 +109,16 @@ describe("useDataTransfer", () => {
       const selected = [importable()];
 
       await act(async () => {
-        await result.current.handleExport(selected, false, true);
+        await result.current.handleExport(selected, {
+          includeVideos: false,
+          exportAsReadonly: true,
+        });
       });
 
-      expect(mockedExport).toHaveBeenCalledWith(selected, false, true);
+      expect(mockedExport).toHaveBeenCalledWith(selected, {
+        includeVideos: false,
+        exportAsReadonly: true,
+      });
       expect(result.current.dialog).toBeNull();
       expect(result.current.showExportModal).toBe(false);
     });
@@ -122,7 +128,7 @@ describe("useDataTransfer", () => {
       const { result } = await mount();
 
       await act(async () => {
-        await result.current.handleExport([], true, false);
+        await result.current.handleExport([], {});
       });
 
       expect(result.current.dialog?.message).toBe("no sharing");
@@ -133,7 +139,7 @@ describe("useDataTransfer", () => {
       const { result } = await mount();
 
       await act(async () => {
-        await result.current.handleExport([], true, false);
+        await result.current.handleExport([], {});
       });
 
       expect(result.current.dialog?.message).toContain("disk full");

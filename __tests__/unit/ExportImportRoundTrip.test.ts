@@ -8,7 +8,10 @@ import {
   seedBinaryFile,
   seedFile,
 } from "@/__mocks__/expo-file-system";
-import { exportPatternLists } from "@/src/pattern/data/exportPatterns";
+import {
+  ExportOptions,
+  exportPatternLists,
+} from "@/src/pattern/data/exportPatterns";
 import { importPatternLists } from "@/src/pattern/data/ImportPatterns";
 import {
   exportDataVersion,
@@ -93,13 +96,9 @@ function listWith(
  */
 async function roundTrip(
   lists: PatternListWithPatterns[],
-  { includeVideos = true, exportAsReadonly = false } = {},
+  options: ExportOptions = {},
 ) {
-  const exportResult = await exportPatternLists(
-    lists,
-    includeVideos,
-    exportAsReadonly,
-  );
+  const exportResult = await exportPatternLists(lists, options);
 
   const sharedUri = mockedShareAsync.mock.calls.at(-1)?.[0] as string;
   const rawJson = readFileText(sharedUri);
@@ -281,6 +280,79 @@ describe("export → import round trip", () => {
       const [restored] = importResult.patternLists![0].patterns[0].videoRefs;
       expect(restored.generated).toEqual(generated);
       expect(readFileBytes(restored.value)).toEqual(videoBytes(1));
+    });
+
+    describe("transcripts (3.2)", () => {
+      const transcript = {
+        language: "en",
+        model: "whisper-base-q5_1",
+        createdAt: 1_790_000_000_000,
+        segments: [{ start: 0.5, end: 3, text: "Anchor on five and six." }],
+      };
+      const SPIN: IModifier = {
+        id: generateUUID(),
+        name: "with a spin",
+        position: "postfix",
+        universal: false,
+        videoRefs: [],
+      };
+      const transcribed = () => {
+        seedBinaryFile(VIDEO_A, videoBytes(1));
+        return createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [{ ...localRef(VIDEO_A), transcript }],
+          modifierRefs: [
+            {
+              modifierId: SPIN.id,
+              videoRefs: [{ ...localRef(VIDEO_A), transcript }],
+            },
+          ],
+        });
+      };
+
+      it("stay behind unless the user chose to include them", async () => {
+        const { exported, importResult } = await roundTrip([
+          listWith([transcribed()]),
+        ]);
+
+        expect(exported.includesTranscripts).toBe(false);
+        expect(JSON.stringify(exported.patternLists)).not.toContain(
+          "Anchor on five",
+        );
+        const [restored] = importResult.patternLists![0].patterns;
+        expect(restored.videoRefs[0].transcript).toBeUndefined();
+        // The video itself still travels.
+        expect(readFileBytes(restored.videoRefs[0].value)).toEqual(
+          videoBytes(1),
+        );
+      });
+
+      it("come back intact when included", async () => {
+        const { exported, importResult } = await roundTrip(
+          [listWith([transcribed()], { modifiers: [SPIN] })],
+          { includeTranscripts: true },
+        );
+
+        expect(exported.version).toBe("3.2.0");
+        expect(exported.includesTranscripts).toBe(true);
+        const [restored] = importResult.patternLists![0].patterns;
+        expect(restored.videoRefs[0].transcript).toEqual(transcript);
+        expect(restored.modifierRefs[0].videoRefs[0].transcript).toEqual(
+          transcript,
+        );
+      });
+
+      it("need the videos: without them there is nothing to carry one", async () => {
+        const { exported } = await roundTrip([listWith([transcribed()])], {
+          includeVideos: false,
+          includeTranscripts: true,
+        });
+
+        expect(exported.includesTranscripts).toBe(false);
+        expect(JSON.stringify(exported.patternLists)).not.toContain(
+          "Anchor on five",
+        );
+      });
     });
 
     it("leaves URL videos untouched, start time included", async () => {

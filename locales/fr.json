@@ -293,5 +293,8 @@
   "speechModel": "Modèle vocal",
   "speechModelInstalled": "Sur ce téléphone",
   "speechModelMissing": "Non téléchargé",
-  "speechModelHint": "Transcrit ce qui est dit dans les vidéos. Téléchargé lors de la première transcription."
+  "speechModelHint": "Transcrit ce qui est dit dans les vidéos. Téléchargé lors de la première transcription.",
+  "includeTranscriptsInExport": "Inclure les transcriptions",
+  "includeTranscriptsHint": "Ce que disent les professeurs dans les vidéos les accompagne. À laisser désactivé sauf si les destinataires doivent le lire.",
+  "includeTranscriptsNeedsVideos": "Les transcriptions accompagnent leurs vidéos : incluez d'abord les vidéos."
 }

@@ -23,3 +23,14 @@ export function withoutTranscripts<
     })),
   };
 }
+
+/** Whether any of these patterns has a transcript anywhere — its own videos or a combination's. */
+export function hasTranscripts(
+  patterns: Pick<IPattern, "videoRefs" | "modifierRefs">[],
+): boolean {
+  return patterns.some(
+    (p) =>
+      (p.videoRefs ?? []).some((v) => v.transcript) ||
+      (p.modifierRefs ?? []).some((m) => m.videoRefs.some((v) => v.transcript)),
+  );
+}

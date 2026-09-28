@@ -2,7 +2,9 @@ import {
   IModifier,
   IPattern,
   IPatternModifierRef,
+  ITranscriptSegment,
   IVideoReference,
+  IVideoTranscript,
   ModifierPosition,
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -107,9 +109,60 @@ function normalizeVideoRefs(raw: unknown, where: string, warnings: string[]) {
         warnings.push(`${where}: dropped malformed provenance of a video`);
       }
     }
+    // What was said in it (3.2): kept when it is a transcript at all, minus any line that is
+    // not one; the video itself is fine either way.
+    if (entry.transcript !== undefined) {
+      const transcript = normalizeTranscript(entry.transcript, where, warnings);
+      if (transcript) ref.transcript = transcript;
+    }
     refs.push(ref);
   }
   return refs;
+}
+
+const isFiniteNumber = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v);
+
+function normalizeTranscript(
+  raw: unknown,
+  where: string,
+  warnings: string[],
+): IVideoTranscript | undefined {
+  if (
+    !isObject(raw) ||
+    !isNonEmptyString(raw.language) ||
+    !isNonEmptyString(raw.model) ||
+    !isFiniteNumber(raw.createdAt) ||
+    !Array.isArray(raw.segments)
+  ) {
+    warnings.push(`${where}: dropped a malformed transcript of a video`);
+    return undefined;
+  }
+  const segments: ITranscriptSegment[] = [];
+  let dropped = 0;
+  for (const s of raw.segments) {
+    if (
+      isObject(s) &&
+      isFiniteNumber(s.start) &&
+      isFiniteNumber(s.end) &&
+      s.start >= 0 &&
+      s.end >= s.start &&
+      typeof s.text === "string"
+    ) {
+      segments.push({ start: s.start, end: s.end, text: s.text });
+    } else {
+      dropped++;
+    }
+  }
+  if (dropped > 0) {
+    warnings.push(`${where}: dropped ${dropped} malformed transcript line(s)`);
+  }
+  return {
+    language: raw.language,
+    model: raw.model,
+    createdAt: raw.createdAt,
+    segments: segments.sort((a, b) => a.start - b.start),
+  };
 }
 
 function normalizePatternTypes(
