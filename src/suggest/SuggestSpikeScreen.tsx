@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { ScrollView, View } from "react-native";
 import { Redirect } from "expo-router";
 import { StyleSheet } from "react-native-unistyles";
@@ -44,6 +45,15 @@ const SuggestSpikeScreen: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [runs, setRuns] = useState<Run[]>([]);
   const [nano, setNano] = useState<string>("not checked");
+
+  // A 1–3 GB download or a batch of runs outlasts the screen timeout; a locked phone pauses both.
+  useEffect(() => {
+    if (!busy) return;
+    activateKeepAwakeAsync("suggest-spike").catch(() => undefined);
+    return () => {
+      deactivateKeepAwake("suggest-spike").catch(() => undefined);
+    };
+  }, [busy]);
 
   if (!__DEV__) return <Redirect href="/" />;
 
