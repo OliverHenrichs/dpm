@@ -32,7 +32,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
 | 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
-| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | in the app on Android — transcribe a video, read the transcript, add lines to the description, export them by choice; iOS open | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--in-the-app-on-android) |
+| 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | in the app on Android — transcribe a video, read the transcript, add lines to the description, export them by choice, and draft a name and description from them; iOS open | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--in-the-app-on-android) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
 down, so the graph's detail view renders a permanently empty modifier strip — see
@@ -1893,22 +1893,53 @@ transcribed, counting once to 100%.
 - Code-switching teachers (English jargon inside Spanish speech): the vocabulary prompt helps;
   the spike will show how much.
 
-**Later, separate — suggestions from a transcript (assessed 2026-09-28, not started):** a
-suggested pattern name and description, drafted by an LLM from the transcript and the list's own
-vocabulary, always shown for the user to accept or edit, never written on its own.
-- **On-device, llama.rn (llama.cpp, same family as whisper.rn):** a 1–2B instruct model (Qwen3
-  1.7B, Gemma 3 1B; ~1 GB q4) downloaded on first use like Whisper. Enough for "name + two
-  sentences from ≤ 500 words" in English/German/Spanish; weaker in hi/bn. CPU speed on the Pixel
-  unmeasured — expect ~10 s for a description. Private, offline, free, every phone.
-- **On-device, Gemini Nano (ML Kit GenAI Prompt API):** no download, better model, but beta, a
-  device list (Pixel 9/10 series listed, **10a not**), foreground-only, a per-app battery quota,
-  and a Kotlin module of our own.
-- **Cloud, Gemini via Firebase AI Logic:** best quality, no model on the phone. The free tier may
-  not be offered to users in the EEA/UK/CH (Gemini API terms) — so Blaze billing, at fractions of
-  a cent per suggestion; App Check becomes mandatory 2026-11-02; and the transcript leaves the
-  device, which brings back L3's consent step.
-- **Next step if wanted:** a spike on the Pixel with llama.rn — two models, the owner's clip plus a
-  German one — for quality, speed and memory, and a check whether the 10a reports Gemini Nano.
+#### Suggestions (2026-09-30, branch `feature/l4-suggest`)
+
+A suggested pattern name and description, drafted on the phone from the transcript and the list's
+vocabulary; nothing is filled in until the user taps *Use suggestion*.
+
+**Spike (2026-09-29, branch `spike/l4-suggest`, not merged)** — four GGUF models through llama.rn on
+the Pixel 10a's CPU, over written EN/DE/ES teacher transcripts, a water break and the list's real
+transcripts:
+
+| Model | File | Per suggestion | Peak app PSS | Verdict |
+|---|---|---|---|---|
+| Qwen3.5 0.8B | 533 MB | 3–8 s | 2.0 GB | copies the transcript; over-cautious with v2 |
+| Gemma 3 1B | 806 MB | 4–16 s | 2.2 GB | slower; adds steps nobody said |
+| **Qwen3.5 2B** | 1281 MB | 3.5–15 s | 3.4 GB | **own-words summaries, right names, silent on non-teaching clips (v2)** |
+| Gemma 4 E2B | 2841 MB | 3–17 s | 3.9 GB | copies the transcript; too big |
+
+- **Gemini Nano is not on the Pixel 10a** (AICore `606-FEATURE_NOT_FOUND`); ML Kit genai-prompt
+  beta3+ also needs Kotlin 2.3 and minSdk 26. Cloud Gemini was not pursued (assessed 2026-09-28:
+  no free tier for EEA/UK/CH users, App Check, consent).
+- **The prompt mattered more than the size.** v1 (name + description) had the models invent a
+  pattern for a water break, primed by the vocabulary. v2 asks `teaches` first, allows the
+  vocabulary for spelling only, and wants the description in the model's own words.
+
+**Built:**
+- `src/suggest/`: `models.ts` (Qwen3.5 2B Q4_K_M, pinned to one Hugging Face commit, SHA-256
+  checked), `suggestPrompt.ts` (v2 prompt, JSON schema, tolerant parsing; `teaches: false` empties
+  the answer), `suggestPattern.ts` (loads the model for one answer and releases it; runs through
+  `jobStore.runExclusive`, so never beside Whisper or the silhouette pipeline).
+- `canSuggest()`: Android with ≥ 6 GB RAM (`expo-device`) and the native hash check available.
+- `SuggestionPanel` in the transcript sheet: size notice before the 1.3 GB download, progress,
+  "waiting for the video work", result with *Use suggestion* / *Discard*, "nothing to suggest"
+  for a clip that teaches nothing, retry on an unreadable answer. Keeps the screen awake while it
+  works. *Use suggestion* sets the name only when it is empty and adds the description as its own
+  paragraph.
+- Settings → **On-device models**: speech and suggestion model, each with size and *Delete*.
+  `modelStore.ts` now serves both (`installedModelUri`, `downloadModel`, `deleteModel`).
+- **Found on the way:** shortening or de-identifying carried the transcript over whole — lines from
+  outside the cut, at the source's times (a 15 s clip showed a line at 0:23). `trimTranscript` now
+  keeps the lines inside the cut, retimed. Transcripts already carried over wrongly stay until the
+  video is transcribed again.
+
+**On the Pixel:** from the "Test Video 2" transcript — size notice, 1.3 GB download and hash
+check, then "Double Side Turn" and a plausible description in 225 s all told; *Use suggestion*
+kept the existing name and filled the empty description. Settings listed both models.
+
+**Open:** real teacher footage in German and Spanish; iOS (no native hash, and llama.rn's Metal
+path untested).
 
 **Size:** **L** overall. The spike decides whether it stays at L or grows.
 

@@ -4,7 +4,10 @@ import {
   recordReplacement,
   replaceVideoInPattern,
 } from "@/src/deidentify/jobs/replaceVideo";
-import { withoutTranscripts } from "@/src/pattern/data/transcripts";
+import {
+  trimTranscript,
+  withoutTranscripts,
+} from "@/src/pattern/data/transcripts";
 import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
 import { createTestPattern } from "@/utils/testFactories";
 
@@ -85,5 +88,37 @@ describe("withoutTranscripts", () => {
     });
     // The pattern itself is untouched.
     expect(pattern.videoRefs[0].transcript).toBe(TRANSCRIPT);
+  });
+});
+
+describe("trimTranscript", () => {
+  const transcript = {
+    language: "en",
+    model: "whisper-base-q5_1",
+    createdAt: 1,
+    segments: [
+      { start: 0, end: 2, text: "before" },
+      { start: 2, end: 5, text: "into the cut" },
+      { start: 5.5, end: 6.5, text: "inside" },
+      { start: 6, end: 9, text: "out of the cut" },
+      { start: 9, end: 12, text: "after" },
+    ],
+  };
+
+  it("keeps what was said in the cut, timed from its start", () => {
+    expect(trimTranscript(transcript, 3, 7).segments).toEqual([
+      { start: 0, end: 2, text: "into the cut" },
+      { start: 2.5, end: 3.5, text: "inside" },
+      { start: 3, end: 4, text: "out of the cut" },
+    ]);
+  });
+
+  it("keeps the transcript's other fields, and nothing for a silent cut", () => {
+    const trimmed = trimTranscript(transcript, 12, 20);
+    expect(trimmed).toEqual({ ...transcript, segments: [] });
+  });
+
+  it("changes nothing for a cut over the whole clip", () => {
+    expect(trimTranscript(transcript, 0, 12)).toEqual(transcript);
   });
 });

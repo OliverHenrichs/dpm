@@ -1,4 +1,8 @@
-import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
+import {
+  IPattern,
+  IVideoReference,
+  IVideoTranscript,
+} from "@/src/pattern/types/IPatternList";
 
 /**
  * A video reference without its transcript. Transcripts stay on the device: exporting or
@@ -33,4 +37,26 @@ export function hasTranscripts(
       (p.videoRefs ?? []).some((v) => v.transcript) ||
       (p.modifierRefs ?? []).some((m) => m.videoRefs.some((v) => v.transcript)),
   );
+}
+
+/**
+ * The transcript of a cut: the lines said within [start, end) of the source, timed from the cut's
+ * start. Shortening and de-identifying both cut a window out of the video; carried over whole, the
+ * transcript kept lines from outside it, at the source's times — past the end of the new clip.
+ */
+export function trimTranscript(
+  transcript: IVideoTranscript,
+  start: number,
+  end: number,
+): IVideoTranscript {
+  return {
+    ...transcript,
+    segments: transcript.segments
+      .filter((s) => s.end > start && s.start < end)
+      .map((s) => ({
+        ...s,
+        start: Math.max(s.start, start) - start,
+        end: Math.min(s.end, end) - start,
+      })),
+  };
 }
