@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { ActivityIndicator, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -28,6 +29,14 @@ type State =
   | { step: "result"; suggestion: Suggestion }
   | { step: "error"; message: string };
 
+const KEEP_AWAKE_TAG = "suggest";
+const BUSY_STEPS = new Set<State["step"]>([
+  "download",
+  "waiting",
+  "loading",
+  "thinking",
+]);
+
 /**
  * A suggested name and description for the pattern the transcript teaches (L4), drafted on the
  * phone by a small language model. Nothing is filled in until the user taps "Use suggestion",
@@ -39,6 +48,16 @@ const SuggestionPanel: React.FC<Props> = ({ transcript, onApply }) => {
   const { theme } = useUnistyles();
   const { activeList, patterns } = useActivePatternList();
   const [state, setState] = useState<State>({ step: "idle" });
+
+  // A 1.3 GB download outlasts most screen timeouts, and a locked phone pauses it.
+  const working = BUSY_STEPS.has(state.step);
+  useEffect(() => {
+    if (!working) return;
+    activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
+    return () => {
+      deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
+    };
+  }, [working]);
 
   if (!canSuggest() || transcript.segments.length === 0) return null;
 
