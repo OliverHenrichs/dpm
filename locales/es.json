@@ -296,5 +296,22 @@
   "speechModelHint": "Transcribe lo que se dice en los vídeos. Se descarga con la primera transcripción.",
   "includeTranscriptsInExport": "Incluir transcripciones",
   "includeTranscriptsHint": "Lo que dicen los profesores en los vídeos viaja con ellos. Déjalo desactivado salvo que los destinatarios deban leerlo.",
-  "includeTranscriptsNeedsVideos": "Las transcripciones viajan con sus vídeos: incluye primero los vídeos."
+  "includeTranscriptsNeedsVideos": "Las transcripciones viajan con sus vídeos: incluye primero los vídeos.",
+  "suggestRun": "Sugerir nombre y descripción",
+  "suggestDownloadHint": "Las sugerencias las escribe un pequeño modelo de lenguaje en este teléfono, con una descarga única de {{size}} MB. Se recomienda wifi.",
+  "suggestDownloadAndRun": "Descargar y sugerir",
+  "suggestDownloading": "Descargando el modelo de sugerencias … {{percent}} %",
+  "suggestWaiting": "Esperando a que termine el trabajo con vídeos …",
+  "suggestThinking": "Pensando …",
+  "suggestFailed": "Esta vez no hay sugerencia. Inténtalo de nuevo.",
+  "suggestRetry": "Intentar de nuevo",
+  "suggestNothing": "Nada que sugerir: este vídeo no parece enseñar una figura.",
+  "suggestName": "Nombre: {{name}}",
+  "suggestApplyHint": "Solo rellena el nombre si está vacío; la descripción va en un párrafo propio. Compruébalo con el vídeo.",
+  "suggestDismiss": "Descartar",
+  "suggestApply": "Usar sugerencia",
+  "deviceModels": "Modelos en el dispositivo",
+  "suggestionModel": "Modelo de sugerencias",
+  "suggestionModelHint": "Redacta el nombre y la descripción de una figura a partir de una transcripción.",
+  "deleteModel": "Eliminar {{name}}"
 }

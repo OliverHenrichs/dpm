@@ -11,8 +11,24 @@ import {
   WHISPER_MODEL,
 } from "@/src/transcribe/models";
 
+/**
+ * The app's downloaded models — the speech models here, and the suggestion model
+ * (`src/suggest/`) through the per-model helpers below: one folder, one verified download path.
+ */
 const modelDir = () => new Directory(Paths.document, "models");
 const fileFor = (model: ModelSpec) => new File(modelDir(), model.fileName);
+
+/** The model's file when it is on the device and complete (size checked; hashed on download). */
+export function installedModelUri(model: ModelSpec): string | null {
+  const file = fileFor(model);
+  return file.exists && file.size === model.bytes ? file.uri : null;
+}
+
+/** Removes one model's file; the next use downloads it again. */
+export function deleteModel(model: ModelSpec): void {
+  const file = fileFor(model);
+  if (file.exists) file.delete();
+}
 
 export type InstalledModels = { whisperUri: string; vadUri: string };
 
@@ -52,7 +68,7 @@ export async function ensureModels(
       doneBytes += model.bytes;
       continue;
     }
-    await download(model, (written) =>
+    await downloadModel(model, (written) =>
       onProgress?.((doneBytes + written) / TRANSCRIPTION_DOWNLOAD_BYTES),
     );
     doneBytes += model.bytes;
@@ -61,10 +77,17 @@ export async function ensureModels(
   return installedModels()!;
 }
 
-async function download(
+/**
+ * Downloads one model to a `.part` file and moves it into place once its size and SHA-256
+ * match, so an interrupted or corrupted download is never taken for a model. Reports bytes
+ * written so far.
+ */
+export async function downloadModel(
   model: ModelSpec,
   onBytes: (written: number) => void,
 ): Promise<void> {
+  const dir = modelDir();
+  if (!dir.exists) dir.create({ intermediates: true });
   const partial = new File(modelDir(), `${model.fileName}.part`);
   if (partial.exists) partial.delete();
 
@@ -100,8 +123,5 @@ async function download(
 
 /** Frees the space (~60 MB); the next transcription downloads the models again. */
 export function deleteModels(): void {
-  for (const model of TRANSCRIPTION_MODELS) {
-    const file = fileFor(model);
-    if (file.exists) file.delete();
-  }
+  TRANSCRIPTION_MODELS.forEach(deleteModel);
 }

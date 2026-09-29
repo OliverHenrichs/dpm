@@ -17,6 +17,8 @@ import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
 import { LANGUAGES } from "@/src/settings/types/Languages";
+import SuggestionPanel from "@/src/suggest/components/SuggestionPanel";
+import { Suggestion } from "@/src/suggest/suggestPrompt";
 import {
   appendToDescription,
   segmentAt,
@@ -43,6 +45,8 @@ type Props = {
   onDescriptionChange?: (append: (description: string) => string) => void;
   /** Transcribes the video again in a given language, when detection got it wrong. */
   onRetranscribe?: (language: string) => void;
+  /** Takes a suggested name and description (L4); omitted where there is no form to fill. */
+  onApplySuggestion?: (suggestion: Suggestion) => void;
 };
 
 /** Whisper's name for a language the app does not ship, or "und" when nothing was said. */
@@ -62,6 +66,7 @@ const TranscriptSheet: React.FC<Props> = ({
   onClose,
   onDescriptionChange,
   onRetranscribe,
+  onApplySuggestion,
 }) => (
   <Modal
     visible={target !== null}
@@ -77,6 +82,7 @@ const TranscriptSheet: React.FC<Props> = ({
           onClose={onClose}
           onDescriptionChange={onDescriptionChange}
           onRetranscribe={onRetranscribe}
+          onApplySuggestion={onApplySuggestion}
         />
       )}
     </ModalOverlay>
@@ -88,6 +94,7 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
   onClose,
   onDescriptionChange,
   onRetranscribe,
+  onApplySuggestion,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -175,6 +182,16 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
             />
           ))}
         </View>
+      )}
+
+      {onApplySuggestion && (
+        <SuggestionPanel
+          transcript={target.transcript}
+          onApply={(suggestion) => {
+            onApplySuggestion(suggestion);
+            onClose();
+          }}
+        />
       )}
 
       <ScrollView

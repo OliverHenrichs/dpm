@@ -12,6 +12,7 @@ import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";
 import { resetGestureMock } from "./__mocks__/react-native-gesture-handler";
 import { resetReanimatedMock } from "./__mocks__/react-native-reanimated";
 import { resetWhisperMock } from "./__mocks__/whisper.rn/index";
+import { resetLlamaMock } from "./__mocks__/llama.rn";
 
 // `waitFor` defaults to 1s, which is not enough for the first mount of the
 // full provider stack on a cold CI runner — and it would surface as a
@@ -25,6 +26,7 @@ beforeEach(() => {
   resetGestureMock();
   resetReanimatedMock();
   resetWhisperMock();
+  resetLlamaMock();
 });
 
 // jest-expo's own setup mocks the legacy file system with stubs, which would

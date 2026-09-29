@@ -188,6 +188,20 @@ export const jobStore = {
     emit();
   },
 
+  /**
+   * Runs work in turn with the jobs, never beside one: the suggestion model (L4) takes ~3.4 GB
+   * while loaded, and next to Whisper or the silhouette pipeline it would not fit in memory. It
+   * starts once everything queued before it has finished.
+   */
+  runExclusive<T>(work: () => Promise<T>): Promise<T> {
+    const result = queue.then(work);
+    queue = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  },
+
   /** Test hook: forget everything, and wait for a running job first. */
   async reset() {
     await queue;
