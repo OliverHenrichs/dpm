@@ -1893,7 +1893,7 @@ transcribed, counting once to 100%.
 - Code-switching teachers (English jargon inside Spanish speech): the vocabulary prompt helps;
   the spike will show how much.
 
-**Later, separate — suggestions from a transcript (assessed 2026-09-28, not started):** a
+**Later, separate — suggestions from a transcript (assessed 2026-09-28, spiked 2026-09-29):** a
 suggested pattern name and description, drafted by an LLM from the transcript and the list's own
 vocabulary, always shown for the user to accept or edit, never written on its own.
 - **On-device, llama.rn (llama.cpp, same family as whisper.rn):** a 1–2B instruct model (Qwen3
@@ -1909,6 +1909,43 @@ vocabulary, always shown for the user to accept or edit, never written on its ow
   device, which brings back L3's consent step.
 - **Next step if wanted:** a spike on the Pixel with llama.rn — two models, the owner's clip plus a
   German one — for quality, speed and memory, and a check whether the 10a reports Gemini Nano.
+
+**Spike (2026-09-29, Pixel 10a, branch `spike/l4-suggest`) — verdict: go, with Qwen3.5 2B.**
+
+Built: llama.rn 0.12.9; a dev-only bench at `/suggest-spike` (`src/suggest/`) that downloads each
+model and runs it over five written teacher transcripts (EN sugar push, EN "sugar bush" →
+Sugar Tuck turn, DE left side pass, ES whip, EN water break) plus the list's real transcripts;
+`modules/genai-probe` for Gemini Nano. Answers are schema-bound JSON (llama.rn's `json_schema`).
+
+- **Gemini Nano: not on the Pixel 10a.** AICore answers `606-FEATURE_NOT_FOUND`. ML Kit's
+  genai-prompt beta3+ is built with Kotlin 2.3 (the project compiles with 2.1) and needs
+  minSdk 26 (the app has 24); the spike used beta2 and a manifest override.
+- **Measured on CPU** (`v8_2_dotprod_i8mm` build; no GPU path on Tensor):
+
+| Model | File | Download | Load | Output | Per suggestion | Peak app PSS |
+|---|---|---|---|---|---|---|
+| Qwen3.5 0.8B | 533 MB | 26 s | 1.5 s | 25–29 tok/s | 3–8 s | 2.0 GB |
+| Gemma 3 1B | 806 MB | 50 s | 1.2 s | 14–21 tok/s | 4–16 s | 2.2 GB |
+| Qwen3.5 2B | 1281 MB | ~1.5 min | 2.8–4.6 s | 13–15 tok/s | 3.5–15 s | 3.2–3.4 GB |
+| Gemma 4 E2B (reference) | 2841 MB | ~3 min | 3.9 s | 12 tok/s | 3–17 s | 3.9 GB |
+
+- **Prompt v1** (name + description): every model found the names, including the misheard
+  "sugar bush" → the list's "Sugar Tuck turn" and the German "Links-Seitenpass". But the small
+  ones copied the transcript, Gemma 3 1B added a "reverse whip", and Qwen3.5 2B **invented
+  patterns for non-teaching clips** ("Open whip" for a water break, "Test popup" for the
+  owner's test clip) — primed by the list's vocabulary. Gemma 4 E2B stayed empty on the break
+  but copied the transcripts almost word for word.
+- **Prompt v2** (`teaches` boolean first; vocabulary for spelling only; "own words, no filler"):
+  **Qwen3.5 2B** then returned empty for both non-teaching clips, the right name for all five
+  teaching ones, and real summaries in EN/DE/ES. Slips: "compresses on beat 3" (3–4), and the
+  misheard "Sugar Bush" repeated in one description. Qwen3.5 0.8B became over-cautious (empty for
+  the sugar tuck and a real teaching clip) and invented in Spanish.
+
+**For the feature:** Qwen3.5 2B (Apache-2.0) with prompt v2, as an optional second download
+(1.3 GB) after the speech model; one suggestion in ~5–15 s; a "Suggest name and description" button
+in the transcript sheet, filling the form's empty fields only on the user's tap. Open: 3.4 GB app
+memory while loaded (release it after use; never together with Whisper — the job queue is serial),
+real teacher footage (all teaching inputs here were written), and a hash for the model file.
 
 **Size:** **L** overall. The spike decides whether it stays at L or grows.
 

@@ -13,6 +13,7 @@ import { deleteLlm, downloadLlm, llmUri } from "@/src/suggest/llmStore";
 import { SAMPLES, Sample } from "@/src/suggest/samples";
 import {
   parseSuggestion,
+  PROMPT_VERSION,
   Suggestion,
   suggestionMessages,
   vocabularyFor,
@@ -102,7 +103,12 @@ const SuggestSpikeScreen: React.FC = () => {
           vocabulary,
         });
         const stats = `load ${o.loadMs} ms · prompt ${o.promptTokens} tok in ${o.promptMs} ms · ${o.outputTokens} tok at ${o.outputPerSecond}/s · total ${o.totalMs} ms · ${o.lib}`;
-        log({ model: model.id, sample: sample.id, ...o });
+        log({
+          model: model.id,
+          prompt: PROMPT_VERSION,
+          sample: sample.id,
+          ...o,
+        });
         setRuns((r) => [
           {
             model: model.id,

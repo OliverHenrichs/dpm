@@ -7,13 +7,19 @@ import { LANGUAGES } from "@/src/settings/types/Languages";
  */
 export type Suggestion = { name: string; description: string };
 
+/** v2: `teaches` gate, vocabulary for spelling only, description in the model's own words. */
+export const PROMPT_VERSION = 2;
+
+// `teaches` comes first, so the model commits to whether there is a pattern at all before it
+// writes a name: v1 of the prompt had the small models invent one for a water break (spike).
 export const SUGGESTION_SCHEMA = {
   type: "object",
   properties: {
+    teaches: { type: "boolean" },
     name: { type: "string" },
     description: { type: "string" },
   },
-  required: ["name", "description"],
+  required: ["teaches", "name", "description"],
 } as const;
 
 const LANGUAGE_NAMES: Record<string, string> = Object.fromEntries(
@@ -25,11 +31,11 @@ export function languageName(code: string): string | undefined {
 }
 
 const SYSTEM = `You help dancers keep notes on partner-dance patterns.
-You get what a teacher said while demonstrating one pattern, transcribed automatically (it may contain recognition mistakes), and the dancer's own vocabulary of pattern names and terms.
-Suggest:
-- "name": the pattern's name, 1 to 4 words. Use the name the teacher gives it; when it matches a vocabulary entry, use the vocabulary's spelling. Empty if the teacher neither names nor describes a pattern.
-- "description": 1 to 3 short sentences for the dancer's notes: the counts, what the lead and the follow do, and the teacher's tips. Only what the teacher said; no greetings, no music cues, nothing invented. Empty if there is nothing worth noting.
-Answer with JSON only.`;
+You get a transcript of a video, made automatically (it may contain recognition mistakes), and the dancer's vocabulary of pattern names and terms.
+Answer with JSON:
+- "teaches": true only if the speaker explains how to dance a pattern: steps, counts, or what the lead or follow does. Chat, breaks, tests and introductions are false.
+- "name": the pattern's name as the speaker says it, 1 to 4 words. The vocabulary is only for spelling: if the speaker's name for it is a vocabulary entry, possibly misheard, use the vocabulary's spelling. Never take a name from the vocabulary that the speaker does not say. Empty if "teaches" is false or no name is said.
+- "description": a note for the dancer in your own words, 1 to 3 short sentences: the counts, what the lead and the follow do, and the tips. Do not copy the transcript; leave out counting-in, greetings and filler. Nothing that was not said. Empty if "teaches" is false.`;
 
 /** The words the dancer already uses, for the model to match spellings against. */
 export function vocabularyFor(
@@ -81,6 +87,8 @@ export function parseSuggestion(text: string): Suggestion | null {
     if (typeof raw !== "object" || raw === null) return null;
     const clean = (v: unknown) =>
       typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "";
+    // Asked first and stated plainly; a name after "no pattern here" is not believed.
+    if (raw.teaches === false) return { name: "", description: "" };
     return { name: clean(raw.name), description: clean(raw.description) };
   } catch {
     return null;

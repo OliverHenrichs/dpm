@@ -49,6 +49,12 @@ describe("parseSuggestion", () => {
     ).toEqual({ name: "Whip", description: "Eight counts." });
   });
 
+  it("does not believe a name after the model said no pattern is taught", () => {
+    expect(
+      parseSuggestion('{"teaches":false,"name":"Open whip","description":"x"}'),
+    ).toEqual({ name: "", description: "" });
+  });
+
   it("gives empty fields for missing or non-string values", () => {
     expect(parseSuggestion('{"name": 3}')).toEqual({
       name: "",
