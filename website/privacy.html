@@ -1,0 +1,200 @@
+<!doctype html>
+<!-- Generated from PRIVACY_POLICY.md by website/build-privacy.py. Do not edit by hand. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy policy · DPM</title>
+    <meta name="description" content="Privacy policy for DPM (Dance Pattern Mapper)." />
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="./">
+          <img src="img/logo.png" alt="" width="36" height="36" />
+          DPM
+        </a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="./">Home</a>
+          <a href="https://github.com/OliverHenrichs/dance-pattern-mapper">GitHub</a>
+        </nav>
+      </div>
+    </header>
+    <main class="wrap prose">
+<h1>Privacy Policy — DancePatternMapper</h1>
+<p><strong>Last updated: March 22, 2026</strong></p>
+<hr>
+<h2>1. Who we are</h2>
+<p><strong>App name:</strong> DancePatternMapper<br>
+<strong>Developer / Data Controller:</strong> Oliver Henrichs<br>
+<strong>Contact email:</strong> dance-pattern-mapper@pm.me<br>
+<strong>Website / Support page:</strong> N/A</p>
+<p>If you have any questions about this Privacy Policy or wish to exercise your rights, please contact us at the email address above.</p>
+<hr>
+<h2>2. What this app does</h2>
+<p>DancePatternMapper is a tool for mapping and visualising partner-dance prerequisite graphs. It runs primarily <strong>on your device</strong> with all data stored locally. An optional cloud-sharing feature lets you publish a pattern list so others can subscribe to it using an 8-character share code.</p>
+<hr>
+<h2>3. What data we collect and why</h2>
+<h3>3.1 Data stored on your device only</h3>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Purpose</th>
+<th>Where stored</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pattern lists, patterns, descriptions, tags</td>
+<td>Core app functionality</td>
+<td>On-device (AsyncStorage)</td>
+</tr>
+<tr>
+<td>Video files you attach to patterns</td>
+<td>Viewing and exporting patterns</td>
+<td>On-device local filesystem</td>
+</tr>
+<tr>
+<td>Your active list selection</td>
+<td>Restore your last session</td>
+<td>On-device (AsyncStorage)</td>
+</tr>
+</tbody>
+</table>
+<p>None of this data ever leaves your device unless you explicitly use the Export or Cloud Sharing feature.</p>
+<h3>3.2 Data uploaded to our cloud service (Cloud Sharing only)</h3>
+<p>When you choose to <strong>publish a pattern list</strong>, the following is sent to and stored in Google Firebase Firestore:</p>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pattern list content (name, pattern names, descriptions, tags, prerequisites)</td>
+<td>Sharing the list with subscribers</td>
+</tr>
+<tr>
+<td>Video URLs you have attached (the link text only, not the video file itself)</td>
+<td>Enabling subscribers to view linked videos</td>
+</tr>
+<tr>
+<td>A randomly generated 8-character share code (your "list ID")</td>
+<td>Identifying your list in the cloud</td>
+</tr>
+<tr>
+<td>Timestamps (<code>publishedAt</code>, <code>publisherVersion</code>)</td>
+<td>Detecting updates on subscriber devices</td>
+</tr>
+</tbody>
+</table>
+<p><strong>We do not collect:</strong> your name, email address, phone number, location, or any account credentials. The app has no user accounts.</p>
+<p><strong>Local video files are never uploaded.</strong> Only URL-based video references are included in the cloud document.</p>
+<h3>3.3 Data collected automatically by our infrastructure</h3>
+<p>When you use the Cloud Sharing feature (publishing or subscribing), Google Firebase automatically records:</p>
+<ul>
+<li>Your <strong>IP address</strong> (a form of personal data under GDPR)</li>
+<li>Connection timestamps and basic usage metadata</li>
+</ul>
+<p>This happens even if the feature is available but you only read a shared list. It does <strong>not</strong> happen when you use the app in local-only mode (no publishing or subscribing).</p>
+<hr>
+<h2>4. Legal basis for processing (GDPR Art. 6)</h2>
+<table>
+<thead>
+<tr>
+<th>Processing activity</th>
+<th>Legal basis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Storing pattern data on your device</td>
+<td>Necessary for the performance of the service you requested (Art. 6(1)(b))</td>
+</tr>
+<tr>
+<td>Publishing your list to Firebase</td>
+<td>Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time</td>
+</tr>
+<tr>
+<td>IP address collection by Firebase</td>
+<td>Legitimate interest in operating a secure service (Art. 6(1)(f))</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>5. Who we share your data with</h2>
+<p>We use the following third-party data processor:</p>
+<p><strong>Google LLC</strong> (Firebase / Firestore)<br>
+Role: Data Processor<br>
+Purpose: Cloud storage of published pattern lists<br>
+Privacy policy: https://policies.google.com/privacy<br>
+Data Processing Terms: https://firebase.google.com/terms/data-processing-terms<br>
+Data location: <strong>Europe (europe-west, Belgium).</strong> All Firestore data is stored exclusively on Google servers within the European Union. No cross-border transfer outside the EU/EEA takes place for stored data.</p>
+<p>We do <strong>not</strong> sell your data to third parties and do not use your data for advertising.</p>
+<hr>
+<h2>6. Data retention</h2>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Retention</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local device data</td>
+<td>Until you uninstall the app or delete the list manually</td>
+</tr>
+<tr>
+<td>Published Firestore document</td>
+<td>Until you unpublish the list from within the app (Settings → [your list] → Unpublish). There is no automatic expiry.</td>
+</tr>
+<tr>
+<td>Firebase infrastructure logs (IP, timestamps)</td>
+<td>Governed by Google's own retention policy (typically 30–180 days)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>7. Your rights (GDPR, if you are in the EU/EEA)</h2>
+<p>You have the right to:</p>
+<ul>
+<li><strong>Access</strong> — request a copy of your personal data we hold</li>
+<li><strong>Erasure</strong> ("right to be forgotten") — request deletion of your personal data</li>
+<li><strong>Portability</strong> — export your data (use the in-app Export feature for local data; request Firestore data deletion by contacting us)</li>
+<li><strong>Objection</strong> — object to processing based on legitimate interest</li>
+<li><strong>Lodge a complaint</strong> — with your national data protection authority (e.g. the <a href="https://www.bfdi.bund.de/">BfDI</a> in Germany, the <a href="https://ico.org.uk/">ICO</a> in the UK)</li>
+</ul>
+<p><strong>How to delete your published data:</strong> Open the app → Dances → your list → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document. For anything else, contact us at dance-pattern-mapper@pm.me.</p>
+<p>Because the app has no user accounts, we cannot identify which Firestore documents belong to you without you providing the share code. Please include it in any erasure request.</p>
+<hr>
+<h2>8. Children</h2>
+<p>The app is not directed at children under 13 (or under 16 in the EU). We do not knowingly collect personal data from children. If you believe a child has submitted personal data through the cloud sharing feature, please contact us and we will delete it.</p>
+<hr>
+<h2>9. Security</h2>
+<p>We use cryptographically secure random number generation (CSPRNG) to create share codes. Published lists are protected by Firestore Security Rules that require a valid app token to write. However, any person who obtains a share code can read the corresponding list — do not publish lists containing sensitive personal information.</p>
+<hr>
+<h2>10. Changes to this policy</h2>
+<p>We may update this policy. When we do, we will update the "Last updated" date at the top of this document. We encourage you to review this policy periodically.</p>
+<hr>
+<h2>11. Contact</h2>
+<p>Oliver Henrichs<br>
+dance-pattern-mapper@pm.me</p>
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© 2026 Oliver Henrichs</span>
+        <nav aria-label="Footer">
+          <a href="./">Home</a>
+          <a href="mailto:dance-pattern-mapper@pm.me">Contact</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

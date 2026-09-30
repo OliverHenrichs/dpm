@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPM · Dance Pattern Mapper</title>
+    <meta
+      name="description"
+      content="DPM maps partner-dance patterns as a graph of what builds on what. Keep your patterns, videos and variations in one place, see how they connect, and share lists with your dance partners."
+    />
+    <meta name="theme-color" content="#f5f3ff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Social previews. Update SITE_URL here once the site has its final address. -->
+    <link rel="canonical" href="https://oliverhenrichs.github.io/dance-pattern-mapper/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DPM · Dance Pattern Mapper" />
+    <meta
+      property="og:description"
+      content="See how your dance patterns build on each other. Patterns, videos and variations in one place, mapped as a graph."
+    />
+    <meta property="og:url" content="https://oliverhenrichs.github.io/dance-pattern-mapper/" />
+    <meta
+      property="og:image"
+      content="https://oliverhenrichs.github.io/dance-pattern-mapper/img/og-image.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="./">
+          <img src="img/logo.png" alt="" width="36" height="36" />
+          DPM
+        </a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="#graph">Features</a>
+          <a class="optional" href="#video">Video tools</a>
+          <a class="optional" href="#faq">FAQ</a>
+          <a href="https://github.com/OliverHenrichs/dance-pattern-mapper">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+      <section class="hero">
+        <div class="wrap">
+          <div>
+            <span class="eyebrow">Dance Pattern Mapper</span>
+            <h1>See how your dance fits together.</h1>
+            <p class="lead">
+              Every partner-dance pattern builds on others. DPM keeps your patterns, their videos
+              and their variations in one place, and draws them as a map of what leads to what,
+              so you know what to practise next and what you've forgotten.
+            </p>
+            <div class="actions">
+              <a class="btn btn-primary" href="https://github.com/OliverHenrichs/dance-pattern-mapper">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path
+                    d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z"
+                  />
+                </svg>
+                View on GitHub
+              </a>
+              <a class="btn btn-secondary" href="#graph">Take the tour</a>
+            </div>
+            <!-- When the store listings are live, replace this line with the official
+                 Google Play and App Store badges linking to them. -->
+            <p class="status">
+              In active development for Android and iOS. Open source, no account needed.
+            </p>
+          </div>
+
+          <div class="hero-art">
+            <svg
+              viewBox="0 0 480 380"
+              role="img"
+              aria-label="A network graph of West Coast Swing patterns: Sugar Push leads to the side passes, which lead to turns and whips."
+            >
+              <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 0 10 5 0 10z" fill="var(--edge)" />
+                </marker>
+              </defs>
+              <g class="art-edge" marker-end="url(#arr)">
+                <path d="M226 64 136 124" />
+                <path d="M254 64 344 124" />
+                <path d="M110 158 86 212" />
+                <path d="M136 152 222 218" />
+                <path d="M344 152 258 218" />
+                <path d="M370 158 394 212" />
+                <path d="M226 256 186 306" />
+                <path d="M254 256 294 306" />
+                <path d="M100 248 C 150 310 240 320 290 322" />
+              </g>
+              <g>
+                <circle cx="240" cy="46" r="20" fill="var(--coral)" />
+                <circle cx="120" cy="140" r="20" fill="var(--teal)" />
+                <circle cx="360" cy="140" r="20" fill="var(--teal)" />
+                <circle cx="80" cy="230" r="20" fill="var(--teal)" />
+                <circle cx="240" cy="236" r="20" fill="var(--violet)" />
+                <circle cx="400" cy="230" r="20" fill="var(--amber)" />
+                <circle cx="176" cy="322" r="20" fill="var(--violet)" />
+                <circle cx="310" cy="322" r="20" fill="var(--violet)" />
+              </g>
+              <!-- Badges: a play mark for a video, dots for attached modifiers. -->
+              <g fill="var(--primary)">
+                <circle cx="256" cy="30" r="8" />
+                <circle cx="256" cy="220" r="8" />
+                <circle cx="96" cy="214" r="8" />
+              </g>
+              <g fill="var(--on-primary)">
+                <path d="M253 26v8l6-4z" />
+                <path d="M253 216v8l6-4z" />
+                <path d="M93 210v8l6-4z" />
+              </g>
+              <g fill="var(--primary)">
+                <circle cx="326" cy="342" r="3.5" />
+                <circle cx="335" cy="342" r="3.5" />
+                <circle cx="416" cy="250" r="3.5" />
+              </g>
+              <g class="art-label" text-anchor="middle">
+                <text x="240" y="84">Sugar Push</text>
+                <text x="120" y="178">Left Side Pass</text>
+                <text x="360" y="178">Right Side Pass</text>
+                <text x="80" y="268">Underarm Turn</text>
+                <text x="240" y="274">Basic Whip</text>
+                <text x="400" y="268">Tuck Turn</text>
+                <text x="176" y="362">Reverse Whip</text>
+                <text x="310" y="362">Inside-Turn Whip</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── The idea ─────────────────────────────────────────────────────── -->
+      <section class="band" id="idea">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>Patterns build on patterns</h2>
+            <p>
+              You can't dance a whip before you can lead a pass. DPM makes that structure explicit.
+              You record the prerequisites, and the app shows you the rest.
+            </p>
+          </div>
+          <ol class="steps">
+            <li>
+              <h3>Start a list for your dance</h3>
+              <p>
+                Pick a template for West Coast Swing, Salsa, Bachata, Argentine Tango or Lindy Hop,
+                or start from a blank list for any other partner dance.
+              </p>
+            </li>
+            <li>
+              <h3>Add what you learn</h3>
+              <p>
+                Name, type, counts, level, notes, tags and videos from class, plus the patterns it
+                builds on.
+              </p>
+            </li>
+            <li>
+              <h3>See the whole map</h3>
+              <p>
+                DPM lays out your repertoire as a timeline or a network, and you can filter it down
+                to exactly what you're working on.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ── Features ─────────────────────────────────────────────────────── -->
+      <section id="graph">
+        <div class="wrap">
+          <div class="feature">
+            <div>
+              <h2>Two views of one map</h2>
+              <p>
+                The <strong>timeline</strong> gives each pattern type its own lane and flows left to
+                right by how many steps a pattern is from the basics. The <strong>network</strong>
+                is a zoomable graph you can pan, pinch and arrange by hand.
+              </p>
+              <ul>
+                <li>Colours show the pattern type, shading shows the level</li>
+                <li>Badges show which patterns have videos or variations</li>
+                <li>Drag nodes into your own arrangement. DPM remembers it for each list</li>
+                <li>Tap any pattern to open its details and videos</li>
+                <li>Circular prerequisites are flagged, never silently dropped</li>
+              </ul>
+            </div>
+            <div class="feature-art">
+              <svg
+                viewBox="0 0 530 280"
+                role="img"
+                aria-label="Timeline view: one lane per pattern type (push, pass, whip, tuck), patterns placed left to right by dependency depth."
+              >
+                <defs>
+                  <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M0 0 10 5 0 10z" fill="var(--edge)" />
+                  </marker>
+                </defs>
+                <rect class="art-variant" x="0" y="20" width="530" height="60" rx="8" opacity=".55" />
+                <rect class="art-variant" x="0" y="140" width="530" height="60" rx="8" opacity=".55" />
+                <g class="art-label-muted">
+                  <text x="12" y="54">push</text>
+                  <text x="12" y="114">pass</text>
+                  <text x="12" y="174">whip</text>
+                  <text x="12" y="234">tuck</text>
+                </g>
+                <g class="art-edge" marker-end="url(#arr2)">
+                  <path d="M180 50 C200 50 172 110 188 110" />
+                  <path d="M180 50 C204 50 166 230 188 230" />
+                  <path d="M290 110 298 110" />
+                  <path d="M290 110 C306 110 284 170 298 170" />
+                  <path d="M400 110 C416 110 394 168 408 168" />
+                  <path d="M400 170 408 170" />
+                  <path d="M290 230 C380 252 392 184 408 176" />
+                </g>
+                <g>
+                  <rect x="80" y="35" width="100" height="30" rx="8" fill="var(--coral)" />
+                  <rect x="190" y="95" width="100" height="30" rx="8" fill="var(--teal)" />
+                  <rect x="300" y="95" width="100" height="30" rx="8" fill="var(--teal)" />
+                  <rect x="300" y="155" width="100" height="30" rx="8" fill="var(--violet)" />
+                  <rect x="410" y="155" width="110" height="30" rx="8" fill="var(--violet)" />
+                  <rect x="190" y="215" width="100" height="30" rx="8" fill="var(--amber)" />
+                </g>
+                <g class="art-on-fill" text-anchor="middle">
+                  <text x="130" y="54">Sugar Push</text>
+                  <text x="240" y="114">Left Side Pass</text>
+                  <text x="350" y="114">Underarm Turn</text>
+                  <text x="350" y="174">Basic Whip</text>
+                  <text x="465" y="174">Inside-Turn Whip</text>
+                  <text x="240" y="234">Tuck Turn</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="feature flip">
+            <div>
+              <h2>Find a pattern, and everything around it</h2>
+              <p>
+                Filter by name, type, level, counts or tags. On the graph, the filter doesn't just
+                hide what doesn't match. It shows the chain a match belongs to, from the path that
+                leads to it to everything connected to it. The matches stay bright and the rest
+                fades back.
+              </p>
+              <p class="muted">
+                The same filter works on the list, alongside sorting by name, type, level, counts or
+                date added.
+              </p>
+            </div>
+            <div class="feature-art">
+              <svg
+                viewBox="0 0 480 330"
+                role="img"
+                aria-label="The network graph filtered for 'whip': the whip patterns and the path leading to them stay bright, other patterns are dimmed."
+              >
+                <defs>
+                  <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M0 0 10 5 0 10z" fill="var(--edge)" />
+                  </marker>
+                </defs>
+                <rect class="art-variant" x="120" y="4" width="240" height="36" rx="18" />
+                <g fill="none" stroke="var(--text-muted)" stroke-width="2">
+                  <circle cx="144" cy="21" r="6" />
+                  <path d="M149 26l5 5" />
+                </g>
+                <text class="art-label" x="164" y="27">whip</text>
+                <g class="art-edge" marker-end="url(#arr3)">
+                  <path d="M226 84 136 134" />
+                  <path d="M136 162 222 212" />
+                  <path d="M226 250 186 290" class="art-dim" />
+                  <path d="M254 250 294 290" />
+                  <path d="M254 84 344 134" class="art-dim" />
+                  <path d="M344 162 258 212" class="art-dim" />
+                  <path d="M110 166 86 206" class="art-dim" />
+                </g>
+                <circle cx="240" cy="68" r="18" fill="var(--coral)" />
+                <circle cx="120" cy="148" r="18" fill="var(--teal)" />
+                <circle cx="240" cy="230" r="20" fill="var(--violet)" stroke="var(--primary)" stroke-width="4" />
+                <circle cx="310" cy="306" r="20" fill="var(--violet)" stroke="var(--primary)" stroke-width="4" />
+                <g class="art-dim">
+                  <circle cx="360" cy="148" r="18" fill="var(--teal)" />
+                  <circle cx="80" cy="222" r="18" fill="var(--teal)" />
+                  <circle cx="176" cy="306" r="18" fill="var(--violet)" />
+                  <circle cx="410" cy="232" r="18" fill="var(--amber)" />
+                </g>
+                <g class="art-label">
+                  <text x="268" y="72">Sugar Push</text>
+                  <text x="8" y="130">Left Side Pass</text>
+                  <text x="270" y="234">Basic Whip</text>
+                  <text x="340" y="310">Inside-Turn Whip</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="feature">
+            <div>
+              <h2>Variations without duplicates</h2>
+              <p>
+                "With a spin", "hesitation", "slow": <strong>modifiers</strong> change how a pattern
+                is danced without making it a new pattern. Each one comes before, after or inside
+                the pattern it's attached to.
+              </p>
+              <ul>
+                <li>
+                  <strong>Universal</strong> modifiers apply to every pattern in the list and carry
+                  their own demo videos
+                </li>
+                <li>
+                  Others attach to individual patterns, each with videos of <em>that</em> pattern
+                  danced <em>that</em> way
+                </li>
+                <li>A modifier's page lists every pattern it's used with</li>
+              </ul>
+            </div>
+            <div class="feature-art">
+              <svg viewBox="0 0 440 250" role="img" aria-label="A pattern card for Basic Whip with attached modifiers: hesitation (prefix), with a spin (postfix), and slow (universal).">
+                <rect class="art-variant" x="0" y="0" width="440" height="250" rx="14" opacity=".5" />
+                <rect x="20" y="20" width="6" height="56" rx="3" fill="var(--violet)" />
+                <text class="art-label" x="40" y="42" style="font-size: 18px; font-weight: 700; stroke: none">Basic Whip</text>
+                <text class="art-label-muted" x="40" y="66">whip · 8 counts · Intermediate</text>
+                <text class="art-label-muted" x="20" y="112">MODIFIERS</text>
+                <g>
+                  <rect class="art-surface" x="20" y="124" width="188" height="36" rx="18" />
+                  <text class="art-label" x="38" y="147">Hesitation</text>
+                  <text class="art-label-muted" x="124" y="147">prefix</text>
+
+                  <rect class="art-surface" x="220" y="124" width="200" height="36" rx="18" />
+                  <text class="art-label" x="238" y="147">With a spin</text>
+                  <text class="art-label-muted" x="330" y="147">postfix</text>
+                  <circle cx="400" cy="142" r="8" fill="var(--primary)" />
+                  <path d="M397 138v8l6-4z" fill="var(--on-primary)" />
+
+                  <rect class="art-surface" x="20" y="172" width="188" height="36" rx="18" />
+                  <text class="art-label" x="38" y="195">Slow</text>
+                  <text class="art-label-muted" x="100" y="195">universal</text>
+                  <circle cx="190" cy="190" r="8" fill="var(--primary)" />
+                  <path d="M187 186v8l6-4z" fill="var(--on-primary)" />
+                </g>
+                <text class="art-label-muted" x="20" y="234">Hesitation Basic Whip with a spin, danced slow.</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="feature flip" id="share">
+            <div>
+              <h2>Share a list with your partner or class</h2>
+              <p>
+                <strong>Publish</strong> a list and DPM gives you an 8-character code and a QR code.
+                Anyone who enters or scans it gets a live copy that updates when you do. It's
+                read-only for them, and it becomes theirs to edit if you stop sharing.
+              </p>
+              <p>
+                Or <strong>export</strong> lists to a file and send it however you like. Your own
+                videos can travel inside it. You can mark the export read-only, and imports are
+                checked before anything is written, so a damaged file can't half-overwrite your
+                data.
+              </p>
+            </div>
+            <div class="feature-art">
+              <svg viewBox="0 0 440 220" role="img" aria-label="A share code, K7QM2XRA, next to a QR code.">
+                <g transform="translate(24 36)">
+                  <rect class="art-surface" x="-8" y="-8" width="142" height="142" rx="8" />
+                  <g fill="var(--text)">
+                    <path d="M0 0h42v42H0zM6 6v30h30V6zM12 12h18v18H12z" fill-rule="evenodd" />
+                    <path d="M84 0h42v42H84zM90 6v30h30V6zM96 12h18v18H96z" fill-rule="evenodd" />
+                    <path d="M0 84h42v42H0zM6 90v30h30V90zM12 96h18v18H12z" fill-rule="evenodd" />
+                    <path
+                      d="M48 6h6v6h-6zM48 18h6v6h-6zM48 24h6v6h-6zM48 36h6v6h-6zM54 42h6v6h-6zM54 54h6v6h-6zM60 24h6v6h-6zM60 30h6v6h-6zM60 60h6v6h-6zM66 24h6v6h-6zM66 66h6v6h-6zM72 0h6v6h-6zM72 12h6v6h-6zM72 30h6v6h-6zM72 48h6v6h-6zM78 12h6v6h-6zM78 24h6v6h-6zM78 54h6v6h-6zM0 48h6v6h-6zM0 66h6v6h-6zM6 60h6v6h-6zM6 72h6v6h-6zM12 48h6v6h-6zM18 54h6v6h-6zM18 66h6v6h-6zM24 60h6v6h-6zM24 72h6v6h-6zM30 54h6v6h-6zM30 78h6v6h-6zM36 60h6v6h-6zM42 66h6v6h-6zM48 78h6v6h-6zM48 102h6v6h-6zM48 120h6v6h-6zM54 90h6v6h-6zM54 114h6v6h-6zM60 96h6v6h-6zM60 108h6v6h-6zM66 84h6v6h-6zM66 102h6v6h-6zM66 120h6v6h-6zM72 90h6v6h-6zM72 114h6v6h-6zM78 96h6v6h-6zM84 60h6v6h-6zM84 78h6v6h-6zM84 114h6v6h-6zM90 66h6v6h-6zM90 84h6v6h-6zM90 108h6v6h-6zM96 48h6v6h-6zM96 96h6v6h-6zM96 120h6v6h-6zM102 60h6v6h-6zM102 72h6v6h-6zM102 90h6v6h-6zM108 54h6v6h-6zM108 102h6v6h-6zM108 120h6v6h-6zM114 66h6v6h-6zM114 84h6v6h-6zM120 54h6v6h-6zM120 72h6v6h-6zM120 108h6v6h-6z"
+                    />
+                  </g>
+                </g>
+                <text class="art-label-muted" x="190" y="74">SHARE CODE</text>
+                <text x="190" y="116" fill="var(--text)" style="font: 800 34px ui-monospace, monospace; letter-spacing: 3px">K7QM2XRA</text>
+                <text class="art-label-muted" x="190" y="148">Live copy · read-only for subscribers</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Video tools ──────────────────────────────────────────────────── -->
+      <section class="band" id="video">
+        <div class="wrap">
+          <div class="feature">
+            <div>
+              <span class="eyebrow">On your phone, not in the cloud</span>
+              <h2>Your class videos, put to work</h2>
+              <p>
+                Attach videos to any pattern: a clip from your gallery, a new recording, or a
+                YouTube link that starts at the right second. Then let DPM help with the tedious
+                part:
+              </p>
+              <ul>
+                <li><strong>Shorten</strong> a long recording to just the pattern</li>
+                <li>
+                  <strong>De-identify</strong> a clip by turning the dancers into silhouettes, so
+                  you can share it without sharing faces
+                </li>
+                <li>
+                  <strong>Transcribe</strong> what the teacher says, then tap a line to jump to it,
+                  or add the lines you want to your notes
+                </li>
+                <li>
+                  <strong>Suggest</strong> a name and description from that transcript. You decide
+                  whether to use it
+                </li>
+              </ul>
+              <p class="muted">
+                All of it runs on the phone. The speech and language models download once, and
+                your videos never leave the device. De-identifying, transcribing and suggestions
+                are available on Android first.
+              </p>
+            </div>
+            <div class="feature-art">
+              <svg viewBox="0 0 420 330" role="img" aria-label="A de-identified video of two dancers shown as silhouettes, with a transcript below and a suggested pattern name.">
+                <rect x="0" y="0" width="420" height="170" rx="12" fill="#18181b" />
+                <g fill="#818cf8">
+                  <circle cx="170" cy="46" r="13" />
+                  <path d="M156 64c-10 6-14 30-10 52l-8 44h12l10-40 8 40h12l-4-48c6-12 6-34-2-44z" />
+                  <circle cx="246" cy="50" r="12" />
+                  <path d="M234 66c-8 8-10 26-6 44l-14 52h12l14-42 10 42h12l-8-50c4-14 2-34-6-44z" />
+                  <path d="M186 80l40 6" stroke="#818cf8" stroke-width="6" stroke-linecap="round" />
+                </g>
+                <rect x="14" y="14" width="80" height="22" rx="11" fill="rgb(0 0 0 / 65%)" />
+                <text x="54" y="29" text-anchor="middle" fill="#fff" style="font: 700 10px system-ui, sans-serif; letter-spacing: 0.5px">SILHOUETTE</text>
+                <rect x="14" y="150" width="392" height="6" rx="3" fill="rgb(255 255 255 / 25%)" />
+                <rect x="120" y="150" width="140" height="6" rx="3" fill="#818cf8" />
+
+                <g class="art-label">
+                  <text x="0" y="200"><tspan class="art-label-muted">0:04</tspan>  Anchor on five and six, don't rush it</text>
+                  <text x="0" y="226"><tspan class="art-label-muted">0:09</tspan>  Lead's hand stays low through the turn</text>
+                </g>
+                <rect class="art-variant" x="0" y="250" width="420" height="80" rx="12" />
+                <text class="art-label-muted" x="16" y="274">SUGGESTED</text>
+                <text class="art-label" x="16" y="298" style="font-size: 15px; font-weight: 700; stroke: none">Inside-Turn Whip</text>
+                <rect x="300" y="282" width="104" height="30" rx="15" fill="var(--primary)" />
+                <text x="352" y="302" text-anchor="middle" fill="var(--on-primary)" style="font: 700 12px system-ui, sans-serif">Use suggestion</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Everything else ──────────────────────────────────────────────── -->
+      <section id="more">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>And the details</h2>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+              </div>
+              <h3>One list per dance</h3>
+              <p>
+                Each list has its own pattern types, colours and modifiers. The five templates come
+                with starter patterns.
+              </p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 12 12 20 4 12V4h8z" /><circle cx="8.5" cy="8.5" r="1.5" /></svg>
+              </div>
+              <h3>Levels, counts and tags</h3>
+              <p>Beginner to advanced, the count of the pattern, and free-form tags to filter by.</p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14" /><rect x="3" y="3" width="18" height="18" rx="4" /></svg>
+              </div>
+              <h3>Works offline</h3>
+              <p>
+                Everything is stored on your phone. Cloud sharing is optional and only happens when
+                you publish.
+              </p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" /></svg>
+              </div>
+              <h3>Nine languages</h3>
+              <p>
+                English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português and Deutsch.
+                DPM follows your phone's language by default.
+              </p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z" /></svg>
+              </div>
+              <h3>Light and dark</h3>
+              <p>Follow the system or pick one. Colour contrast meets accessibility minimums in both.</p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M14 5l-4 14" /></svg>
+              </div>
+              <h3>Open source</h3>
+              <p>
+                MIT-licensed and developed in the open on
+                <a href="https://github.com/OliverHenrichs/dance-pattern-mapper">GitHub</a>.
+                Issues and ideas are welcome.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── FAQ ──────────────────────────────────────────────────────────── -->
+      <section class="band faq" id="faq">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>Questions</h2>
+          </div>
+          <details>
+            <summary>Which dances does it work for?</summary>
+            <p>
+              Any partner dance. There are templates for West Coast Swing, Salsa, Bachata, Argentine
+              Tango and Lindy Hop, and a blank list lets you set up your own pattern types for
+              anything else.
+            </p>
+          </details>
+          <details>
+            <summary>Do I need an account?</summary>
+            <p>
+              No. DPM has no accounts and no sign-in. Your lists live on your phone. Sharing works
+              with a code, not a profile.
+            </p>
+          </details>
+          <details>
+            <summary>Where do my videos go?</summary>
+            <p>
+              Nowhere, unless you send them. Videos stay on your device. An export can include them
+              if you choose, and a published list only shares video <em>links</em>, never the files.
+            </p>
+          </details>
+          <details>
+            <summary>Does the AI send my videos to a server?</summary>
+            <p>
+              No. Silhouettes, transcripts and suggestions are computed on the phone. The models
+              download once (Wi-Fi recommended), and you can delete them in Settings.
+            </p>
+          </details>
+          <details>
+            <summary>What happens to a list I've shared if I stop sharing?</summary>
+            <p>
+              The cloud copy is deleted right away. People who subscribed keep their copy, and it
+              becomes theirs to edit.
+            </p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© 2026 Oliver Henrichs · DPM is open source under the MIT licence</span>
+        <nav aria-label="Footer">
+          <a href="privacy.html">Privacy policy</a>
+          <a href="mailto:dance-pattern-mapper@pm.me">Contact</a>
+          <a href="https://github.com/OliverHenrichs/dance-pattern-mapper">GitHub</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>
