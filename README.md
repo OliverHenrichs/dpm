@@ -5,7 +5,7 @@
 [![React Native](https://img.shields.io/badge/React%20Native-0.86-61dafb?logo=react)](https://reactnative.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6?logo=typescript)](https://www.typescriptlang.org)
 
-> **Status:** Work in Progress 🚧
+> **Status:** Work in Progress 🚧 · **Website:** [oliverhenrichs.github.io/dpm](https://oliverhenrichs.github.io/dpm/)
 
 A React Native / Expo mobile app for mapping partner-dance patterns as a prerequisite graph.  
 Organise patterns into dance-style-specific lists, visualise their dependencies in a swimlane timeline or a zoomable network graph, and share your lists with other dancers via export/import or live cloud sync.
@@ -26,6 +26,7 @@ Organise patterns into dance-style-specific lists, visualise their dependencies 
 - Per-pattern fields: name, type, counts, level (Beginner / Intermediate / Advanced), description, free-form **tags**, **prerequisite links** to other patterns, one or more **videos** (local file or URL with optional start time), and attached **modifiers**
 - Supports **online videos** including YouTube links with in-app playback
 - Inline video thumbnails with a swipeable carousel in both the edit form and the detail view
+- Start a new pattern **from a video**, picked from the gallery or **recorded** with the system camera; the video seeds the form. Picked videos are copied into the app's own storage, so they survive the OS clearing its cache
 
 ### Modifiers
 Modifiers are affixes that change how a pattern is danced ("with a spin", "slow", "hijacked"). They are defined per list, on their own tab next to the patterns:
@@ -34,6 +35,17 @@ Modifiers are affixes that change how a pattern is danced ("with a spin", "slow"
 - **Universal** modifiers apply to every pattern in the list and carry their own demo videos
 - **Non-universal** modifiers are attached to individual patterns, and each attachment can hold videos of *that* pattern danced with *that* modifier
 - A modifier's detail view lists every pattern it is attached to; deleting a modifier detaches it from all patterns
+
+### Video Tools (Android)
+**Edit Pattern → Videos → Edit video** opens a sheet with the clip and a trim bar. Everything below runs **on the device**. No video, audio or transcript is uploaded, and each tool runs as a background job reported in a banner on the pattern list.
+
+- **Shorten** cuts the selection out at the source's size, audio kept
+- **De-identify** turns a 1–30 s selection into a **silhouette** video: tap each dancer (one, or a couple) on a frame and they are tracked through the clip. The result replaces the video in the pattern, with a *Silhouette* badge; the original stays in the gallery
+- **Transcribe speech** writes down what the teacher says ([whisper.cpp](https://github.com/ggerganov/whisper.cpp) via `whisper.rn`, after a one-time ~61 MB model download). The transcript view shows timestamped lines: tap one to seek there, tick lines and **Add to description**. Shortening a video keeps only the transcript lines inside the cut
+- **Suggest name and description** drafts both from the transcript and the list's vocabulary, using a small language model (Qwen3.5 2B via `llama.rn`, a one-time ~1.3 GB download, devices with ≥ 6 GB RAM). Nothing is written until you tap *Use suggestion*, which fills the name only when it is empty
+- Downloaded models are hash-checked, listed under **Settings → On-device models** with their size, and can be deleted there
+
+The native parts are local Expo modules in `modules/` (`video-deidentify`, `audio-extract`); on iOS and web these tools are hidden.
 
 ### Graph Visualisation
 Two switchable views driven by the prerequisite graph:
@@ -59,7 +71,8 @@ Both views render from a single graph model, so they cannot disagree about depth
 - Both panels slide up as bottom sheets
 
 ### Import & Export
-- Export selected pattern lists to a **JSON file** (format version `3.0.0`) shared via the native share sheet
+- Export selected pattern lists to a **JSON file** (format version `3.2.0`) shared via the native share sheet
+- **Transcripts** travel only when you opt in on the export sheet, and never in a published cloud list
 - Local videos — for patterns, universal modifiers and per-pattern modifier combinations — are **base64-embedded**, or left out entirely if you opt out (URL videos always survive)
 - Option to **export as read-only** to prevent recipients from editing the list
 - Import a previously exported file: lists that do not exist yet are added, and each conflicting list can be **skipped** or **replaced**
@@ -76,6 +89,7 @@ Both views render from a single graph model, so they cannot disagree about depth
 - **Theme**: Light, Dark, or System default
 - **Language**: nine locales — English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Deutsch. A fresh install follows the device language; your pick is remembered from then on
 - **Data transfer**: export and import pattern lists
+- **On-device models**: the speech and suggestion models, with their size and a *Delete* button (Android)
 
 ---
 
@@ -87,15 +101,18 @@ Both views render from a single graph model, so they cannot disagree about depth
 | Navigation | [Expo Router](https://expo.github.io/router) file-based routing + its built-in `Drawer` layout |
 | Persistence | [@react-native-async-storage/async-storage](https://github.com/react-native-async-storage/async-storage) |
 | Cloud sync | [Firebase](https://firebase.google.com) (Firestore) ^12 |
+| Styling | [react-native-unistyles](https://www.unistyl.es) 3 — every colour, spacing step and text style comes from the design tokens in `src/common/theme/tokens.ts` |
 | Graphics | [react-native-svg](https://github.com/software-mansion/react-native-svg) 15 |
 | Gestures & animation | [react-native-gesture-handler](https://docs.swmansion.com/react-native-gesture-handler) + [react-native-reanimated](https://docs.swmansion.com/react-native-reanimated) — pan, pinch and node dragging all run on the UI thread |
 | Video | [expo-video](https://docs.expo.dev/versions/latest/sdk/video) + [expo-video-thumbnails](https://docs.expo.dev/versions/latest/sdk/video-thumbnails) |
+| Video processing | Local Expo modules in `modules/` (Kotlin): `video-deidentify` (AndroidX Media3 + LiteRT person tracking) and `audio-extract` |
+| On-device AI | [whisper.rn](https://github.com/mybigday/whisper.rn) (speech to text) + [llama.rn](https://github.com/mybigday/llama.rn) (suggestions) |
 | YouTube | [react-native-youtube-iframe](https://lonelycpp.github.io/react-native-youtube-iframe) |
 | QR codes | [react-native-qrcode-svg](https://github.com/awesomejerry/react-native-qrcode-svg) + [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera) |
 | File / Share | [expo-file-system](https://docs.expo.dev/versions/latest/sdk/filesystem) + [expo-sharing](https://docs.expo.dev/versions/latest/sdk/sharing) + [expo-document-picker](https://docs.expo.dev/versions/latest/sdk/document-picker) |
 | i18n | [i18next](https://www.i18next.com) + [react-i18next](https://react.i18next.com) |
 | Language | TypeScript ~6.0 |
-| Testing | Jest 30 + ts-jest + @testing-library/react-native — **901 tests** across two projects |
+| Testing | Jest 30 + ts-jest + @testing-library/react-native — **1265 tests** across two projects |
 
 The new architecture, typed routes and the React Compiler are enabled in `app.config.ts`.
 
@@ -118,8 +135,15 @@ src/pattern/graph/       Timeline + network views, details modal
   ├─ model/              Pure graph maths: adjacency, cycles, depth, filtering, layout merge
   ├─ render/             Shared SVG primitives and the drag overlay
   └─ data/               Per-list manual layout storage
+src/deidentify/          Edit-video sheet, shorten / de-identify jobs and the job banner
+  ├─ jobs/               Background job store, one native job at a time
+  └─ providers/          De-identification methods (on-device tracking)
+src/transcribe/          Speech-to-text jobs, model downloads, transcript sheet
+src/suggest/             Name and description suggestions from a transcript
 src/firebase/            Optional Firestore config and list-sharing service
-src/settings/            Settings screen and data-transfer hook
+src/settings/            Settings screen, data-transfer hook, on-device model management
+modules/                 Local native Expo modules: video-deidentify, audio-extract (Android)
+website/                 Static project website, deployed to GitHub Pages (see website/README.md)
 __mocks__/               Behavioural mocks: AsyncStorage, filesystem, Reanimated, gestures
 __tests__/ , utils/      Jest tests and test factories
 ```
@@ -134,14 +158,20 @@ See [AGENTS.md](AGENTS.md) for a deeper architecture walkthrough and the project
 # 1. Install dependencies
 npm install
 
-# 2. Start the dev server (LAN mode)
-npm start                 # → expo start --lan
+# 2. Start the dev server for the development client
+npm start                 # → expo start --dev-client
 
 # Or target a specific platform
 npm run android
 npm run ios
-npx expo start --web
+npm run web
 ```
+
+The app runs in a **development build** (`expo-dev-client`), not Expo Go: it ships native modules
+(`modules/`, `whisper.rn`, `llama.rn`) that Expo Go does not contain. Build one with
+`eas build --profile development` or locally with `npx expo run:android`, and rebuild it whenever a
+native module is added or changed. Note that `expo prebuild` / `expo run:*` rewrite the `android` and
+`ios` npm scripts; revert that.
 
 ### Running Tests
 
@@ -184,3 +214,12 @@ FIREBASE_APP_TOKEN=...   # write token used by the publish flow, checked by your
 `app.config.ts` reads these into `extra.firebase` at build time — no credentials are committed to the repository.  
 Expo loads `.env` automatically when running `expo start` or `eas build`.  
 For EAS cloud builds, add each variable as an [EAS Secret](https://docs.expo.dev/build-reference/variables/#using-secrets-in-eas-build).
+
+---
+
+## Website
+
+`website/` is a static site (plain HTML and CSS, no build step) that introduces DPM and hosts the
+privacy policy, rendered from [PRIVACY_POLICY.md](PRIVACY_POLICY.md). `.github/workflows/pages.yml`
+publishes it to GitHub Pages on every push to `master` that touches it. Preview it with
+`python3 -m http.server 8765 --directory website`; details in [website/README.md](website/README.md).

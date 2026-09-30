@@ -77,8 +77,8 @@ export interface IVideoReference {
   /** Set on a video the app made from another — e.g. de-identified silhouettes (L3). */
   generated?: IGeneratedVideo;
   /**
-   * What is said in the video, transcribed on the device (L4). Kept out of exports and shared
-   * lists: it is someone's words, often said off-hand.
+   * What is said in the video, transcribed on the device (L4). Never in shared lists, and in
+   * exports only when the user opts in: it is someone's words, often said off-hand.
    */
   transcript?: IVideoTranscript;
 }
