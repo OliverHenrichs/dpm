@@ -16,6 +16,10 @@ apply wherever you are working. Depth lives next to the code it governs, in a ne
 | `src/firebase/AGENTS.md` | Firestore sharing and its configuration |
 | `__tests__/AGENTS.md` | Jest projects, the global mocks, and the traps in this suite |
 
+The video tools (`src/deidentify/`, `src/transcribe/`, `src/suggest/`, `modules/`) have no nested
+file yet; their rules are in "On-device video tools" below, and the design history in
+`AGENT_TASKS.md` (L3, L4).
+
 Creating a *new* file in a directory does not pull its `AGENTS.md` in — read or search something
 there first.
 
@@ -52,7 +56,7 @@ Everything lives in `src/pattern/types/IPatternList.ts` (plus `PatternType.ts`, 
 | `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `tags: string[]`; optional `level` (`PatternLevel` value); `videoRefs: IVideoReference[]`; `modifierRefs: IPatternModifierRef[]` |
 | `IModifier` | `string` (UUID) | `position: "prefix" \| "postfix" \| "amends"`; `universal: boolean`; `videoRefs` are only used when `universal === true` |
 | `IPatternModifierRef` | — | `{ modifierId, videoRefs }` — a non-universal modifier attached to one pattern, with videos of that pattern **executed with** the modifier |
-| `IVideoReference` | — | `{ type: "url" \| "local", value: string, startTime?: number }` (`startTime` for URL videos only) |
+| `IVideoReference` | — | `{ type: "url" \| "local", value: string, startTime?: number, generated?, transcript? }` — `startTime` for URL videos only; `generated: { method, createdAt }` marks a video the app made (a silhouette); `transcript: IVideoTranscript` (`{ language, model, createdAt, segments: { start, end, text }[] }`) is what was said in it |
 
 Creation helper types: `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`.
 
@@ -61,6 +65,19 @@ Creation helper types: `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<
 Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pattern. **Universal** ones implicitly apply to every pattern and carry their own `videoRefs`; **non-universal** ones are attached per-pattern through `IPattern.modifierRefs`, each attachment carrying its own videos of that combination.
 
 **Pattern ids are never reused.** `IPatternList.nextPatternId` is a high-water mark; `nextPatternId(list, patterns)` in `src/pattern/data/patternIds.ts` is the only way to mint one. The manual graph layout outlives individual patterns, so a reused id would inherit a stranger's stored position.
+
+## On-device video tools
+
+Android only for now. Edit Pattern → Videos → **Edit video** (`src/deidentify/components/VideoEditPanel.tsx`) offers *Shorten*, *De-identify* and *Transcribe speech*; the transcript sheet (`src/transcribe/components/TranscriptSheet.tsx`) hosts *Suggest name and description* (`src/suggest/`). Settings → *On-device models* (`src/settings/components/DeviceModelsSection.tsx`) lists and deletes the downloaded models.
+
+- **Native pieces.** `modules/video-deidentify` (Media3 trim/transcode, LiteRT person tracking, silhouette render; also backs *Shorten*) and `modules/audio-extract` (16 kHz mono PCM for Whisper) are local Expo modules, autolinked. `whisper.rn` and `llama.rn` are npm native modules. All of them need a rebuilt dev client.
+- **Gate on availability, never on `Platform.OS`.** `isDeidentifyAvailable` / `canShortenVideos()`, `isAudioExtractAvailable`, and `canSuggest()` (Android, ≥ 6 GB RAM, native hash check) are false on iOS, web and Jest, and the UI hides the action.
+- **One job at a time.** `jobStore` (`src/deidentify/jobs/`) queues shorten / de-identify / transcribe jobs and runs them one by one; anything else heavy (suggestions) goes through `jobStore.runExclusive`. The phone cannot hold two models at once. `DeidentifyJobsProvider` exposes it to React and keeps the screen awake while jobs run; `DeidentifyJobsBanner` reports them.
+- **A finished job replaces the source video in the pattern** (`replaceVideo.ts`): through the mounted tree's attach handler when it can take it, otherwise straight to storage, since the user may have switched lists meanwhile. Shortening or de-identifying keeps only the transcript lines inside the cut, retimed (`trimTranscript`).
+- **Providers** are pluggable (`src/deidentify/providers/`). `runDeidentify` is the only entry point, and enforces in code the trim limits and that a provider which sends footage off the device has recorded consent. The one shipped provider is on-device.
+- **Models** are downloaded on first use from pinned URLs and SHA-256 checked (`src/transcribe/modelStore.ts`, specs in `src/transcribe/models.ts` and `src/suggest/models.ts`). The size is shown before any download.
+- **Transcripts are private by default.** They never go into a published list (`withoutTranscripts`), and exports carry them only on the export sheet's opt-in; see `src/pattern/data/AGENTS.md`. The description is never written without the user: *Add to description* and *Use suggestion* are explicit, and a suggestion fills the name only when it is empty.
+- **Web.** `src/transcribe/whisper.web.ts` stubs `whisper.rn`, which reads its native module at import (see Platform splits below).
 
 ## Rules that apply everywhere
 
@@ -82,7 +99,7 @@ Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pa
 
 ```bash
 npm install              # install deps
-npm start                # expo start --lan (or: npx expo start)
+npm start                # expo start --dev-client (a development build, not Expo Go)
 npm run android          # expo start --android
 npm run ios              # expo start --ios
 npm test                 # Jest, both projects (no device needed)
@@ -123,3 +140,5 @@ Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo ru
 - **audit** — fails if `npm audit` drifts from the baseline of exactly three moderate findings. If a change to that baseline is intentional, update both the workflow's `expected` map and this file.
 
 Run the same checks locally before pushing; every one of them passes on `master`.
+
+`.github/workflows/pages.yml` is separate: on a push to `master` that touches `website/` or `PRIVACY_POLICY.md`, it renders the privacy page (`website/build-privacy.py`) and publishes `website/` to GitHub Pages. The site is static HTML and CSS with no build step; see `website/README.md`.
