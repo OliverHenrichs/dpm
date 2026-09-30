@@ -5,7 +5,7 @@
 [![React Native](https://img.shields.io/badge/React%20Native-0.86-61dafb?logo=react)](https://reactnative.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6?logo=typescript)](https://www.typescriptlang.org)
 
-> **Status:** Work in Progress 🚧 · **Website:** [oliverhenrichs.github.io/dance-pattern-mapper](https://oliverhenrichs.github.io/dance-pattern-mapper/)
+> **Status:** Work in Progress 🚧 · **Website:** [oliverhenrichs.github.io/dpm](https://oliverhenrichs.github.io/dpm/)
 
 A React Native / Expo mobile app for mapping partner-dance patterns as a prerequisite graph.  
 Organise patterns into dance-style-specific lists, visualise their dependencies in a swimlane timeline or a zoomable network graph, and share your lists with other dancers via export/import or live cloud sync.

@@ -35,7 +35,7 @@ TEMPLATE = """<!doctype html>
         </a>
         <nav class="site-nav" aria-label="Main">
           <a href="./">Home</a>
-          <a href="https://github.com/OliverHenrichs/dance-pattern-mapper">GitHub</a>
+          <a href="https://github.com/OliverHenrichs/dpm">GitHub</a>
         </nav>
       </div>
     </header>

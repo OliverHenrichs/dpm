@@ -26,15 +26,15 @@ can't go stale.
 ## Deploying
 
 `.github/workflows/pages.yml` publishes this folder to GitHub Pages on every push to `master` that
-touches it. To enable it, go to **Settings → Pages → Source: GitHub Actions**. The site is then
-served at `https://oliverhenrichs.github.io/dance-pattern-mapper/`.
+touches it (repository Settings → Pages → Source is set to **GitHub Actions**). The site is
+served at `https://oliverhenrichs.github.io/dpm/`.
 
 ### Moving the site
 
 These addresses are hard-coded and must change together when the site gets its own domain:
 
 - `index.html`: `canonical`, `og:url`, `og:image`
-- `404.html`: the `/dance-pattern-mapper/` prefix (becomes `/` on a root domain)
+- `404.html`: the `/dpm/` prefix (becomes `/` on a root domain)
 
 ## Before launch
 
