@@ -42,8 +42,7 @@ These addresses are hard-coded and must change together when the site gets its o
   hero with the official Google Play and App Store badges.
 - **Screenshots.** The illustrations are drawn and don't show the real UI. Real device screenshots
   (graph, pattern details, transcript) would be more convincing.
-- **Privacy policy.** `PRIVACY_POLICY.md` still lists the website as "N/A". It also predates the
-  on-device models: downloading them from Hugging Face exposes the device's IP address to that
-  host, which the policy should mention.
+- **Privacy policy.** Keep `PRIVACY_POLICY.md` in step with the app: a new network connection,
+  permission or kind of stored data belongs in it before it ships.
 - **Impressum.** A site run from Germany may need an Impressum (§ 5 DDG), depending on whether it
   counts as commercial. That is a legal judgement, so it isn't included here.
