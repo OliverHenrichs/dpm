@@ -5,6 +5,7 @@ import {
   savePatterns,
 } from "@/src/pattern/data/PatternListStorage";
 import { persistVideo } from "@/src/pattern/data/videoFiles";
+import { trimTranscript } from "@/src/pattern/data/transcripts";
 import { generateUUID } from "@/src/pattern/types/PatternType";
 import { IGeneratedVideo } from "@/src/pattern/types/IPatternList";
 import { shortenVideo, TrimRequest } from "@/src/deidentify/shortenVideo";
@@ -188,6 +189,20 @@ export const jobStore = {
     emit();
   },
 
+  /**
+   * Runs work in turn with the jobs, never beside one: the suggestion model (L4) takes ~3.4 GB
+   * while loaded, and next to Whisper or the silhouette pipeline it would not fit in memory. It
+   * starts once everything queued before it has finished.
+   */
+  runExclusive<T>(work: () => Promise<T>): Promise<T> {
+    const result = queue.then(work);
+    queue = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  },
+
   /** Test hook: forget everything, and wait for a running job first. */
   async reset() {
     await queue;
@@ -308,13 +323,20 @@ async function run(id: string, job: StartJob) {
     } catch {
       // best effort — the cache is the OS's to clear anyway
     }
-    // A new video in place of the old; what was said in the old one is still what was said
-    // (L4) — the transcript moves over, though a silhouette has no sound of its own.
+    // A new video in place of the old; what was said in the part kept is still what was said
+    // (L4) — its lines move over, retimed to the cut, though a silhouette has no sound of its own.
+    const { startSeconds, endSeconds } = job.request;
     await attach(job.listId, job.request.sourceUri, (previous) => ({
       type: "local",
       value: stored,
       ...(generated && { generated }),
-      ...(previous.transcript && { transcript: previous.transcript }),
+      ...(previous.transcript && {
+        transcript: trimTranscript(
+          previous.transcript,
+          startSeconds,
+          endSeconds,
+        ),
+      }),
     }));
     patch(id, { status: "done", progress: 1, resultUri: stored });
   } catch (e) {

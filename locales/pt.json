@@ -296,5 +296,22 @@
   "speechModelHint": "Transcreve o que é dito nos vídeos. Descarregado com a primeira transcrição.",
   "includeTranscriptsInExport": "Incluir transcrições",
   "includeTranscriptsHint": "O que os professores dizem nos vídeos vai com eles. Deixe desligado, a menos que os destinatários devam lê-lo.",
-  "includeTranscriptsNeedsVideos": "As transcrições viajam com os seus vídeos: inclua primeiro os vídeos."
+  "includeTranscriptsNeedsVideos": "As transcrições viajam com os seus vídeos: inclua primeiro os vídeos.",
+  "suggestRun": "Sugerir nome e descrição",
+  "suggestDownloadHint": "As sugestões são escritas neste telemóvel por um pequeno modelo de linguagem, com uma transferência única de {{size}} MB. Recomenda-se Wi-Fi.",
+  "suggestDownloadAndRun": "Descarregar e sugerir",
+  "suggestDownloading": "A descarregar o modelo de sugestões … {{percent}} %",
+  "suggestWaiting": "À espera que o trabalho com vídeos termine …",
+  "suggestThinking": "A pensar …",
+  "suggestFailed": "Desta vez não há sugestão. Tente novamente.",
+  "suggestRetry": "Tentar novamente",
+  "suggestNothing": "Nada a sugerir: este vídeo não parece ensinar uma figura.",
+  "suggestName": "Nome: {{name}}",
+  "suggestApplyHint": "Só preenche o nome se estiver vazio; a descrição fica num parágrafo próprio. Confirme com o vídeo.",
+  "suggestDismiss": "Descartar",
+  "suggestApply": "Usar sugestão",
+  "deviceModels": "Modelos no dispositivo",
+  "suggestionModel": "Modelo de sugestões",
+  "suggestionModelHint": "Redige o nome e a descrição de uma figura a partir de uma transcrição.",
+  "deleteModel": "Eliminar {{name}}"
 }

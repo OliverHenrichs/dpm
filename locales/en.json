@@ -296,5 +296,22 @@
   "speechModelHint": "Transcribes what is said in videos. Downloaded with the first transcription.",
   "includeTranscriptsInExport": "Include transcripts",
   "includeTranscriptsHint": "What teachers said in the videos goes with them. Leave off unless the recipients should read it.",
-  "includeTranscriptsNeedsVideos": "Transcripts travel with their videos: include videos first."
+  "includeTranscriptsNeedsVideos": "Transcripts travel with their videos: include videos first.",
+  "suggestRun": "Suggest name and description",
+  "suggestDownloadHint": "Suggestions are written on this phone by a small language model, a one-time download of {{size}} MB. Wi-Fi recommended.",
+  "suggestDownloadAndRun": "Download and suggest",
+  "suggestDownloading": "Downloading the suggestion model … {{percent}} %",
+  "suggestWaiting": "Waiting for the video work to finish …",
+  "suggestThinking": "Thinking …",
+  "suggestFailed": "No suggestion this time. Try again.",
+  "suggestRetry": "Try again",
+  "suggestNothing": "Nothing to suggest: this video does not seem to teach a pattern.",
+  "suggestName": "Name: {{name}}",
+  "suggestApplyHint": "Fills the name only if it is empty; the description gets a paragraph of its own. Check it against the video.",
+  "suggestDismiss": "Discard",
+  "suggestApply": "Use suggestion",
+  "deviceModels": "On-device models",
+  "suggestionModel": "Suggestion model",
+  "suggestionModelHint": "Drafts a pattern name and description from a transcript.",
+  "deleteModel": "Delete {{name}}"
 }

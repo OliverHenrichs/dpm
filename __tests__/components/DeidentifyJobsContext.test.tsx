@@ -362,6 +362,47 @@ describe("transcription jobs (L4)", () => {
     expect(mockedTranscribe).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps only the part of the transcript inside the cut, retimed", async () => {
+    const list = createTestPatternList();
+    const transcript = {
+      ...TRANSCRIPT,
+      segments: [
+        { start: 1, end: 2, text: "Before the cut." },
+        { start: 4, end: 6, text: "Anchor on five and six." },
+        { start: 12, end: 13, text: "After the cut." },
+      ],
+    };
+    const pattern = createTestPattern("t", {
+      id: 1,
+      videoRefs: [{ type: "local", value: SOURCE, transcript }],
+    });
+    renderWithProviders(
+      <DeidentifyJobsProvider>
+        <Probe />
+      </DeidentifyJobsProvider>,
+      { lists: [list], patterns: { [list.id]: [pattern] } },
+    );
+    await waitFor(async () =>
+      expect(await storedPatterns(list.id)).toHaveLength(1),
+    );
+
+    act(() => {
+      jobs.start({
+        kind: "deidentify",
+        listId: list.id,
+        patternName: "Sugar Push",
+        provider: fakeProvider(),
+        request: { sourceUri: SOURCE, startSeconds: 3, endSeconds: 10 },
+      });
+    });
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    const [saved] = await storedPatterns(list.id);
+    expect(saved.videoRefs[0].transcript!.segments).toEqual([
+      { start: 1, end: 3, text: "Anchor on five and six." },
+    ]);
+  });
+
   it("carries a transcript over when the video is de-identified", async () => {
     const list = createTestPatternList();
     const pattern = createTestPattern("t", {

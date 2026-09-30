@@ -296,5 +296,22 @@
   "speechModelHint": "Transkribiert, was in Videos gesagt wird. Wird mit der ersten Transkription geladen.",
   "includeTranscriptsInExport": "Transkripte einschließen",
   "includeTranscriptsHint": "Was Lehrende in den Videos sagen, geht mit. Nur einschalten, wenn die Empfänger es lesen sollen.",
-  "includeTranscriptsNeedsVideos": "Transkripte reisen mit ihren Videos: zuerst Videos einschließen."
+  "includeTranscriptsNeedsVideos": "Transkripte reisen mit ihren Videos: zuerst Videos einschließen.",
+  "suggestRun": "Name und Beschreibung vorschlagen",
+  "suggestDownloadHint": "Vorschläge schreibt ein kleines Sprachmodell auf diesem Telefon, einmalig {{size}} MB zum Herunterladen. WLAN empfohlen.",
+  "suggestDownloadAndRun": "Herunterladen und vorschlagen",
+  "suggestDownloading": "Vorschlagsmodell wird geladen … {{percent}} %",
+  "suggestWaiting": "Warte, bis die Videobearbeitung fertig ist …",
+  "suggestThinking": "Denke nach …",
+  "suggestFailed": "Diesmal kein Vorschlag. Bitte erneut versuchen.",
+  "suggestRetry": "Erneut versuchen",
+  "suggestNothing": "Nichts vorzuschlagen: Dieses Video scheint keine Figur zu unterrichten.",
+  "suggestName": "Name: {{name}}",
+  "suggestApplyHint": "Setzt den Namen nur, wenn er leer ist; die Beschreibung bekommt einen eigenen Absatz. Mit dem Video abgleichen.",
+  "suggestDismiss": "Verwerfen",
+  "suggestApply": "Vorschlag übernehmen",
+  "deviceModels": "Modelle auf dem Gerät",
+  "suggestionModel": "Vorschlagsmodell",
+  "suggestionModelHint": "Entwirft Name und Beschreibung einer Figur aus einem Transkript.",
+  "deleteModel": "{{name}} löschen"
 }

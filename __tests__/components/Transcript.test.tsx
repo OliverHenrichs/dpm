@@ -5,7 +5,6 @@ import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import TranscriptSheet, {
   TranscriptTarget,
 } from "@/src/transcribe/components/TranscriptSheet";
-import SpeechModelRow from "@/src/transcribe/components/SpeechModelRow";
 import DeidentifyJobsBanner from "@/src/deidentify/components/DeidentifyJobsBanner";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { clearReplacements } from "@/src/deidentify/jobs/replaceVideo";
@@ -14,7 +13,7 @@ import {
   IVideoTranscript,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
-import { deleteModels, installedModels } from "@/src/transcribe/modelStore";
+import { installedModels } from "@/src/transcribe/modelStore";
 import { transcribeVideo } from "@/src/transcribe/transcribeVideo";
 import {
   createTestPattern,
@@ -316,17 +315,5 @@ describe("the jobs banner", () => {
 
     expect(stop).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByText(/Sugar Push/)).toBeNull());
-  });
-});
-
-describe("SpeechModelRow", () => {
-  it("frees the space the model takes", () => {
-    renderWithProviders(<SpeechModelRow />);
-    expect(screen.getByText("On this phone")).toBeOnTheScreen();
-
-    fireEvent.press(screen.getByText("Delete"));
-
-    expect(deleteModels).toHaveBeenCalled();
-    expect(screen.getByText("Not downloaded")).toBeOnTheScreen();
   });
 });

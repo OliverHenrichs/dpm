@@ -296,5 +296,22 @@
   "speechModelHint": "Transcrit ce qui est dit dans les vidéos. Téléchargé lors de la première transcription.",
   "includeTranscriptsInExport": "Inclure les transcriptions",
   "includeTranscriptsHint": "Ce que disent les professeurs dans les vidéos les accompagne. À laisser désactivé sauf si les destinataires doivent le lire.",
-  "includeTranscriptsNeedsVideos": "Les transcriptions accompagnent leurs vidéos : incluez d'abord les vidéos."
+  "includeTranscriptsNeedsVideos": "Les transcriptions accompagnent leurs vidéos : incluez d'abord les vidéos.",
+  "suggestRun": "Suggérer un nom et une description",
+  "suggestDownloadHint": "Les suggestions sont rédigées sur ce téléphone par un petit modèle de langage, à télécharger une fois ({{size}} Mo). Wi-Fi recommandé.",
+  "suggestDownloadAndRun": "Télécharger et suggérer",
+  "suggestDownloading": "Téléchargement du modèle de suggestion … {{percent}} %",
+  "suggestWaiting": "En attente de la fin du traitement vidéo …",
+  "suggestThinking": "Réflexion …",
+  "suggestFailed": "Pas de suggestion cette fois. Réessayez.",
+  "suggestRetry": "Réessayer",
+  "suggestNothing": "Rien à suggérer : cette vidéo ne semble pas enseigner de figure.",
+  "suggestName": "Nom : {{name}}",
+  "suggestApplyHint": "Ne remplit le nom que s'il est vide ; la description reçoit son propre paragraphe. Vérifiez-la avec la vidéo.",
+  "suggestDismiss": "Ignorer",
+  "suggestApply": "Utiliser la suggestion",
+  "deviceModels": "Modèles sur l'appareil",
+  "suggestionModel": "Modèle de suggestion",
+  "suggestionModelHint": "Rédige le nom et la description d'une figure à partir d'une transcription.",
+  "deleteModel": "Supprimer {{name}}"
 }

@@ -296,5 +296,22 @@
   "speechModelHint": "يفرّغ ما يُقال في مقاطع الفيديو. يُنزَّل مع أول عملية تفريغ.",
   "includeTranscriptsInExport": "تضمين النصوص المفرغة",
   "includeTranscriptsHint": "ما قاله المعلمون في مقاطع الفيديو سيُرسَل معها. اتركه مُعطّلاً ما لم يكن على المستلمين قراءته.",
-  "includeTranscriptsNeedsVideos": "النصوص المفرغة تنتقل مع مقاطعها: ضمّن مقاطع الفيديو أولاً."
+  "includeTranscriptsNeedsVideos": "النصوص المفرغة تنتقل مع مقاطعها: ضمّن مقاطع الفيديو أولاً.",
+  "suggestRun": "اقتراح اسم ووصف",
+  "suggestDownloadHint": "يكتب الاقتراحات نموذج لغوي صغير على هذا الهاتف، ويتطلب تنزيله مرة واحدة ({{size}} ميغابايت). يُنصح باستخدام Wi-Fi.",
+  "suggestDownloadAndRun": "تنزيل واقتراح",
+  "suggestDownloading": "جارٍ تنزيل نموذج الاقتراحات … {{percent}} %",
+  "suggestWaiting": "في انتظار انتهاء معالجة الفيديو …",
+  "suggestThinking": "جارٍ التفكير …",
+  "suggestFailed": "لا يوجد اقتراح هذه المرة. حاول مرة أخرى.",
+  "suggestRetry": "حاول مرة أخرى",
+  "suggestNothing": "لا شيء للاقتراح: لا يبدو أن هذا الفيديو يعلّم حركة.",
+  "suggestName": "الاسم: {{name}}",
+  "suggestApplyHint": "يملأ الاسم فقط إذا كان فارغًا، ويُضاف الوصف في فقرة مستقلة. قارنه بالفيديو.",
+  "suggestDismiss": "تجاهل",
+  "suggestApply": "استخدام الاقتراح",
+  "deviceModels": "النماذج على الجهاز",
+  "suggestionModel": "نموذج الاقتراحات",
+  "suggestionModelHint": "يصوغ اسم الحركة ووصفها من النص المفرغ.",
+  "deleteModel": "حذف {{name}}"
 }

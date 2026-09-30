@@ -33,6 +33,7 @@ import TranscriptSheet, {
   TranscriptTarget,
 } from "@/src/transcribe/components/TranscriptSheet";
 import { useStartTranscription } from "@/src/transcribe/hooks/useStartTranscription";
+import { appendToDescription } from "@/src/transcribe/excerpt";
 import {
   getCommonBorder,
   getCommonInput,
@@ -556,6 +557,18 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           setNewPattern((prev) => ({
             ...prev,
             description: append(prev.description ?? ""),
+          }))
+        }
+        onApplySuggestion={(suggestion) =>
+          setNewPattern((prev) => ({
+            ...prev,
+            // Never over the user's own text: a name only where there is none, and the
+            // description as a paragraph of its own.
+            name: prev.name.trim() ? prev.name : suggestion.name,
+            description: appendToDescription(
+              prev.description ?? "",
+              suggestion.description,
+            ),
           }))
         }
         onRetranscribe={
