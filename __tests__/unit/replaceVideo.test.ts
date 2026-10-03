@@ -36,6 +36,39 @@ describe("replaceVideoInPattern", () => {
     ).toEqual([NEW]);
   });
 
+  it("keeps both: the new video goes right after the original", () => {
+    const p = createTestPattern("t", {
+      videoRefs: [{ type: "local", value: OLD }, other],
+    });
+    expect(
+      replaceVideoInPattern(p, OLD, (ref) => [ref, NEW]).videoRefs,
+    ).toEqual([{ type: "local", value: OLD }, NEW, other]);
+  });
+
+  it("does not add a kept video twice when applied again", () => {
+    const p = createTestPattern("t", {
+      videoRefs: [{ type: "local", value: OLD }],
+    });
+    const keepBoth = (ref: IVideoReference) => [ref, NEW];
+    const once = replaceVideoInPattern(p, OLD, keepBoth);
+    expect(replaceVideoInPattern(once, OLD, keepBoth).videoRefs).toEqual([
+      { type: "local", value: OLD },
+      NEW,
+    ]);
+  });
+
+  it("never grows a full group past three videos", () => {
+    const full = [
+      { type: "local" as const, value: OLD },
+      other,
+      { type: "url" as const, value: "https://y.tube/z" },
+    ];
+    const p = createTestPattern("t", { videoRefs: full });
+    expect(
+      replaceVideoInPattern(p, OLD, (ref) => [ref, NEW]).videoRefs,
+    ).toEqual(full);
+  });
+
   it("returns the same object when the video is not there", () => {
     const p = createTestPattern("t", { videoRefs: [other] });
     expect(replaceVideoInPattern(p, OLD, NEW)).toBe(p);

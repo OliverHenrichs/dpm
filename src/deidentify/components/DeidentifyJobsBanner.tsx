@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -7,6 +7,7 @@ import {
   DeidentifyJob,
   useDeidentifyJobs,
 } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import VideoReviewModal from "@/src/deidentify/components/VideoReviewModal";
 
 type Props = {
   /**
@@ -18,13 +19,16 @@ type Props = {
 
 /**
  * Where background video jobs report: one line per job, and a dismiss button once none is
- * still running. Renders nothing when there are no jobs.
+ * still running. A finished video waiting to be checked gets a Review button, which opens it
+ * for the user to keep or discard. Renders nothing when there are no jobs.
  */
 const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   const { jobs, dismissFinished, cancel, canCancel } = useDeidentifyJobs();
+  const [reviewId, setReviewId] = useState<string | null>(null);
   if (jobs.length === 0) return null;
+  const reviewing = jobs.find((j) => j.id === reviewId) ?? null;
 
   const line = (job: DeidentifyJob) => {
     const name = job.patternName;
@@ -37,6 +41,8 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
           name,
           percent: Math.round(job.progress * 100),
         });
+      case "review":
+        return t("videoJobReview", { name });
       case "done":
         return t(`${prefix}JobDone`, { name });
       case "failed":
@@ -71,6 +77,13 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
             >
               {line(job)}
             </Text>
+            {job.status === "review" && (
+              <Button
+                title={t("videoJobReviewButton")}
+                size="sm"
+                onPress={() => setReviewId(job.id)}
+              />
+            )}
             {canCancel(job) && (
               <IconButton
                 icon="close-circle-outline"
@@ -85,7 +98,11 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
           </View>
         );
       })}
-      {!busy && (
+      <VideoReviewModal
+        job={reviewing?.status === "review" ? reviewing : null}
+        onClose={() => setReviewId(null)}
+      />
+      {!busy && !jobs.every((j) => j.status === "review") && (
         <Button
           title={t("deidentifyDismiss")}
           variant="ghost"

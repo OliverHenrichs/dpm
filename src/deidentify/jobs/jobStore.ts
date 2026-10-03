@@ -7,7 +7,10 @@ import {
 import { persistVideo } from "@/src/pattern/data/videoFiles";
 import { trimTranscript } from "@/src/pattern/data/transcripts";
 import { generateUUID } from "@/src/pattern/types/PatternType";
-import { IGeneratedVideo } from "@/src/pattern/types/IPatternList";
+import {
+  IGeneratedVideo,
+  IVideoReference,
+} from "@/src/pattern/types/IPatternList";
 import { shortenVideo, TrimRequest } from "@/src/deidentify/shortenVideo";
 import {
   DeidentifyProvider,
@@ -29,7 +32,15 @@ import {
   ModelDownloadError,
 } from "@/src/transcribe/modelStore";
 
-export type JobStatus = "queued" | "running" | "done" | "failed";
+/**
+ * `review`: a shortened or de-identified video is ready, and waits for the user to look at it
+ * and keep it (in place of the original, or beside it) or discard it. Nothing in the pattern
+ * changes until then.
+ */
+export type JobStatus = "queued" | "running" | "review" | "done" | "failed";
+
+/** What to do with a reviewed result: put it in place of the original, or add it beside it. */
+export type KeepMode = "replace" | "both";
 
 export type JobKind = "deidentify" | "shorten" | "transcribe";
 
@@ -43,8 +54,13 @@ export type DeidentifyJob = {
   status: JobStatus;
   /** 0..1 while running. */
   progress: number;
-  /** The video that replaced the source, once done — how the job's pattern is found again. */
+  /**
+   * The new video: waiting for review, or in the pattern once done (a transcription's is the
+   * source itself) — how the job's pattern is found again.
+   */
   resultUri?: string;
+  /** The part of the source a shortened or de-identified video was cut from, in seconds. */
+  clip?: { start: number; end: number };
   error?: string;
   /** An i18n key for a failure the user can act on, shown instead of [error]. */
   errorKey?: string;
@@ -110,6 +126,8 @@ let jobs: DeidentifyJob[] = [];
 const listeners = new Set<() => void>();
 let queue: Promise<void> = Promise.resolve();
 let attachHandler: AttachHandler | null = null;
+/** Finished videos waiting for review, by job id: what keeping one puts into the pattern. */
+const pending = new Map<string, { generated?: IGeneratedVideo }>();
 /** Jobs the user cancelled before they ran; `run` skips them. */
 const cancelled = new Set<string>();
 /** How to stop the running job early, when its kind can be stopped. */
@@ -152,6 +170,12 @@ export const jobStore = {
         sourceUri: job.request.sourceUri,
         status: "queued",
         progress: 0,
+        ...(job.kind !== "transcribe" && {
+          clip: {
+            start: job.request.startSeconds,
+            end: job.request.endSeconds,
+          },
+        }),
       },
     ];
     emit();
@@ -183,9 +207,59 @@ export const jobStore = {
     );
   },
 
-  /** Removes finished and failed jobs. */
+  /** Removes finished and failed jobs; a result waiting for review stays. */
   dismissFinished() {
-    jobs = jobs.filter((j) => j.status === "queued" || j.status === "running");
+    jobs = jobs.filter(
+      (j) =>
+        j.status === "queued" ||
+        j.status === "running" ||
+        j.status === "review",
+    );
+    emit();
+  },
+
+  /**
+   * Keeps a reviewed result: in place of the original (`replace`), or added right after it
+   * (`both`). What was said in the part kept moves over with the new video, retimed to the cut;
+   * with `replace` the lines outside it go.
+   */
+  async keep(id: string, mode: KeepMode) {
+    const job = jobs.find((j) => j.id === id);
+    const result = pending.get(id);
+    if (job?.status !== "review" || !job.resultUri || !result) return;
+    pending.delete(id);
+    const value = job.resultUri;
+    const clip = job.clip;
+    const { generated } = result;
+    const made = (previous: IVideoReference): IVideoReference => ({
+      type: "local",
+      value,
+      ...(generated && { generated }),
+      ...(previous.transcript &&
+        clip && {
+          transcript: trimTranscript(previous.transcript, clip.start, clip.end),
+        }),
+    });
+    try {
+      await attach(job.listId, job.sourceUri, (previous) =>
+        mode === "replace" ? made(previous) : [previous, made(previous)],
+      );
+      patch(id, { status: "done" });
+    } catch (e) {
+      patch(id, {
+        status: "failed",
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  },
+
+  /** Throws a reviewed result away; the original stays as it was. */
+  discard(id: string) {
+    const job = jobs.find((j) => j.id === id);
+    if (job?.status !== "review") return;
+    pending.delete(id);
+    deleteQuietly(job.resultUri);
+    jobs = jobs.filter((j) => j.id !== id);
     emit();
   },
 
@@ -207,11 +281,22 @@ export const jobStore = {
   async reset() {
     await queue;
     jobs = [];
+    pending.clear();
     cancelled.clear();
     attachHandler = null;
     emit();
   },
 };
+
+/** Best effort: a file the app no longer needs, in the cache or its own storage. */
+function deleteQuietly(uri: string | undefined) {
+  if (!uri) return;
+  try {
+    new File(uri).delete();
+  } catch {
+    // the cache is the OS's to clear anyway, and a stray file costs only space
+  }
+}
 
 async function attach(listId: string, oldUri: string, update: VideoUpdate) {
   recordReplacement(oldUri, update);
@@ -318,27 +403,10 @@ async function run(id: string, job: StartJob) {
       uri,
       job.kind === "shorten" ? "shortened" : "deidentified",
     );
-    try {
-      new File(uri).delete(); // the cache copy
-    } catch {
-      // best effort — the cache is the OS's to clear anyway
-    }
-    // A new video in place of the old; what was said in the part kept is still what was said
-    // (L4) — its lines move over, retimed to the cut, though a silhouette has no sound of its own.
-    const { startSeconds, endSeconds } = job.request;
-    await attach(job.listId, job.request.sourceUri, (previous) => ({
-      type: "local",
-      value: stored,
-      ...(generated && { generated }),
-      ...(previous.transcript && {
-        transcript: trimTranscript(
-          previous.transcript,
-          startSeconds,
-          endSeconds,
-        ),
-      }),
-    }));
-    patch(id, { status: "done", progress: 1, resultUri: stored });
+    deleteQuietly(uri); // the cache copy
+    // The user looks at it before it goes into the pattern; see `keep` and `discard`.
+    pending.set(id, { generated });
+    patch(id, { status: "review", progress: 1, resultUri: stored });
   } catch (e) {
     if (cancelled.delete(id)) return; // stopped on request; the job is already gone
     patch(id, {

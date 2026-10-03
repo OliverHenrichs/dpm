@@ -38,6 +38,8 @@ type Props = {
     provider: DeidentifyProvider,
     request: DeidentifyRequest,
   ) => void;
+  /** Shown above the actions while picking the part to keep (an option that goes with them). */
+  options?: React.ReactNode;
 };
 
 /** The output palette's dancer colours, so a marker shows which colour that dancer gets. */
@@ -67,6 +69,7 @@ const VideoEditPanel: React.FC<Props> = ({
   providers,
   onShorten,
   onDeidentify,
+  options,
 }) => {
   const { t } = useTranslation();
   const [provider, setProvider] = useState<DeidentifyProvider | undefined>(
@@ -250,6 +253,7 @@ const VideoEditPanel: React.FC<Props> = ({
                 : t("deidentifyTooLong", { max: provider.maxSeconds })}
             </Text>
           )}
+          {options}
           <View style={styles.row}>
             {button(
               t("videoShorten"),

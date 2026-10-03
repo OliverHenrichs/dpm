@@ -245,6 +245,11 @@ describe("PatternListManager", () => {
           request: { sourceUri: SOURCE, startSeconds: 0, endSeconds: 2 },
         });
       });
+    /** Opens the finished video from the banner and puts it in place of the original. */
+    const reviewAndReplace = async () => {
+      fireEvent.press(await screen.findByText("Review"));
+      fireEvent.press(await screen.findByText("Replace the original"));
+    };
 
     it("links a finished job to its pattern, opening it in the list", async () => {
       (shortenVideo as jest.Mock).mockResolvedValueOnce(
@@ -256,6 +261,10 @@ describe("PatternListManager", () => {
       ]);
 
       await startShorten(list.id);
+      expect(
+        await screen.findByText("Whip: the new video is ready to check"),
+      ).toBeOnTheScreen();
+      await reviewAndReplace();
       const line = await screen.findByText("Whip: shortened video is in place");
       await waitFor(() => expect(line.props.accessibilityRole).toBe("link"));
       expect(screen.queryByText(/^Counts/)).toBeNull();
@@ -274,6 +283,7 @@ describe("PatternListManager", () => {
       ]);
 
       await startShorten("another-list");
+      await reviewAndReplace();
       const line = await screen.findByText("Whip: shortened video is in place");
 
       expect(line.props.accessibilityRole).toBeUndefined();
@@ -286,6 +296,7 @@ describe("PatternListManager", () => {
       const { list } = await renderManager([pattern(1, "Sugar Push")]);
 
       await startShorten(list.id);
+      await reviewAndReplace();
       const line = await screen.findByText("Whip: shortened video is in place");
 
       expect(line.props.accessibilityRole).toBeUndefined();
