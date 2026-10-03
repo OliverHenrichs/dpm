@@ -41,6 +41,7 @@ import TranscriptSheet, {
 } from "@/src/transcribe/components/TranscriptSheet";
 import { useStartTranscription } from "@/src/transcribe/hooks/useStartTranscription";
 import { appendToDescription } from "@/src/transcribe/excerpt";
+import { Suggestion } from "@/src/suggest/suggestPrompt";
 import {
   getCommonBorder,
   getCommonInput,
@@ -243,6 +244,18 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     (j) => draftUris.has(j.sourceUri) && j.status !== "done",
   );
 
+  // Never over the user's own text: a name only where there is none, and the description as a
+  // paragraph of its own.
+  const applySuggestion = (suggestion: Suggestion) =>
+    setNewPattern((prev) => ({
+      ...prev,
+      name: prev.name.trim() ? prev.name : suggestion.name,
+      description: appendToDescription(
+        prev.description ?? "",
+        suggestion.description,
+      ),
+    }));
+
   // A finished video waiting to be checked, opened from its line below the videos.
   const [reviewId, setReviewId] = useState<string | null>(null);
   const reviewing =
@@ -265,6 +278,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           ...prev,
           description: append(prev.description ?? ""),
         })),
+      onApplySuggestion: applySuggestion,
     };
   })();
   // Edit was pressed with no video on the phone to edit and no room to pick one.
@@ -311,7 +325,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   };
 
   const handleEditVideo = () => {
-    if (editable.length > 0) setShowDeidentifyPicker(true);
+    if (editable.length === 1) openEditor(editable[0].ref);
+    else if (editable.length > 1) setShowDeidentifyPicker(true);
     else if (activeVideoRefs.length >= MAX_VIDEOS) setEditBlocked(true);
     else void pickForDeidentify();
   };
@@ -523,14 +538,22 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
         onEditVideo={canEditVideos ? handleEditVideo : undefined}
+        onEditVideoAt={
+          canEditVideos
+            ? (index) => openEditor(activeVideoRefs[index])
+            : undefined
+        }
         onOpenTranscript={(index) => openTranscript(activeVideoRefs[index])}
-        disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
+        disabled={isActiveVideoReadonly || activeVideoRefs.length >= MAX_VIDEOS}
+        full={!isActiveVideoReadonly && activeVideoRefs.length >= MAX_VIDEOS}
       />
       {draftJobs.map((job) =>
         job.status === "review" ? (
           <View key={job.id} style={styles.jobRow}>
             <Text style={[styles.jobLine, styles.jobRowText]}>
-              {t("videoJobInFormReview")}
+              {job.kind === "transcribe"
+                ? t("suggestJobInFormReview")
+                : t("videoJobInFormReview")}
             </Text>
             <Button
               title={t("videoJobReviewButton")}
@@ -550,6 +573,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           </Text>
         ),
       )}
+      {draftJobs.some(
+        (j) => j.status === "queued" || j.status === "running",
+      ) && <Text style={styles.jobLine}>{t("videoJobsKeepOpen")}</Text>}
       <VideoReviewModal
         job={reviewing}
         onClose={() => setReviewId(null)}
@@ -622,18 +648,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             description: append(prev.description ?? ""),
           }))
         }
-        onApplySuggestion={(suggestion) =>
-          setNewPattern((prev) => ({
-            ...prev,
-            // Never over the user's own text: a name only where there is none, and the
-            // description as a paragraph of its own.
-            name: prev.name.trim() ? prev.name : suggestion.name,
-            description: appendToDescription(
-              prev.description ?? "",
-              suggestion.description,
-            ),
-          }))
-        }
+        onApplySuggestion={applySuggestion}
         onRetranscribe={
           canEditVideos && transcriptTarget
             ? (language) => startTranscription(transcriptTarget, language)

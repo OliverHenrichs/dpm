@@ -2,10 +2,15 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { AppText, Button } from "@/src/common/ui";
+import { AppText, Button, Chip } from "@/src/common/ui";
 import { isAudioExtractAvailable } from "@/modules/audio-extract";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
-import { installedModels } from "@/src/transcribe/modelStore";
+import {
+  installedModels,
+  installedModelUri,
+} from "@/src/transcribe/modelStore";
+import { canSuggest } from "@/src/suggest/suggestPattern";
+import { SUGGESTION_DOWNLOAD_MB, SUGGESTION_MODEL } from "@/src/suggest/models";
 import { TRANSCRIPTION_DOWNLOAD_MB } from "@/src/transcribe/models";
 import {
   TranscriptionTarget,
@@ -26,6 +31,10 @@ type Props = {
  * already is. The first transcription needs the speech model; the user is told its size before
  * anything is downloaded, and the job then fetches it. A silhouette has no sound (L3 drops it),
  * so it is not offered there.
+ *
+ * Where suggestions can run, it can go on to suggest a name and description in the same job,
+ * which then waits for the user to review the suggestion. On by default once the suggestion
+ * model is on the phone; off before, since that is a much larger download (named on the chip).
  */
 const TranscribeSection: React.FC<Props> = ({
   target,
@@ -35,14 +44,29 @@ const TranscribeSection: React.FC<Props> = ({
   const { t } = useTranslation();
   const startTranscription = useStartTranscription();
   const [confirmDownload, setConfirmDownload] = useState(false);
+  const offerSuggest = canSuggest();
+  const suggestInstalled =
+    offerSuggest && installedModelUri(SUGGESTION_MODEL) !== null;
+  const [suggest, setSuggest] = useState(suggestInstalled);
 
   if (!isAudioExtractAvailable) return null;
 
   const run = () => {
     // Detected afresh; the transcript view offers a fixed language for when detection is wrong.
-    startTranscription(target);
+    startTranscription(target, undefined, { suggest: offerSuggest && suggest });
     onStarted();
   };
+  const suggestChip = offerSuggest && (
+    <Chip
+      label={
+        suggestInstalled
+          ? t("transcribeThenSuggest")
+          : t("transcribeThenSuggestDownload", { size: SUGGESTION_DOWNLOAD_MB })
+      }
+      selected={suggest}
+      onPress={() => setSuggest((on) => !on)}
+    />
+  );
   const onTranscribe = () => {
     if (installedModels()) run();
     else setConfirmDownload(true);
@@ -98,12 +122,15 @@ const TranscribeSection: React.FC<Props> = ({
           )}
         </View>
       ) : (
-        <Button
-          title={t("transcribeRun")}
-          icon="account-voice"
-          variant="secondary"
-          onPress={onTranscribe}
-        />
+        <>
+          {suggestChip}
+          <Button
+            title={t("transcribeRun")}
+            icon="account-voice"
+            variant="secondary"
+            onPress={onTranscribe}
+          />
+        </>
       )}
     </View>
   );

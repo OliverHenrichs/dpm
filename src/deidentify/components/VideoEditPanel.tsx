@@ -54,7 +54,7 @@ const WHOLE_CLIP_SLACK = 0.1;
 
 /**
  * Edit a pattern's video: pick the part to keep on a bar over the whole clip, then either
- * shorten the video to it or de-identify it. The preview loops the selection, so what you see
+ * shorten the video to it or anonymize it (the user-facing word for de-identifying). The preview loops the selection, so what you see
  * is what you keep. De-identifying is offered once the selection fits the provider (30 s
  * on-device); a provider that tracks from a prompt then holds the selection's first frame for
  * one tap per dancer.
@@ -246,6 +246,9 @@ const VideoEditPanel: React.FC<Props> = ({
             onChangeEnd={(w) => seekTo(w.start)}
             playhead={playhead}
           />
+          {isWholeClip && (
+            <Text style={styles.hint}>{t("videoShortenHint")}</Text>
+          )}
           {provider && !fitsProvider && (
             <Text style={styles.hint}>
               {length < provider.minSeconds
@@ -273,12 +276,14 @@ const VideoEditPanel: React.FC<Props> = ({
                 disabled: !fitsProvider,
               })}
           </View>
+          {provider && <Text style={styles.hint}>{t("deidentifyWhy")}</Text>}
         </>
       )}
 
       {prompting && provider && (
         <>
           <Text style={styles.text}>{tapHint}</Text>
+          <Text style={styles.hint}>{t("deidentifyTapFrameHint")}</Text>
           {providers.length > 1 && (
             <View style={styles.row}>
               {providers.map((p) => {

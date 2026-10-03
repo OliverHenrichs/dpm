@@ -122,7 +122,7 @@ afterEach(async () => {
 });
 
 describe("EditPatternForm — editing a video", () => {
-  it("offers the pattern's own video, and opens the trim step on it", async () => {
+  it("opens the only video on the phone straight away", async () => {
     renderForm(
       createTestPattern(TYPE.id, {
         id: 1,
@@ -131,7 +131,6 @@ describe("EditPatternForm — editing a video", () => {
     );
 
     fireEvent.press(await editButton());
-    fireEvent.press(await screen.findByLabelText("Video 1"));
 
     expect(await screen.findByText(`trim ${SOURCE}`)).toBeOnTheScreen();
   });
@@ -191,7 +190,6 @@ describe("EditPatternForm — editing a video", () => {
     );
 
     fireEvent.press(await editButton());
-    fireEvent.press(await screen.findByLabelText("Video 1"));
     fireEvent.press(await screen.findByText("mock shorten"));
 
     await reviewAndReplace();
@@ -216,7 +214,6 @@ describe("EditPatternForm — editing a video", () => {
     );
 
     fireEvent.press(await editButton());
-    fireEvent.press(await screen.findByLabelText("Video 1"));
     await screen.findByText("mock shorten");
     expect(screen.queryByText("mock deidentify")).toBeNull();
 
@@ -238,7 +235,6 @@ describe("EditPatternForm — editing a video", () => {
     );
 
     fireEvent.press(await editButton());
-    fireEvent.press(await screen.findByLabelText("Video 1"));
     fireEvent.press(await screen.findByText("mock shorten"));
     expect(
       await screen.findByText("A new video is ready to check"),
@@ -263,7 +259,6 @@ describe("EditPatternForm — editing a video", () => {
     );
 
     fireEvent.press(await editButton());
-    fireEvent.press(await screen.findByLabelText("Video 1"));
     fireEvent.press(await screen.findByText("mock shorten"));
     fireEvent.press(await screen.findByText("Review"));
     fireEvent.press(await screen.findByText("Discard the new video"));
@@ -295,7 +290,6 @@ describe("EditPatternForm — editing a video", () => {
     );
 
     fireEvent.press(await editButton());
-    fireEvent.press(await screen.findByLabelText("Video 1"));
     fireEvent.press(await screen.findByText("mock shorten"));
     fireEvent.press(await screen.findByText("Review"));
 
@@ -337,22 +331,63 @@ describe("EditPatternForm — editing a video", () => {
     expect(mockedPicker).not.toHaveBeenCalled();
   });
 
-  it("says why online videos are not offered for editing", async () => {
+  it("asks which video when there are several, and says why online videos are missing", async () => {
     renderForm(
       createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [
           { type: "local", value: SOURCE },
           { type: "url", value: "https://y.tube/a" },
+          { type: "local", value: "file:///document/video-b.mp4" },
         ],
       }),
     );
 
     fireEvent.press(await editButton());
-
     expect(
       await screen.findByText(
         "Online videos can't be edited, only videos saved on the phone.",
+      ),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Video 3"));
+
+    expect(
+      await screen.findByText("trim file:///document/video-b.mp4"),
+    ).toBeOnTheScreen();
+  });
+
+  it("edits a video from its own thumbnail, and gives online videos no edit button", async () => {
+    renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        videoRefs: [
+          { type: "url", value: "https://y.tube/a" },
+          { type: "local", value: SOURCE },
+        ],
+      }),
+    );
+
+    fireEvent.press(await screen.findByLabelText("Edit video 2"));
+
+    expect(await screen.findByText(`trim ${SOURCE}`)).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Edit video 1")).toBeNull();
+  });
+
+  it("says why '+' is off once there are three videos", async () => {
+    renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        videoRefs: [
+          { type: "local", value: SOURCE },
+          { type: "url", value: "https://y.tube/a" },
+          { type: "url", value: "https://y.tube/b" },
+        ],
+      }),
+    );
+
+    expect(
+      await screen.findByText(
+        "Holds up to 3 videos. Remove one to add another.",
       ),
     ).toBeOnTheScreen();
   });
