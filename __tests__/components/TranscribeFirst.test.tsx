@@ -1,8 +1,8 @@
 import React from "react";
-import DeidentifyModal, {
-  DeidentifyTarget,
-} from "@/src/deidentify/components/DeidentifyModal";
-import { jobStore, StartJob } from "@/src/deidentify/jobs/jobStore";
+import AnonymizeModal, {
+  AnonymizeTarget,
+} from "@/src/anonymize/components/AnonymizeModal";
+import { jobStore, StartJob } from "@/src/anonymize/jobs/jobStore";
 import { installedModels } from "@/src/transcribe/modelStore";
 import { createTestPatternList } from "@/utils/testFactories";
 import {
@@ -21,12 +21,12 @@ jest.mock("@/src/transcribe/modelStore", () => ({
   installedModels: jest.fn(),
 }));
 // No native pipeline under jest: no provider, so the panel offers shortening only.
-jest.mock("@/src/deidentify/providers/allProviders", () => ({
+jest.mock("@/src/anonymize/providers/allProviders", () => ({
   ALL_PROVIDERS: [],
 }));
 // The real panel needs expo-video; this one offers the cut as a plain button and shows the
 // options it is given.
-jest.mock("@/src/deidentify/components/VideoEditPanel", () => ({
+jest.mock("@/src/anonymize/components/VideoEditPanel", () => ({
   __esModule: true,
   default: ({
     sourceUri,
@@ -58,7 +58,7 @@ const mockedInstalled = installedModels as jest.MockedFunction<
 >;
 const SOURCE = "file:///document/video-a.mp4";
 
-function renderModal(extra: Partial<DeidentifyTarget> = {}) {
+function renderModal(extra: Partial<AnonymizeTarget> = {}) {
   const list = createTestPatternList();
   const started: StartJob[] = [];
   jest.spyOn(jobStore, "start").mockImplementation((job) => {
@@ -66,7 +66,7 @@ function renderModal(extra: Partial<DeidentifyTarget> = {}) {
     return `job-${started.length}`;
   });
   renderWithProviders(
-    <DeidentifyModal
+    <AnonymizeModal
       target={{
         listId: list.id,
         patternName: "Whip",

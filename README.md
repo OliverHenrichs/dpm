@@ -40,12 +40,12 @@ Modifiers are affixes that change how a pattern is danced ("with a spin", "slow"
 **Edit Pattern → Videos → Edit video** opens a sheet with the clip and a trim bar. Everything below runs **on the device**. No video, audio or transcript is uploaded, and each tool runs as a background job reported in a banner on the pattern list.
 
 - **Shorten** cuts the selection out at the source's size, audio kept
-- **De-identify** turns a 1–30 s selection into a **silhouette** video: tap each dancer (one, or a couple) on a frame and they are tracked through the clip. The result replaces the video in the pattern, with a *Silhouette* badge; the original stays in the gallery
+- **Anonymize** turns a 1–30 s selection into a **silhouette** video: tap each dancer (one, or a couple) on a frame and they are tracked through the clip. The result replaces the video in the pattern, with a *Silhouette* badge; the original stays in the gallery
 - **Transcribe speech** writes down what the teacher says ([whisper.cpp](https://github.com/ggerganov/whisper.cpp) via `whisper.rn`, after a one-time ~61 MB model download). The transcript view shows timestamped lines: tap one to seek there, tick lines and **Add to description**. Shortening a video keeps only the transcript lines inside the cut
 - **Suggest name and description** drafts both from the transcript and the list's vocabulary, using a small language model (Qwen3.5 2B via `llama.rn`, a one-time ~1.3 GB download, devices with ≥ 6 GB RAM). Nothing is written until you tap *Use suggestion*, which fills the name only when it is empty
 - Downloaded models are hash-checked, listed under **Settings → On-device models** with their size, and can be deleted there
 
-The native parts are local Expo modules in `modules/` (`video-deidentify`, `audio-extract`); on iOS and web these tools are hidden.
+The native parts are local Expo modules in `modules/` (`video-anonymize`, `audio-extract`); on iOS and web these tools are hidden.
 
 ### Graph Visualisation
 Two switchable views driven by the prerequisite graph:
@@ -105,7 +105,7 @@ Both views render from a single graph model, so they cannot disagree about depth
 | Graphics | [react-native-svg](https://github.com/software-mansion/react-native-svg) 15 |
 | Gestures & animation | [react-native-gesture-handler](https://docs.swmansion.com/react-native-gesture-handler) + [react-native-reanimated](https://docs.swmansion.com/react-native-reanimated) — pan, pinch and node dragging all run on the UI thread |
 | Video | [expo-video](https://docs.expo.dev/versions/latest/sdk/video) + [expo-video-thumbnails](https://docs.expo.dev/versions/latest/sdk/video-thumbnails) |
-| Video processing | Local Expo modules in `modules/` (Kotlin): `video-deidentify` (AndroidX Media3 + LiteRT person tracking) and `audio-extract` |
+| Video processing | Local Expo modules in `modules/` (Kotlin): `video-anonymize` (AndroidX Media3 + LiteRT person tracking) and `audio-extract` |
 | On-device AI | [whisper.rn](https://github.com/mybigday/whisper.rn) (speech to text) + [llama.rn](https://github.com/mybigday/llama.rn) (suggestions) |
 | YouTube | [react-native-youtube-iframe](https://lonelycpp.github.io/react-native-youtube-iframe) |
 | QR codes | [react-native-qrcode-svg](https://github.com/awesomejerry/react-native-qrcode-svg) + [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera) |
@@ -135,14 +135,14 @@ src/pattern/graph/       Timeline + network views, details modal
   ├─ model/              Pure graph maths: adjacency, cycles, depth, filtering, layout merge
   ├─ render/             Shared SVG primitives and the drag overlay
   └─ data/               Per-list manual layout storage
-src/deidentify/          Edit-video sheet, shorten / de-identify jobs and the job banner
+src/anonymize/           Edit-video sheet, shorten / anonymize jobs and the job banner
   ├─ jobs/               Background job store, one native job at a time
-  └─ providers/          De-identification methods (on-device tracking)
+  └─ providers/          Anonymization methods (on-device tracking)
 src/transcribe/          Speech-to-text jobs, model downloads, transcript sheet
 src/suggest/             Name and description suggestions from a transcript
 src/firebase/            Optional Firestore config and list-sharing service
 src/settings/            Settings screen, data-transfer hook, on-device model management
-modules/                 Local native Expo modules: video-deidentify, audio-extract (Android)
+modules/                 Local native Expo modules: video-anonymize, audio-extract (Android)
 website/                 Static project website, deployed to GitHub Pages (see website/README.md)
 __mocks__/               Behavioural mocks: AsyncStorage, filesystem, Reanimated, gestures
 __tests__/ , utils/      Jest tests and test factories

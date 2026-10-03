@@ -5,9 +5,9 @@ import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import TranscriptSheet, {
   TranscriptTarget,
 } from "@/src/transcribe/components/TranscriptSheet";
-import DeidentifyJobsBanner from "@/src/deidentify/components/DeidentifyJobsBanner";
-import { jobStore } from "@/src/deidentify/jobs/jobStore";
-import { clearReplacements } from "@/src/deidentify/jobs/replaceVideo";
+import AnonymizeJobsBanner from "@/src/anonymize/components/AnonymizeJobsBanner";
+import { jobStore } from "@/src/anonymize/jobs/jobStore";
+import { clearReplacements } from "@/src/anonymize/jobs/replaceVideo";
 import {
   IPattern,
   IVideoTranscript,
@@ -44,14 +44,14 @@ jest.mock("@/src/transcribe/transcribeVideo", () => ({
   transcribeVideo: jest.fn(),
 }));
 // Editing needs the shortening module; the trim step itself is not under test here.
-jest.mock("@/src/deidentify/shortenVideo", () => ({
+jest.mock("@/src/anonymize/shortenVideo", () => ({
   canShortenVideos: () => true,
   shortenVideo: jest.fn(),
 }));
-jest.mock("@/src/deidentify/providers/allProviders", () => ({
+jest.mock("@/src/anonymize/providers/allProviders", () => ({
   ALL_PROVIDERS: [],
 }));
-jest.mock("@/src/deidentify/components/VideoEditPanel", () => ({
+jest.mock("@/src/anonymize/components/VideoEditPanel", () => ({
   __esModule: true,
   default: () => null,
 }));
@@ -297,7 +297,7 @@ describe("the jobs banner", () => {
       stop,
     });
     const list = createTestPatternList();
-    renderWithProviders(<DeidentifyJobsBanner />, { lists: [list] });
+    renderWithProviders(<AnonymizeJobsBanner />, { lists: [list] });
 
     act(() => {
       jobStore.start({

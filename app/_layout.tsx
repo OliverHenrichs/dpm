@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/src/common/components/ThemeContext";
 import ServerStyles from "@/src/common/theme/ServerStyles";
 import { ActivePatternListProvider } from "@/src/pattern/data/components/ActivePatternListContext";
-import { DeidentifyJobsProvider } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import DrawerContent from "@/src/common/components/DrawerContent";
 import { DRAWER_ROUTES } from "@/src/common/components/DrawerRoutes";
 
@@ -65,7 +65,7 @@ function AppDrawer() {
       {/* The app's theme, not the system's: someone who picked light on a
           dark phone would otherwise get white icons on a white bar. */}
       <StatusBar style={rt.themeName === "dark" ? "light" : "dark"} />
-      <DeidentifyJobsProvider>
+      <AnonymizeJobsProvider>
         <SafeAreaView style={styles.flexView}>
           <Drawer
             screenOptions={{
@@ -108,7 +108,7 @@ function AppDrawer() {
             ))}
           </Drawer>
         </SafeAreaView>
-      </DeidentifyJobsProvider>
+      </AnonymizeJobsProvider>
     </ActivePatternListProvider>
   );
 }

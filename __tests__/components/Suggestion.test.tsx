@@ -6,8 +6,8 @@ import {
 import { llamaCalls, setLlamaAnswer } from "@/__mocks__/llama.rn";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import DeviceModelsSection from "@/src/settings/components/DeviceModelsSection";
-import { jobStore } from "@/src/deidentify/jobs/jobStore";
-import { clearReplacements } from "@/src/deidentify/jobs/replaceVideo";
+import { jobStore } from "@/src/anonymize/jobs/jobStore";
+import { clearReplacements } from "@/src/anonymize/jobs/replaceVideo";
 import {
   IPattern,
   IVideoTranscript,
@@ -58,7 +58,7 @@ jest.mock("@/src/transcribe/transcribeVideo", () => ({
   ...jest.requireActual("@/src/transcribe/transcribeVideo"),
   transcribeVideo: jest.fn(),
 }));
-jest.mock("@/src/deidentify/shortenVideo", () => ({
+jest.mock("@/src/anonymize/shortenVideo", () => ({
   canShortenVideos: () => true,
   shortenVideo: jest.fn(),
 }));

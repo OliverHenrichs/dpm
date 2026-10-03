@@ -43,9 +43,9 @@ None of this data leaves your device unless you explicitly use the Export or Clo
 
 ### 3.2 On-device video tools
 
-Shortening a video, de-identifying it (turning the dancers into silhouettes), transcribing its speech and suggesting a pattern name and description are all processed **entirely on your device**. The video, its audio, the transcript and the suggestion are never sent to us or to anyone else.
+Shortening a video, anonymizing it (turning the dancers into silhouettes), transcribing its speech and suggesting a pattern name and description are all processed **entirely on your device**. The video, its audio, the transcript and the suggestion are never sent to us or to anyone else.
 
-A de-identified video shows the dancers as silhouettes and contains no sound. People may still be recognisable from their body shape, movement or surroundings, so treat it with the same care as the original.
+An anonymized video shows the dancers as silhouettes and contains no sound. People may still be recognisable from their body shape, movement or surroundings, so treat it with the same care as the original.
 
 If your videos show other people, such as teachers or other dancers, you are responsible for having their permission to record, keep and share those videos.
 

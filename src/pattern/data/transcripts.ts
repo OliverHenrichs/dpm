@@ -41,7 +41,7 @@ export function hasTranscripts(
 
 /**
  * The transcript of a cut: the lines said within [start, end) of the source, timed from the cut's
- * start. Shortening and de-identifying both cut a window out of the video; carried over whole, the
+ * start. Shortening and anonymizing both cut a window out of the video; carried over whole, the
  * transcript kept lines from outside it, at the source's times — past the end of the new clip.
  */
 export function trimTranscript(

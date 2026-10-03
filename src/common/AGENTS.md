@@ -41,7 +41,7 @@ weight needs its file added in both places in `app.config.ts`, and a dev client 
 
 **Colour literals fail lint** (`eslint.config.js`, `no-restricted-syntax`) everywhere in `src/` and
 `app/` except `tokens.ts` and the pattern-type palette, which is data. A literal that is genuinely
-data, like the de-identified video's dancer colours, carries a disable comment saying so.
+data, like the anonymized video's dancer colours, carries a disable comment saying so.
 
 **Every value comes from a token.** `theme.colors` (roles), `theme.space` (4-point scale),
 `theme.radius`, `theme.typography` (spread a text style, then set its colour), `theme.elevation`,
@@ -190,7 +190,7 @@ out from the top sat under the clock and battery (the edit-pattern dialog's titl
 `Modal`'s scrim is a `ModalOverlay`** (`components/ModalOverlay.tsx`): it covers the whole screen and
 pads its content by the system bars' insets plus a spacing step (`padding`, default `xl`;
 `align="bottom"` for panels that meet the bottom edge, whose own card then pads by the bottom inset,
-as `DeidentifyModal` does). `BottomSheet` does the same inside itself. The insets come from
+as `AnonymizeModal` does). `BottomSheet` does the same inside itself. The insets come from
 Unistyles' runtime (`StyleSheet.create((theme, rt) => …)`, `rt.insets`), so they follow rotation;
 the Jest mock reports them as zero.
 

@@ -31,7 +31,7 @@ familiar with the codebase, including tests and review — they are estimates, n
 | 3 | Moveable patterns in network graph | **L** | ✅ done | [L2](#l2--moveable-patterns-in-the-network-graph) |
 | 4 | Show video and modifier availability in the graph; show modifiers in details when clicked | **M** | ✅ done | [M2](#m2--surface-video-and-modifier-availability-in-the-graph) |
 | 5 | Make home-button field larger | **S** | ✅ done | [S2](#s2--enlarge-the-home-button-target--done) |
-| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or de-identify a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
+| 6 | AI comic-style anonymised videos (BYOK, 30 s cap, cost warning) | **L** | in progress — in the app on Android: shorten or anonymize a pattern's video as a background job; iOS, consent UI and remote providers open | [L3](#l3--ai-anonymised-comic-style-videos) |
 | 7 | Transcript of what's said in a pattern's video — teachers explain while they demonstrate, and it could inform the pattern description | **L** | in the app on Android — transcribe a video, read the transcript, add lines to the description, export them by choice, and draft a name and description from them; iOS open | [L4](#l4--transcripts-of-what-teachers-say-in-a-video--in-the-app-on-android) |
 
 Note on item 4: half of it is a one-line fix (`PatternDetailsModal` never passes `modifiers`
@@ -1264,8 +1264,8 @@ exactly rather than inventing a second pattern.
 #### Spike result (2026-09-23/24) — no-go as scoped
 
 Code: branch `spike/l3-silhouette`, not for merge. It holds the local Expo module
-`modules/video-deidentify/` (Android only) and a `__DEV__` panel at the bottom of Settings.
-The models are gitignored, so run `modules/video-deidentify/scripts/fetch-models.sh` before
+`modules/video-anonymize/` (Android only) and a `__DEV__` panel at the bottom of Settings.
+The models are gitignored, so run `modules/video-anonymize/scripts/fetch-models.sh` before
 building. Tested on a Pixel 10a with four real teaching clips (13–19 s):
 1. Professional couple in black, closed position with turns, spectators at the right and the
    bottom edge.
@@ -1277,7 +1277,7 @@ building. Tested on a Pixel 10a with four real teaching clips (13–19 s):
 regardless of the verdict:
 - **Audience.** The intended audience is *public* (YouTube). Once footage is published the
   GDPR household exemption ends, and KUG §22 needs consent to publish someone's image. So
-  de-identification has to be real, and on-device.
+  anonymization has to be real, and on-device.
 - **Silhouettes are the primary strategy.** They keep the movement and drop identity.
 - **The AI comic path is an optional later phase.** A video-to-video render keeps likeness,
   so it is not anonymisation, and it sends identifiable third-party footage to a paid
@@ -1338,7 +1338,7 @@ plus `libmediapipe_tasks_jni.so` (10.5 MB) is roughly +13–27 MB.
 
 **Verdict.** The pipeline is sound, but no off-the-shelf MediaPipe model segments full-body
 dancers reliably enough for footage that is not bright, close and uncluttered. Shipping on
-top of it would mean de-identified videos that are unreadable exactly when they matter:
+top of it would mean anonymized videos that are unreadable exactly when they matter:
 turns, closed position, shows, low light. **Do not build the feature on these models.**
 
 Options, if L3 is picked up again:
@@ -1427,7 +1427,7 @@ reference closely.
 
 **Where the models come from:**
 - EdgeTAM's LiteRT graphs are converted with an adapted copy of john-rocky/LiteRT-Models'
-  script (MIT), in `modules/video-deidentify/scripts/convert_edgetam_video.py`. The port's
+  script (MIT), in `modules/video-anonymize/scripts/convert_edgetam_video.py`. The port's
   published model files are no longer public.
 - RF-DETR is exported with `rfdetr`'s own TFLite export (`scripts/export_rfdetr.py`).
 - Both are gitignored.
@@ -1541,7 +1541,7 @@ Commits `fb22189` to `0a6feb4`. The dev panel is gone; the feature lives in a pa
   - **Shorten** cuts the selection at the source's size, audio kept. It needs no taps and has no
     length cap: a separate feature that happens to share the Media3 pass (`shortenVideo.ts`,
     `height: 0` keeps the size).
-  - **De-identify** is enabled once the selection fits the provider (1–30 s). The tap step then
+  - **Anonymize** is enabled once the selection fits the provider (1–30 s). The tap step then
     offers **one dancer or a couple** (`minPromptCount: 1`); the native side was already sized by
     the number of taps. A video that already is a silhouette can only be shortened, and keeps its
     provenance.
@@ -1558,14 +1558,14 @@ show a "Silhouette" badge. A finished job **replaces** the source in the pattern
 stays in the gallery. Picked and recorded videos are now copied into the document directory
 (`persistVideo`) — the picker's cache URIs could vanish, a latent bug for every picked video.
 
-**Background jobs** (`src/deidentify/jobs/jobStore.ts`):
+**Background jobs** (`src/anonymize/jobs/jobStore.ts`):
 - A module-level store, not component state. On the phone Android destroyed and recreated the
   activity mid-run, in the same process: jobs held in React state vanished with the old tree,
   while the native run carried on and would have written that tree's stale pattern snapshot back.
 - One job at a time (two pipelines do not fit in memory), screen kept awake (`expo-keep-awake`).
 - A job finds its video **by URI** across the list, so it works for a pattern not yet saved. A
   finished result goes through the attach handler of the *currently mounted* tree
-  (`DeidentifyJobsProvider`, merging with the active list in memory), or straight to storage for
+  (`AnonymizeJobsProvider`, merging with the active list in memory), or straight to storage for
   another list. `applyReplacements` swaps it into drafts saved later, and an open edit form swaps
   it in live.
 
@@ -1590,13 +1590,13 @@ apps — watch it on clips near 30 s.
 **Debug options removed** (2026-09-26): the tuning is now constants in the pipeline —
 `FP32_GRAPHS = {encode}` (EdgeTamTracker), `TRACK_EVERY = 2` and guided edges (EdgeTamSegmenter)
 — and the per-graph CPU forcing, the frame cap, the kept transcode and the encoder-input dump are
-gone. Dev builds still log each run's per-frame stats (`[deidentify]` chunks). Replaying a phone
+gone. Dev builds still log each run's per-frame stats (`[anonymize]` chunks). Replaying a phone
 run on the desktop replica needs its transcode, so that means temporarily re-adding the keep.
 
 **Open:**
 - **iOS**: the native module is Android-only (Vision person segmentation or a Core ML EdgeTAM port
   would be the route; needs a Mac/EAS build). Today the editor button is simply absent there.
-- **Consent UI and a remote provider** (e.g. Viggle): `runDeidentify` already refuses
+- **Consent UI and a remote provider** (e.g. Viggle): `runAnonymize` already refuses
   `sendsFootageOffDevice` without a recorded consent; the step that records it does not exist.
 - A job lives only as long as the process; if Android kills the app mid-run the job is lost (the
   original video is untouched). A foreground service would fix it.
@@ -1616,7 +1616,7 @@ the work starts; everything else is a recommendation with its reason.
 #### What the user gets
 
 - In **Edit Pattern → Videos → Edit video** (L3's sheet), a third action beside *Shorten* and
-  *De-identify*: **Transcribe speech**. It runs as a background job like the other two.
+  *Anonymize*: **Transcribe speech**. It runs as a background job like the other two.
 - A **transcript view**: the video on top, the transcript below as timestamped lines. Tapping a
   line seeks the video there; ticking lines and pressing **Add to description** appends them to the
   open form's description.
@@ -1672,17 +1672,17 @@ carries AAC (or Opus) in an MP4. The app therefore needs a small native step,
   Sonic processor, already a dependency through L3, can do the resampling.
 - **iOS:** `AVAssetReader` with linear-PCM output settings at 16 kHz mono.
 - **Put it in its own small Expo module** (`modules/audio-extract`), not in
-  `modules/video-deidentify`. That module is Android-only and carries ~130 MB of models; this step
+  `modules/video-anonymize`. That module is Android-only and carries ~130 MB of models; this step
   should work on both platforms from the start.
 
-**Always transcribe the source, never the de-identified copy.** L3's output drops the audio
-deliberately. When de-identifying replaces a video that has a transcript, the transcript moves to
+**Always transcribe the source, never the anonymized copy.** L3's output drops the audio
+deliberately. When anonymizing replaces a video that has a transcript, the transcript moves to
 the replacement, as L3's `generated` provenance does (`replaceVideo.ts`). The editor disables
 *Transcribe* on a silhouette video, with a hint.
 
 #### Where it lives
 
-- `src/transcribe/`, beside `src/deidentify/`:
+- `src/transcribe/`, beside `src/anonymize/`:
   - `transcribeVideo.ts`: extract audio, load the model, run `whisper.rn` with prompt and VAD,
     map segments.
   - `modelStore.ts`: download, verify and locate the model file.
@@ -1797,7 +1797,7 @@ before transcription and a shorter prompt are now part of it.
   then commas, to ~110 characters, times shared out by length.
 - The vocabulary prompt is capped at 224 characters.
 - Jobs: `"transcribe"` in `jobStore`; the transcript is put on the same video reference through
-  a `VideoUpdate` function. De-identify and shorten carry an existing transcript to the
+  a `VideoUpdate` function. Anonymize and shorten carry an existing transcript to the
   replacement.
 - Data: `IVideoReference.transcript?: IVideoTranscript`. `withoutTranscripts` strips it from
   exports and published lists — for now unconditionally; the opt-in is the data phase.
@@ -1828,7 +1828,7 @@ is not wired to `stop()` yet; the music clip has not been re-measured with VAD i
   thumbnail image.
 - **Jobs:** the model download is part of the transcription job, weighted into one count to 100%
   (download 30%). Queued jobs and running transcriptions can be cancelled from the banner;
-  de-identify and shorten cannot once running (no native stop). "No sound" and a failed download
+  anonymize and shorten cannot once running (no native stop). "No sound" and a failed download
   are reported as sentences (`errorKey`), not exception text.
 - **Settings → Speech model:** whether it is on the phone, and *Delete* to free the space.
 - The dev bench and its route are gone. Strings in all nine locales.
@@ -1929,7 +1929,7 @@ transcripts:
   paragraph.
 - Settings → **On-device models**: speech and suggestion model, each with size and *Delete*.
   `modelStore.ts` now serves both (`installedModelUri`, `downloadModel`, `deleteModel`).
-- **Found on the way:** shortening or de-identifying carried the transcript over whole — lines from
+- **Found on the way:** shortening or anonymizing carried the transcript over whole — lines from
   outside the cut, at the source's times (a 15 s clip showed a line at 0:23). `trimTranscript` now
   keeps the lines inside the cut, retimed. Transcripts already carried over wrongly stay until the
   video is transcribed again.

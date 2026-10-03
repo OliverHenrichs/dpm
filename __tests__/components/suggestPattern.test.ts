@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import * as Device from "expo-device";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
 import { llamaCalls, setLlamaAnswer } from "@/__mocks__/llama.rn";
-import { jobStore } from "@/src/deidentify/jobs/jobStore";
+import { jobStore } from "@/src/anonymize/jobs/jobStore";
 import {
   canSuggest,
   suggestPattern,

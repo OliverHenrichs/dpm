@@ -9,7 +9,7 @@ import {
   resizeEnd,
   resizeStart,
   TrimLimits,
-} from "@/src/deidentify/model/trimWindow";
+} from "@/src/anonymize/model/trimWindow";
 
 const limits: TrimLimits = { duration: 60, min: 1, max: 30 };
 
