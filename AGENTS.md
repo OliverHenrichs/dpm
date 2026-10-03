@@ -129,15 +129,15 @@ Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo ru
 
 - Do **not** run `npx expo install --fix`. Several packages are deliberately ahead of the versions SDK 57 bundles — `@react-native-async-storage/async-storage@3`, `react-native-gesture-handler@3`, `jest@30`, `react@19.2.7`, `react-native-safe-area-context`, `react-native-svg` — and `--fix` would downgrade them, two across a major. `npx expo install --check` listing them is expected.
 - `react-test-renderer` is pinned to the exact `react` version and must be bumped with it. `jest-expo` must track the SDK major.
-- `npm audit` findings are checked against an allowlist of reviewed advisories in `scripts/check-audit.js` (`npm run audit:check`), not a count. Accepted today: `decode-uri-component` (GHSA-vcc3-ghjq-m6fr, via `expo-router` → `query-string@7`, whose fix is ESM-only and cannot be forced under a CJS parent; waits for expo-router upstream), and `node-forge` (GHSA-86w9-cpqp-85rv, via `@expo/cli`) and `braces` (GHSA-vfj7-8cjw-p6xm, via `micromatch` under metro, jest and `@expo/cli`), both dev tooling only and with no patched release yet. The raw counts are large because every package above them is flagged too. Any advisory not on the list is new. `overrides` in `package.json` carries the rest; each entry exists because a parent pins a range below the fix.
+- `npm audit` findings are checked against an allowlist of reviewed advisories in `scripts/check-audit.js` (`npm run audit:check`), not a count. Accepted today: `decode-uri-component` (GHSA-vcc3-ghjq-m6fr, via `expo-router` → `query-string@7`, whose fix is ESM-only and cannot be forced under a CJS parent; waits for expo-router upstream), and `node-forge` (GHSA-86w9-cpqp-85rv, via `@expo/cli`) and `braces` (GHSA-vfj7-8cjw-p6xm, via `micromatch` under metro, jest and `@expo/cli`), both dev tooling only and with no patched release yet. Each acceptance carries an `until` date: past it the advisory fails CI again until someone re-reviews it and either fixes it or sets a new date, and the check warns in the week before. The raw counts are large because every package above them is flagged too. Any advisory not on the list is new. `overrides` in `package.json` carries the rest; each entry exists because a parent pins a range below the fix.
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push to `master` and every PR, in three jobs:
+`.github/workflows/ci.yml` runs on every push to `master` and every PR, in three jobs, and every Monday runs the audit job alone so an expired acceptance or a new advisory shows up without a push:
 
 - **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`. Lint and the format check cover the tests, mocks and root config files too: `expo lint` with no path would lint only `src/`, `app/` and `components/`, and did, until a lint error in a test went unnoticed.
 - **bundle** — `npx expo export` for **both** `web` and `android`, which is the gate that catches a platform-split import fault.
-- **audit** — fails if `npm audit` reports any advisory not in the accepted list in `scripts/check-audit.js`, and warns when an accepted one disappears. Accepting a new advisory means adding it there and to this file.
+- **audit** — fails if `npm audit` reports any advisory not in the accepted list in `scripts/check-audit.js`, fails when an acceptance's `until` date has passed, and warns when one is about to expire or an accepted advisory disappears. Accepting a new advisory means adding it there and to this file.
 
 Run the same checks locally before pushing; every one of them passes on `master`.
 
