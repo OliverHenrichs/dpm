@@ -341,10 +341,15 @@
   "suggestReviewTranscriptKept": "The transcript stays on the video either way.",
   "transcribeThenSuggest": "Then suggest a name and description",
   "transcribeThenSuggestDownload": "Then suggest a name and description (downloads {{size}} MB)",
-  "videoJobsKeepOpen": "These run on the phone. Keep the app open until they finish.",
+  "videoJobsKeepOpen": "These run on the phone. You can switch to another app and get a notification when they finish, but don't close DPM.",
   "anonymizeTapFrameHint": "Can't see every dancer on this frame? Go back and start the selection where they are.",
   "modelDownload": "Download",
   "downloadModel": "Download {{name}}",
   "modelDownloading": "Downloading … {{percent}} %",
-  "modelDownloadFailed": "Download failed. Check the connection and try again."
+  "modelDownloadFailed": "Download failed. Check the connection and try again.",
+  "videoJobsChannel": "Video work",
+  "videoJobsNotifyTitle": "Your video work is finished",
+  "videoJobsNotifyReview": "Open DPM to review the results.",
+  "videoJobsNotifyFailed": "Something went wrong. Open DPM to see what.",
+  "videoJobsNotifyDone": "Everything is saved to your patterns."
 }

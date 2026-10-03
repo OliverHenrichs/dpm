@@ -341,10 +341,15 @@
   "suggestReviewTranscriptKept": "La transcription reste sur la vidéo dans tous les cas.",
   "transcribeThenSuggest": "Puis suggérer un nom et une description",
   "transcribeThenSuggestDownload": "Puis suggérer un nom et une description (télécharge {{size}} Mo)",
-  "videoJobsKeepOpen": "Cela tourne sur le téléphone. Garde l’app ouverte jusqu’à la fin.",
+  "videoJobsKeepOpen": "Ces tâches s'exécutent sur le téléphone. Vous pouvez passer à une autre app et recevoir une notification à la fin, mais ne fermez pas DPM.",
   "anonymizeTapFrameHint": "Tous les danseurs ne sont pas visibles sur cette image ? Reviens en arrière et commence la sélection là où ils le sont.",
   "modelDownload": "Télécharger",
   "downloadModel": "Télécharger {{name}}",
   "modelDownloading": "Téléchargement … {{percent}} %",
-  "modelDownloadFailed": "Échec du téléchargement. Vérifie la connexion et réessaie."
+  "modelDownloadFailed": "Échec du téléchargement. Vérifie la connexion et réessaie.",
+  "videoJobsChannel": "Traitement vidéo",
+  "videoJobsNotifyTitle": "Le traitement de vos vidéos est terminé",
+  "videoJobsNotifyReview": "Ouvrez DPM pour vérifier les résultats.",
+  "videoJobsNotifyFailed": "Un problème est survenu. Ouvrez DPM pour voir lequel.",
+  "videoJobsNotifyDone": "Tout est enregistré dans vos figures."
 }

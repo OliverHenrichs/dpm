@@ -4,7 +4,10 @@ import React, {
   useRef,
   useSyncExternalStore,
 } from "react";
+import { AppState } from "react-native";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
   AnonymizeJob,
@@ -13,6 +16,12 @@ import {
   StartJob,
 } from "@/src/anonymize/jobs/jobStore";
 import { replaceVideoInPattern } from "@/src/anonymize/jobs/replaceVideo";
+import {
+  askNotificationPermission,
+  clearJobsNotification,
+  notifyJobsFinished,
+  onJobsNotificationOpened,
+} from "@/src/anonymize/jobs/jobNotifications";
 
 export type {
   AnonymizeJob,
@@ -66,8 +75,64 @@ export const AnonymizeJobsProvider: React.FC<PropsWithChildren> = ({
     };
   }, [running]);
 
+  useFinishedNotification(jobs, running);
+
   return <>{children}</>;
 };
+
+/**
+ * Tells the user, with a phone notification, when the jobs they left running have finished
+ * while the app was in the background: one notification per batch, not per job, since a cut
+ * often queues a transcription ahead of it. The permission is asked for when a batch starts,
+ * so the prompt comes with the action it is for. Tapping the notification opens the pattern
+ * list, where the banner offers the review; coming back to the app any other way clears it.
+ */
+function useFinishedNotification(jobs: AnonymizeJob[], running: boolean) {
+  const { t } = useTranslation();
+  const latest = useRef({ jobs, t });
+  /** The jobs of the current batch: everything queued or running since the queue was empty. */
+  const batch = useRef(new Set<string>());
+
+  useEffect(() => {
+    latest.current = { jobs, t };
+    for (const job of jobs) {
+      if (job.status === "queued" || job.status === "running") {
+        batch.current.add(job.id);
+      }
+    }
+  }, [jobs, t]);
+
+  useEffect(() => {
+    const { jobs: now, t: translate } = latest.current;
+    if (running) {
+      void askNotificationPermission(translate("videoJobsChannel"));
+      return;
+    }
+    const ids = batch.current;
+    batch.current = new Set();
+    if (AppState.currentState === "active") return;
+    // Cancelled jobs leave the list, so a batch the user cancelled entirely notifies nothing.
+    const finished = now.filter((j) => ids.has(j.id));
+    if (finished.length === 0) return;
+    const body = finished.some((j) => j.status === "review")
+      ? "videoJobsNotifyReview"
+      : finished.some((j) => j.status === "failed")
+        ? "videoJobsNotifyFailed"
+        : "videoJobsNotifyDone";
+    void notifyJobsFinished(translate("videoJobsNotifyTitle"), translate(body));
+  }, [running]);
+
+  useEffect(() => {
+    const opened = onJobsNotificationOpened(() => router.navigate("/patterns"));
+    const appState = AppState.addEventListener("change", (state) => {
+      if (state === "active") void clearJobsNotification();
+    });
+    return () => {
+      opened();
+      appState.remove();
+    };
+  }, []);
+}
 
 export type JobsApi = {
   jobs: AnonymizeJob[];

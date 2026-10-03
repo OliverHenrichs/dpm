@@ -341,10 +341,15 @@
   "suggestReviewTranscriptKept": "يبقى النص المفرغ على الفيديو في كل الأحوال.",
   "transcribeThenSuggest": "ثم اقتراح اسم ووصف",
   "transcribeThenSuggestDownload": "ثم اقتراح اسم ووصف (تنزيل {{size}} ميغابايت)",
-  "videoJobsKeepOpen": "تعمل هذه على الهاتف. أبقِ التطبيق مفتوحًا حتى تنتهي.",
+  "videoJobsKeepOpen": "تعمل هذه المهام على الهاتف. يمكنك الانتقال إلى تطبيق آخر وسيصلك إشعار عند انتهائها، لكن لا تغلق DPM.",
   "anonymizeTapFrameHint": "لا ترى كل الراقصين في هذا الإطار؟ ارجع وابدأ التحديد حيث يظهرون.",
   "modelDownload": "تنزيل",
   "downloadModel": "تنزيل {{name}}",
   "modelDownloading": "جارٍ التنزيل … {{percent}} %",
-  "modelDownloadFailed": "فشل التنزيل. تحقق من الاتصال وحاول مرة أخرى."
+  "modelDownloadFailed": "فشل التنزيل. تحقق من الاتصال وحاول مرة أخرى.",
+  "videoJobsChannel": "معالجة الفيديو",
+  "videoJobsNotifyTitle": "اكتملت معالجة مقاطع الفيديو",
+  "videoJobsNotifyReview": "افتح DPM لمراجعة النتائج.",
+  "videoJobsNotifyFailed": "حدث خطأ ما. افتح DPM لمعرفة السبب.",
+  "videoJobsNotifyDone": "تم حفظ كل شيء في خطواتك."
 }

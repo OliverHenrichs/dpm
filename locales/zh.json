@@ -341,10 +341,15 @@
   "suggestReviewTranscriptKept": "无论如何，转写都会保留在视频上。",
   "transcribeThenSuggest": "然后建议名称和描述",
   "transcribeThenSuggestDownload": "然后建议名称和描述（下载 {{size}} MB）",
-  "videoJobsKeepOpen": "这些在手机上运行。请保持应用打开，直到完成。",
+  "videoJobsKeepOpen": "这些任务在手机上运行。你可以切换到其他应用，完成时会收到通知，但请不要关闭 DPM。",
   "anonymizeTapFrameHint": "这一帧看不到所有舞者？返回并从他们出现的地方开始选择。",
   "modelDownload": "下载",
   "downloadModel": "下载{{name}}",
   "modelDownloading": "正在下载 … {{percent}} %",
-  "modelDownloadFailed": "下载失败。请检查网络连接后重试。"
+  "modelDownloadFailed": "下载失败。请检查网络连接后重试。",
+  "videoJobsChannel": "视频处理",
+  "videoJobsNotifyTitle": "你的视频处理已完成",
+  "videoJobsNotifyReview": "打开 DPM 查看结果。",
+  "videoJobsNotifyFailed": "出了点问题。打开 DPM 查看详情。",
+  "videoJobsNotifyDone": "所有内容都已保存到你的舞步中。"
 }

@@ -119,6 +119,17 @@ export default (): ExpoConfig => ({
       },
     ],
     "expo-video",
+    // Says when video jobs finish while the app is in the background (src/anonymize/jobs/
+    // jobNotifications.ts). Prebuild would apply this plugin anyway once the package is
+    // installed; it is listed for the icon, which Android draws white on the status bar. On iOS it
+    // also writes the aps-environment entitlement, so the App ID needs Push Notifications enabled.
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/images/notification-icon.png",
+        color: "#4f46e5",
+      },
+    ],
     "expo-localization",
     // Inter, embedded natively (SIL Open Font License, assets/fonts/Inter-OFL.txt). On Android the
     // weights form one "Inter" family, so `fontWeight` picks the right file as it does on iOS,

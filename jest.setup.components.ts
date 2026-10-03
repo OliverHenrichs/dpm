@@ -90,6 +90,23 @@ jest.mock("expo-haptics", () => ({
   NotificationFeedbackType: { Success: "success", Error: "error" },
 }));
 
+// The video jobs' finished notification (src/anonymize/jobs/jobNotifications.ts). Permission is
+// not decided yet, so starting a job asks for it; JobNotifications.test.tsx asserts on these.
+jest.mock("expo-notifications", () => ({
+  AndroidImportance: { DEFAULT: 3 },
+  setNotificationChannelAsync: jest.fn(async () => null),
+  getPermissionsAsync: jest.fn(async () => ({
+    granted: false,
+    canAskAgain: true,
+  })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  scheduleNotificationAsync: jest.fn(async () => "id"),
+  dismissNotificationAsync: jest.fn(async () => undefined),
+  addNotificationResponseReceivedListener: jest.fn(() => ({
+    remove: jest.fn(),
+  })),
+}));
+
 // react-native-youtube-iframe pulls in react-native-webview, which has no
 // usable jest implementation. See AGENTS.md — the YouTube player is kept behind
 // YouTubeVideoItem precisely so it can be swapped out like this.

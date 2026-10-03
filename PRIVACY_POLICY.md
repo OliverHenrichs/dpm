@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: September 30, 2026**
+**Last updated: October 3, 2026**
 
 ---
 
@@ -86,6 +86,7 @@ The speech-to-text and suggestion features need models that are downloaded once,
 | Camera | Scanning a share QR code, and recording a video for a pattern with the system camera. The camera image used for scanning is processed on the device and not stored. |
 | Microphone (iOS only) | The sound of videos you record for a pattern. On Android the system camera app records the sound, and the app itself does not request microphone access. |
 | Photos / videos | Choosing a video from your gallery to attach to a pattern. Only the videos you pick are read, and they are copied into the app's own storage. |
+| Notifications | Telling you when video work you started (shortening, anonymizing, transcribing) has finished while the app was in the background. The app asks the first time you start such work. Notifications are created on the device; nothing is sent from a server. |
 
 You can refuse or withdraw any of these permissions in your device settings; only the feature that needs it stops working.
 

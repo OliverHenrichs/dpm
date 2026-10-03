@@ -341,10 +341,15 @@
   "suggestReviewTranscriptKept": "A transcrição fica no vídeo em qualquer caso.",
   "transcribeThenSuggest": "Depois sugerir nome e descrição",
   "transcribeThenSuggestDownload": "Depois sugerir nome e descrição (descarrega {{size}} MB)",
-  "videoJobsKeepOpen": "Isto corre no telemóvel. Mantenha a app aberta até terminar.",
+  "videoJobsKeepOpen": "Isso roda no telefone. Você pode mudar para outro app e receber uma notificação quando terminar, mas não feche o DPM.",
   "anonymizeTapFrameHint": "Não vê todos os dançarinos nesta imagem? Volte atrás e comece a seleção onde se vejam.",
   "modelDownload": "Descarregar",
   "downloadModel": "Descarregar {{name}}",
   "modelDownloading": "A descarregar … {{percent}} %",
-  "modelDownloadFailed": "A descarga falhou. Verifique a ligação e tente de novo."
+  "modelDownloadFailed": "A descarga falhou. Verifique a ligação e tente de novo.",
+  "videoJobsChannel": "Edição de vídeo",
+  "videoJobsNotifyTitle": "A edição dos seus vídeos terminou",
+  "videoJobsNotifyReview": "Abra o DPM para rever os resultados.",
+  "videoJobsNotifyFailed": "Algo deu errado. Abra o DPM para ver o quê.",
+  "videoJobsNotifyDone": "Tudo foi salvo nos seus passos."
 }

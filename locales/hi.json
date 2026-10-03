@@ -341,10 +341,15 @@
   "suggestReviewTranscriptKept": "ट्रांसक्रिप्ट हर हाल में वीडियो पर रहता है।",
   "transcribeThenSuggest": "फिर नाम और विवरण सुझाएँ",
   "transcribeThenSuggestDownload": "फिर नाम और विवरण सुझाएँ ({{size}} MB डाउनलोड)",
-  "videoJobsKeepOpen": "ये फ़ोन पर चलते हैं। पूरा होने तक ऐप खुला रखें।",
+  "videoJobsKeepOpen": "ये फ़ोन पर चलते हैं। आप किसी दूसरे ऐप पर जा सकते हैं और पूरा होने पर सूचना मिलेगी, लेकिन DPM बंद न करें।",
   "anonymizeTapFrameHint": "इस फ़्रेम में हर नर्तक नहीं दिख रहा? वापस जाएँ और चयन वहाँ से शुरू करें जहाँ वे दिखें।",
   "modelDownload": "डाउनलोड करें",
   "downloadModel": "{{name}} डाउनलोड करें",
   "modelDownloading": "डाउनलोड हो रहा है … {{percent}} %",
-  "modelDownloadFailed": "डाउनलोड विफल रहा। कनेक्शन जाँचें और फिर कोशिश करें।"
+  "modelDownloadFailed": "डाउनलोड विफल रहा। कनेक्शन जाँचें और फिर कोशिश करें।",
+  "videoJobsChannel": "वीडियो प्रोसेसिंग",
+  "videoJobsNotifyTitle": "आपकी वीडियो प्रोसेसिंग पूरी हो गई",
+  "videoJobsNotifyReview": "नतीजे देखने के लिए DPM खोलें।",
+  "videoJobsNotifyFailed": "कुछ गड़बड़ हो गई। क्या हुआ, यह देखने के लिए DPM खोलें।",
+  "videoJobsNotifyDone": "सब कुछ आपके पैटर्न में सहेज दिया गया है।"
 }
