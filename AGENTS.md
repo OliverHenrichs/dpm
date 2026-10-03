@@ -77,7 +77,7 @@ Android only for now. Edit Pattern → Videos → **Edit video** (`src/deidentif
 - **Providers** are pluggable (`src/deidentify/providers/`). `runDeidentify` is the only entry point, and enforces in code the trim limits and that a provider which sends footage off the device has recorded consent. The one shipped provider is on-device.
 - **Models** are downloaded on first use from pinned URLs and SHA-256 checked (`src/transcribe/modelStore.ts`, specs in `src/transcribe/models.ts` and `src/suggest/models.ts`). The size is shown before any download.
 - **Transcripts are private by default.** They never go into a published list (`withoutTranscripts`), and exports carry them only on the export sheet's opt-in; see `src/pattern/data/AGENTS.md`. The description is never written without the user: *Add to description* and *Use suggestion* are explicit, and a suggestion fills the name only when it is empty.
-- **Web.** `src/transcribe/whisper.web.ts` stubs `whisper.rn`, which reads its native module at import (see Platform splits below).
+- **Web.** `src/transcribe/whisper.web.ts` stubs `whisper.rn` and `src/suggest/llama.web.ts` stubs `llama.rn`; both read their native module at import (see Platform splits below).
 
 ## Rules that apply everywhere
 
@@ -87,7 +87,7 @@ Android only for now. Edit Pattern → Videos → **Edit video** (`src/deidentif
 - **UI primitives.** Build touchables and text from `@/src/common/ui` (`Button`, `IconButton`, `Chip`, `Card`, `AppText`), not raw `TouchableOpacity`; see `src/common/AGENTS.md`. Try visual changes in the dev-only design gallery (`/gallery`, linked from Settings).
 - **Theming.** Styles are Unistyles sheets declared at module level, `StyleSheet.create((theme) => …)` imported from `react-native-unistyles`, and every colour, spacing step, radius, text style and shadow comes from the design tokens in `src/common/theme/tokens.ts` — never a literal. Non-style values (icon colours, SVG fills) come from `useUnistyles()`. Text on a coloured fill uses that fill's `on*` role. Details, and the setup's traps, in `src/common/AGENTS.md`.
 - **Screen edges.** `SCREEN_EDGE_INSET` is applied once as `PageContainer`'s horizontal padding, to stay clear of the Android system back-gesture band. Do not pad individual scrollers.
-- **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The four that exist are `YouTubeVideoItem`, `PatternNodeGroup`, `ServerStyles` (web's static-render CSS) and `src/transcribe/whisper` (whisper.rn reads its native module at import, which fails web's static render); route node presses through `PatternNodeGroup` rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.
+- **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The five that exist are `YouTubeVideoItem`, `PatternNodeGroup`, `ServerStyles` (web's static-render CSS), `src/transcribe/whisper` and `src/suggest/llama` (whisper.rn and llama.rn read their native module at import, which fails web's static render); route node presses through `PatternNodeGroup` rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.
 
 ## Filtering & sorting
 
