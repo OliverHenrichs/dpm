@@ -12,18 +12,46 @@ import { ExpoConfig } from "expo/config";
  * so no manual dotenv setup is required.
  */
 
+/**
+ * Build variants, chosen by APP_VARIANT (set per profile in eas.json; set it by hand for a local
+ * `npx expo run:android`). Each variant has its own application id, so a development client, a
+ * sideloaded preview and the Play Store install live side by side on one phone instead of failing
+ * to install over each other: Android refuses an update signed with a different certificate, and
+ * every variant is signed differently (local debug keystore, EAS keystore, Play app signing key).
+ * Unset means production, so a release can never ship under a variant id by accident.
+ */
+const APP_ID = "com.teholi.DancePatternMapper";
+const VARIANTS = {
+  development: { idSuffix: ".dev", nameSuffix: " (Dev)" },
+  preview: { idSuffix: ".preview", nameSuffix: " (Preview)" },
+  production: { idSuffix: "", nameSuffix: "" },
+} as const;
+type Variant = keyof typeof VARIANTS;
+
+function resolveVariant(raw: string | undefined): Variant {
+  if (raw === undefined || raw === "") return "production";
+  if (raw in VARIANTS) return raw as Variant;
+  throw new Error(
+    `Unknown APP_VARIANT "${raw}"; expected ${Object.keys(VARIANTS).join(", ")}`,
+  );
+}
+
+const variant = VARIANTS[resolveVariant(process.env.APP_VARIANT)];
+const appId = APP_ID + variant.idSuffix;
+
 export default (): ExpoConfig => ({
-  name: "DancePatternMapper",
+  name: "DancePatternMapper" + variant.nameSuffix,
   slug: "DancePatternMapper",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/app-icon.png",
-  scheme: "dancepatternmapper",
+  // Distinct per variant, so a deep link opens one app rather than an Android chooser.
+  scheme: "dancepatternmapper" + variant.idSuffix.replace(".", "-"),
   userInterfaceStyle: "automatic",
   ios: {
     // Required for prebuild/EAS; there is no app.json for the CLI to write it
     // into, so it has to live here. Mirrors android.package.
-    bundleIdentifier: "com.teholi.DancePatternMapper",
+    bundleIdentifier: appId,
     supportsTablet: true,
     icon: {
       dark: "./assets/images/ios-dark.png",
@@ -37,7 +65,7 @@ export default (): ExpoConfig => ({
       monochromeImage: "./assets/images/adaptive-icon.png",
       backgroundColor: "#18181b",
     },
-    package: "com.teholi.DancePatternMapper",
+    package: appId,
   },
   web: {
     output: "static",

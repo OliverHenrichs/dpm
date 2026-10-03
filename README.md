@@ -173,6 +173,36 @@ The app runs in a **development build** (`expo-dev-client`), not Expo Go: it shi
 native module is added or changed. Note that `expo prebuild` / `expo run:*` rewrite the `android` and
 `ios` npm scripts; revert that.
 
+### Build variants and signing
+
+Android will not install an update signed with a different certificate than the installed app
+(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), and this app is signed by up to three different keys: the
+debug keystore of a local `expo run:android`, the keystore EAS keeps for cloud builds, and Google's
+app signing key for anything installed from the Play Store. So each build variant gets its own
+application id, chosen by `APP_VARIANT` in `app.config.ts`, and they install side by side:
+
+| `APP_VARIANT` | Application id | Launcher name | Built by | Signed with |
+|---|---|---|---|---|
+| `development` | `com.teholi.DancePatternMapper.dev` | DancePatternMapper (Dev) | `eas build --profile development`, or `APP_VARIANT=development npx expo run:android` | EAS keystore, or the local debug keystore |
+| `preview` | `com.teholi.DancePatternMapper.preview` | DancePatternMapper (Preview) | `eas build --profile preview` (APK, sideload) | EAS keystore |
+| unset / `production` | `com.teholi.DancePatternMapper` | DancePatternMapper | `eas build --profile production` (AAB, for Play) | EAS keystore as **upload key**; Play re-signs with the app signing key |
+
+`eas.json` sets the variable for each profile. Locally, set it yourself for a development client;
+without it you build the production id, which then collides with whatever is installed under it.
+A local debug build and an EAS development build are still two keys for one id, so stick to one
+of them; switching means uninstalling the dev app (it holds only test data).
+
+Each variant has its own storage, so lists on the phone's production install are not visible in the
+dev app. Move them across with export / import if you need them.
+
+**Release signing (Play App Signing).** No keystore lives in this repository (`*.jks`, `*.keystore`
+are gitignored) and none should. EAS generates and stores the Android keystore on the first
+`eas build --profile production` (`eas credentials -p android` to inspect, or to download a backup —
+keep that backup outside the repo). In Play Console, enrol in Play App Signing and let Google
+generate the app signing key; the EAS keystore is then only the upload key, and a lost upload key
+can be reset through Play support rather than losing the app. The first AAB has to be uploaded by
+hand in Play Console; `eas submit` works after that.
+
 ### Running Tests
 
 Tests are split into two Jest projects. Most logic lives in `unit`, which runs in plain Node and
