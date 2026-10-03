@@ -131,7 +131,7 @@ Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo ru
 
 - Do **not** run `npx expo install --fix`. Several packages are deliberately ahead of the versions SDK 57 bundles — `@react-native-async-storage/async-storage@3`, `react-native-gesture-handler@3`, `jest@30`, `react@19.2.7`, `react-native-safe-area-context`, `react-native-svg` — and `--fix` would downgrade them, two across a major. `npx expo install --check` listing them is expected.
 - `react-test-renderer` is pinned to the exact `react` version and must be bumped with it. `jest-expo` must track the SDK major.
-- `npm audit` is expected to report **three moderate findings and nothing else** — all one root cause, `expo-router` → `query-string@7` → `decode-uri-component`, which cannot be forced past an ESM-only fix under a CJS parent and has to wait for expo-router upstream. Anything beyond that is new. `overrides` in `package.json` carries the rest; each entry exists because a parent pins a range below the fix.
+- `npm audit` findings are checked against an allowlist of reviewed advisories in `scripts/check-audit.js` (`npm run audit:check`), not a count. Accepted today: `decode-uri-component` (GHSA-vcc3-ghjq-m6fr, via `expo-router` → `query-string@7`, whose fix is ESM-only and cannot be forced under a CJS parent; waits for expo-router upstream), and `node-forge` (GHSA-86w9-cpqp-85rv, via `@expo/cli`) and `braces` (GHSA-vfj7-8cjw-p6xm, via `micromatch` under metro, jest and `@expo/cli`), both dev tooling only and with no patched release yet. The raw counts are large because every package above them is flagged too. Any advisory not on the list is new. `overrides` in `package.json` carries the rest; each entry exists because a parent pins a range below the fix.
 
 ## Continuous integration
 
@@ -139,7 +139,7 @@ Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo ru
 
 - **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`. Lint and the format check cover the tests, mocks and root config files too: `expo lint` with no path would lint only `src/`, `app/` and `components/`, and did, until a lint error in a test went unnoticed.
 - **bundle** — `npx expo export` for **both** `web` and `android`, which is the gate that catches a platform-split import fault.
-- **audit** — fails if `npm audit` drifts from the baseline of exactly three moderate findings. If a change to that baseline is intentional, update both the workflow's `expected` map and this file.
+- **audit** — fails if `npm audit` reports any advisory not in the accepted list in `scripts/check-audit.js`, and warns when an accepted one disappears. Accepting a new advisory means adding it there and to this file.
 
 Run the same checks locally before pushing; every one of them passes on `master`.
 
