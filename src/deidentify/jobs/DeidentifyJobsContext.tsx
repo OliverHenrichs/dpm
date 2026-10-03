@@ -9,11 +9,18 @@ import { useActivePatternList } from "@/src/pattern/data/components/ActivePatter
 import {
   DeidentifyJob,
   jobStore,
+  KeepMode,
   StartJob,
 } from "@/src/deidentify/jobs/jobStore";
 import { replaceVideoInPattern } from "@/src/deidentify/jobs/replaceVideo";
 
-export type { DeidentifyJob, JobKind, JobStatus, StartJob } from "./jobStore";
+export type {
+  DeidentifyJob,
+  JobKind,
+  JobStatus,
+  KeepMode,
+  StartJob,
+} from "./jobStore";
 
 const KEEP_AWAKE_TAG = "deidentify";
 
@@ -70,6 +77,10 @@ export type JobsApi = {
   /** Cancels a queued job or a running transcription; see `jobStore.cancel`. */
   cancel: (id: string) => void;
   canCancel: (job: DeidentifyJob) => boolean;
+  /** Puts a reviewed result into the pattern; see `jobStore.keep`. */
+  keep: (id: string, mode: KeepMode) => Promise<void>;
+  /** Throws a reviewed result away. */
+  discard: (id: string) => void;
 };
 
 /** The jobs, live. Works without the provider; the provider only adds attach and keep-awake. */
@@ -85,5 +96,7 @@ export const useDeidentifyJobs = (): JobsApi => {
     dismissFinished: jobStore.dismissFinished,
     cancel: jobStore.cancel,
     canCancel: jobStore.canCancel,
+    keep: jobStore.keep,
+    discard: jobStore.discard,
   };
 };

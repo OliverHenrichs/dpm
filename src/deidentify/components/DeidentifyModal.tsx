@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { IconButton } from "@/src/common/ui";
+import { Chip, IconButton } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,10 @@ import {
   IVideoTranscript,
 } from "@/src/pattern/types/IPatternList";
 import TranscribeSection from "@/src/transcribe/components/TranscribeSection";
+import { isAudioExtractAvailable } from "@/modules/audio-extract";
+import { useStartTranscription } from "@/src/transcribe/hooks/useStartTranscription";
+import { installedModels } from "@/src/transcribe/modelStore";
+import { TRANSCRIPTION_DOWNLOAD_MB } from "@/src/transcribe/models";
 
 export type DeidentifyTarget = {
   listId: string;
@@ -38,7 +42,13 @@ type Props = {
 /**
  * Edit a pattern's video — shorten it, de-identify part of it, or transcribe what is said in
  * it. Each runs as a background job (de-identifying takes minutes), so this closes as soon as
- * one is started; the job replaces the video in the pattern, or annotates it, when done.
+ * one is started. A transcript lands on the video when done; a shortened or de-identified video
+ * waits for the user to review it (`VideoReviewModal`).
+ *
+ * Cutting a video that has sound and no transcript offers to transcribe the whole of it first,
+ * on by default: a silhouette has no sound to transcribe later, and an instructor's explanation
+ * is usually longer than the part worth keeping. The jobs run in turn, so the transcript is on
+ * the original before the cut is reviewed.
  */
 const DeidentifyModal: React.FC<Props> = ({
   target,
@@ -47,6 +57,19 @@ const DeidentifyModal: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const { start } = useDeidentifyJobs();
+  const startTranscription = useStartTranscription();
+  const [transcribeFirst, setTranscribeFirst] = useState(true);
+  const offerTranscribeFirst =
+    isAudioExtractAvailable &&
+    !!target &&
+    !target.generated &&
+    !target.transcript;
+  // Queued ahead of the cut, so it runs first.
+  const maybeTranscribeFirst = () => {
+    if (target && offerTranscribeFirst && transcribeFirst) {
+      startTranscription(target);
+    }
+  };
 
   return (
     <Modal
@@ -80,7 +103,23 @@ const DeidentifyModal: React.FC<Props> = ({
                   providers={
                     target.generated ? [] : availableProviders(ALL_PROVIDERS)
                   }
+                  options={
+                    offerTranscribeFirst && (
+                      <Chip
+                        label={
+                          installedModels()
+                            ? t("videoTranscribeFirst")
+                            : t("videoTranscribeFirstDownload", {
+                                size: TRANSCRIPTION_DOWNLOAD_MB,
+                              })
+                        }
+                        selected={transcribeFirst}
+                        onPress={() => setTranscribeFirst((on) => !on)}
+                      />
+                    )
+                  }
                   onShorten={(request) => {
+                    maybeTranscribeFirst();
                     start({
                       kind: "shorten",
                       listId: target.listId,
@@ -91,6 +130,7 @@ const DeidentifyModal: React.FC<Props> = ({
                     onClose();
                   }}
                   onDeidentify={(provider, request) => {
+                    maybeTranscribeFirst();
                     start({
                       kind: "deidentify",
                       listId: target.listId,

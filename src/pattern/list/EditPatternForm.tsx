@@ -22,11 +22,18 @@ import BottomSheet from "@/src/common/components/BottomSheet";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
+import AppDialog from "@/src/common/components/AppDialog";
 import DeidentifyModal, {
   DeidentifyTarget,
 } from "@/src/deidentify/components/DeidentifyModal";
+import VideoReviewModal, {
+  ReviewSource,
+} from "@/src/deidentify/components/VideoReviewModal";
 import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
-import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
+import {
+  applyReplacements,
+  MAX_VIDEOS,
+} from "@/src/deidentify/jobs/replaceVideo";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { canShortenVideos } from "@/src/deidentify/shortenVideo";
 import TranscriptSheet, {
@@ -236,6 +243,34 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     (j) => draftUris.has(j.sourceUri) && j.status !== "done",
   );
 
+  // A finished video waiting to be checked, opened from its line below the videos.
+  const [reviewId, setReviewId] = useState<string | null>(null);
+  const reviewing =
+    draftJobs.find((j) => j.id === reviewId && j.status === "review") ?? null;
+  // The original as this draft holds it — it may not be saved yet.
+  const reviewSource = ((): ReviewSource | undefined => {
+    if (!reviewing) return undefined;
+    const groups = [
+      newPattern.videoRefs ?? [],
+      ...(newPattern.modifierRefs ?? []).map((m) => m.videoRefs),
+    ];
+    const group = groups.find((g) =>
+      g.some((v) => v.value === reviewing.sourceUri),
+    );
+    return {
+      ref: group?.find((v) => v.value === reviewing.sourceUri),
+      groupSize: group?.length ?? 0,
+      onDescriptionChange: (append) =>
+        setNewPattern((prev) => ({
+          ...prev,
+          description: append(prev.description ?? ""),
+        })),
+    };
+  })();
+  // Edit was pressed with no video on the phone to edit and no room to pick one.
+  const [editBlocked, setEditBlocked] = useState(false);
+  const onlineVideos = activeVideoRefs.length - editable.length;
+
   const openEditor = (ref: IVideoReference) => {
     if (!activeList) return;
     setShowDeidentifyPicker(false);
@@ -276,8 +311,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   };
 
   const handleEditVideo = () => {
-    if (editable.length === 0) void pickForDeidentify();
-    else setShowDeidentifyPicker(true);
+    if (editable.length > 0) setShowDeidentifyPicker(true);
+    else if (activeVideoRefs.length >= MAX_VIDEOS) setEditBlocked(true);
+    else void pickForDeidentify();
   };
 
   const handleRemoveVideo = (index: number) => {
@@ -490,17 +526,41 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onOpenTranscript={(index) => openTranscript(activeVideoRefs[index])}
         disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
       />
-      {draftJobs.map((job) => (
-        <Text key={job.id} style={styles.jobLine}>
-          {job.status === "queued"
-            ? t("videoJobInFormQueued")
-            : job.status === "running"
-              ? t("videoJobInFormRunning", {
-                  percent: Math.round(job.progress * 100),
-                })
-              : t("deidentifyFailed", { message: job.error ?? "" })}
-        </Text>
-      ))}
+      {draftJobs.map((job) =>
+        job.status === "review" ? (
+          <View key={job.id} style={styles.jobRow}>
+            <Text style={[styles.jobLine, styles.jobRowText]}>
+              {t("videoJobInFormReview")}
+            </Text>
+            <Button
+              title={t("videoJobReviewButton")}
+              size="sm"
+              onPress={() => setReviewId(job.id)}
+            />
+          </View>
+        ) : (
+          <Text key={job.id} style={styles.jobLine}>
+            {job.status === "queued"
+              ? t("videoJobInFormQueued")
+              : job.status === "running"
+                ? t("videoJobInFormRunning", {
+                    percent: Math.round(job.progress * 100),
+                  })
+                : t("deidentifyFailed", { message: job.error ?? "" })}
+          </Text>
+        ),
+      )}
+      <VideoReviewModal
+        job={reviewing}
+        onClose={() => setReviewId(null)}
+        source={reviewSource}
+      />
+      <AppDialog
+        visible={editBlocked}
+        title={t("videoEditTitle")}
+        message={t("videoEditOnlyLocal", { max: MAX_VIDEOS })}
+        onClose={() => setEditBlocked(false)}
+      />
       <BottomSheet
         visible={showDeidentifyPicker}
         onClose={() => setShowDeidentifyPicker(false)}
@@ -508,6 +568,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         minHeight="25%"
         maxHeight="50%"
       >
+        {onlineVideos > 0 && (
+          <Text style={styles.jobLine}>{t("videoEditOnlineHint")}</Text>
+        )}
         <View style={styles.deidentifyChoices}>
           {editable.map(({ ref, index }) => (
             <Tappable
@@ -678,6 +741,12 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.space.sm,
       color: theme.colors.textMuted,
     },
+    jobRow: {
+      ...getCommonRow(),
+      gap: theme.space.sm,
+      marginBottom: theme.space.sm,
+    },
+    jobRowText: { flex: 1, marginBottom: 0 },
     deidentifyChoices: {
       ...getCommonRow(),
       flexWrap: "wrap",

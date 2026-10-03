@@ -104,10 +104,12 @@ const PatternListManager = () => {
   };
 
   // The banner links a job to its pattern: by the video it produced once done, by the source
-  // until then. Only in the active list — another list's patterns are not loaded here.
+  // until then (a result waiting for review is not in the pattern yet). Only in the active
+  // list — another list's patterns are not loaded here.
   const openJobPattern = (job: DeidentifyJob) => {
     if (activeList?.id !== job.listId) return undefined;
-    const uri = job.resultUri ?? job.sourceUri;
+    const uri =
+      job.status === "done" ? (job.resultUri ?? job.sourceUri) : job.sourceUri;
     const pattern = patterns.find((p) => patternHasVideo(p, uri));
     if (!pattern) return undefined;
     return () => {

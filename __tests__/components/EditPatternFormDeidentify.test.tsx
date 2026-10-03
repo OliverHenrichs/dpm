@@ -54,17 +54,20 @@ jest.mock("@/src/deidentify/components/VideoEditPanel", () => ({
     providers,
     onShorten,
     onDeidentify,
+    options,
   }: {
     sourceUri: string;
     providers: unknown[];
     onShorten: (r: object) => void;
     onDeidentify: (p: unknown, r: object) => void;
+    options?: React.ReactNode;
   }) => {
     const { Text: MockText } = jest.requireActual("react-native");
     const window = { sourceUri, startSeconds: 1, endSeconds: 4 };
     return (
       <>
         <MockText>{`trim ${sourceUri}`}</MockText>
+        {options}
         <MockText onPress={() => onShorten(window)}>mock shorten</MockText>
         {providers.length > 0 && (
           <MockText onPress={() => onDeidentify(providers[0], window)}>
@@ -101,6 +104,13 @@ function renderForm(existing?: IPattern, readonly = false) {
 }
 
 const editButton = () => screen.findByLabelText("Edit a video");
+
+/** Opens the finished video from its line in the form, and puts it in place of the original. */
+async function reviewAndReplace() {
+  fireEvent.press(await screen.findByText("Review"));
+  fireEvent.press(await screen.findByText("Replace the original"));
+  await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+}
 
 beforeEach(() => {
   mockedPicker.mockResolvedValue({ canceled: true } as never);
@@ -165,7 +175,7 @@ describe("EditPatternForm — editing a video", () => {
         request: { sourceUri: SOURCE, startSeconds: 0, endSeconds: 5 },
       });
     });
-    await waitFor(() => expect(jobStore.getJobs()[0].status).toBe("done"));
+    await reviewAndReplace();
 
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() => expect(saved().videoRefs[0].generated).toBeDefined());
@@ -184,7 +194,7 @@ describe("EditPatternForm — editing a video", () => {
     fireEvent.press(await screen.findByLabelText("Video 1"));
     fireEvent.press(await screen.findByText("mock shorten"));
 
-    await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+    await reviewAndReplace();
     expect(jobStore.getJobs()[0].kind).toBe("shorten");
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() =>
@@ -211,11 +221,140 @@ describe("EditPatternForm — editing a video", () => {
     expect(screen.queryByText("mock deidentify")).toBeNull();
 
     fireEvent.press(screen.getByText("mock shorten"));
-    await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+    await reviewAndReplace();
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() =>
       expect(saved().videoRefs[0].generated).toEqual(generated),
     );
+  });
+
+  it("waits for review before the draft changes, and can keep both", async () => {
+    const { saved } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        name: "Whip",
+        videoRefs: [{ type: "local", value: SOURCE }],
+      }),
+    );
+
+    fireEvent.press(await editButton());
+    fireEvent.press(await screen.findByLabelText("Video 1"));
+    fireEvent.press(await screen.findByText("mock shorten"));
+    expect(
+      await screen.findByText("A new video is ready to check"),
+    ).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByText("Review"));
+    fireEvent.press(await screen.findByText("Keep both"));
+    await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() => expect(saved().videoRefs).toHaveLength(2));
+    expect(saved().videoRefs[0].value).toBe(SOURCE);
+    expect(saved().videoRefs[1].value).toMatch(/shortened-/);
+  });
+
+  it("discards a reviewed video, leaving the original", async () => {
+    const { saved } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        name: "Whip",
+        videoRefs: [{ type: "local", value: SOURCE }],
+      }),
+    );
+
+    fireEvent.press(await editButton());
+    fireEvent.press(await screen.findByLabelText("Video 1"));
+    fireEvent.press(await screen.findByText("mock shorten"));
+    fireEvent.press(await screen.findByText("Review"));
+    fireEvent.press(await screen.findByText("Discard the new video"));
+
+    await waitFor(() => expect(jobStore.getJobs()).toEqual([]));
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(saved().videoRefs).toEqual([{ type: "local", value: SOURCE }]),
+    );
+  });
+
+  it("offers to add the whole transcript before a cut drops some of it", async () => {
+    const transcript = {
+      language: "en",
+      model: "whisper-base-q5_1",
+      createdAt: 1,
+      segments: [
+        { start: 0, end: 0.5, text: "First the lead preps." },
+        { start: 2, end: 3, text: "Anchor on five and six." },
+      ],
+    };
+    const { saved } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        name: "Whip",
+        description: "Lead's notes.",
+        videoRefs: [{ type: "local", value: SOURCE, transcript }],
+      }),
+    );
+
+    fireEvent.press(await editButton());
+    fireEvent.press(await screen.findByLabelText("Video 1"));
+    fireEvent.press(await screen.findByText("mock shorten"));
+    fireEvent.press(await screen.findByText("Review"));
+
+    expect(
+      await screen.findByText(/Replacing keeps 1 of 2 transcript lines/),
+    ).toBeOnTheScreen();
+    fireEvent.press(
+      screen.getByText("Add the whole transcript to the description"),
+    );
+    expect(screen.getByText("Added to the description")).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Replace the original"));
+    await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(saved().description).toMatch(
+        /^Lead's notes\.\n\nFirst the lead preps\. Anchor on five and six\.$/,
+      ),
+    );
+  });
+
+  it("explains why it cannot edit when every video is online and there is no room", async () => {
+    renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        videoRefs: [
+          { type: "url", value: "https://y.tube/a" },
+          { type: "url", value: "https://y.tube/b" },
+          { type: "url", value: "https://y.tube/c" },
+        ],
+      }),
+    );
+
+    fireEvent.press(await editButton());
+
+    expect(
+      await screen.findByText(/Only videos saved on the phone can be edited/),
+    ).toBeOnTheScreen();
+    expect(mockedPicker).not.toHaveBeenCalled();
+  });
+
+  it("says why online videos are not offered for editing", async () => {
+    renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        videoRefs: [
+          { type: "local", value: SOURCE },
+          { type: "url", value: "https://y.tube/a" },
+        ],
+      }),
+    );
+
+    fireEvent.press(await editButton());
+
+    expect(
+      await screen.findByText(
+        "Online videos can't be edited, only videos saved on the phone.",
+      ),
+    ).toBeOnTheScreen();
   });
 
   it("is not offered on a read-only list", async () => {

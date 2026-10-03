@@ -1,21 +1,35 @@
 import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
 
+/** How many videos a pattern, or one modifier combination of it, can hold. */
+export const MAX_VIDEOS = 3;
+
 /**
  * What a finished job does to a video reference: replace it with a new one (a shortened or
- * de-identified video), or derive the new one from it (a transcript added to the same video).
- * The function form works on whatever reference is there at the time — including the copy in an
- * edit form's draft — so it keeps fields the job never saw.
+ * de-identified video), derive the new one from it (a transcript added to the same video), or
+ * keep it and add the new one after it (both kept). The function form works on whatever
+ * reference is there at the time — including the copy in an edit form's draft — so it keeps
+ * fields the job never saw.
  */
 export type VideoUpdate =
-  IVideoReference | ((current: IVideoReference) => IVideoReference);
+  | IVideoReference
+  | ((current: IVideoReference) => IVideoReference | IVideoReference[]);
 
-export const applyUpdate = (update: VideoUpdate, ref: IVideoReference) =>
-  typeof update === "function" ? update(ref) : update;
+export const applyUpdate = (
+  update: VideoUpdate,
+  ref: IVideoReference,
+): IVideoReference[] => {
+  const result = typeof update === "function" ? update(ref) : update;
+  return Array.isArray(result) ? result : [result];
+};
 
 /**
  * Applies [update] to the video at [oldUri] wherever this pattern references it — its own
  * videos or a modifier combination's. Returns the same pattern object when nothing matched, so
  * callers can tell a no-op cheaply.
+ *
+ * A video already in the same group is not added twice, and a group never grows past
+ * [MAX_VIDEOS]: an update that keeps both is applied again on every later save of a draft (see
+ * [applyReplacements]), and must change nothing the second time.
  */
 export function replaceVideoInPattern(
   pattern: IPattern,
@@ -23,12 +37,23 @@ export function replaceVideoInPattern(
   update: VideoUpdate,
 ): IPattern {
   let changed = false;
-  const swap = (refs: IVideoReference[]) =>
-    refs.map((ref) => {
-      if (ref.value !== oldUri) return ref;
-      changed = true;
-      return applyUpdate(update, ref);
+  const swap = (refs: IVideoReference[]) => {
+    if (!refs.some((ref) => ref.value === oldUri)) return refs;
+    changed = true;
+    const present = new Set(refs.map((ref) => ref.value));
+    let room = MAX_VIDEOS - refs.length;
+    return refs.flatMap((ref) => {
+      if (ref.value !== oldUri) return [ref];
+      const [first, ...added] = applyUpdate(update, ref);
+      const fresh = added.filter((next) => {
+        if (present.has(next.value) || room <= 0) return false;
+        present.add(next.value);
+        room--;
+        return true;
+      });
+      return [first, ...fresh];
     });
+  };
   const videoRefs = swap(pattern.videoRefs);
   const modifierRefs = pattern.modifierRefs.map((m) => ({
     ...m,
