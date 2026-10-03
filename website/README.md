@@ -42,7 +42,7 @@ These addresses are hard-coded and must change together when the site gets its o
 - **Store badges.** When the listings go live, replace the "In active development" line in the
   hero with the official Google Play and App Store badges.
 - **Screenshots.** The screenshots come from the app's web build at phone size (412 × 870), with a
-  West Coast Swing course list ("WCS Beginners · Autumn 2026", tagged by course week) seeded into
+  West Coast Swing group list ("WCS · Thursday group", tagged by course and festival) seeded into
   storage. Sharing and the video tools can't be shot there (no Firebase, Android-only), so those two
   are still drawn; replace them with device screenshots when a phone is at hand.
 - **Privacy policy.** Keep `PRIVACY_POLICY.md` in step with the app: a new network connection,
