@@ -334,5 +334,17 @@
   "deidentifyWhy": "Anonymizing hides the dancers' faces and looks, so everyone in the clip can be comfortable with it being shared.",
   "videoShortenHint": "Drag the ends of the bar to choose the part to keep.",
   "videosFullHint": "Holds up to {{max}} videos. Remove one to add another.",
-  "videoEditN": "Edit video {{n}}"
+  "videoEditN": "Edit video {{n}}",
+  "suggestJobReview": "{{name}}: a name and description are suggested",
+  "suggestJobInFormReview": "A name and description are suggested",
+  "suggestReviewTitle": "Suggestion — {{name}}",
+  "suggestReviewTranscriptKept": "The transcript stays on the video either way.",
+  "transcribeThenSuggest": "Then suggest a name and description",
+  "transcribeThenSuggestDownload": "Then suggest a name and description (downloads {{size}} MB)",
+  "videoJobsKeepOpen": "These run on the phone. Keep the app open until they finish.",
+  "deidentifyTapFrameHint": "Can't see every dancer on this frame? Go back and start the selection where they are.",
+  "modelDownload": "Download",
+  "downloadModel": "Download {{name}}",
+  "modelDownloading": "Downloading … {{percent}} %",
+  "modelDownloadFailed": "Download failed. Check the connection and try again."
 }

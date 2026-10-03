@@ -18,6 +18,7 @@ import {
   appendToDescription,
   transcriptExcerpt,
 } from "@/src/transcribe/excerpt";
+import { Suggestion } from "@/src/suggest/suggestPrompt";
 
 /** Where the reviewed video's original sits, when the caller knows it better than the list. */
 export type ReviewSource = {
@@ -27,6 +28,8 @@ export type ReviewSource = {
   groupSize: number;
   /** Appends to the description of the pattern the original belongs to. */
   onDescriptionChange?: (append: (description: string) => string) => void;
+  /** Hands a suggestion to that pattern, which decides what it may fill. */
+  onApplySuggestion?: (suggestion: Suggestion) => void;
 };
 
 type Props = {
@@ -49,6 +52,10 @@ type Props = {
  * sheet says so and offers to put the whole transcript into the description first: an
  * instructor often explains a figure at length and then shows it briefly, and the explanation
  * belongs in the description while only the showing is worth keeping as video.
+ *
+ * A transcribe-and-suggest job is reviewed here too: its suggested name and description, to use
+ * or not. Using it never overwrites the user's text: a name only where there is none, and the
+ * description as a paragraph of its own.
  */
 const VideoReviewModal: React.FC<Props> = ({ job, onClose, source }) => {
   return (
@@ -59,7 +66,15 @@ const VideoReviewModal: React.FC<Props> = ({ job, onClose, source }) => {
       onRequestClose={onClose}
     >
       <ModalOverlay align="bottom" padding="none">
-        {job?.resultUri && (
+        {job?.kind === "transcribe" && (
+          <SuggestionCard
+            key={job.id}
+            job={job}
+            onClose={onClose}
+            source={source}
+          />
+        )}
+        {job?.kind !== "transcribe" && job?.resultUri && (
           <ReviewCard
             key={job.id}
             job={job}
@@ -188,6 +203,81 @@ const ReviewCard: React.FC<{
   );
 };
 
+const SuggestionCard: React.FC<{
+  job: DeidentifyJob;
+  onClose: () => void;
+  source?: ReviewSource;
+}> = ({ job, onClose, source }) => {
+  const { t } = useTranslation();
+  const { settle } = useDeidentifyJobs();
+  const fromList = useListSource(job.sourceUri);
+  const { onApplySuggestion } = source ?? fromList;
+  const suggestion = job.suggestion;
+  const empty = !suggestion || (!suggestion.name && !suggestion.description);
+
+  const close = (apply: boolean) => {
+    if (apply && suggestion) onApplySuggestion?.(suggestion);
+    settle(job.id);
+    onClose();
+  };
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <AppText variant="title" numberOfLines={1} style={styles.title}>
+          {t("suggestReviewTitle", { name: job.patternName })}
+        </AppText>
+        <IconButton
+          icon="close"
+          color="textMuted"
+          onPress={onClose}
+          accessibilityLabel={t("videoReviewLater")}
+        />
+      </View>
+      <ScrollView contentContainerStyle={styles.body}>
+        {job.errorKey ? (
+          <AppText variant="bodySmall" color="danger">
+            {t(job.errorKey)}
+          </AppText>
+        ) : empty ? (
+          <AppText variant="bodySmall" color="textMuted">
+            {t("suggestNothing")}
+          </AppText>
+        ) : (
+          <View style={styles.note} testID="suggestion">
+            {suggestion.name !== "" && (
+              <AppText variant="label">
+                {t("suggestName", { name: suggestion.name })}
+              </AppText>
+            )}
+            {suggestion.description !== "" && (
+              <AppText>{suggestion.description}</AppText>
+            )}
+            <AppText variant="caption" color="textMuted">
+              {t("suggestApplyHint")}
+            </AppText>
+          </View>
+        )}
+        <AppText variant="bodySmall" color="textMuted">
+          {t("suggestReviewTranscriptKept")}
+        </AppText>
+        {!empty && !job.errorKey && onApplySuggestion && (
+          <Button
+            title={t("suggestApply")}
+            icon="check"
+            onPress={() => close(true)}
+          />
+        )}
+        <Button
+          title={t("suggestDismiss")}
+          variant="secondary"
+          onPress={() => close(false)}
+        />
+      </ScrollView>
+    </View>
+  );
+};
+
 /** The original as the active list holds it, with the means to change its description. */
 function useListSource(sourceUri: string): ReviewSource {
   const { patterns, editPattern, isReadonly } = usePatternCrud();
@@ -207,6 +297,17 @@ function useListSource(sourceUri: string): ReviewSource {
             void editPattern({
               ...pattern,
               description: append(pattern.description ?? ""),
+            }),
+      onApplySuggestion: isReadonly
+        ? undefined
+        : (suggestion) =>
+            void editPattern({
+              ...pattern,
+              name: pattern.name.trim() ? pattern.name : suggestion.name,
+              description: appendToDescription(
+                pattern.description ?? "",
+                suggestion.description,
+              ),
             }),
     };
   }

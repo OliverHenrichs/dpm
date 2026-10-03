@@ -334,5 +334,17 @@
   "deidentifyWhy": "يخفي إخفاء الهوية وجوه الراقصين ومظهرهم، ليكون كل من في المقطع مرتاحًا لمشاركته.",
   "videoShortenHint": "اسحب طرفي الشريط لاختيار الجزء الذي يبقى.",
   "videosFullHint": "يتسع هنا حتى {{max}} مقاطع فيديو. احذف واحدًا لإضافة آخر.",
-  "videoEditN": "تعديل الفيديو {{n}}"
+  "videoEditN": "تعديل الفيديو {{n}}",
+  "suggestJobReview": "{{name}}: تم اقتراح اسم ووصف",
+  "suggestJobInFormReview": "تم اقتراح اسم ووصف",
+  "suggestReviewTitle": "اقتراح — {{name}}",
+  "suggestReviewTranscriptKept": "يبقى النص المفرغ على الفيديو في كل الأحوال.",
+  "transcribeThenSuggest": "ثم اقتراح اسم ووصف",
+  "transcribeThenSuggestDownload": "ثم اقتراح اسم ووصف (تنزيل {{size}} ميغابايت)",
+  "videoJobsKeepOpen": "تعمل هذه على الهاتف. أبقِ التطبيق مفتوحًا حتى تنتهي.",
+  "deidentifyTapFrameHint": "لا ترى كل الراقصين في هذا الإطار؟ ارجع وابدأ التحديد حيث يظهرون.",
+  "modelDownload": "تنزيل",
+  "downloadModel": "تنزيل {{name}}",
+  "modelDownloading": "جارٍ التنزيل … {{percent}} %",
+  "modelDownloadFailed": "فشل التنزيل. تحقق من الاتصال وحاول مرة أخرى."
 }

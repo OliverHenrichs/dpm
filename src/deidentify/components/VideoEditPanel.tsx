@@ -283,6 +283,7 @@ const VideoEditPanel: React.FC<Props> = ({
       {prompting && provider && (
         <>
           <Text style={styles.text}>{tapHint}</Text>
+          <Text style={styles.hint}>{t("deidentifyTapFrameHint")}</Text>
           {providers.length > 1 && (
             <View style={styles.row}>
               {providers.map((p) => {

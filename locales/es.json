@@ -334,5 +334,17 @@
   "deidentifyWhy": "Anonimizar oculta la cara y el aspecto de los bailarines, para que todos en el vídeo estén cómodos con que se comparta.",
   "videoShortenHint": "Arrastra los extremos de la barra para elegir la parte que se queda.",
   "videosFullHint": "Caben hasta {{max}} vídeos. Quita uno para añadir otro.",
-  "videoEditN": "Editar vídeo {{n}}"
+  "videoEditN": "Editar vídeo {{n}}",
+  "suggestJobReview": "{{name}}: se sugieren un nombre y una descripción",
+  "suggestJobInFormReview": "Se sugieren un nombre y una descripción",
+  "suggestReviewTitle": "Sugerencia — {{name}}",
+  "suggestReviewTranscriptKept": "La transcripción se queda en el vídeo en cualquier caso.",
+  "transcribeThenSuggest": "Después sugerir nombre y descripción",
+  "transcribeThenSuggestDownload": "Después sugerir nombre y descripción (descarga {{size}} MB)",
+  "videoJobsKeepOpen": "Se ejecuta en el teléfono. Mantén la app abierta hasta que termine.",
+  "deidentifyTapFrameHint": "¿No se ven todos los bailarines en este fotograma? Vuelve atrás y empieza la selección donde se vean.",
+  "modelDownload": "Descargar",
+  "downloadModel": "Descargar {{name}}",
+  "modelDownloading": "Descargando … {{percent}} %",
+  "modelDownloadFailed": "La descarga falló. Comprueba la conexión e inténtalo de nuevo."
 }
