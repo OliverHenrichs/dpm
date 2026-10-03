@@ -10,20 +10,28 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import PlusButton from "@/src/common/components/PlusButton";
-import { Icon, IconButton, Tappable } from "@/src/common/ui";
+import { Button, Icon, IconButton, Tappable } from "@/src/common/ui";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { formatTime } from "@/src/common/utils/TImeUtils";
+import { MAX_VIDEOS } from "@/src/deidentify/jobs/replaceVideo";
 
 export type PatternVideosProps = {
   videoRefs: IVideoReference[];
   thumbnails: string[];
   onAddVideo: () => void;
   onRemoveVideo: (index: number) => void;
-  /** Offers editing a video (shorten, de-identify) next to '+'; omitted where that cannot run. */
+  /**
+   * Offers editing a video (shorten, anonymize, transcribe) as a labelled button next to '+';
+   * omitted where that cannot run.
+   */
   onEditVideo?: () => void;
+  /** Edits one video, from a button on its thumbnail; only videos saved on the phone get one. */
+  onEditVideoAt?: (index: number) => void;
   /** Opens a video's transcript (L4); its thumbnail is pressable once it has one. */
   onOpenTranscript?: (index: number) => void;
   disabled?: boolean;
+  /** At the most videos it can hold: '+' is disabled, and a line says why. */
+  full?: boolean;
 };
 
 const PatternVideos: React.FC<PatternVideosProps> = ({
@@ -32,8 +40,10 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   onAddVideo,
   onRemoveVideo,
   onEditVideo,
+  onEditVideoAt,
   onOpenTranscript,
   disabled = false,
+  full = false,
 }) => {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
@@ -102,6 +112,17 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
               />
             </View>
           )}
+          {onEditVideoAt && ref.type === "local" && (
+            <IconButton
+              icon="movie-edit"
+              variant="filled"
+              color="success"
+              size={theme.iconSize.sm - 2}
+              onPress={() => onEditVideoAt(idx)}
+              accessibilityLabel={t("videoEditN", { n: idx + 1 })}
+              style={styles.editButton}
+            />
+          )}
           {/* A bare "×" told a screen reader nothing about what it removes. */}
           <IconButton
             icon="close"
@@ -129,12 +150,18 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
           {renderThumbnails()}
         </ScrollView>
       </View>
+      {full && (
+        <Text style={styles.fullHint}>
+          {t("videosFullHint", { max: MAX_VIDEOS })}
+        </Text>
+      )}
       <View style={styles.addButtonContainer}>
         {onEditVideo && (
-          <IconButton
+          <Button
+            title={t("videoEditTitle")}
             icon="movie-edit"
-            color="success"
-            size={28}
+            variant="secondary"
+            size="sm"
             onPress={onEditVideo}
             accessibilityLabel={t("videoEditA11y")}
           />
@@ -221,6 +248,17 @@ const styles = StyleSheet.create((theme) => ({
     position: "absolute",
     top: -theme.space.sm,
     right: -theme.space.sm,
+    zIndex: 2,
+  },
+  fullHint: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginTop: theme.space.xs,
+  },
+  editButton: {
+    position: "absolute",
+    bottom: -theme.space.xs,
+    left: -theme.space.sm,
     zIndex: 2,
   },
   addButtonContainer: {

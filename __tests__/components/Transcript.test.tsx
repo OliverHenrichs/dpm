@@ -203,7 +203,6 @@ function renderForm(existing: IPattern) {
 
 const openEditor = async () => {
   fireEvent.press(await screen.findByLabelText("Edit a video"));
-  fireEvent.press(await screen.findByLabelText("Video 1"));
 };
 
 describe("transcribing from the pattern form", () => {
@@ -280,7 +279,9 @@ describe("transcribing from the pattern form", () => {
     await openEditor();
 
     expect(
-      await screen.findByText("A silhouette has no sound to transcribe."),
+      await screen.findByText(
+        "An anonymized video has no sound to transcribe.",
+      ),
     ).toBeOnTheScreen();
     expect(screen.queryByText("Transcribe speech")).toBeNull();
   });

@@ -311,7 +311,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   };
 
   const handleEditVideo = () => {
-    if (editable.length > 0) setShowDeidentifyPicker(true);
+    if (editable.length === 1) openEditor(editable[0].ref);
+    else if (editable.length > 1) setShowDeidentifyPicker(true);
     else if (activeVideoRefs.length >= MAX_VIDEOS) setEditBlocked(true);
     else void pickForDeidentify();
   };
@@ -523,8 +524,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onAddVideo={openAddVideoModal}
         onRemoveVideo={handleRemoveVideo}
         onEditVideo={canEditVideos ? handleEditVideo : undefined}
+        onEditVideoAt={
+          canEditVideos
+            ? (index) => openEditor(activeVideoRefs[index])
+            : undefined
+        }
         onOpenTranscript={(index) => openTranscript(activeVideoRefs[index])}
-        disabled={isActiveVideoReadonly || activeVideoRefs.length >= 3}
+        disabled={isActiveVideoReadonly || activeVideoRefs.length >= MAX_VIDEOS}
+        full={!isActiveVideoReadonly && activeVideoRefs.length >= MAX_VIDEOS}
       />
       {draftJobs.map((job) =>
         job.status === "review" ? (

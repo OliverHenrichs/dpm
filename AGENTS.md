@@ -68,7 +68,7 @@ Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pa
 
 ## On-device video tools
 
-Android only for now. Edit Pattern → Videos → **Edit video** (`src/deidentify/components/VideoEditPanel.tsx`) offers *Shorten*, *De-identify* and *Transcribe speech*; the transcript sheet (`src/transcribe/components/TranscriptSheet.tsx`) hosts *Suggest name and description* (`src/suggest/`). Settings → *On-device models* (`src/settings/components/DeviceModelsSection.tsx`) lists and deletes the downloaded models.
+Android only for now. Edit Pattern → Videos → **Edit video** (`src/deidentify/components/VideoEditPanel.tsx`) offers *Shorten*, *Anonymize* (de-identify, in the code) and *Transcribe speech*, from the labelled button beside + or the button on each video saved on the phone; the transcript sheet (`src/transcribe/components/TranscriptSheet.tsx`) hosts *Suggest name and description* (`src/suggest/`). Settings → *On-device models* (`src/settings/components/DeviceModelsSection.tsx`) lists and deletes the downloaded models.
 
 - **Native pieces.** `modules/video-deidentify` (Media3 trim/transcode, LiteRT person tracking, silhouette render; also backs *Shorten*) and `modules/audio-extract` (16 kHz mono PCM for Whisper) are local Expo modules, autolinked. `whisper.rn` and `llama.rn` are npm native modules. All of them need a rebuilt dev client.
 - **Gate on availability, never on `Platform.OS`.** `isDeidentifyAvailable` / `canShortenVideos()`, `isAudioExtractAvailable`, and `canSuggest()` (Android, ≥ 6 GB RAM, native hash check) are false on iOS, web and Jest, and the UI hides the action.
