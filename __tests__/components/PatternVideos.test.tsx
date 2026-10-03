@@ -67,7 +67,7 @@ describe("PatternVideos", () => {
     expect(screen.queryByText("Online")).toBeNull();
   });
 
-  it("marks a de-identified video, and only that one", () => {
+  it("marks an anonymized video, and only that one", () => {
     renderVideos({
       videoRefs: [
         local("file:///plain.mp4"),

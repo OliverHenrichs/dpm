@@ -3,9 +3,9 @@ import { Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
-import { jobStore } from "@/src/deidentify/jobs/jobStore";
-import { DeidentifyJobsProvider } from "@/src/deidentify/jobs/DeidentifyJobsContext";
-import { shortenVideo } from "@/src/deidentify/shortenVideo";
+import { jobStore } from "@/src/anonymize/jobs/jobStore";
+import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext";
+import { shortenVideo } from "@/src/anonymize/shortenVideo";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
 import PatternListManager from "@/src/pattern/list/PatternListManager";
 import {
@@ -30,7 +30,7 @@ import {
 // The video editor needs the native module; pretend it is there so the post-save offer shows.
 // The editor itself is covered by its own suite; here it only has to open, on
 // the right video.
-jest.mock("@/src/deidentify/components/VideoEditPanel", () => {
+jest.mock("@/src/anonymize/components/VideoEditPanel", () => {
   const { Text } = jest.requireActual("react-native");
   return {
     __esModule: true,
@@ -40,7 +40,7 @@ jest.mock("@/src/deidentify/components/VideoEditPanel", () => {
   };
 });
 
-jest.mock("@/src/deidentify/shortenVideo", () => ({
+jest.mock("@/src/anonymize/shortenVideo", () => ({
   canShortenVideos: () => true,
   shortenVideo: jest.fn(async () => {
     throw new Error("no native module");
@@ -88,9 +88,9 @@ async function renderManager(
   });
   // With the jobs provider, as in the app: a finished job then updates the loaded patterns.
   renderWithProviders(
-    <DeidentifyJobsProvider>
+    <AnonymizeJobsProvider>
       <PatternListManager />
-    </DeidentifyJobsProvider>,
+    </AnonymizeJobsProvider>,
     {
       lists: [list],
       patterns: { [list.id]: patterns },

@@ -1,4 +1,4 @@
-import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+import { useAnonymizeJobs } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { vocabularyPrompt } from "@/src/transcribe/vocabulary";
 import { vocabularyFor } from "@/src/suggest/suggestPrompt";
@@ -18,7 +18,7 @@ export type TranscriptionTarget = {
  */
 export function useStartTranscription() {
   const { activeList, patterns } = useActivePatternList();
-  const { start } = useDeidentifyJobs();
+  const { start } = useAnonymizeJobs();
   return (
     target: TranscriptionTarget,
     language?: string,

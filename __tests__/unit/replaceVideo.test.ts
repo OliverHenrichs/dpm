@@ -3,14 +3,14 @@ import {
   clearReplacements,
   recordReplacement,
   replaceVideoInPattern,
-} from "@/src/deidentify/jobs/replaceVideo";
+} from "@/src/anonymize/jobs/replaceVideo";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { createTestPattern } from "@/utils/testFactories";
 
 const OLD = "file:///document/video-a.mp4";
 const NEW: IVideoReference = {
   type: "local",
-  value: "file:///document/deidentified-b.mp4",
+  value: "file:///document/anonymized-b.mp4",
   generated: { method: "on-device-tracking", createdAt: 1 },
 };
 const other: IVideoReference = { type: "url", value: "https://y.tube/x" };

@@ -23,19 +23,19 @@ import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import AppDialog from "@/src/common/components/AppDialog";
-import DeidentifyModal, {
-  DeidentifyTarget,
-} from "@/src/deidentify/components/DeidentifyModal";
+import AnonymizeModal, {
+  AnonymizeTarget,
+} from "@/src/anonymize/components/AnonymizeModal";
 import VideoReviewModal, {
   ReviewSource,
-} from "@/src/deidentify/components/VideoReviewModal";
-import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
+} from "@/src/anonymize/components/VideoReviewModal";
+import { useAnonymizeJobs } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import {
   applyReplacements,
   MAX_VIDEOS,
-} from "@/src/deidentify/jobs/replaceVideo";
-import { jobStore } from "@/src/deidentify/jobs/jobStore";
-import { canShortenVideos } from "@/src/deidentify/shortenVideo";
+} from "@/src/anonymize/jobs/replaceVideo";
+import { jobStore } from "@/src/anonymize/jobs/jobStore";
+import { canShortenVideos } from "@/src/anonymize/shortenVideo";
 import TranscriptSheet, {
   TranscriptTarget,
 } from "@/src/transcribe/components/TranscriptSheet";
@@ -103,16 +103,16 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     null,
   );
   const [showAttachPicker, setShowAttachPicker] = useState(false);
-  const [showDeidentifyPicker, setShowDeidentifyPicker] = useState(false);
-  const [deidentifyTarget, setDeidentifyTarget] =
-    useState<DeidentifyTarget | null>(null);
+  const [showAnonymizePicker, setShowAnonymizePicker] = useState(false);
+  const [anonymizeTarget, setAnonymizeTarget] =
+    useState<AnonymizeTarget | null>(null);
   const [transcriptTarget, setTranscriptTarget] =
     useState<TranscriptTarget | null>(null);
   const { activeList } = useActivePatternList();
-  const { jobs } = useDeidentifyJobs();
+  const { jobs } = useAnonymizeJobs();
   const startTranscription = useStartTranscription();
 
-  // A de-identification job that finishes while this form is open replaced the video in the
+  // An anonymization job that finishes while this form is open replaced the video in the
   // stored pattern, not in this draft; swap it here too, so the form shows the result and
   // saving does not put the original back.
   useEffect(
@@ -223,9 +223,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     }
   };
 
-  // Editing a video (shorten, de-identify): one of this draft's own local videos, or one
+  // Editing a video (shorten, anonymize): one of this draft's own local videos, or one
   // picked from the gallery (added to the draft first). The run is a background job; see
-  // src/deidentify/jobs/jobStore.ts.
+  // src/anonymize/jobs/jobStore.ts.
   const canEditVideos =
     !!activeList &&
     !activeList.readonly &&
@@ -287,8 +287,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 
   const openEditor = (ref: IVideoReference) => {
     if (!activeList) return;
-    setShowDeidentifyPicker(false);
-    setDeidentifyTarget({
+    setShowAnonymizePicker(false);
+    setAnonymizeTarget({
       listId: activeList.id,
       patternName: newPattern.name.trim() || t("addPatternNew"),
       sourceUri: ref.value,
@@ -300,7 +300,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // What was said in a video (L4): opened from its thumbnail, or from Edit video.
   const openTranscript = (ref: IVideoReference) => {
     if (!activeList || !ref.transcript) return;
-    setDeidentifyTarget(null);
+    setAnonymizeTarget(null);
     setTranscriptTarget({
       listId: activeList.id,
       patternName: newPattern.name.trim() || t("addPatternNew"),
@@ -310,9 +310,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     });
   };
 
-  const pickForDeidentify = async () => {
+  const pickForAnonymize = async () => {
     if (activeVideoRefs.length >= 3) return;
-    setShowDeidentifyPicker(false);
+    setShowAnonymizePicker(false);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsMultipleSelection: false,
@@ -326,9 +326,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 
   const handleEditVideo = () => {
     if (editable.length === 1) openEditor(editable[0].ref);
-    else if (editable.length > 1) setShowDeidentifyPicker(true);
+    else if (editable.length > 1) setShowAnonymizePicker(true);
     else if (activeVideoRefs.length >= MAX_VIDEOS) setEditBlocked(true);
-    else void pickForDeidentify();
+    else void pickForAnonymize();
   };
 
   const handleRemoveVideo = (index: number) => {
@@ -569,7 +569,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 ? t("videoJobInFormRunning", {
                     percent: Math.round(job.progress * 100),
                   })
-                : t("deidentifyFailed", { message: job.error ?? "" })}
+                : t("anonymizeFailed", { message: job.error ?? "" })}
           </Text>
         ),
       )}
@@ -588,30 +588,30 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onClose={() => setEditBlocked(false)}
       />
       <BottomSheet
-        visible={showDeidentifyPicker}
-        onClose={() => setShowDeidentifyPicker(false)}
-        title={t("deidentifyChooseVideo")}
+        visible={showAnonymizePicker}
+        onClose={() => setShowAnonymizePicker(false)}
+        title={t("anonymizeChooseVideo")}
         minHeight="25%"
         maxHeight="50%"
       >
         {onlineVideos > 0 && (
           <Text style={styles.jobLine}>{t("videoEditOnlineHint")}</Text>
         )}
-        <View style={styles.deidentifyChoices}>
+        <View style={styles.anonymizeChoices}>
           {editable.map(({ ref, index }) => (
             <Tappable
               key={ref.value}
               onPress={() => openEditor(ref)}
-              accessibilityLabel={t("deidentifyVideoN", { n: index + 1 })}
-              style={styles.deidentifyThumbButton}
+              accessibilityLabel={t("anonymizeVideoN", { n: index + 1 })}
+              style={styles.anonymizeThumbButton}
             >
               {thumbnails[index] ? (
                 <Image
                   source={{ uri: thumbnails[index] }}
-                  style={styles.deidentifyThumb}
+                  style={styles.anonymizeThumb}
                 />
               ) : (
-                <View style={[styles.deidentifyThumb, styles.thumbFallback]}>
+                <View style={[styles.anonymizeThumb, styles.thumbFallback]}>
                   <Text style={styles.buttonText}>{index + 1}</Text>
                 </View>
               )}
@@ -619,16 +619,16 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           ))}
         </View>
         <Button
-          title={t("deidentifyFromGallery")}
+          title={t("anonymizeFromGallery")}
           icon="image-plus"
           variant="secondary"
-          onPress={pickForDeidentify}
+          onPress={pickForAnonymize}
           disabled={activeVideoRefs.length >= 3}
         />
       </BottomSheet>
-      <DeidentifyModal
-        target={deidentifyTarget}
-        onClose={() => setDeidentifyTarget(null)}
+      <AnonymizeModal
+        target={anonymizeTarget}
+        onClose={() => setAnonymizeTarget(null)}
         onOpenTranscript={(target) =>
           openTranscript(
             activeVideoRefs.find((ref) => ref.value === target.sourceUri) ?? {
@@ -762,17 +762,17 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.space.sm,
     },
     jobRowText: { flex: 1, marginBottom: 0 },
-    deidentifyChoices: {
+    anonymizeChoices: {
       ...getCommonRow(),
       flexWrap: "wrap",
       gap: theme.space.sm,
       marginBottom: theme.space.lg,
     },
-    deidentifyThumbButton: {
+    anonymizeThumbButton: {
       overflow: "hidden",
       borderRadius: theme.radius.md,
     },
-    deidentifyThumb: { width: 96, height: 96, borderRadius: theme.radius.md },
+    anonymizeThumb: { width: 96, height: 96, borderRadius: theme.radius.md },
     thumbFallback: {
       justifyContent: "center",
       alignItems: "center",

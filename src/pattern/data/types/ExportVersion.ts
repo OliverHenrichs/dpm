@@ -10,7 +10,7 @@ export const SUPPORTED_MAJOR = 3;
 
 /**
  * Highest minor version this build understands within `SUPPORTED_MAJOR`.
- * 1: video references may carry `generated` (de-identified videos, L3).
+ * 1: video references may carry `generated` (anonymized videos, L3).
  * 2: video references may carry `transcript` (what was said in them, L4).
  */
 export const SUPPORTED_MINOR = 2;

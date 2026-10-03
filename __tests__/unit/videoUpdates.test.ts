@@ -3,7 +3,7 @@ import {
   clearReplacements,
   recordReplacement,
   replaceVideoInPattern,
-} from "@/src/deidentify/jobs/replaceVideo";
+} from "@/src/anonymize/jobs/replaceVideo";
 import {
   trimTranscript,
   withoutTranscripts,

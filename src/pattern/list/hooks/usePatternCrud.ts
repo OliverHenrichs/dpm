@@ -1,4 +1,4 @@
-import { applyReplacements } from "@/src/deidentify/jobs/replaceVideo";
+import { applyReplacements } from "@/src/anonymize/jobs/replaceVideo";
 import { useCallback, useMemo } from "react";
 import {
   IModifier,
@@ -118,7 +118,7 @@ export function usePatternCrud(): PatternCrud {
         console.error("Cannot edit pattern without id");
         return false;
       }
-      // A draft opened before a de-identification job finished still holds the original
+      // A draft opened before an anonymization job finished still holds the original
       // video; saving it must not put the original back.
       const updated = applyReplacements(pattern as IPattern);
       await commitPatterns(

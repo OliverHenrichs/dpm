@@ -6,7 +6,7 @@ import { generateUUID } from "@/src/pattern/types/PatternType";
  *
  * The image picker hands out URIs in its *cache*, which Android may clear at any time — a
  * pattern that kept such a URI silently lost its video one day. The same goes for anything the
- * app generates (de-identified videos land in the cache first). The document directory is where
+ * app generates (anonymized videos land in the cache first). The document directory is where
  * import already writes videos, so it is where every local video a pattern references lives.
  *
  * A URI already in the document directory is returned unchanged, so this is safe to call twice.

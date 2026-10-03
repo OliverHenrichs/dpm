@@ -10,7 +10,7 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
 
 type VideoCarouselProps = {
   videoRefs: IVideoReference[];
-  /** Label of the badge on generated (de-identified) videos. */
+  /** Label of the badge on generated (anonymized) videos. */
   generatedLabel?: string;
 };
 

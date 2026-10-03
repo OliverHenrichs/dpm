@@ -22,13 +22,13 @@ import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 import * as ImagePicker from "expo-image-picker";
 import AppDialog from "@/src/common/components/AppDialog";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
-import DeidentifyModal, {
-  DeidentifyTarget,
-} from "@/src/deidentify/components/DeidentifyModal";
-import DeidentifyJobsBanner from "@/src/deidentify/components/DeidentifyJobsBanner";
-import { canShortenVideos } from "@/src/deidentify/shortenVideo";
-import { DeidentifyJob, jobStore } from "@/src/deidentify/jobs/jobStore";
-import { patternHasVideo } from "@/src/deidentify/jobs/replaceVideo";
+import AnonymizeModal, {
+  AnonymizeTarget,
+} from "@/src/anonymize/components/AnonymizeModal";
+import AnonymizeJobsBanner from "@/src/anonymize/components/AnonymizeJobsBanner";
+import { canShortenVideos } from "@/src/anonymize/shortenVideo";
+import { AnonymizeJob, jobStore } from "@/src/anonymize/jobs/jobStore";
+import { patternHasVideo } from "@/src/anonymize/jobs/replaceVideo";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
@@ -61,18 +61,19 @@ const PatternListManager = () => {
     IModifier | undefined
   >(undefined);
   // "From a video": the picked video seeds the add form, and once the pattern is saved the
-  // user is offered to de-identify it (a background job that replaces the video when done).
+  // user is offered to anonymize it (a background job that replaces the video when done).
   const [initialVideos, setInitialVideos] = useState<
     IVideoReference[] | undefined
   >(undefined);
-  const [deidentifyOffer, setDeidentifyOffer] =
-    useState<DeidentifyTarget | null>(null);
+  const [anonymizeOffer, setAnonymizeOffer] = useState<AnonymizeTarget | null>(
+    null,
+  );
   const [cameraDenied, setCameraDenied] = useState(false);
   // A pattern to scroll to — set when a job line in the banner is tapped. `at` makes tapping
   // the same line twice scroll again.
   const [reveal, setReveal] = useState<{ id: number; at: number }>();
-  const [deidentifyTarget, setDeidentifyTarget] =
-    useState<DeidentifyTarget | null>(null);
+  const [anonymizeTarget, setAnonymizeTarget] =
+    useState<AnonymizeTarget | null>(null);
 
   // The mutations live in usePatternCrud; what is left here is which modal is
   // open. Each returns whether it was applied, so a rejected edit — a blank
@@ -94,7 +95,7 @@ const PatternListManager = () => {
       !jobStore.getJobs().some((j) => j.sourceUri === seeded) &&
       canShortenVideos()
     ) {
-      setDeidentifyOffer({
+      setAnonymizeOffer({
         listId: activeList.id,
         patternName: pattern.name,
         sourceUri: seeded,
@@ -106,7 +107,7 @@ const PatternListManager = () => {
   // The banner links a job to its pattern: by the video it produced once done, by the source
   // until then (a result waiting for review is not in the pattern yet). Only in the active
   // list — another list's patterns are not loaded here.
-  const openJobPattern = (job: DeidentifyJob) => {
+  const openJobPattern = (job: AnonymizeJob) => {
     if (activeList?.id !== job.listId) return undefined;
     const uri =
       job.status === "done" ? (job.resultUri ?? job.sourceUri) : job.sourceUri;
@@ -280,15 +281,15 @@ const PatternListManager = () => {
         </Modal>
 
         <AppDialog
-          visible={deidentifyOffer !== null}
+          visible={anonymizeOffer !== null}
           title={t("videoEditNowTitle")}
           message={t("videoEditNowMessage")}
           closeLabel={t("videoEditLater")}
-          onClose={() => setDeidentifyOffer(null)}
+          onClose={() => setAnonymizeOffer(null)}
           confirmLabel={t("videoEditNowYes")}
           onConfirm={() => {
-            setDeidentifyTarget(deidentifyOffer);
-            setDeidentifyOffer(null);
+            setAnonymizeTarget(anonymizeOffer);
+            setAnonymizeOffer(null);
           }}
         />
         <AppDialog
@@ -297,12 +298,12 @@ const PatternListManager = () => {
           message={t("cameraPermissionDeniedHint")}
           onClose={() => setCameraDenied(false)}
         />
-        <DeidentifyModal
-          target={deidentifyTarget}
-          onClose={() => setDeidentifyTarget(null)}
+        <AnonymizeModal
+          target={anonymizeTarget}
+          onClose={() => setAnonymizeTarget(null)}
         />
 
-        <DeidentifyJobsBanner openAction={openJobPattern} />
+        <AnonymizeJobsBanner openAction={openJobPattern} />
 
         {/* Tab strip */}
         <SegmentedControl

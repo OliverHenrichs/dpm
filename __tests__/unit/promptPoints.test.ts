@@ -2,7 +2,7 @@ import {
   containRect,
   tapToVideoPoint,
   videoPointToView,
-} from "@/src/deidentify/model/promptPoints";
+} from "@/src/anonymize/model/promptPoints";
 
 // A 16:9 landscape video in a 320x320 square view: letterboxed top and bottom (180 tall).
 const view = { width: 320, height: 320 };

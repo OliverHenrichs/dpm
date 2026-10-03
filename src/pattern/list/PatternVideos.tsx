@@ -13,7 +13,7 @@ import PlusButton from "@/src/common/components/PlusButton";
 import { Button, Icon, IconButton, Tappable } from "@/src/common/ui";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { formatTime } from "@/src/common/utils/TImeUtils";
-import { MAX_VIDEOS } from "@/src/deidentify/jobs/replaceVideo";
+import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
 
 export type PatternVideosProps = {
   videoRefs: IVideoReference[];

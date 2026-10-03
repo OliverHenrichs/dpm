@@ -12,7 +12,7 @@ import {
   NewModifier,
 } from "@/src/pattern/types/IPatternList";
 import PatternVideos from "@/src/pattern/list/PatternVideos";
-import { MAX_VIDEOS } from "@/src/deidentify/jobs/replaceVideo";
+import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
 import AddVideoModal from "@/src/pattern/list/AddVideoModal";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import {
