@@ -12,6 +12,7 @@ import {
   NewModifier,
 } from "@/src/pattern/types/IPatternList";
 import PatternVideos from "@/src/pattern/list/PatternVideos";
+import { MAX_VIDEOS } from "@/src/deidentify/jobs/replaceVideo";
 import AddVideoModal from "@/src/pattern/list/AddVideoModal";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import {
@@ -157,7 +158,8 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
               thumbnails={thumbnails}
               onAddVideo={() => setShowAddVideoModal(true)}
               onRemoveVideo={handleRemoveVideo}
-              disabled={(modifier.videoRefs?.length ?? 0) >= 3}
+              disabled={(modifier.videoRefs?.length ?? 0) >= MAX_VIDEOS}
+              full={(modifier.videoRefs?.length ?? 0) >= MAX_VIDEOS}
             />
             <AddVideoModal
               visible={showAddVideoModal}

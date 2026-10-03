@@ -265,7 +265,7 @@ describe("PatternListManager", () => {
         await screen.findByText("Whip: the new video is ready to check"),
       ).toBeOnTheScreen();
       await reviewAndReplace();
-      const line = await screen.findByText("Whip: shortened video is in place");
+      const line = await screen.findByText("Whip: shortened video saved");
       await waitFor(() => expect(line.props.accessibilityRole).toBe("link"));
       expect(screen.queryByText(/^Counts/)).toBeNull();
       fireEvent.press(line);
@@ -284,7 +284,7 @@ describe("PatternListManager", () => {
 
       await startShorten("another-list");
       await reviewAndReplace();
-      const line = await screen.findByText("Whip: shortened video is in place");
+      const line = await screen.findByText("Whip: shortened video saved");
 
       expect(line.props.accessibilityRole).toBeUndefined();
     });
@@ -297,7 +297,7 @@ describe("PatternListManager", () => {
 
       await startShorten(list.id);
       await reviewAndReplace();
-      const line = await screen.findByText("Whip: shortened video is in place");
+      const line = await screen.findByText("Whip: shortened video saved");
 
       expect(line.props.accessibilityRole).toBeUndefined();
     });
@@ -364,7 +364,9 @@ describe("PatternListManager", () => {
     it("opens the video editor when the offer is taken", async () => {
       await createFromVideo();
       fireEvent.press(screen.getByText("Save"));
-      fireEvent.press(await screen.findByText("Edit video"));
+      // The dialog's confirm; the form behind it has an "Edit video" button of its own.
+      await screen.findByText("Edit the video?");
+      fireEvent.press(screen.getAllByText("Edit video").at(-1)!);
 
       expect(
         await screen.findByText(`editing ${MOCK_SEEDED}`),
