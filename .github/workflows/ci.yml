@@ -87,26 +87,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # AGENTS.md documents the expected state: exactly three moderate findings,
-      # all from expo-router -> query-string@7 -> decode-uri-component, which
-      # cannot be patched until expo-router moves off query-string@7. Anything
-      # else, and anything of higher severity, should fail.
-      - name: Fail on new or high-severity vulnerabilities
+      # scripts/check-audit.js lists the advisories we have reviewed and accept
+      # (no patched release, or dev tooling only); see AGENTS.md. Any other
+      # advisory, at any severity, fails the job.
+      - name: Fail on unreviewed vulnerabilities
         run: |
           npm audit --json > audit.json || true
-          node -e '
-            const audit = require("./audit.json");
-            const counts = audit.metadata.vulnerabilities;
-            const expected = { info: 0, low: 0, moderate: 3, high: 0, critical: 0 };
-            const drift = Object.entries(expected).filter(
-              ([level, n]) => counts[level] > n
-            );
-            if (drift.length > 0) {
-              console.error("npm audit drifted from the documented baseline.");
-              console.error("expected:", expected);
-              console.error("actual:  ", counts);
-              console.error("Update AGENTS.md and this baseline if the change is intentional.");
-              process.exit(1);
-            }
-            console.log("npm audit matches the documented baseline:", counts);
-          '
+          node scripts/check-audit.js audit.json
