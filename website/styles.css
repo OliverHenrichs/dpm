@@ -15,6 +15,7 @@
   --on-primary: #ffffff;
   --border: #d1d5db;
   --edge: #8b8aa6;
+  --frame: #1e1b4b;
   --shadow: 0 1px 2px rgb(30 27 75 / 6%), 0 8px 24px rgb(30 27 75 / 8%);
 
   /* Pattern-type colours, from PATTERN_TYPE_COLORS. */
@@ -42,6 +43,7 @@
     --on-primary: #1e1b4b;
     --border: #3f3f46;
     --edge: #71717a;
+    --frame: #3f3f46;
     --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 25%);
   }
 }
@@ -314,6 +316,33 @@ section {
   border-block: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 }
 
+/* Who it's for: one card per audience. */
+.audiences {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.audience {
+  background: var(--background);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.audience p {
+  color: var(--text-muted);
+}
+
+.audience p:last-child {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .audiences {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* The idea: three steps. */
 .steps {
   display: grid;
@@ -343,6 +372,11 @@ section {
   color: var(--on-primary);
   font-weight: 800;
   margin-bottom: 12px;
+}
+
+section:not(.band) .steps li {
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .steps p {
@@ -453,6 +487,24 @@ section {
   border-radius: 999px;
   vertical-align: middle;
   margin-left: 6px;
+}
+
+/* App screenshots, framed as a phone. They come in a light and a dark take, picked by
+   prefers-color-scheme in the <picture>, so they follow the page's theme. */
+.hero-art.shot,
+.feature-art.shot {
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.shot img {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  border: 8px solid var(--frame);
+  border-radius: 36px;
+  box-shadow: var(--shadow);
 }
 
 /* Illustrations share the page's colours, so they follow the theme. */

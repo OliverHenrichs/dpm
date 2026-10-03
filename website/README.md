@@ -6,10 +6,11 @@ requests. That keeps it cheap to host anywhere and free of cookie banners.
 
 | File | What it is |
 |---|---|
-| `index.html` | The landing page. The illustrations are inline SVG drawn with the site's colour variables, so they follow light and dark mode |
+| `index.html` | The landing page. Graph, filter and modifier examples are real app screenshots (`img/shots/`); the sharing and video-tool illustrations are inline SVG drawn with the site's colour variables. Both follow light and dark mode |
 | `styles.css` | All styling. The colours mirror `src/common/theme/tokens.ts` and the pattern-type colours in `PatternType.ts` |
 | `privacy.html` | **Generated** from `/PRIVACY_POLICY.md` by `build-privacy.py`. Edit the Markdown, not the HTML |
 | `404.html` | Not-found page, with absolute paths (see "Moving the site" below) |
+| `img/shots/` | App screenshots, a light and a dark take of each (`name.webp`, `name-dark.webp`), 600 px wide |
 | `img/` | Logo, favicons and the social preview image, derived from `assets/images/app-icon.png` and `store-assets/play-store-feature-graphic.png` |
 | `.nojekyll`, `robots.txt` | Hosting housekeeping |
 
@@ -40,8 +41,10 @@ These addresses are hard-coded and must change together when the site gets its o
 
 - **Store badges.** When the listings go live, replace the "In active development" line in the
   hero with the official Google Play and App Store badges.
-- **Screenshots.** The illustrations are drawn and don't show the real UI. Real device screenshots
-  (graph, pattern details, transcript) would be more convincing.
+- **Screenshots.** The screenshots come from the app's web build at phone size (412 × 870), with a
+  West Coast Swing course list ("WCS Beginners · Autumn 2026", tagged by course week) seeded into
+  storage. Sharing and the video tools can't be shot there (no Firebase, Android-only), so those two
+  are still drawn; replace them with device screenshots when a phone is at hand.
 - **Privacy policy.** Keep `PRIVACY_POLICY.md` in step with the app: a new network connection,
   permission or kind of stored data belongs in it before it ships.
 - **Impressum.** A site run from Germany may need an Impressum (§ 5 DDG), depending on whether it
