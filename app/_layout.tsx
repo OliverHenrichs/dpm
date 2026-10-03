@@ -66,7 +66,7 @@ function AppDrawer() {
           dark phone would otherwise get white icons on a white bar. */}
       <StatusBar style={rt.themeName === "dark" ? "light" : "dark"} />
       <DeidentifyJobsProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <SafeAreaView style={styles.flexView}>
           <Drawer
             screenOptions={{
               drawerPosition: "right",

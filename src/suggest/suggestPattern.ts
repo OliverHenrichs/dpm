@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import * as Device from "expo-device";
-import { initLlama } from "@/src/suggest/llama";
+import { initLlama } from "llama.rn";
 import { isAudioExtractAvailable } from "@/modules/audio-extract";
 import { jobStore } from "@/src/deidentify/jobs/jobStore";
 import { installedModelUri } from "@/src/transcribe/modelStore";
