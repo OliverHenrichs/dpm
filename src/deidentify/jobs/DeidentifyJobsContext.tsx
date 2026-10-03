@@ -81,6 +81,8 @@ export type JobsApi = {
   keep: (id: string, mode: KeepMode) => Promise<void>;
   /** Throws a reviewed result away. */
   discard: (id: string) => void;
+  /** Closes a suggestion's review; see `jobStore.settle`. */
+  settle: (id: string) => void;
 };
 
 /** The jobs, live. Works without the provider; the provider only adds attach and keep-awake. */
@@ -98,5 +100,6 @@ export const useDeidentifyJobs = (): JobsApi => {
     canCancel: jobStore.canCancel,
     keep: jobStore.keep,
     discard: jobStore.discard,
+    settle: jobStore.settle,
   };
 };

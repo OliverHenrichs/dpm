@@ -334,5 +334,17 @@
   "deidentifyWhy": "Anonymisieren verbirgt Gesichter und Aussehen der Tanzenden, damit alle im Video mit dem Teilen einverstanden sein können.",
   "videoShortenHint": "Ziehe die Enden des Balkens, um den Teil zu wählen, der bleibt.",
   "videosFullHint": "Hier passen bis zu {{max}} Videos. Entferne eins, um ein weiteres hinzuzufügen.",
-  "videoEditN": "Video {{n}} bearbeiten"
+  "videoEditN": "Video {{n}} bearbeiten",
+  "suggestJobReview": "{{name}}: Name und Beschreibung sind vorgeschlagen",
+  "suggestJobInFormReview": "Name und Beschreibung sind vorgeschlagen",
+  "suggestReviewTitle": "Vorschlag — {{name}}",
+  "suggestReviewTranscriptKept": "Das Transkript bleibt in jedem Fall am Video.",
+  "transcribeThenSuggest": "Danach Name und Beschreibung vorschlagen",
+  "transcribeThenSuggestDownload": "Danach Name und Beschreibung vorschlagen (lädt {{size}} MB)",
+  "videoJobsKeepOpen": "Das läuft auf dem Telefon. Lass die App offen, bis es fertig ist.",
+  "deidentifyTapFrameHint": "Nicht alle Tanzenden auf diesem Bild zu sehen? Geh zurück und lass den Ausschnitt dort beginnen, wo sie es sind.",
+  "modelDownload": "Herunterladen",
+  "downloadModel": "{{name}} herunterladen",
+  "modelDownloading": "Wird heruntergeladen … {{percent}} %",
+  "modelDownloadFailed": "Download fehlgeschlagen. Prüfe die Verbindung und versuche es noch einmal."
 }

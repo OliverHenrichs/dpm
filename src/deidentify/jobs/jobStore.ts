@@ -27,15 +27,22 @@ import {
   transcribeVideo,
 } from "@/src/transcribe/transcribeVideo";
 import {
+  downloadModel,
   ensureModels,
+  installedModelUri,
   installedModels,
   ModelDownloadError,
 } from "@/src/transcribe/modelStore";
+import { SUGGESTION_MODEL } from "@/src/suggest/models";
+import { runSuggestion } from "@/src/suggest/runSuggestion";
+import { Suggestion } from "@/src/suggest/suggestPrompt";
 
 /**
  * `review`: a shortened or de-identified video is ready, and waits for the user to look at it
  * and keep it (in place of the original, or beside it) or discard it. Nothing in the pattern
- * changes until then.
+ * changes until then. A transcription that was asked to suggest a name and description waits
+ * the same way, with its transcript already on the video, for the user to use the suggestion
+ * or not.
  */
 export type JobStatus = "queued" | "running" | "review" | "done" | "failed";
 
@@ -64,6 +71,8 @@ export type DeidentifyJob = {
   error?: string;
   /** An i18n key for a failure the user can act on, shown instead of [error]. */
   errorKey?: string;
+  /** What a transcribe-and-suggest job suggests, once it is waiting for review. */
+  suggestion?: Suggestion;
 };
 
 type JobTarget = {
@@ -98,6 +107,11 @@ export type TranscribeRequest = {
   language?: string;
   /** Whisper's initial prompt — the list's own words (see vocabularyPrompt). */
   vocabulary?: string;
+  /**
+   * Then suggest a name and description from the transcript, downloading the suggestion model
+   * first when it is missing (the user agreed to that, told its size, before starting).
+   */
+  suggest?: { vocabulary: string[] };
 };
 
 /**
@@ -253,6 +267,13 @@ export const jobStore = {
     }
   },
 
+  /** Closes a suggestion's review, used or not; the transcript stays on its video. */
+  settle(id: string) {
+    const job = jobs.find((j) => j.id === id);
+    if (job?.status !== "review" || job.kind !== "transcribe") return;
+    patch(id, { status: "done" });
+  },
+
   /** Throws a reviewed result away; the original stays as it was. */
   discard(id: string) {
     const job = jobs.find((j) => j.id === id);
@@ -355,23 +376,31 @@ async function process(
  */
 const DOWNLOAD_SHARE = 0.3;
 
+/** Share of a transcribe-and-suggest job's count that the transcript takes. */
+const TRANSCRIPT_SHARE = 0.6;
+
 /**
  * Transcribes the job's video and puts the transcript on it — the same video, so nothing is
  * stored or replaced; whatever the reference already carries is kept. Downloads the models
  * first when they are not on the device (the user agreed to that before starting the job).
  */
 async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
+  const suggest = job.request.suggest;
+  // With a suggestion to follow, the transcript is the first part of the count.
+  const end = suggest ? TRANSCRIPT_SHARE : 1;
   let base = 0;
   if (!installedModels()) {
-    await ensureModels((f) => patch(id, { progress: f * DOWNLOAD_SHARE }));
-    base = DOWNLOAD_SHARE;
+    await ensureModels((f) =>
+      patch(id, { progress: f * DOWNLOAD_SHARE * end }),
+    );
+    base = DOWNLOAD_SHARE * end;
   }
   if (cancelled.delete(id)) return;
   const { promise, stop } = transcribeVideo(job.request.sourceUri, {
     language: job.request.language,
     prompt: job.request.vocabulary,
     onProgress: (fraction) =>
-      patch(id, { progress: base + fraction * (1 - base) }),
+      patch(id, { progress: base + fraction * (end - base) }),
   });
   stopRunning = { id, stop };
   let transcript;
@@ -384,11 +413,34 @@ async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
     ...ref,
     transcript,
   }));
-  patch(id, {
-    status: "done",
-    progress: 1,
-    resultUri: job.request.sourceUri,
-  });
+  if (!suggest || transcript.segments.length === 0) {
+    patch(id, {
+      status: "done",
+      progress: 1,
+      resultUri: job.request.sourceUri,
+    });
+    return;
+  }
+  if (cancelled.delete(id)) return;
+  patch(id, { progress: end, resultUri: job.request.sourceUri });
+  // The transcript is in; a failed suggestion is reported on its review, not as a failed job.
+  try {
+    if (!installedModelUri(SUGGESTION_MODEL)) {
+      await downloadModel(SUGGESTION_MODEL, (written) =>
+        patch(id, {
+          progress: end + (written / SUGGESTION_MODEL.bytes) * (1 - end) * 0.9,
+        }),
+      );
+    }
+    const suggestion = await runSuggestion({
+      transcript: transcript.segments.map((s) => s.text).join(" "),
+      language: transcript.language,
+      vocabulary: suggest.vocabulary,
+    });
+    patch(id, { status: "review", progress: 1, suggestion });
+  } catch {
+    patch(id, { status: "review", progress: 1, errorKey: "suggestFailed" });
+  }
 }
 
 async function run(id: string, job: StartJob) {

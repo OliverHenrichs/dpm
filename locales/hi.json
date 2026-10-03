@@ -334,5 +334,17 @@
   "deidentifyWhy": "गुमनाम करने से नर्तकों के चेहरे और रूप छिप जाते हैं, ताकि वीडियो में हर कोई इसे साझा करने में सहज रहे।",
   "videoShortenHint": "रखे जाने वाले हिस्से को चुनने के लिए बार के सिरों को खींचें।",
   "videosFullHint": "यहाँ अधिकतम {{max}} वीडियो रखे जा सकते हैं। नया जोड़ने के लिए एक हटाएँ।",
-  "videoEditN": "वीडियो {{n}} संपादित करें"
+  "videoEditN": "वीडियो {{n}} संपादित करें",
+  "suggestJobReview": "{{name}}: नाम और विवरण सुझाए गए हैं",
+  "suggestJobInFormReview": "नाम और विवरण सुझाए गए हैं",
+  "suggestReviewTitle": "सुझाव — {{name}}",
+  "suggestReviewTranscriptKept": "ट्रांसक्रिप्ट हर हाल में वीडियो पर रहता है।",
+  "transcribeThenSuggest": "फिर नाम और विवरण सुझाएँ",
+  "transcribeThenSuggestDownload": "फिर नाम और विवरण सुझाएँ ({{size}} MB डाउनलोड)",
+  "videoJobsKeepOpen": "ये फ़ोन पर चलते हैं। पूरा होने तक ऐप खुला रखें।",
+  "deidentifyTapFrameHint": "इस फ़्रेम में हर नर्तक नहीं दिख रहा? वापस जाएँ और चयन वहाँ से शुरू करें जहाँ वे दिखें।",
+  "modelDownload": "डाउनलोड करें",
+  "downloadModel": "{{name}} डाउनलोड करें",
+  "modelDownloading": "डाउनलोड हो रहा है … {{percent}} %",
+  "modelDownloadFailed": "डाउनलोड विफल रहा। कनेक्शन जाँचें और फिर कोशिश करें।"
 }

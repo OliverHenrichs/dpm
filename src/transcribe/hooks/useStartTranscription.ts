@@ -1,6 +1,7 @@
 import { useDeidentifyJobs } from "@/src/deidentify/jobs/DeidentifyJobsContext";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { vocabularyPrompt } from "@/src/transcribe/vocabulary";
+import { vocabularyFor } from "@/src/suggest/suggestPrompt";
 
 export type TranscriptionTarget = {
   listId: string;
@@ -12,12 +13,17 @@ export type TranscriptionTarget = {
 /**
  * Starts a transcription job for a video, primed with the active list's own words (pattern
  * names, types, modifiers, tags) so Whisper hears "sugar push" rather than "sugar bush".
- * `language` is an ISO 639-1 code, or omitted to detect it.
+ * `language` is an ISO 639-1 code, or omitted to detect it. With `suggest`, the job goes on to
+ * suggest a name and description from the transcript.
  */
 export function useStartTranscription() {
   const { activeList, patterns } = useActivePatternList();
   const { start } = useDeidentifyJobs();
-  return (target: TranscriptionTarget, language?: string) => {
+  return (
+    target: TranscriptionTarget,
+    language?: string,
+    { suggest = false }: { suggest?: boolean } = {},
+  ) => {
     const vocabulary = activeList ? vocabularyPrompt(activeList, patterns) : "";
     start({
       kind: "transcribe",
@@ -27,6 +33,9 @@ export function useStartTranscription() {
         sourceUri: target.sourceUri,
         ...(language && { language }),
         ...(vocabulary && { vocabulary }),
+        ...(suggest && {
+          suggest: { vocabulary: vocabularyFor(activeList, patterns) },
+        }),
       },
     });
   };

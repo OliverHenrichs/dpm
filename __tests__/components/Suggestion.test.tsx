@@ -14,6 +14,7 @@ import {
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
 import { deleteModels } from "@/src/transcribe/modelStore";
+import { transcribeVideo } from "@/src/transcribe/transcribeVideo";
 import {
   createTestPattern,
   createTestPatternList,
@@ -51,6 +52,11 @@ jest.mock("@/src/transcribe/modelStore", () => ({
   ...jest.requireActual("@/src/transcribe/modelStore"),
   installedModels: () => ({ whisperUri: "w", vadUri: "v" }),
   deleteModels: jest.fn(),
+}));
+// The engine has its own suite; here a transcription only needs its outcome.
+jest.mock("@/src/transcribe/transcribeVideo", () => ({
+  ...jest.requireActual("@/src/transcribe/transcribeVideo"),
+  transcribeVideo: jest.fn(),
 }));
 jest.mock("@/src/deidentify/shortenVideo", () => ({
   canShortenVideos: () => true,
@@ -191,7 +197,121 @@ describe("suggesting a name and description", () => {
   });
 });
 
+describe("transcribing and suggesting in one job", () => {
+  it("transcribes, suggests, and waits for the suggestion to be used", async () => {
+    seedBinaryFile(MODEL_URI, Buffer.alloc(4));
+    setLlamaAnswer(() => ANSWER);
+    (transcribeVideo as jest.Mock).mockReturnValue({
+      promise: Promise.resolve({
+        transcript: TRANSCRIPT,
+        timing: {
+          audioSeconds: 9,
+          speechSeconds: 9,
+          regions: 1,
+          extractMs: 1,
+          transcribeMs: 1,
+        },
+      }),
+      stop: jest.fn(),
+    });
+    const { saved } = renderForm({
+      videoRefs: [{ type: "local", value: SOURCE }],
+    });
+
+    fireEvent.press(await screen.findByLabelText("Edit a video"));
+    // On by default: the suggestion model is already on the phone.
+    expect(
+      await screen.findByText("Then suggest a name and description"),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Transcribe speech"));
+
+    expect(
+      await screen.findByText("A name and description are suggested"),
+    ).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Review"));
+    expect(await screen.findByText("Name: Sugar Push")).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Use suggestion"));
+    await waitFor(() => expect(jobStore.getJobs()[0].status).toBe("done"));
+    fireEvent.press(screen.getByText("Save"));
+
+    await waitFor(() => expect(saved().name).toBe("Sugar Push"));
+    expect(saved().description).toBe("In on 1-2, out on 5-6.");
+    expect(saved().videoRefs[0].transcript).toEqual(TRANSCRIPT);
+  });
+
+  it("keeps the transcript when the suggestion fails, and says so on review", async () => {
+    seedBinaryFile(MODEL_URI, Buffer.alloc(4));
+    setLlamaAnswer(() => "Sorry.");
+    (transcribeVideo as jest.Mock).mockReturnValue({
+      promise: Promise.resolve({
+        transcript: TRANSCRIPT,
+        timing: {
+          audioSeconds: 9,
+          speechSeconds: 9,
+          regions: 1,
+          extractMs: 1,
+          transcribeMs: 1,
+        },
+      }),
+      stop: jest.fn(),
+    });
+    const { saved } = renderForm({
+      videoRefs: [{ type: "local", value: SOURCE }],
+    });
+
+    fireEvent.press(await screen.findByLabelText("Edit a video"));
+    fireEvent.press(await screen.findByText("Transcribe speech"));
+    fireEvent.press(await screen.findByText("Review"));
+
+    expect(
+      await screen.findByText(/No suggestion this time/),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText("Use suggestion")).toBeNull();
+    fireEvent.press(screen.getByText("Discard"));
+    await waitFor(() => expect(jobStore.getJobs()[0].status).toBe("done"));
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(saved().videoRefs[0].transcript).toEqual(TRANSCRIPT),
+    );
+    expect(saved().name).toBe("");
+  });
+
+  it("is off until the suggestion model is on the phone, and names its size", async () => {
+    renderForm({ videoRefs: [{ type: "local", value: SOURCE }] });
+
+    fireEvent.press(await screen.findByLabelText("Edit a video"));
+
+    const chip = await screen.findByText(
+      "Then suggest a name and description (downloads 1281 MB)",
+    );
+    expect(chip).toBeOnTheScreen();
+  });
+});
+
 describe("DeviceModelsSection", () => {
+  it("downloads a model ahead of its first use", async () => {
+    setDownloadResponse(() => ({ status: 200, body: Buffer.alloc(4) }));
+    renderWithProviders(<DeviceModelsSection />);
+
+    fireEvent.press(screen.getByLabelText("Download Suggestion model"));
+
+    expect(
+      await screen.findByLabelText("Delete Suggestion model"),
+    ).toBeOnTheScreen();
+  });
+
+  it("says so when a download fails, and offers it again", async () => {
+    setDownloadResponse(() => ({ status: 500, body: Buffer.alloc(0) }));
+    renderWithProviders(<DeviceModelsSection />);
+
+    fireEvent.press(screen.getByLabelText("Download Suggestion model"));
+
+    expect(await screen.findByText(/^Download failed/)).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText("Download Suggestion model"),
+    ).toBeOnTheScreen();
+  });
+
   it("lists both models and frees each one's space", () => {
     seedBinaryFile(MODEL_URI, Buffer.alloc(4));
     renderWithProviders(<DeviceModelsSection />);

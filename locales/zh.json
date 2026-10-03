@@ -334,5 +334,17 @@
   "deidentifyWhy": "匿名化会隐藏舞者的面容和外貌，让视频中的每个人都能放心分享。",
   "videoShortenHint": "拖动进度条两端，选择要保留的部分。",
   "videosFullHint": "最多可放 {{max}} 个视频。删除一个才能再添加。",
-  "videoEditN": "编辑视频 {{n}}"
+  "videoEditN": "编辑视频 {{n}}",
+  "suggestJobReview": "{{name}}：已建议名称和描述",
+  "suggestJobInFormReview": "已建议名称和描述",
+  "suggestReviewTitle": "建议 — {{name}}",
+  "suggestReviewTranscriptKept": "无论如何，转写都会保留在视频上。",
+  "transcribeThenSuggest": "然后建议名称和描述",
+  "transcribeThenSuggestDownload": "然后建议名称和描述（下载 {{size}} MB）",
+  "videoJobsKeepOpen": "这些在手机上运行。请保持应用打开，直到完成。",
+  "deidentifyTapFrameHint": "这一帧看不到所有舞者？返回并从他们出现的地方开始选择。",
+  "modelDownload": "下载",
+  "downloadModel": "下载{{name}}",
+  "modelDownloading": "正在下载 … {{percent}} %",
+  "modelDownloadFailed": "下载失败。请检查网络连接后重试。"
 }

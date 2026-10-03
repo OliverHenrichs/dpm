@@ -42,7 +42,9 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
           percent: Math.round(job.progress * 100),
         });
       case "review":
-        return t("videoJobReview", { name });
+        return job.kind === "transcribe"
+          ? t("suggestJobReview", { name })
+          : t("videoJobReview", { name });
       case "done":
         return t(`${prefix}JobDone`, { name });
       case "failed":
@@ -98,6 +100,7 @@ const DeidentifyJobsBanner: React.FC<Props> = ({ openAction }) => {
           </View>
         );
       })}
+      {busy && <Text style={styles.keepOpen}>{t("videoJobsKeepOpen")}</Text>}
       <VideoReviewModal
         job={reviewing?.status === "review" ? reviewing : null}
         onClose={() => setReviewId(null)}
@@ -135,6 +138,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   line: { ...theme.typography.bodySmall, color: theme.colors.text, flex: 1 },
   link: { textDecorationLine: "underline" },
+  keepOpen: { ...theme.typography.caption, color: theme.colors.textMuted },
   dismissButton: {
     alignSelf: "flex-end",
   },

@@ -334,5 +334,17 @@
   "deidentifyWhy": "পরিচয় গোপন করলে নৃত্যশিল্পীদের মুখ ও চেহারা লুকানো থাকে, যাতে ভিডিওর সবাই এটি শেয়ার করতে স্বচ্ছন্দ থাকেন।",
   "videoShortenHint": "যে অংশ রাখবেন তা বেছে নিতে বারের দুই প্রান্ত টানুন।",
   "videosFullHint": "এখানে সর্বোচ্চ {{max}}টি ভিডিও রাখা যায়। আরেকটি যোগ করতে একটি সরান।",
-  "videoEditN": "ভিডিও {{n}} সম্পাদনা"
+  "videoEditN": "ভিডিও {{n}} সম্পাদনা",
+  "suggestJobReview": "{{name}}: নাম ও বিবরণ প্রস্তাব করা হয়েছে",
+  "suggestJobInFormReview": "নাম ও বিবরণ প্রস্তাব করা হয়েছে",
+  "suggestReviewTitle": "প্রস্তাব — {{name}}",
+  "suggestReviewTranscriptKept": "যেভাবেই হোক প্রতিলিপি ভিডিওতে থেকে যায়।",
+  "transcribeThenSuggest": "তারপর নাম ও বিবরণ প্রস্তাব করুন",
+  "transcribeThenSuggestDownload": "তারপর নাম ও বিবরণ প্রস্তাব করুন ({{size}} MB ডাউনলোড)",
+  "videoJobsKeepOpen": "এগুলো ফোনেই চলে। শেষ না হওয়া পর্যন্ত অ্যাপ খোলা রাখুন।",
+  "deidentifyTapFrameHint": "এই ফ্রেমে সব নৃত্যশিল্পী দেখা যাচ্ছে না? ফিরে যান এবং যেখানে তারা আছেন সেখান থেকে নির্বাচন শুরু করুন।",
+  "modelDownload": "ডাউনলোড",
+  "downloadModel": "{{name}} ডাউনলোড করুন",
+  "modelDownloading": "ডাউনলোড হচ্ছে … {{percent}} %",
+  "modelDownloadFailed": "ডাউনলোড ব্যর্থ হয়েছে। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"
 }
