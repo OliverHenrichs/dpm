@@ -180,7 +180,7 @@ const ReviewCard: React.FC<{
         <Button
           title={t("videoReviewDiscard")}
           icon="delete-outline"
-          variant="dangerOutline"
+          variant="danger"
           onPress={() => decide(() => discard(job.id))}
         />
       </ScrollView>
