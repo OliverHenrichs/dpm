@@ -9,6 +9,7 @@ import {
   fireEvent,
   renderWithProviders,
   screen,
+  waitFor,
 } from "@/utils/renderWithProviders";
 
 const TYPE = createTestPatternType({ slug: "push" });
@@ -136,5 +137,33 @@ describe("EditPatternForm prerequisite picker", () => {
         "Greyed-out patterns would create a prerequisite loop.",
       ),
     ).toBeNull();
+  });
+});
+
+describe("EditPatternForm level", () => {
+  it("starts without a level, and clears one when tapped again", async () => {
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+      />,
+    );
+
+    expect(isSelected("Beginner")).toBe(false);
+    fireEvent.press(chipFor("Beginner"));
+    expect(isSelected("Beginner")).toBe(true);
+    fireEvent.press(chipFor("Beginner"));
+    expect(isSelected("Beginner")).toBe(false);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    fireEvent.press(screen.getByText("Save"));
+
+    await waitFor(() => expect(onAccepted).toHaveBeenCalled());
+    // The key is gone rather than undefined, which Firestore would reject.
+    expect(onAccepted.mock.calls[0][0]).not.toHaveProperty("level");
   });
 });

@@ -1,27 +1,14 @@
 import {
   alpha,
+  APP_STYLES,
+  buildTheme,
   ColorTokens,
-  darkColors,
-  lightColors,
+  palettes,
+  webFonts,
 } from "@/src/common/theme/tokens";
+import { contrast, prefersDarkText } from "@/src/common/theme/contrast";
 
 type C = keyof ColorTokens;
-
-/** WCAG 2.x relative luminance of a `#rrggbb` colour. */
-function luminance(hex: string): number {
-  const channels = [1, 3, 5].map(
-    (i) => parseInt(hex.slice(i, i + 2), 16) / 255,
-  );
-  const [r, g, b] = channels.map((c) =>
-    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
-  );
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function contrast(a: string, b: string): number {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
 
 /** Body text: WCAG AA 1.4.3. */
 const TEXT = 4.5;
@@ -52,10 +39,14 @@ const PAIRS: [C, C, number][] = [
   ["text", "border", TEXT],
 ];
 
-describe.each([
-  ["light", lightColors],
-  ["dark", darkColors],
-] as [string, ColorTokens][])("%s colours", (_, palette) => {
+const PALETTES = APP_STYLES.flatMap((style) =>
+  (["light", "dark"] as const).map((scheme): [string, ColorTokens] => [
+    `${style} ${scheme}`,
+    palettes[style][scheme],
+  ]),
+);
+
+describe.each(PALETTES)("%s colours", (_, palette) => {
   it.each(PAIRS)("%s on %s reaches %s:1", (fg, bg, min) => {
     expect(contrast(palette[fg], palette[bg])).toBeGreaterThanOrEqual(min);
   });
@@ -65,6 +56,36 @@ describe.each([
       if (role === "overlay") continue;
       expect(palette[role]).toMatch(/^#[0-9a-f]{6}$/);
     }
+  });
+});
+
+describe("styles", () => {
+  it.each(APP_STYLES)("%s resolves every text style to a family", (style) => {
+    const theme = buildTheme(style, "light", webFonts[style]);
+    for (const text of Object.values(theme.typography)) {
+      expect(text.fontFamily).toBeTruthy();
+      expect(text.fontSize).toBeGreaterThan(0);
+    }
+  });
+
+  it("gives both styles the same token names, so no component has to ask which is on", () => {
+    const [a, b] = APP_STYLES.map((style) => buildTheme(style, "dark"));
+    expect(Object.keys(b.typography).sort()).toEqual(
+      Object.keys(a.typography).sort(),
+    );
+    expect(Object.keys(b.radius).sort()).toEqual(Object.keys(a.radius).sort());
+    expect(Object.keys(b.list).sort()).toEqual(Object.keys(a.list).sort());
+  });
+});
+
+describe("prefersDarkText", () => {
+  it("picks the text colour that contrasts more with a type colour", () => {
+    expect(prefersDarkText("#ffd700")).toBe(true);
+    expect(prefersDarkText("#4b3aa6")).toBe(false);
+  });
+
+  it("falls back to white for a colour it cannot read", () => {
+    expect(prefersDarkText("tomato")).toBe(false);
   });
 });
 

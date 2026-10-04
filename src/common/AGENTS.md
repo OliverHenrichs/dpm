@@ -29,12 +29,26 @@ A theme switch updates those styles natively, without re-rendering. A value that
 function inside the sheet (`bottomSheet: (maxHeight) => ({ … })`, called as
 `styles.bottomSheet(maxHeight)`); never build a style object in render.
 
-**Type is Inter**, embedded natively by expo-font's config plugin (`app.config.ts`; the files and
-their OFL licence are in `assets/fonts/`). On Android the five files form one "Inter" family, so
-`fontWeight` picks the right file there as on iOS; every text style in `theme.typography` carries
-`fontFamily`. A text style that sets colour or weight but spreads no `theme.typography.*` falls back
-to the system font — spread one. Web gets a system font stack instead (`theme/unistyles.ts`). A new
-weight needs its file added in both places in `app.config.ts`, and a dev client rebuild.
+**Two styles, each light and dark.** The app ships *After Hours* (default: warm, roomy, a serif
+display face, made for dancers) and *Clipboard* (dense, condensed, squared-off, mono labels, made
+for trainers), picked in Settings next to the theme. Both are built by `buildTheme(style, scheme)`
+in `theme/tokens.ts` and share every token name, so a component never asks which style is on. What
+differs is values (`palettes`, the per-style `radius`, the type scale) plus `theme.list`, the few
+places the pattern list differs in shape (the type named with a dot or as a filled tag, section header tone).
+Unistyles only knows two themes, `light` and `dark`, so adaptive themes and web's static render keep
+working; `ThemeProvider` persists the style (`@appStyle`) and fills both with it through
+`applyAppStyle` (`UnistylesRuntime.updateTheme`). `tokens.test.ts` checks every palette's contrast
+pairs, and `fonts.test.ts` that every text style names a family and weight a shipped file has.
+
+**Type is embedded per style**: Manrope and DM Serif Display (After Hours), IBM Plex Sans Condensed
+and IBM Plex Mono (Clipboard), through expo-font's config plugin (`FONT_FAMILIES` in
+`app.config.ts`; files and OFL licences in `assets/fonts/`). Each family is registered on Android
+under the files' own family name, which is what iOS resolves by, so one name works on both and
+`fontWeight` picks the file. Text styles name a *role* (`display`, `body`, `mono`) that each style
+maps to a family. DM Serif Display has one weight, so its styles stay at 400: Android fakes any
+other weight. A text style that sets colour or weight but spreads no `theme.typography.*` falls
+back to the system font — spread one. Web gets system stacks instead (`webFonts`). A new weight
+needs its file in `FONT_FAMILIES` and a dev client rebuild.
 
 **Icons come from `@/src/common/ui` (`Icon`, `IconName`)**, one set, MaterialCommunityIcons via
 `@expo/vector-icons`. Every `icon` prop is typed `IconName`, so a misspelt glyph is a type error.

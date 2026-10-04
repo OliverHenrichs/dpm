@@ -1,3 +1,6 @@
+import { APP_ICON_COLORS } from "@/src/common/theme/tokens";
+import { currentAppIconColor } from "@/src/settings/appIcon";
+
 type NotificationsModule = typeof import("expo-notifications");
 
 /**
@@ -58,7 +61,8 @@ export async function notifyJobsFinished(
   try {
     await notifications().scheduleNotificationAsync({
       identifier: NOTIFICATION_ID,
-      content: { title, body },
+      // Android tints the notification's icon; it follows the launcher icon's colour.
+      content: { title, body, color: APP_ICON_COLORS[currentAppIconColor()] },
       trigger: { channelId: CHANNEL_ID },
     });
   } catch {

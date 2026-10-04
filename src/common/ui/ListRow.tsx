@@ -46,6 +46,8 @@ export interface ListRowProps {
   expanded?: boolean;
   /** Title in the danger colour: the row deletes something. */
   destructive?: boolean;
+  /** Sets the title as the heading of its row (`rowTitle`): a pattern's name in the list. */
+  strong?: boolean;
   /** `card` for rows that stand on the page, `plain` inside a sheet or menu. */
   variant?: "plain" | "card";
   onPress?: () => void;
@@ -81,6 +83,7 @@ const ListRow: React.FC<ListRowProps> = ({
   selection,
   expanded,
   destructive = false,
+  strong = false,
   variant = "plain",
   onPress,
   onLongPress,
@@ -113,7 +116,10 @@ const ListRow: React.FC<ListRowProps> = ({
       )}
       <View style={styles.text}>
         <View style={styles.titleLine}>
-          <Text style={styles.title(selected, destructive)} numberOfLines={2}>
+          <Text
+            style={styles.title(selected, destructive, strong)}
+            numberOfLines={2}
+          >
             {title}
           </Text>
           {meta ? (
@@ -221,10 +227,14 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "baseline",
     gap: theme.space.sm,
   },
-  title: (selected: boolean, destructive: boolean) => ({
-    ...theme.typography.body,
+  title: (selected: boolean, destructive: boolean, strong: boolean) => ({
+    ...(strong ? theme.typography.rowTitle : theme.typography.body),
     flexShrink: 1,
-    fontWeight: selected ? "600" : "400",
+    fontWeight: strong
+      ? theme.typography.rowTitle.fontWeight
+      : selected
+        ? "600"
+        : "400",
     color: destructive
       ? theme.colors.danger
       : selected

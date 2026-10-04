@@ -98,12 +98,15 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
           <Text style={styles.label}>{t("type")}:</Text>
           <Text style={styles.patternDetailsValue}>{getTypeName()}</Text>
         </View>
-        <View style={styles.patternDetailsCol}>
-          <Text style={styles.label}>{t("level")}:</Text>
-          <Text style={styles.patternDetailsValue}>
-            {selectedPattern.level ? t(selectedPattern.level) : ""}
-          </Text>
-        </View>
+        {/* Level is optional (it matters for courses); unset, it takes no room. */}
+        {!!selectedPattern.level && (
+          <View style={styles.patternDetailsCol}>
+            <Text style={styles.label}>{t("level")}:</Text>
+            <Text style={styles.patternDetailsValue}>
+              {t(selectedPattern.level)}
+            </Text>
+          </View>
+        )}
       </View>
       {getPrerequisiteView(selectedPattern, patterns, t, styles)}
       {getBuildsIntoView(selectedPattern, patterns, t, styles)}

@@ -126,6 +126,77 @@ describe("PatternList", () => {
   });
 });
 
+describe("PatternList rows and sections", () => {
+  const WHIP_TYPE = createTestPatternType({ slug: "whip" });
+  const sectioned = () =>
+    renderList(
+      [
+        createTestPattern(TYPE.id, { id: 1, name: "Sugar Push", counts: 6 }),
+        createTestPattern(WHIP_TYPE.id, {
+          id: 2,
+          name: "Basic Whip",
+          counts: 8,
+          level: undefined,
+          videoRefs: [{ type: "url", value: "https://example.com/a" }],
+        }),
+        createTestPattern(WHIP_TYPE.id, { id: 3, name: "Basket Whip" }),
+      ],
+      { patternTypes: [WHIP_TYPE, TYPE] },
+    );
+
+  const sortBy = (label: string) => {
+    fireEvent.press(screen.getByLabelText("Sort Patterns"));
+    fireEvent.press(screen.getByText(label));
+  };
+
+  it("names type and level under a pattern, not its counts", () => {
+    sectioned();
+
+    expect(screen.getByText("push")).toBeOnTheScreen();
+    // Basic Whip has no level, so only two rows name one.
+    expect(screen.getAllByText("whip")).toHaveLength(2);
+    expect(screen.getAllByText("· Beginner")).toHaveLength(2);
+    expect(screen.queryByText(/counts/i)).toBeNull();
+    expect(screen.getByLabelText("Videos: 1")).toBeOnTheScreen();
+  });
+
+  it("adds no headers when sorted by name", () => {
+    sectioned();
+
+    expect(screen.queryAllByRole("header")).toHaveLength(0);
+  });
+
+  it("heads each type in the list's own order, pinned while scrolling", () => {
+    sectioned();
+    sortBy("Type");
+
+    const headers = screen.getAllByRole("header").map((h) => h.props.children);
+    expect(headers).toHaveLength(2);
+    expect(screen.getAllByText(/^(whip|push)$/)[0]).toHaveTextContent("whip");
+    expect(screen.UNSAFE_getByType(FlatList).props.stickyHeaderIndices).toEqual(
+      [0, 3],
+    );
+  });
+
+  it("gathers patterns without a level under a last header", () => {
+    sectioned();
+    sortBy("Level");
+
+    expect(screen.getByText("No level")).toBeOnTheScreen();
+    expect(screen.UNSAFE_getByType(FlatList).props.stickyHeaderIndices).toEqual(
+      [0, 3],
+    );
+  });
+
+  it("heads each count when sorted by counts", () => {
+    sectioned();
+    sortBy("Counts");
+
+    expect(screen.getByText("6 counts")).toBeOnTheScreen();
+    expect(screen.getByText("8 counts")).toBeOnTheScreen();
+  });
+});
+
 describe("PatternList revealing a pattern", () => {
   // Sorted by name: Left Side Pass, Sugar Push, Whip — Whip is row 2.
   const WHIP = { id: 3, at: 1 };

@@ -22,19 +22,59 @@ import PatternListImportModal from "@/src/pattern/data/components/PatternListImp
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
 import AppDialog from "@/src/common/components/AppDialog";
 import DeviceModelsSection from "@/src/settings/components/DeviceModelsSection";
+import { APP_ICON_COLORS, AppStyle } from "@/src/common/theme/tokens";
+import {
+  APP_ICON_COLOR_OPTIONS,
+  type AppIconColor,
+  canChangeAppIcon,
+  currentAppIconColor,
+  setAppIconColor,
+} from "@/src/settings/appIcon";
+
+const ICON_COLOR_LABEL_KEYS: Record<AppIconColor, string> = {
+  indigo: "iconColorIndigo",
+  amber: "iconColorAmber",
+  coral: "iconColorCoral",
+};
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
-  const { theme: themePreference, setTheme } = useThemeContext();
+  const {
+    theme: themePreference,
+    setTheme,
+    appStyle,
+    setAppStyle,
+  } = useThemeContext();
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const selectedLanguage = findLanguage(currentLang);
   const { theme } = useUnistyles();
+  // Read once: the icon only changes through this screen.
+  const [showIconColors] = useState(canChangeAppIcon);
+  const [iconColor, setIconColor] = useState<AppIconColor>(currentAppIconColor);
+
+  const chooseIconColor = async (color: AppIconColor) => {
+    if (color === iconColor) return;
+    if (await setAppIconColor(color)) setIconColor(color);
+  };
 
   const themeOptions: { value: ThemeType; label: string; icon: IconName }[] = [
     { value: "system", label: t("themeSystem"), icon: "theme-light-dark" },
     { value: "light", label: t("themeLight"), icon: "white-balance-sunny" },
     { value: "dark", label: t("themeDark"), icon: "weather-night" },
+  ];
+
+  const styleOptions: { value: AppStyle; label: string; hint: string }[] = [
+    {
+      value: "afterHours",
+      label: t("styleAfterHours"),
+      hint: t("styleAfterHoursHint"),
+    },
+    {
+      value: "clipboard",
+      label: t("styleClipboard"),
+      hint: t("styleClipboardHint"),
+    },
   ];
 
   // Data transfer logic extracted to custom hook
@@ -84,6 +124,23 @@ const SettingsScreen: React.FC = () => {
           accessibilityLabel={`${t("language")}: ${selectedLanguage.label}`}
         />
 
+        {/* Style Section */}
+        <View style={commonStyles.sectionHeaderRow}>
+          <Text style={commonStyles.sectionTitle}>{t("appStyle")}</Text>
+        </View>
+        <View style={styles.styleList}>
+          {styleOptions.map((opt) => (
+            <ListRow
+              key={opt.value}
+              title={opt.label}
+              subtitle={opt.hint}
+              selection="single"
+              selected={appStyle === opt.value}
+              onPress={() => setAppStyle(opt.value)}
+            />
+          ))}
+        </View>
+
         {/* Theme Section */}
         <View style={commonStyles.sectionHeaderRow}>
           <Text style={commonStyles.sectionTitle}>{t("theme")}</Text>
@@ -126,6 +183,31 @@ const SettingsScreen: React.FC = () => {
         )}
 
         <DeviceModelsSection />
+
+        {/* App Icon Section: last, since switching closes the app. A colour of its own,
+            whichever style is chosen. */}
+        {showIconColors && (
+          <>
+            <View style={commonStyles.sectionHeaderRow}>
+              <Text style={commonStyles.sectionTitle}>{t("appIconColor")}</Text>
+            </View>
+            <Text style={styles.sectionHint}>{t("appIconColorHint")}</Text>
+            <View style={styles.styleList}>
+              {APP_ICON_COLOR_OPTIONS.map((color) => (
+                <ListRow
+                  key={color}
+                  title={t(ICON_COLOR_LABEL_KEYS[color])}
+                  leading={
+                    <View style={styles.swatch(APP_ICON_COLORS[color])} />
+                  }
+                  selection="single"
+                  selected={iconColor === color}
+                  onPress={() => void chooseIconColor(color)}
+                />
+              ))}
+            </View>
+          </>
+        )}
 
         {/* SPIKE (L3): dev-only, not for merge. */}
         {__DEV__ && (
@@ -179,6 +261,18 @@ const styles = StyleSheet.create((theme) => ({
     ...getCommonListContainer(theme),
   },
   indented: { marginLeft: theme.space.sm },
+  styleList: { gap: theme.space.xs, marginBottom: theme.space.xxl },
+  sectionHint: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+  },
+  swatch: (color: string) => ({
+    width: theme.iconSize.lg,
+    height: theme.iconSize.lg,
+    borderRadius: theme.radius.sm,
+    backgroundColor: color,
+  }),
   galleryLink: { alignSelf: "flex-start", marginTop: theme.space.xl },
   loadingContainer: {
     paddingVertical: theme.space.xl,

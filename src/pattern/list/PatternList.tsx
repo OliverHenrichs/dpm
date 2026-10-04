@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FlatList, ListRenderItemInfo, Text, View } from "react-native";
 import { ListRow, type IconName } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
@@ -16,6 +22,8 @@ import PatternListHeader from "./PatternListHeader";
 import PatternListItem from "./PatternListItem";
 import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
+import { buildListEntries, PatternListEntry } from "./hooks/patternSections";
+import PatternSectionHeader from "./PatternSectionHeader";
 
 /** Where "a pattern from a video" takes its video from. */
 export type VideoSource = "library" | "camera";
@@ -66,11 +74,37 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     props.patterns,
     filter,
   );
-  const { sortedPatterns } = usePatternSort(filteredPatterns, sortConfig);
+  const { sortedPatterns } = usePatternSort(
+    filteredPatterns,
+    sortConfig,
+    props.patternTypes,
+  );
+  const entries = useMemo(
+    () =>
+      buildListEntries(
+        sortedPatterns,
+        sortConfig.field,
+        props.patternTypes ?? [],
+        {
+          level: (level) => t(level),
+          counts: (n) => t("countsSection", { n }),
+          noLevel: t("noLevel"),
+          noType: t("noType"),
+        },
+      ),
+    [sortedPatterns, sortConfig.field, props.patternTypes, t],
+  );
+  // Section headers stay at the top while their patterns scroll under them.
+  const stickyHeaderIndices = useMemo(
+    () => entries.flatMap((entry, i) => (entry.kind === "section" ? [i] : [])),
+    [entries],
+  );
 
-  const listRef = useRef<FlatList<IPattern>>(null);
+  const listRef = useRef<FlatList<PatternListEntry>>(null);
   const revealIndex = props.reveal
-    ? sortedPatterns.findIndex((p) => p.id === props.reveal!.id)
+    ? entries.findIndex(
+        (e) => e.kind === "pattern" && e.pattern.id === props.reveal!.id,
+      )
     : -1;
   // Revealing also selects the row, which collapses whichever row was open before. The list
   // learns the new row heights only from the next layout, so scrolling at once used the old
@@ -92,27 +126,31 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.reveal]);
 
-  const keyExtractor = useCallback(
-    (pattern: IPattern) => String(pattern.id),
-    [],
-  );
+  const keyExtractor = useCallback((entry: PatternListEntry) => entry.key, []);
 
   // Rebuilt whenever the row's inputs change; PatternListItem is memoised, so
   // only the rows whose props actually differ re-render.
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<IPattern>) => (
-      <PatternListItem
-        pattern={item}
-        allPatterns={props.patterns}
-        patternTypes={props.patternTypes}
-        modifiers={props.modifiers}
-        isReadonly={isReadonly}
-        isSelected={props.selectedPattern?.id === item.id}
-        onSelect={props.onSelect}
-        onEdit={props.onEdit}
-        onDelete={props.onDelete}
-      />
-    ),
+    ({ item }: ListRenderItemInfo<PatternListEntry>) =>
+      item.kind === "section" ? (
+        <PatternSectionHeader
+          title={item.title}
+          count={item.count}
+          color={item.color}
+        />
+      ) : (
+        <PatternListItem
+          pattern={item.pattern}
+          allPatterns={props.patterns}
+          patternTypes={props.patternTypes}
+          modifiers={props.modifiers}
+          isReadonly={isReadonly}
+          isSelected={props.selectedPattern?.id === item.pattern.id}
+          onSelect={props.onSelect}
+          onEdit={props.onEdit}
+          onDelete={props.onDelete}
+        />
+      ),
     [
       props.patterns,
       props.patternTypes,
@@ -149,7 +187,8 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           })
         }
         style={styles.scrollView}
-        data={sortedPatterns}
+        data={entries}
+        stickyHeaderIndices={stickyHeaderIndices}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         ListEmptyComponent={

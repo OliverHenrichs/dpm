@@ -14,6 +14,11 @@ import {
   waitFor,
 } from "@/utils/renderWithProviders";
 import { peekAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
+import {
+  getAppIconName,
+  setAlternateAppIcon,
+  setAlternateIconsSupported,
+} from "@/__mocks__/expo-alternate-app-icons";
 
 jest.mock("@/src/pattern/data/exportPatterns", () => ({
   exportPatternLists: jest.fn(),
@@ -189,6 +194,60 @@ describe("SettingsScreen", () => {
       fireEvent.press(screen.getByText("Dark"));
 
       await waitFor(() => expect(peekAsyncStorage()["@theme"]).toBe("dark"));
+    });
+  });
+
+  describe("style", () => {
+    it("starts on After Hours and remembers a switch to Clipboard", async () => {
+      await renderSettings();
+
+      expect(screen.getByRole("radio", { name: "After Hours" })).toBeSelected();
+      fireEvent.press(screen.getByText("Clipboard"));
+
+      await waitFor(() =>
+        expect(peekAsyncStorage()["@appStyle"]).toBe("clipboard"),
+      );
+      expect(screen.getByRole("radio", { name: "Clipboard" })).toBeSelected();
+    });
+  });
+
+  describe("app icon", () => {
+    it("starts on indigo and switches the launcher icon, whatever the style", async () => {
+      await renderSettings();
+
+      expect(screen.getByRole("radio", { name: "Indigo" })).toBeSelected();
+      fireEvent.press(screen.getByText("Coral"));
+
+      await waitFor(() =>
+        expect(screen.getByRole("radio", { name: "Coral" })).toBeSelected(),
+      );
+      expect(getAppIconName()).toBe("Coral");
+      expect(screen.getByRole("radio", { name: "After Hours" })).toBeSelected();
+
+      fireEvent.press(screen.getByText("Indigo"));
+      await waitFor(() =>
+        expect(screen.getByRole("radio", { name: "Indigo" })).toBeSelected(),
+      );
+      expect(getAppIconName()).toBeNull();
+    });
+
+    it("keeps the current colour when the switch is refused or already made", async () => {
+      await renderSettings();
+
+      fireEvent.press(screen.getByText("Indigo"));
+      expect(setAlternateAppIcon).not.toHaveBeenCalled();
+
+      setAlternateAppIcon.mockRejectedValueOnce(new Error("refused"));
+      fireEvent.press(screen.getByText("Amber"));
+      await waitFor(() => expect(setAlternateAppIcon).toHaveBeenCalled());
+      expect(screen.getByRole("radio", { name: "Indigo" })).toBeSelected();
+    });
+
+    it("is not offered where the platform cannot switch icons", async () => {
+      setAlternateIconsSupported(false);
+      await renderSettings();
+
+      expect(screen.queryByText("App icon")).toBeNull();
     });
   });
 

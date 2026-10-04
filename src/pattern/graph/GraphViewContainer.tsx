@@ -64,7 +64,10 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
         )}
       </View>
 
-      <Legend patternTypes={patternTypes} />
+      <Legend
+        patternTypes={patternTypes}
+        showLevels={model.patterns.some((p) => !!p.level)}
+      />
     </>
   );
 };

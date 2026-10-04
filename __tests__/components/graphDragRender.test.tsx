@@ -10,7 +10,7 @@ import DragOverlay from "@/src/pattern/graph/render/DragOverlay";
 import { buildGraphModel } from "@/src/pattern/graph/model/GraphModel";
 import { render, screen } from "@testing-library/react-native";
 import Animated from "react-native-reanimated";
-import { lightColors } from "@/src/common/theme/tokens";
+import { lightTheme } from "@/src/common/theme/tokens";
 import Svg, { G, Path } from "react-native-svg";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -84,7 +84,7 @@ describe("drawing during a drag", () => {
     it("animates both edges touching the dragged node", () => {
       // 2 is the middle of 1 → 2 → 3, so both edges move with it.
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightColors, drag(2)),
+        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, drag(2)),
       );
 
       expect(rendered.filter((t) => t === DraggedEdge)).toHaveLength(2);
@@ -93,7 +93,7 @@ describe("drawing during a drag", () => {
     it("leaves an edge that does not touch it alone", () => {
       // Dragging 1 moves only 1 → 2; 2 → 3 is untouched.
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightColors, drag(1)),
+        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, drag(1)),
       );
 
       expect(rendered.filter((t) => t === DraggedEdge)).toHaveLength(1);
@@ -101,7 +101,9 @@ describe("drawing during a drag", () => {
 
     it("animates nothing when no drag is in flight", () => {
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightColors, { draggingId: null }),
+        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, {
+          draggingId: null,
+        }),
       );
 
       expect(rendered).not.toContain(DraggedEdge);
@@ -109,7 +111,7 @@ describe("drawing during a drag", () => {
 
     it("still draws every edge", () => {
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightColors, drag(2)),
+        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, drag(2)),
       );
 
       expect(rendered).toHaveLength(MODEL.edges.length);

@@ -85,7 +85,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     name: "",
     typeId: patternTypes[0]?.id || "",
     counts: 6,
-    level: PatternLevel.BEGINNER,
+    // No level: it matters for courses, and a pattern without one simply shows none.
     prerequisites: [],
     description: "",
     tags: [],
@@ -432,7 +432,15 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               key={level}
               label={t(level)}
               selected={newPattern.level === level}
-              onPress={() => setNewPattern({ ...newPattern, level })}
+              accessibilityHint={
+                newPattern.level === level ? t("levelClearHint") : undefined
+              }
+              onPress={() => {
+                // Tapping the chosen level clears it. The key goes, rather than holding
+                // `undefined`, which Firestore rejects when the list is published.
+                const { level: current, ...rest } = newPattern;
+                setNewPattern(current === level ? rest : { ...rest, level });
+              }}
             />
           ))}
         </View>

@@ -131,6 +131,7 @@ describe("the video jobs' notification", () => {
         content: {
           title: "Your video work is finished",
           body: "Open DPM to review the results.",
+          color: "#6366f1",
         },
         trigger: { channelId: "video-jobs" },
       }),

@@ -398,5 +398,20 @@
   "importContextList": "列表“{{list}}”",
   "importContextPattern": "列表“{{list}}”，舞步“{{pattern}}”",
   "importContextModifier": "列表“{{list}}”，变化“{{modifier}}”",
-  "importMessageInContext": "{{context}}：{{message}}"
+  "importMessageInContext": "{{context}}：{{message}}",
+  "appStyle": "风格",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "温暖宽松，适合练习和社交舞会。",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "紧凑有条理，适合带课。",
+  "noLevel": "未设难度",
+  "noType": "未设类型",
+  "countsSection": "{{n}} 拍",
+  "videosCountA11y": "视频：{{n}}",
+  "levelClearHint": "再次点按已选难度即可取消。",
+  "appIconColor": "应用图标",
+  "appIconColorHint": "主屏幕上图标的颜色。更改后应用会关闭。",
+  "iconColorIndigo": "靛蓝",
+  "iconColorAmber": "琥珀",
+  "iconColorCoral": "珊瑚"
 }

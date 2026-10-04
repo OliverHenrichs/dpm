@@ -398,5 +398,20 @@
   "importContextList": "তালিকা \"{{list}}\"",
   "importContextPattern": "তালিকা \"{{list}}\", প্যাটার্ন \"{{pattern}}\"",
   "importContextModifier": "তালিকা \"{{list}}\", মডিফায়ার \"{{modifier}}\"",
-  "importMessageInContext": "{{context}}: {{message}}"
+  "importMessageInContext": "{{context}}: {{message}}",
+  "appStyle": "স্টাইল",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "উষ্ণ ও খোলামেলা। অনুশীলন ও সোশ্যাল নাচের জন্য।",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "ঘন ও সুসংগঠিত। কোর্স চালানোর জন্য।",
+  "noLevel": "কোনো স্তর নেই",
+  "noType": "কোনো ধরন নেই",
+  "countsSection": "{{n}} কাউন্ট",
+  "videosCountA11y": "ভিডিও: {{n}}",
+  "levelClearHint": "স্তর সরাতে নির্বাচিত স্তরে আবার ট্যাপ করুন।",
+  "appIconColor": "অ্যাপ আইকন",
+  "appIconColorHint": "হোম স্ক্রিনে আইকনের রং। এটি বদলালে অ্যাপটি বন্ধ হয়ে যায়।",
+  "iconColorIndigo": "নীল",
+  "iconColorAmber": "অ্যাম্বার",
+  "iconColorCoral": "প্রবাল"
 }

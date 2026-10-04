@@ -83,7 +83,9 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerIcon: { width: 40, height: 40 },
+  // The logo is one colour on transparency, so it takes the style's brand colour like the menu
+  // button beside it.
+  headerIcon: { width: 40, height: 40, tintColor: theme.colors.primary },
   headerTitle: {
     ...theme.typography.headline,
     // Laid out *between* the buttons, never over them.
