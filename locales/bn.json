@@ -408,5 +408,10 @@
   "noType": "কোনো ধরন নেই",
   "countsSection": "{{n}} কাউন্ট",
   "videosCountA11y": "ভিডিও: {{n}}",
-  "levelClearHint": "স্তর সরাতে নির্বাচিত স্তরে আবার ট্যাপ করুন।"
+  "levelClearHint": "স্তর সরাতে নির্বাচিত স্তরে আবার ট্যাপ করুন।",
+  "appIconColor": "অ্যাপ আইকন",
+  "appIconColorHint": "হোম স্ক্রিনে আইকনের রং। এটি বদলালে অ্যাপটি কিছুক্ষণের জন্য বন্ধ হতে পারে।",
+  "iconColorIndigo": "নীল",
+  "iconColorAmber": "অ্যাম্বার",
+  "iconColorCoral": "প্রবাল"
 }

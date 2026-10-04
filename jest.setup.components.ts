@@ -9,6 +9,7 @@ import "@/src/common/theme/unistyles";
 import { resetAsyncStorageMock } from "./__mocks__/@react-native-async-storage/async-storage";
 import { resetFileSystemMock } from "./__mocks__/expo-file-system";
 import { resetDeviceLocalesMock } from "./__mocks__/expo-localization";
+import { resetAlternateIconsMock } from "./__mocks__/expo-alternate-app-icons";
 import { resetGestureMock } from "./__mocks__/react-native-gesture-handler";
 import { resetReanimatedMock } from "./__mocks__/react-native-reanimated";
 import { resetWhisperMock } from "./__mocks__/whisper.rn/index";
@@ -23,6 +24,7 @@ beforeEach(() => {
   resetAsyncStorageMock();
   resetFileSystemMock();
   resetDeviceLocalesMock();
+  resetAlternateIconsMock();
   resetGestureMock();
   resetReanimatedMock();
   resetWhisperMock();

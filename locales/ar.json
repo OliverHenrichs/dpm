@@ -408,5 +408,10 @@
   "noType": "بلا نوع",
   "countsSection": "{{n}} عدّات",
   "videosCountA11y": "مقاطع الفيديو: {{n}}",
-  "levelClearHint": "اضغط على المستوى المحدد مرة أخرى لإزالته."
+  "levelClearHint": "اضغط على المستوى المحدد مرة أخرى لإزالته.",
+  "appIconColor": "أيقونة التطبيق",
+  "appIconColorHint": "لون الأيقونة على شاشتك الرئيسية. قد يُغلق التطبيق للحظة عند تغييره.",
+  "iconColorIndigo": "نيلي",
+  "iconColorAmber": "كهرماني",
+  "iconColorCoral": "مرجاني"
 }

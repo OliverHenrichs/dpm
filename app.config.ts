@@ -181,6 +181,24 @@ export default (): ExpoConfig => ({
       },
     ],
     "expo-localization",
+    // The launcher icon in the other colours Settings offers (src/settings/appIcon.ts); the
+    // default indigo icon is the one above. iOS reuses the tinted icon, which has no colour.
+    [
+      "expo-alternate-app-icons",
+      (["amber", "coral"] as const).map((color) => ({
+        name: color[0].toUpperCase() + color.slice(1),
+        ios: {
+          light: `./assets/images/icon-colors/ios-light-${color}.png`,
+          dark: `./assets/images/icon-colors/ios-dark-${color}.png`,
+          tinted: "./assets/images/ios-tinted.png",
+        },
+        android: {
+          foregroundImage: `./assets/images/icon-colors/adaptive-${color}.png`,
+          monochromeImage: "./assets/images/adaptive-icon.png",
+          backgroundColor: "#18181b",
+        },
+      })),
+    ],
     // The two styles' typefaces, embedded natively (SIL Open Font License, assets/fonts/*-OFL.txt):
     // Manrope and DM Serif Display for After Hours, IBM Plex Sans Condensed and Plex Mono for
     // Clipboard. On Android each family is registered under the files' own family name, so

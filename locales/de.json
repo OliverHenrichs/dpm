@@ -408,5 +408,10 @@
   "noType": "Ohne Typ",
   "countsSection": "{{n}} Counts",
   "videosCountA11y": "Videos: {{n}}",
-  "levelClearHint": "Tippe das gewählte Niveau erneut an, um es zu entfernen."
+  "levelClearHint": "Tippe das gewählte Niveau erneut an, um es zu entfernen.",
+  "appIconColor": "App-Symbol",
+  "appIconColorHint": "Die Farbe des Symbols auf deinem Startbildschirm. Beim Wechsel kann sich die App kurz schließen.",
+  "iconColorIndigo": "Indigo",
+  "iconColorAmber": "Bernstein",
+  "iconColorCoral": "Koralle"
 }

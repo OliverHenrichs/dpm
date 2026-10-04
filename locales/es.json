@@ -408,5 +408,10 @@
   "noType": "Sin tipo",
   "countsSection": "{{n}} tiempos",
   "videosCountA11y": "Vídeos: {{n}}",
-  "levelClearHint": "Toca otra vez el nivel elegido para dejarlo sin nivel."
+  "levelClearHint": "Toca otra vez el nivel elegido para dejarlo sin nivel.",
+  "appIconColor": "Icono de la app",
+  "appIconColorHint": "El color del icono en tu pantalla de inicio. Al cambiarlo, la app puede cerrarse un momento.",
+  "iconColorIndigo": "Índigo",
+  "iconColorAmber": "Ámbar",
+  "iconColorCoral": "Coral"
 }

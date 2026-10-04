@@ -22,7 +22,20 @@ import PatternListImportModal from "@/src/pattern/data/components/PatternListImp
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
 import AppDialog from "@/src/common/components/AppDialog";
 import DeviceModelsSection from "@/src/settings/components/DeviceModelsSection";
-import { AppStyle } from "@/src/common/theme/tokens";
+import { APP_ICON_COLORS, AppStyle } from "@/src/common/theme/tokens";
+import {
+  APP_ICON_COLOR_OPTIONS,
+  type AppIconColor,
+  canChangeAppIcon,
+  currentAppIconColor,
+  setAppIconColor,
+} from "@/src/settings/appIcon";
+
+const ICON_COLOR_LABEL_KEYS: Record<AppIconColor, string> = {
+  indigo: "iconColorIndigo",
+  amber: "iconColorAmber",
+  coral: "iconColorCoral",
+};
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -36,6 +49,14 @@ const SettingsScreen: React.FC = () => {
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const selectedLanguage = findLanguage(currentLang);
   const { theme } = useUnistyles();
+  // Read once: the icon only changes through this screen.
+  const [showIconColors] = useState(canChangeAppIcon);
+  const [iconColor, setIconColor] = useState<AppIconColor>(currentAppIconColor);
+
+  const chooseIconColor = async (color: AppIconColor) => {
+    if (color === iconColor) return;
+    if (await setAppIconColor(color)) setIconColor(color);
+  };
 
   const themeOptions: { value: ThemeType; label: string; icon: IconName }[] = [
     { value: "system", label: t("themeSystem"), icon: "theme-light-dark" },
@@ -119,6 +140,30 @@ const SettingsScreen: React.FC = () => {
             />
           ))}
         </View>
+
+        {/* App Icon Section: a colour of its own, whichever style is chosen */}
+        {showIconColors && (
+          <>
+            <View style={commonStyles.sectionHeaderRow}>
+              <Text style={commonStyles.sectionTitle}>{t("appIconColor")}</Text>
+            </View>
+            <Text style={styles.sectionHint}>{t("appIconColorHint")}</Text>
+            <View style={styles.styleList}>
+              {APP_ICON_COLOR_OPTIONS.map((color) => (
+                <ListRow
+                  key={color}
+                  title={t(ICON_COLOR_LABEL_KEYS[color])}
+                  leading={
+                    <View style={styles.swatch(APP_ICON_COLORS[color])} />
+                  }
+                  selection="single"
+                  selected={iconColor === color}
+                  onPress={() => void chooseIconColor(color)}
+                />
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Theme Section */}
         <View style={commonStyles.sectionHeaderRow}>
@@ -216,6 +261,17 @@ const styles = StyleSheet.create((theme) => ({
   },
   indented: { marginLeft: theme.space.sm },
   styleList: { gap: theme.space.xs, marginBottom: theme.space.xxl },
+  sectionHint: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.sm,
+  },
+  swatch: (color: string) => ({
+    width: theme.iconSize.lg,
+    height: theme.iconSize.lg,
+    borderRadius: theme.radius.sm,
+    backgroundColor: color,
+  }),
   galleryLink: { alignSelf: "flex-start", marginTop: theme.space.xl },
   loadingContainer: {
     paddingVertical: theme.space.xl,

@@ -149,6 +149,18 @@ export const mediaColors = {
   black: "#000000",
 } as const;
 
+/**
+ * The colours the launcher icon comes in (Settings → App icon), independent of the style.
+ * Indigo is the original and the default; the others are mid tones of the two styles' accents,
+ * chosen to read on the icon's dark background and on iOS's light one alike. The icon files
+ * themselves are in assets/images/icon-colors/.
+ */
+export const APP_ICON_COLORS = {
+  indigo: "#6366f1",
+  amber: "#e8962e",
+  coral: "#e5532f",
+} as const;
+
 /** A 4-point spacing scale, for padding, margin and gap. */
 export const space = {
   none: 0,

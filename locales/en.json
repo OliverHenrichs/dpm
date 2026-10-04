@@ -408,5 +408,10 @@
   "noType": "No type",
   "countsSection": "{{n}} counts",
   "videosCountA11y": "Videos: {{n}}",
-  "levelClearHint": "Tap the selected level again to leave it unset."
+  "levelClearHint": "Tap the selected level again to leave it unset.",
+  "appIconColor": "App icon",
+  "appIconColorHint": "The colour of the icon on your home screen. Changing it may close the app for a moment.",
+  "iconColorIndigo": "Indigo",
+  "iconColorAmber": "Amber",
+  "iconColorCoral": "Coral"
 }
