@@ -422,5 +422,13 @@
   "reelsEmptyAll": "لا توجد مقاطع فيديو في أي قائمة بعد.",
   "reelsPlay": "تشغيل الفيديو",
   "reelsPause": "إيقاف الفيديو مؤقتًا",
-  "reelsVideoPosition": "الفيديو {{n}} من {{total}}"
+  "reelsVideoPosition": "الفيديو {{n}} من {{total}}",
+  "importWarnRhythmMismatch": "لم يطابق إيقاعها عدد عدّاتها فتم حذفه.",
+  "rhythm": "الإيقاع",
+  "rhythmPlaceholder": "مثلًا 1 2 3&4 5&6",
+  "rhythmInvalid": "هذا ليس إيقاعًا بعد. عُدّ كل ضربة بدءًا من 1: ‏3&4 خطوة ثلاثية و(4) نقرة أو وقفة. يُحفظ عندما يصبح صحيحًا.",
+  "rhythmSuggestionHint": "يستخدم هذا الإيقاع ويضبط العدّات لتطابقه.",
+  "dance": "الرقصة",
+  "danceHint": "تحدد الإيقاعات المقترحة لعدّات الخطوة.",
+  "danceNone": "لا شيء"
 }

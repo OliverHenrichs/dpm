@@ -53,9 +53,9 @@ Everything lives in `src/pattern/types/IPatternList.ts` (plus `PatternType.ts`, 
 
 | Type | Id type | Key detail |
 |---|---|---|
-| `IPatternList` | `string` (UUID) | Owns its own `PatternType[]` **and** `IModifier[]` — both are **per-list**, not global; optional `readonly?: boolean` (subscriber/read-only copy) and `shareCode?: string` (Firestore doc ID) |
+| `IPatternList` | `string` (UUID) | Owns its own `PatternType[]` **and** `IModifier[]` — both are **per-list**, not global; optional `readonly?: boolean` (subscriber/read-only copy), `shareCode?: string` (Firestore doc ID) and `dance?: Dance` (`Dance.ts`; picks rhythm suggestions) |
 | `PatternType` | `string` (UUID) | `slug` = display name; `color` = hex; referenced from patterns via `typeId` |
-| `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `tags: string[]`; optional `level` (`PatternLevel` value); `videoRefs: IVideoReference[]`; `modifierRefs: IPatternModifierRef[]` |
+| `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `tags: string[]`; optional `level` (`PatternLevel` value); optional `rhythm` ("1 2 3&4 5&6"), which always matches `counts` (`src/pattern/rhythm/`); `videoRefs: IVideoReference[]`; `modifierRefs: IPatternModifierRef[]` |
 | `IModifier` | `string` (UUID) | `position: "prefix" \| "postfix" \| "amends"`; `universal: boolean`; `videoRefs` are only used when `universal === true` |
 | `IPatternModifierRef` | — | `{ modifierId, videoRefs }` — a non-universal modifier attached to one pattern, with videos of that pattern **executed with** the modifier |
 | `IVideoReference` | — | `{ type: "url" \| "local", value: string, startTime?: number, generated?, transcript? }` — `startTime` for URL videos only; `generated: { method, createdAt }` marks a video the app made (a silhouette); `transcript: IVideoTranscript` (`{ language, model, createdAt, segments: { start, end, text }[] }`) is what was said in it |

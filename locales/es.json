@@ -422,5 +422,13 @@
   "reelsEmptyAll": "Aún no hay videos en ninguna lista.",
   "reelsPlay": "Reproducir video",
   "reelsPause": "Pausar video",
-  "reelsVideoPosition": "Video {{n}} de {{total}}"
+  "reelsVideoPosition": "Video {{n}} de {{total}}",
+  "importWarnRhythmMismatch": "Su ritmo no coincidía con sus tiempos y se omitió.",
+  "rhythm": "Ritmo",
+  "rhythmPlaceholder": "p. ej. 1 2 3&4 5&6",
+  "rhythmInvalid": "Aún no es un ritmo. Cuenta cada tiempo desde 1: 3&4 es un triple, (4) un toque o una pausa. Se guarda cuando sea válido.",
+  "rhythmSuggestionHint": "Usa este ritmo y ajusta los tiempos.",
+  "dance": "Baile",
+  "danceHint": "Elige qué ritmos se sugieren para los tiempos de una figura.",
+  "danceNone": "Ninguno"
 }

@@ -94,6 +94,14 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
             {selectedPattern.counts}
           </Text>
         </View>
+        {!!selectedPattern.rhythm && (
+          <View style={styles.patternDetailsCol}>
+            <Text style={styles.label}>{t("rhythm")}:</Text>
+            <Text style={styles.patternDetailsValue}>
+              {selectedPattern.rhythm}
+            </Text>
+          </View>
+        )}
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("type")}:</Text>
           <Text style={styles.patternDetailsValue}>{getTypeName()}</Text>

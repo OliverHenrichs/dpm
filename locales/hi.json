@@ -422,5 +422,13 @@
   "reelsEmptyAll": "किसी भी सूची में अभी कोई वीडियो नहीं है।",
   "reelsPlay": "वीडियो चलाएँ",
   "reelsPause": "वीडियो रोकें",
-  "reelsVideoPosition": "वीडियो {{n}} / {{total}}"
+  "reelsVideoPosition": "वीडियो {{n}} / {{total}}",
+  "importWarnRhythmMismatch": "इसकी लय इसके काउंट से मेल नहीं खाती थी, इसलिए छोड़ दी गई।",
+  "rhythm": "लय",
+  "rhythmPlaceholder": "जैसे 1 2 3&4 5&6",
+  "rhythmInvalid": "यह अभी लय नहीं है। 1 से हर बीट गिनें: 3&4 ट्रिपल है, (4) टैप या ठहराव। सही होते ही यह सहेजी जाती है।",
+  "rhythmSuggestionHint": "यह लय अपनाता है और काउंट उसके अनुसार करता है।",
+  "dance": "नृत्य",
+  "danceHint": "तय करता है कि पैटर्न के काउंट के लिए कौन-सी लय सुझाई जाए।",
+  "danceNone": "कोई नहीं"
 }

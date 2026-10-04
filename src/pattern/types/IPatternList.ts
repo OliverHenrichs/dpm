@@ -1,3 +1,4 @@
+import type { Dance } from "@/src/pattern/types/Dance";
 import { PatternType } from "./PatternType";
 
 /**
@@ -52,6 +53,8 @@ export interface IPatternList {
    * for why there is no migration.
    */
   nextPatternId?: number;
+  /** The dance the list is for: which rhythms are suggested. Absent means none in particular. */
+  dance?: Dance;
 }
 
 /**
@@ -63,6 +66,8 @@ export interface IPattern {
   typeId: string; // References PatternType.id
   counts: number;
   level?: string; // Optional level (beginner, intermediate, advanced)
+  /** How the steps fall on the counts ("1 2 3&4 5&6"); always matches `counts`. See src/pattern/rhythm/. */
+  rhythm?: string;
   prerequisites: number[];
   description: string;
   tags: string[];

@@ -94,7 +94,7 @@ is equally correct. What is not correct is snapshotting once and leaving it.
 
 ## Export / Import format
 
-Version `"3.2.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.3.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -103,6 +103,7 @@ Version `"3.2.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `
 - `exportPatternLists(lists, { includeVideos, exportAsReadonly, includeTranscripts })` (`exportPatterns.ts`) writes the file to the document directory and hands it to `expo-sharing`. With `includeVideos === false` local refs are stripped instead of embedded (URL refs always survive); with `exportAsReadonly` each list gets `readonly: true`.
 - 3.1 added `IVideoReference.generated` (`{ method, createdAt }`), the provenance of a video the app made — today the anonymized clips from `src/anonymize/`. `validateExportData` keeps it when well-formed and drops only the field, with a warning, when not; `ImportPatterns` spreads the ref when relocating a local video so it survives the trip.
 - 3.2 added `IVideoReference.transcript` (L4: what was said in the video). It is **left out unless `includeTranscripts`**, the export sheet's opt-in, which is offered only when a selected list has a transcript and is off every time the sheet opens; it needs `includeVideos`, since a transcript sits on a local video ref. `validateExportData` keeps a well-formed transcript, drops single malformed lines with a warning, and drops the whole field (never the video) when it is not a transcript at all. Published lists (`src/firebase/`) never carry transcripts — `withoutTranscripts` in `transcripts.ts`.
+- 3.3 added `IPattern.rhythm` and `IPatternList.dance`. `validateExportData` keeps a rhythm only when it matches the pattern's counts (the app never stores one that does not), dropping it with `importWarnRhythmMismatch` otherwise, and keeps a dance only when this build knows it.
 - Picked videos go through `persistVideo` / `persistPickedVideos` (`videoFiles.ts`), which copy them into the document directory: the picker hands out cache URIs the OS may clear.
 - Videos are keyed in the `videos` map by their **original local path**; pattern videos, universal-modifier videos and per-pattern modifier-combination videos are all embedded.
 - `importPatternLists()` (`ImportPatterns.ts`) picks a file via `expo-document-picker`, decodes base64 videos back to the local filesystem via `expo-file-system`, and returns the lists — collecting non-fatal `warnings` for missing/unreadable videos.
@@ -111,4 +112,4 @@ Export/import UI lives in `components/` (`PatternListExportModal`, `PatternListI
 
 ## Default list templates
 
-`DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames. Picking a template happens in `PatternListTemplateModal`.
+`DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames, and gives each the dance's basic rhythm for its counts when it has one. Each template but blank sets the list's `dance`. Picking a template happens in `PatternListTemplateModal`.

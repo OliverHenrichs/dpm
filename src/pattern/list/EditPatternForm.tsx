@@ -22,6 +22,12 @@ import BottomSheet from "@/src/common/components/BottomSheet";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
+import {
+  normalizeRhythm,
+  rhythmCounts,
+  rhythmMatchesCounts,
+  rhythmSuggestions,
+} from "@/src/pattern/rhythm/rhythm";
 import AppDialog from "@/src/common/components/AppDialog";
 import AnonymizeModal, {
   AnonymizeTarget,
@@ -96,6 +102,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   const [newPattern, setNewPattern] = useState<NewPattern>(
     existing ?? createDefaultPattern(),
   );
+  // What is typed in the rhythm field. The pattern carries it only once it is a rhythm, and
+  // then its counts follow it; until then the field says what is wrong.
+  const [rhythmDraft, setRhythmDraft] = useState(existing?.rhythm ?? "");
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [prereqFilter, setPrereqFilter] = useState<string>("");
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
@@ -171,7 +180,10 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     // "Cannot edit pattern without id", so the form could not be escaped
     // except by cancelling.
     const accepted = await onAccepted(newPattern);
-    if (accepted !== false) setNewPattern(createDefaultPattern());
+    if (accepted !== false) {
+      setNewPattern(createDefaultPattern());
+      setRhythmDraft("");
+    }
   };
 
   const openAddVideoModal = () => {
@@ -380,6 +392,37 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       !(newPattern.modifierRefs ?? []).some((r) => r.modifierId === m.id),
   );
 
+  // Counts and rhythm stay matched both ways. New counts drop a rhythm that no longer fits
+  // (the suggestions below offer ones that do); a rhythm sets the counts it takes. The key goes
+  // rather than holding `undefined`, which Firestore rejects when the list is published.
+  const changeCounts = (counts: number) => {
+    const { rhythm, ...rest } = newPattern;
+    if (rhythm && !rhythmMatchesCounts(rhythm, counts)) {
+      setNewPattern({ ...rest, counts });
+      setRhythmDraft("");
+    } else {
+      setNewPattern({ ...newPattern, counts });
+    }
+  };
+
+  const changeRhythm = (text: string) => {
+    setRhythmDraft(text);
+    const { rhythm: _previous, ...rest } = newPattern;
+    const counts = rhythmCounts(text);
+    setNewPattern(
+      counts === null
+        ? rest
+        : { ...rest, counts, rhythm: normalizeRhythm(text) },
+    );
+  };
+
+  const rhythmInvalid =
+    rhythmDraft.trim().length > 0 && rhythmCounts(rhythmDraft) === null;
+  const suggestedRhythms = rhythmSuggestions(
+    activeList?.dance,
+    newPattern.counts,
+  ).filter((rhythm) => rhythm !== newPattern.rhythm);
+
   return (
     <View style={styles.addPatternContainer}>
       <Text style={styles.sectionTitle}>
@@ -403,9 +446,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           <TextInput
             placeholder={t("counts")}
             value={newPattern.counts.toString()}
-            onChangeText={(text) =>
-              setNewPattern({ ...newPattern, counts: parseInt(text) || 0 })
-            }
+            onChangeText={(text) => changeCounts(parseInt(text) || 0)}
             keyboardType="numeric"
             style={styles.input}
             placeholderTextColor={theme.colors.textMuted}
@@ -444,6 +485,35 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             />
           ))}
         </View>
+      </View>
+      <View style={styles.rhythmBlock}>
+        <Text style={styles.label}>{t("rhythm")}</Text>
+        <TextInput
+          placeholder={t("rhythmPlaceholder")}
+          value={rhythmDraft}
+          onChangeText={changeRhythm}
+          accessibilityLabel={t("rhythm")}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.rhythmInput}
+          placeholderTextColor={theme.colors.textMuted}
+        />
+        {rhythmInvalid && (
+          <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
+        )}
+        {suggestedRhythms.length > 0 && (
+          <View style={styles.rhythmSuggestions}>
+            {suggestedRhythms.map((rhythm) => (
+              <Chip
+                key={rhythm}
+                label={rhythm}
+                icon="music-note-outline"
+                accessibilityHint={t("rhythmSuggestionHint")}
+                onPress={() => changeRhythm(rhythm)}
+              />
+            ))}
+          </View>
+        )}
       </View>
       <TextInput
         placeholder={t("description")}
@@ -744,6 +814,19 @@ const styles = StyleSheet.create((theme) => {
     },
     input: { flex: 1, height: "100%", ...baseInput },
     textarea: { ...baseInput, minHeight: 48 },
+    rhythmBlock: { marginBottom: theme.space.sm },
+    rhythmInput: { ...baseInput },
+    rhythmError: {
+      ...theme.typography.caption,
+      color: theme.colors.danger,
+      marginTop: theme.space.xxs,
+    },
+    rhythmSuggestions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: theme.space.xs,
+      marginTop: theme.space.xs,
+    },
     label: { ...getCommonLabel(theme) },
     prereqContainer: getCommonPrereqContainer(theme),
     filterInput: { ...baseInput, height: 40, marginBottom: theme.space.sm },

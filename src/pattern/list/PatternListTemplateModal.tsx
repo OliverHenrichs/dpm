@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { Button, IconButton, ListRow } from "@/src/common/ui";
+import { Button, Chip, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,6 +25,7 @@ import {
   TemplatePattern,
 } from "@/src/pattern/data/DefaultPatternLists";
 import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
+import { Dance, DANCE_NAME_KEYS, DANCES } from "@/src/pattern/types/Dance";
 import {
   isSlugUnique,
   normalizeSlug,
@@ -49,6 +50,8 @@ interface Template {
   nameKey: string;
   descriptionKey: string;
   create: () => IPatternList;
+  /** The dance a list from this template is for: its rhythm suggestions. */
+  dance?: Dance;
 }
 
 interface DraftPatternEntry {
@@ -61,8 +64,17 @@ function applyListEdits(
   list: IPatternList,
   name: string,
   patternTypes: PatternType[],
+  dance: Dance | undefined,
 ): IPatternList {
-  return { ...list, name, patternTypes, updatedAt: Date.now() };
+  // No dance removes the key rather than storing `undefined`, which Firestore rejects.
+  const { dance: _previous, ...rest } = list;
+  return {
+    ...rest,
+    name,
+    patternTypes,
+    ...(dance && { dance }),
+    updatedAt: Date.now(),
+  };
 }
 
 const COLOR_VALUES = Object.values(PATTERN_TYPE_COLORS) as string[];
@@ -79,30 +91,35 @@ const TEMPLATES: Template[] = [
   },
   {
     id: "wcs",
+    dance: "wcs",
     nameKey: "templateWcsName",
     descriptionKey: "templateWcsDescription",
     create: createWestCoastSwingList,
   },
   {
     id: "salsa",
+    dance: "salsa",
     nameKey: "templateSalsaName",
     descriptionKey: "templateSalsaDescription",
     create: createSalsaList,
   },
   {
     id: "bachata",
+    dance: "bachata",
     nameKey: "templateBachataName",
     descriptionKey: "templateBachataDescription",
     create: createBachataList,
   },
   {
     id: "tango",
+    dance: "tango",
     nameKey: "templateTangoName",
     descriptionKey: "templateTangoDescription",
     create: createTangoList,
   },
   {
     id: "lindy",
+    dance: "lindy",
     nameKey: "templateLindyName",
     descriptionKey: "templateLindyDescription",
     create: createLindyHopList,
@@ -158,6 +175,9 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     null,
   );
   const [draftName, setDraftName] = useState(editList?.name ?? "");
+  const [draftDance, setDraftDance] = useState<Dance | undefined>(
+    editList?.dance,
+  );
   const [draftTypes, setDraftTypes] = useState<PatternType[]>(() =>
     (editList?.patternTypes ?? []).map((pt) => ({ ...pt })),
   );
@@ -183,6 +203,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     const foundational = TEMPLATE_FOUNDATIONAL_PATTERNS[template.id] ?? [];
     setSelectedTemplate(template);
     setDraftName(template.id === "blank" ? "" : t(template.nameKey));
+    setDraftDance(template.dance);
     setDraftTypes(baseList.patternTypes.map((pt) => ({ ...pt })));
     setDraftPatterns(
       foundational.map((tp) => ({ templatePattern: tp, included: true })),
@@ -200,16 +221,20 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
 
     if (isEditMode && editList && onSaveList) {
       // ── Edit path ─────────────────────────────────────────────────────
-      onSaveList(applyListEdits(editList, draftName.trim(), finalTypes));
+      onSaveList(
+        applyListEdits(editList, draftName.trim(), finalTypes, draftDance),
+      );
     } else {
       // ── Create path ───────────────────────────────────────────────────
-      const newList = createPatternList(draftName.trim(), finalTypes);
+      const created = createPatternList(draftName.trim(), finalTypes);
+      const newList = draftDance ? { ...created, dance: draftDance } : created;
       const includedPatterns = draftPatterns
         .filter((e) => e.included)
         .map((e) => e.templatePattern);
       const initialPatterns = resolveTemplatePatterns(
         includedPatterns,
         finalTypes,
+        draftDance,
       );
       onCreateList(newList, initialPatterns);
     }
@@ -343,6 +368,25 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
           placeholderTextColor={theme.colors.textMuted}
         />
+
+        {/* ── Dance: which rhythms are suggested ──────────────────────────── */}
+        <Text style={[styles.label, styles.sectionGap]}>{t("dance")}</Text>
+        <Text style={styles.subtitle}>{t("danceHint")}</Text>
+        <View style={styles.danceRow}>
+          <Chip
+            label={t("danceNone")}
+            selected={draftDance === undefined}
+            onPress={() => setDraftDance(undefined)}
+          />
+          {DANCES.map((dance) => (
+            <Chip
+              key={dance}
+              label={t(DANCE_NAME_KEYS[dance])}
+              selected={draftDance === dance}
+              onPress={() => setDraftDance(dance)}
+            />
+          ))}
+        </View>
 
         {/* ── Pattern Types ─────────────────────────────────────────────── */}
         <Text style={[styles.label, styles.sectionGap]}>
@@ -504,6 +548,11 @@ const styles = StyleSheet.create((theme) => ({
   },
   templateList: {
     maxHeight: 420,
+  },
+  danceRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: theme.space.xs,
   },
   label: {
     ...theme.typography.label,

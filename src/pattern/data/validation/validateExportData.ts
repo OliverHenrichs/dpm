@@ -1,3 +1,8 @@
+import { isDance } from "@/src/pattern/types/Dance";
+import {
+  normalizeRhythm,
+  rhythmMatchesCounts,
+} from "@/src/pattern/rhythm/rhythm";
 import {
   IModifier,
   IPattern,
@@ -347,12 +352,28 @@ function normalizePatterns(
       warnings.push(msg("importWarnPrerequisitesMissing", undefined, label));
     }
 
+    // A rhythm is kept only when it fits the counts beside it; the app never stores one that
+    // does not, so anything else was edited by hand.
+    const counts = typeof entry.counts === "number" ? entry.counts : 0;
+    let rhythm: string | undefined;
+    if (entry.rhythm !== undefined) {
+      if (
+        typeof entry.rhythm === "string" &&
+        rhythmMatchesCounts(entry.rhythm, counts)
+      ) {
+        rhythm = normalizeRhythm(entry.rhythm);
+      } else {
+        warnings.push(msg("importWarnRhythmMismatch", undefined, label));
+      }
+    }
+
     firstPass.push({
       id: entry.id,
       name: asString(entry.name, ""),
       typeId,
-      counts: typeof entry.counts === "number" ? entry.counts : 0,
+      counts,
       ...(typeof entry.level === "string" && { level: entry.level }),
+      ...(rhythm && { rhythm }),
       prerequisites,
       description: asString(entry.description, ""),
       tags: asStringArray(entry.tags),
@@ -423,6 +444,8 @@ function normalizeList(
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : now,
     ...(raw.readonly === true && { readonly: true as const }),
     ...(isNonEmptyString(raw.shareCode) && { shareCode: raw.shareCode }),
+    // A dance this build does not know only loses its suggestions.
+    ...(isDance(raw.dance) && { dance: raw.dance }),
     patterns,
   };
 }

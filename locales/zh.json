@@ -422,5 +422,13 @@
   "reelsEmptyAll": "所有列表都还没有视频。",
   "reelsPlay": "播放视频",
   "reelsPause": "暂停视频",
-  "reelsVideoPosition": "第 {{n}} 个视频，共 {{total}} 个"
+  "reelsVideoPosition": "第 {{n}} 个视频，共 {{total}} 个",
+  "importWarnRhythmMismatch": "节奏与拍数不符，已略去。",
+  "rhythm": "节奏",
+  "rhythmPlaceholder": "例如 1 2 3&4 5&6",
+  "rhythmInvalid": "还不是有效的节奏。请从 1 开始数每一拍：3&4 表示三连步，(4) 表示点地或停顿。有效后才会保存。",
+  "rhythmSuggestionHint": "使用此节奏并相应调整拍数。",
+  "dance": "舞种",
+  "danceHint": "决定为舞步拍数推荐哪些节奏。",
+  "danceNone": "无"
 }
