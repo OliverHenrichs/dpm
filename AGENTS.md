@@ -29,7 +29,8 @@ there first.
 app/_layout.tsx        ← root layout (imports @/src/i18n)
   ThemeProvider        ← global light/dark theme
     ActivePatternListProvider  ← global state: active list + its patterns
-      Drawer           ← expo-router/drawer, 4 file-based routes
+      Drawer           ← expo-router/drawer: Lists, the (list) group, Settings
+        Tabs           ← app/(list)/: the active list's List and Map, as bottom tabs
 ```
 
 Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (SDK 56 forbids importing those from app code — Metro fails the bundle). Import `Drawer` from `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from `expo-router`. Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop.
@@ -37,11 +38,11 @@ Navigation is **file-based expo-router**; there is no `@react-navigation/*` depe
 | File | Path | Screen component |
 |---|---|---|
 | `app/index.tsx` | `/` | `src/pattern/list/PatternListSelector.tsx` |
-| `app/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` |
-| `app/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` |
+| `app/(list)/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` (the *List* tab) |
+| `app/(list)/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` (the *Map* tab) |
 | `app/settings.tsx` | `/settings` | `src/settings/SettingsScreen.tsx` |
 
-Each route file is a one-line re-export; the screens live in `src/`. `src/common/components/DrawerRoutes.ts` is the single source of truth for the route list (name, href, i18n title key, whether the header shows the active list's name) and is consumed by the navigator, the drawer menu (`DrawerContent.tsx`) and `AppHeader.tsx` — add a route there and in `app/`, not in three places.
+Each route file is a one-line re-export; the screens live in `src/`. The drawer holds the places (*Lists*, Settings, and an entry back into the open list); the views of the active list are bottom tabs in the `(list)` group (`ListTabsLayout.tsx`). A group does not change a URL, so `/patterns` and `/graph` are what they were. `src/common/components/DrawerRoutes.ts` is the single source of truth for both (`DRAWER_ROUTES`, `LIST_TABS`: name, href, i18n title key, icon, whether the header shows the active list's name) and is consumed by both navigators, the drawer menu (`DrawerContent.tsx`) and `AppHeader.tsx` — add a route there and in `app/`, not in three places. A new view of a list is a tab; a new place is a drawer entry.
 
 All screens share state through `ActivePatternListContext` (`src/pattern/data/components/ActivePatternListContext.tsx`). Every screen reads `activeList`, `patterns`, `isLoading`, and `hasLists` from `useActivePatternList()` and mutates via `setActiveList`, `updatePatterns`, `updateActiveList(list, patternsOverride?)`, `refreshActiveList` — **never loads storage directly**. Pattern and modifier mutations go through `usePatternCrud`, never through the context directly.
 

@@ -18,7 +18,7 @@ describe("AppHeader", () => {
     it("navigates home when pressed", () => {
       renderWithProviders(<AppHeader />);
 
-      fireEvent.press(screen.getByLabelText("Go to dances"));
+      fireEvent.press(screen.getByLabelText("Go to lists"));
 
       expect(router.navigate).toHaveBeenCalledWith("/");
     });
@@ -26,15 +26,15 @@ describe("AppHeader", () => {
     it("is a button to assistive technology", () => {
       renderWithProviders(<AppHeader />);
 
-      expect(
-        screen.getByLabelText("Go to dances").props.accessibilityRole,
-      ).toBe("button");
+      expect(screen.getByLabelText("Go to lists").props.accessibilityRole).toBe(
+        "button",
+      );
     });
 
     it("is at least 48dp square before hit slop", () => {
       renderWithProviders(<AppHeader />);
 
-      const style = flatten(screen.getByLabelText("Go to dances").props.style);
+      const style = flatten(screen.getByLabelText("Go to lists").props.style);
       expect(style.width).toBeGreaterThanOrEqual(48);
       expect(style.height).toBeGreaterThanOrEqual(48);
     });
@@ -52,7 +52,7 @@ describe("AppHeader", () => {
     it("is the same size as the home button, so the title centres on screen", () => {
       renderWithProviders(<AppHeader />);
 
-      const home = flatten(screen.getByLabelText("Go to dances").props.style);
+      const home = flatten(screen.getByLabelText("Go to lists").props.style);
       const menu = flatten(screen.getByLabelText("Open menu").props.style);
       expect(menu.width).toBe(home.width);
     });

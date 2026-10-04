@@ -29,8 +29,8 @@ A theme switch updates those styles natively, without re-rendering. A value that
 function inside the sheet (`bottomSheet: (maxHeight) => ({ … })`, called as
 `styles.bottomSheet(maxHeight)`); never build a style object in render.
 
-**Two styles, each light and dark.** The app ships *After Hours* (default: warm, roomy, a serif
-display face, made for dancers) and *Clipboard* (dense, condensed, squared-off, mono labels, made
+**Two styles, each light and dark.** The app ships _After Hours_ (default: warm, roomy, a serif
+display face, made for dancers) and _Clipboard_ (dense, condensed, squared-off, mono labels, made
 for trainers), picked in Settings next to the theme. Both are built by `buildTheme(style, scheme)`
 in `theme/tokens.ts` and share every token name, so a component never asks which style is on. What
 differs is values (`palettes`, the per-style `radius`, the type scale) plus `theme.list`, the few
@@ -44,7 +44,7 @@ pairs, and `fonts.test.ts` that every text style names a family and weight a shi
 and IBM Plex Mono (Clipboard), through expo-font's config plugin (`FONT_FAMILIES` in
 `app.config.ts`; files and OFL licences in `assets/fonts/`). Each family is registered on Android
 under the files' own family name, which is what iOS resolves by, so one name works on both and
-`fontWeight` picks the file. Text styles name a *role* (`display`, `body`, `mono`) that each style
+`fontWeight` picks the file. Text styles name a _role_ (`display`, `body`, `mono`) that each style
 maps to a family. DM Serif Display has one weight, so its styles stay at 400: Android fakes any
 other weight. A text style that sets colour or weight but spreads no `theme.typography.*` falls
 back to the system font — spread one. Web gets system stacks instead (`webFonts`). A new weight
@@ -177,7 +177,13 @@ In `AppHeader` the app icon is a home button that navigates to `HOME_ROUTE` (exp
 `components/DrawerRoutes.ts` — the first drawer entry, `/`), and the hamburger opens the drawer via
 `useNavigation<{ openDrawer: () => void }>()`; `DrawerContent` must take `navigation` from the
 `drawerContent` render prop instead, since it sits beside the screens and `useNavigation()` there
-does not resolve to the drawer navigator.
+does not resolve to the drawer navigator. In a tab of the `(list)` group `useNavigation()` returns
+the tab's navigation, which carries its parent drawer's `openDrawer` too.
+
+The tab bar (`ListTabsLayout`) passes `safeAreaInsets={{ bottom: 0 }}`: the root layout's
+`SafeAreaView` already keeps the app above the system bar, and the tab bar adding the inset again
+floats it a bar's height too high. Its colours are navigator options, read from `useUnistyles()`
+like the drawer's, so a theme or style switch re-renders them.
 
 ## The Android back-gesture band
 

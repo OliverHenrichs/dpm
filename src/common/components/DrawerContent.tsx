@@ -6,9 +6,13 @@ import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import {
+  AppRoute,
   DRAWER_ROUTES,
-  DrawerRoute,
+  HOME_ROUTE,
+  LIST_TABS,
+  isListTab,
 } from "@/src/common/components/DrawerRoutes";
+import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 
 /**
  * Only the drawer-specific part of the navigation object is needed here. It has
@@ -27,13 +31,14 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
   // Re-renders on a theme switch. The drawer's scroll view did not follow
   // one natively: after switching to light it stayed dark under dark text.
   const { theme } = useUnistyles();
+  const { activeList } = useActivePatternList();
 
-  const go = (route: DrawerRoute) => {
+  const go = (route: AppRoute) => {
     navigation.closeDrawer();
     router.navigate(route.href);
   };
 
-  const renderItem = (route: DrawerRoute) => {
+  const renderItem = (route: AppRoute) => {
     const isFocused = pathname === route.href;
     return (
       <ListRow
@@ -48,8 +53,7 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
     );
   };
 
-  const mainRoutes = DRAWER_ROUTES.filter((r) => r.name !== "settings");
-  const settingsRoutes = DRAWER_ROUTES.filter((r) => r.name === "settings");
+  const otherRoutes = DRAWER_ROUTES.filter((r) => r !== HOME_ROUTE);
 
   return (
     <ScrollView
@@ -66,9 +70,20 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
       <View style={styles.drawerHeaderContainer}>
         <Text style={styles.drawerHeader}>{t("menu")}</Text>
       </View>
-      {mainRoutes.map(renderItem)}
+      {renderItem(HOME_ROUTE)}
+      {/* The way back into the list that is open; its views are the tabs at the bottom. */}
+      {activeList && (
+        <ListRow
+          title={activeList.name}
+          icon={LIST_TABS[0].icon}
+          iconColor={isListTab(pathname) ? "primary" : "textMuted"}
+          selected={isListTab(pathname)}
+          onPress={() => go(LIST_TABS[0])}
+          style={styles.listItem}
+        />
+      )}
       <View style={styles.divider} />
-      {settingsRoutes.map(renderItem)}
+      {otherRoutes.map(renderItem)}
     </ScrollView>
   );
 }
@@ -91,6 +106,12 @@ const styles = StyleSheet.create((theme) => {
     },
     item: {
       marginHorizontal: theme.space.sm,
+      marginBottom: theme.space.xxs,
+    },
+    // Under "Lists", as the list it belongs to.
+    listItem: {
+      marginLeft: theme.space.xl,
+      marginRight: theme.space.sm,
       marginBottom: theme.space.xxs,
     },
     divider: {
