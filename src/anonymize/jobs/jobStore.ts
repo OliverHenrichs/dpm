@@ -24,6 +24,7 @@ import {
 } from "@/src/anonymize/jobs/replaceVideo";
 import {
   NoAudioError,
+  releaseTranscriptionContexts,
   transcribeVideo,
 } from "@/src/transcribe/transcribeVideo";
 import {
@@ -352,6 +353,8 @@ async function process(
   job: StartJob & { kind: "anonymize" | "shorten" },
 ): Promise<{ uri: string; generated?: IGeneratedVideo }> {
   const onProgress = (fraction: number) => patch(id, { progress: fraction });
+  // A transcription queued ahead of the cut leaves Whisper loaded; the phone needs that memory.
+  await releaseTranscriptionContexts();
   if (job.kind === "shorten") {
     const uri = await shortenVideo(job.request, onProgress);
     return { uri, generated: job.generated };

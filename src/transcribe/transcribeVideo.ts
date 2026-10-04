@@ -52,8 +52,9 @@ export class NoAudioError extends Error {
   }
 }
 
-// Loaded once and kept: loading costs a fraction of a second, and a list is often transcribed a
-// video at a time.
+// Loaded once and kept while transcribing: loading costs a fraction of a second, and a list is
+// often transcribed a video at a time. A video job unloads them first; see
+// releaseTranscriptionContexts.
 let whisper: WhisperContext | null = null;
 let vad: WhisperVadContext | null = null;
 
@@ -63,6 +64,20 @@ async function contexts() {
   whisper ??= await initWhisper({ filePath: models.whisperUri });
   vad ??= await initWhisperVad({ filePath: models.vadUri });
   return { whisper, vad };
+}
+
+/**
+ * Unloads the models; the next transcription loads them again. The video jobs call this before
+ * they start: Whisper keeps ~250 MB of native memory, which the silhouette pipeline needs
+ * (measured on a Pixel 10a after a transcription, 2026-10-04).
+ */
+export async function releaseTranscriptionContexts() {
+  const loaded = [whisper, vad];
+  whisper = null;
+  vad = null;
+  await Promise.all(
+    loaded.map((context) => context?.release().catch(() => undefined)),
+  );
 }
 
 /** Test hook: forget the loaded contexts. */

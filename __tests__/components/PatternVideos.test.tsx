@@ -76,7 +76,7 @@ describe("PatternVideos", () => {
       thumbnails: ["file:///plain.jpg", "file:///s.jpg"],
     });
 
-    expect(screen.getAllByText("Anonymized")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Anonymized")).toHaveLength(1);
   });
 
   it("removes the video whose button is pressed", () => {
