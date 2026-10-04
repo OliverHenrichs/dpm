@@ -37,7 +37,8 @@ The app connects to the internet only for the following optional features, each 
 | Video files you attach to patterns, including videos you record or edit in the app | Viewing, editing and exporting patterns | On-device local filesystem |
 | Transcripts of what is said in your videos | Reading and reusing what a teacher said | On-device (AsyncStorage) |
 | Downloaded speech and suggestion models | Running the video tools offline | On-device local filesystem |
-| Your graph layout, active list, theme and language | Restoring your settings | On-device (AsyncStorage) |
+| Your graph layout, active list, theme, app style and language | Restoring your settings | On-device (AsyncStorage) |
+| Your app icon colour | Showing the launcher icon you chose | On-device, by the operating system |
 
 None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature. Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts". An editable export of a list you have published also carries that list's share key, so whoever imports it can update or stop sharing the published list (that is how you move it to a new phone); a read-only export never does.
 
@@ -55,7 +56,7 @@ When you choose to **publish a pattern list**, the following is sent to and stor
 
 | Data | Purpose |
 |---|---|
-| Pattern list content (name, pattern types, pattern names, descriptions, tags, prerequisites, modifiers) | Sharing the list with subscribers |
+| Pattern list content (name, the list's dance, pattern types, pattern names, descriptions, counts, rhythms, levels, tags, prerequisites, modifiers) | Sharing the list with subscribers |
 | Video URLs you have attached (the link text only, not the video file itself) | Enabling subscribers to view linked videos |
 | A randomly generated 8-character share code (your "list ID") | Identifying your list in the cloud |
 | Timestamps (`publishedAt`, `publisherVersion`) | Detecting updates on subscriber devices |
@@ -76,7 +77,7 @@ This does **not** happen when you use the app without publishing or subscribing.
 
 ### 3.4 Online videos
 
-When you play a video that you (or the publisher of a list you subscribed to) attached by URL, the app loads it from wherever it is hosted. YouTube links play in YouTube's embedded player. The host, for example **YouTube (Google)**, receives your IP address and device information, and may set cookies or collect usage data under its own privacy policy. We receive none of this data.
+When you play a video that you (or the publisher of a list you subscribed to) attached by URL, the app loads it from wherever it is hosted. YouTube links play in YouTube's embedded player. To show a preview image of a YouTube link, for example in the pattern editor or in the Reels overview, the app loads that video's thumbnail from YouTube (img.youtube.com) without you pressing play. The host, for example **YouTube (Google)**, receives your IP address and device information, and may set cookies or collect usage data under its own privacy policy. We receive none of this data.
 
 ### 3.5 Model downloads
 
@@ -134,7 +135,7 @@ We do **not** sell your data to third parties and do not use your data for adver
 |---|---|
 | Local device data | Until you uninstall the app or delete it in the app (a list, a pattern, a video) |
 | Downloaded models | Until you delete them under Settings → On-device models, or uninstall the app |
-| Published Firestore document | Until you stop sharing the list in the app (Dances → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry. |
+| Published Firestore document | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry. |
 | Owner record of a published list | Removed together with the list when you stop sharing it |
 | Anonymous user ID (Firebase Authentication) | Kept while you might still publish from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
 | Firebase infrastructure logs (IP, timestamps) | Governed by Google's own retention policy (typically 30–180 days) |
@@ -152,7 +153,7 @@ You have the right to:
 - **Objection** — object to processing based on legitimate interest
 - **Lodge a complaint** — with your national data protection authority (e.g. the [BfDI](https://www.bfdi.bund.de/) in Germany, the [ICO](https://ico.org.uk/) in the UK)
 
-**How to delete your published data:** Open the app → Dances → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document and its owner record. For anything else, contact us at dance-pattern-mapper@pm.me.
+**How to delete your published data:** Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document and its owner record. For anything else, contact us at dance-pattern-mapper@pm.me.
 
 Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.
 
