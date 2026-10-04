@@ -111,6 +111,7 @@ npm run ios              # expo start --ios
 npm test                 # Jest, both projects (no device needed)
 npm run test:unit        # pure-logic project only — sub-second feedback loop
 npm run test:components  # rendering project only (jest-expo)
+npm run test:rules       # Firestore rules in the emulator (needs Java 21+)
 npm run test:watch       # watch mode
 npm run test:coverage    # coverage over all of src/, with thresholds enforced
 npm run lint             # ESLint over the whole project (expo lint .)
@@ -143,10 +144,11 @@ Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo ru
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push to `master` and every PR, in three jobs, and every Monday runs the audit job alone so an expired acceptance or a new advisory shows up without a push:
+`.github/workflows/ci.yml` runs on every push to `master` and every PR, in four jobs, and every Monday runs the audit job alone so an expired acceptance or a new advisory shows up without a push:
 
 - **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`. Lint and the format check cover the tests, mocks and root config files too: `expo lint` with no path would lint only `src/`, `app/` and `components/`, and did, until a lint error in a test went unnoticed.
 - **bundle** — `npx expo export` for **both** `web` and `android`, which is the gate that catches a platform-split import fault.
+- **rules** — `npm run test:rules`: `firestore.rules` in the Firestore emulator, against the documents the app writes.
 - **audit** — fails if `npm audit` reports any advisory not in the accepted list in `scripts/check-audit.js`, fails when an acceptance's `until` date has passed, and warns when one is about to expire or an accepted advisory disappears. Accepting a new advisory means adding it there and to this file.
 
 Run the same checks locally before pushing; every one of them passes on `master`.

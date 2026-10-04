@@ -14,6 +14,8 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest --selectProjects unit",
     "test:components": "jest --selectProjects components",
+    "test:rules": "npx -y firebase-tools@15.32.1 emulators:exec --only firestore --project demo-dpm \"jest -c jest.rules.config.js\"",
+    "rules:deploy": "node --env-file=.env scripts/deploy-firestore-rules.js",
     "audit:check": "npm audit --json > audit.json; node scripts/check-audit.js audit.json",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -72,6 +74,7 @@
     "whisper.rn": "^0.7.4"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "30.0.0",
     "@types/react": "~19.2.16",
