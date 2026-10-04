@@ -183,9 +183,9 @@ application id, chosen by `APP_VARIANT` in `app.config.ts`, and they install sid
 
 | `APP_VARIANT` | Application id | Launcher name | Built by | Signed with |
 |---|---|---|---|---|
-| `development` | `com.teholi.DancePatternMapper.dev` | DancePatternMapper (Dev) | `eas build --profile development`, or `APP_VARIANT=development npx expo run:android` | EAS keystore, or the local debug keystore |
-| `preview` | `com.teholi.DancePatternMapper.preview` | DancePatternMapper (Preview) | `eas build --profile preview` (APK, sideload) | EAS keystore |
-| unset / `production` | `com.teholi.DancePatternMapper` | DancePatternMapper | `eas build --profile production` (AAB, for Play) | EAS keystore as **upload key**; Play re-signs with the app signing key |
+| `development` | `com.teholi.DancePatternMapper.dev` | DPM (Dev) | `eas build --profile development`, or `APP_VARIANT=development npx expo run:android` | EAS keystore, or the local debug keystore |
+| `preview` | `com.teholi.DancePatternMapper.preview` | DPM (Preview) | `eas build --profile preview` (APK, sideload) | EAS keystore |
+| unset / `production` | `com.teholi.DancePatternMapper` | DPM | `eas build --profile production` (AAB, for Play) | EAS keystore as **upload key**; Play re-signs with the app signing key |
 
 `eas.json` sets the variable for each profile. Locally, set it yourself for a development client;
 without it you build the production id, which then collides with whatever is installed under it.

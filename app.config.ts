@@ -40,7 +40,7 @@ const variant = VARIANTS[resolveVariant(process.env.APP_VARIANT)];
 const appId = APP_ID + variant.idSuffix;
 
 export default (): ExpoConfig => ({
-  name: "DancePatternMapper" + variant.nameSuffix,
+  name: "DPM" + variant.nameSuffix,
   slug: "DancePatternMapper",
   version: "1.0.0",
   orientation: "portrait",
