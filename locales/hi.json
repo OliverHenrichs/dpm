@@ -413,5 +413,14 @@
   "appIconColorHint": "होम स्क्रीन पर आइकन का रंग। इसे बदलने पर ऐप बंद हो जाता है।",
   "iconColorIndigo": "नील",
   "iconColorAmber": "कहरुबा",
-  "iconColorCoral": "मूँगा"
+  "iconColorCoral": "मूँगा",
+  "reelsTab": "रील्स",
+  "reelsScope": "रील्स यहाँ से दिखाएँ",
+  "reelsScopeList": "यह सूची",
+  "reelsScopeAll": "सभी सूचियाँ",
+  "reelsEmptyList": "इस सूची में अभी कोई वीडियो नहीं है। किसी पैटर्न में वीडियो जोड़ें, वह यहाँ दिखेगा।",
+  "reelsEmptyAll": "किसी भी सूची में अभी कोई वीडियो नहीं है।",
+  "reelsPlay": "वीडियो चलाएँ",
+  "reelsPause": "वीडियो रोकें",
+  "reelsVideoPosition": "वीडियो {{n}} / {{total}}"
 }

@@ -44,11 +44,12 @@ jest.mock("expo-router", () => {
 });
 
 describe("list tabs", () => {
-  it("offers the active list as List and Map", () => {
+  it("offers the active list as List, Map and Reels", () => {
     renderWithProviders(<ListTabsLayout />);
 
     expect(screen.getByTestId("tab-patterns")).toHaveTextContent(/List/);
     expect(screen.getByTestId("tab-graph")).toHaveTextContent(/Map/);
+    expect(screen.getByTestId("tab-reels")).toHaveTextContent(/Reels/);
   });
 });
 

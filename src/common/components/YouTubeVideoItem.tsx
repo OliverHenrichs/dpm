@@ -6,14 +6,20 @@ import { extractYouTubeVideoId } from "@/src/common/utils/YouTubeUtils";
 export type YouTubeVideoItemProps = {
   videoRef: IVideoReference;
   width: number;
+  /** Defaults to the 200 the pattern details use. */
+  height?: number;
 };
 
 /** YouTube player for native platforms – renders the player inside a WebView. */
-const YouTubeVideoItem: FC<YouTubeVideoItemProps> = ({ videoRef, width }) => {
+const YouTubeVideoItem: FC<YouTubeVideoItemProps> = ({
+  videoRef,
+  width,
+  height = 200,
+}) => {
   const videoId = extractYouTubeVideoId(videoRef.value) ?? "";
   return (
     <YoutubePlayer
-      height={200}
+      height={height}
       width={width}
       videoId={videoId}
       play={false}

@@ -56,6 +56,13 @@ export const LIST_TABS: AppRoute[] = [
     icon: "map-outline",
     showsActiveListName: true,
   },
+  {
+    name: "reels",
+    href: "/reels",
+    titleKey: "reelsTab",
+    icon: "play-box-multiple-outline",
+    showsActiveListName: true,
+  },
 ];
 
 /** Every screen with a title of its own, for the header. */

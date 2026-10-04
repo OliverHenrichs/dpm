@@ -423,6 +423,8 @@ export const iconSize = {
   sm: 16,
   md: 20,
   lg: 24,
+  /** A play button over a video. */
+  xl: 40,
 } as const;
 
 /** Minimum touch target, per the Android and iOS guidelines. */

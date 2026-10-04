@@ -413,5 +413,14 @@
   "appIconColorHint": "A cor do ícone na sua tela inicial. Ao mudá-la, o app fecha.",
   "iconColorIndigo": "Índigo",
   "iconColorAmber": "Âmbar",
-  "iconColorCoral": "Coral"
+  "iconColorCoral": "Coral",
+  "reelsTab": "Reels",
+  "reelsScope": "Mostrar reels de",
+  "reelsScopeList": "Esta lista",
+  "reelsScopeAll": "Todas as listas",
+  "reelsEmptyList": "Ainda não há vídeos nesta lista. Adicione um a um passo e ele aparece aqui.",
+  "reelsEmptyAll": "Ainda não há vídeos em nenhuma lista.",
+  "reelsPlay": "Reproduzir vídeo",
+  "reelsPause": "Pausar vídeo",
+  "reelsVideoPosition": "Vídeo {{n}} de {{total}}"
 }

@@ -413,5 +413,14 @@
   "appIconColorHint": "The colour of the icon on your home screen. Changing it closes the app.",
   "iconColorIndigo": "Indigo",
   "iconColorAmber": "Amber",
-  "iconColorCoral": "Coral"
+  "iconColorCoral": "Coral",
+  "reelsTab": "Reels",
+  "reelsScope": "Show reels from",
+  "reelsScopeList": "This list",
+  "reelsScopeAll": "All lists",
+  "reelsEmptyList": "No videos in this list yet. Add one to a pattern and it shows up here.",
+  "reelsEmptyAll": "No videos in any list yet.",
+  "reelsPlay": "Play video",
+  "reelsPause": "Pause video",
+  "reelsVideoPosition": "Video {{n}} of {{total}}"
 }

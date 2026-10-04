@@ -30,7 +30,7 @@ app/_layout.tsx        ← root layout (imports @/src/i18n)
   ThemeProvider        ← global light/dark theme
     ActivePatternListProvider  ← global state: active list + its patterns
       Drawer           ← expo-router/drawer: Lists, the (list) group, Settings
-        Tabs           ← app/(list)/: the active list's List and Map, as bottom tabs
+        Tabs           ← app/(list)/: the active list's List, Map and Reels, as bottom tabs
 ```
 
 Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (SDK 56 forbids importing those from app code — Metro fails the bundle). Import `Drawer` from `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from `expo-router`. Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop.
@@ -40,6 +40,7 @@ Navigation is **file-based expo-router**; there is no `@react-navigation/*` depe
 | `app/index.tsx` | `/` | `src/pattern/list/PatternListSelector.tsx` |
 | `app/(list)/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` (the *List* tab) |
 | `app/(list)/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` (the *Map* tab) |
+| `app/(list)/reels.tsx` | `/reels` | `src/reels/ReelsScreen.tsx` (the *Reels* tab) |
 | `app/settings.tsx` | `/settings` | `src/settings/SettingsScreen.tsx` |
 
 Each route file is a one-line re-export; the screens live in `src/`. The drawer holds the places (*Lists*, Settings, and an entry back into the open list); the views of the active list are bottom tabs in the `(list)` group (`ListTabsLayout.tsx`). A group does not change a URL, so `/patterns` and `/graph` are what they were. `src/common/components/DrawerRoutes.ts` is the single source of truth for both (`DRAWER_ROUTES`, `LIST_TABS`: name, href, i18n title key, icon, whether the header shows the active list's name) and is consumed by both navigators, the drawer menu (`DrawerContent.tsx`) and `AppHeader.tsx` — add a route there and in `app/`, not in three places. A new view of a list is a tab; a new place is a drawer entry.
@@ -89,6 +90,10 @@ Android only for now. Edit Pattern → Videos → **Edit video** (`src/anonymize
 - **Theming.** Styles are Unistyles sheets declared at module level, `StyleSheet.create((theme) => …)` imported from `react-native-unistyles`, and every colour, spacing step, radius, text style and shadow comes from the design tokens in `src/common/theme/tokens.ts` — never a literal. Non-style values (icon colours, SVG fills) come from `useUnistyles()`. Text on a coloured fill uses that fill's `on*` role. The app has two styles, After Hours and Clipboard, each light and dark, sharing every token name; add a token to both. Details, and the setup's traps, in `src/common/AGENTS.md`.
 - **Screen edges.** `SCREEN_EDGE_INSET` is applied once as `PageContainer`'s horizontal padding, to stay clear of the Android system back-gesture band. Do not pad individual scrollers.
 - **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The five that exist are `YouTubeVideoItem`, `PatternNodeGroup`, `ServerStyles` (web's static-render CSS), `src/transcribe/whisper` and `src/suggest/llama` (whisper.rn and llama.rn read their native module at import, which fails web's static render); route node presses through `PatternNodeGroup` rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.
+
+## Reels
+
+The *Reels* tab (`src/reels/`) pages through the patterns that have a video, one per page, from the open list or from every list on the phone. Swiping up or down moves between patterns, swiping sideways moves through a pattern's videos (its own, then those danced with a modifier), and a tap plays or pauses. `collectReels` (`reels.ts`) is pure. `useReels` takes the open list from the context and reads the other lists from storage on each visit, since nothing else holds them in memory. Only the video on screen holds a player, because a phone cannot decode a page of them. Reels only reads, so it needs no read-only guard.
 
 ## Filtering & sorting
 

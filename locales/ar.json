@@ -413,5 +413,14 @@
   "appIconColorHint": "لون الأيقونة على شاشتك الرئيسية. يُغلق التطبيق عند تغييره.",
   "iconColorIndigo": "نيلي",
   "iconColorAmber": "كهرماني",
-  "iconColorCoral": "مرجاني"
+  "iconColorCoral": "مرجاني",
+  "reelsTab": "مقاطع",
+  "reelsScope": "عرض المقاطع من",
+  "reelsScopeList": "هذه القائمة",
+  "reelsScopeAll": "كل القوائم",
+  "reelsEmptyList": "لا توجد مقاطع فيديو في هذه القائمة بعد. أضف مقطعًا إلى خطوة وسيظهر هنا.",
+  "reelsEmptyAll": "لا توجد مقاطع فيديو في أي قائمة بعد.",
+  "reelsPlay": "تشغيل الفيديو",
+  "reelsPause": "إيقاف الفيديو مؤقتًا",
+  "reelsVideoPosition": "الفيديو {{n}} من {{total}}"
 }

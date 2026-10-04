@@ -413,5 +413,14 @@
   "appIconColorHint": "主屏幕上图标的颜色。更改后应用会关闭。",
   "iconColorIndigo": "靛蓝",
   "iconColorAmber": "琥珀",
-  "iconColorCoral": "珊瑚"
+  "iconColorCoral": "珊瑚",
+  "reelsTab": "短视频",
+  "reelsScope": "显示短视频来源",
+  "reelsScopeList": "此列表",
+  "reelsScopeAll": "全部列表",
+  "reelsEmptyList": "此列表还没有视频。为舞步添加视频后会显示在这里。",
+  "reelsEmptyAll": "所有列表都还没有视频。",
+  "reelsPlay": "播放视频",
+  "reelsPause": "暂停视频",
+  "reelsVideoPosition": "第 {{n}} 个视频，共 {{total}} 个"
 }

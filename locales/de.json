@@ -413,5 +413,14 @@
   "appIconColorHint": "Die Farbe des Symbols auf deinem Startbildschirm. Beim Wechsel schließt sich die App.",
   "iconColorIndigo": "Indigo",
   "iconColorAmber": "Bernstein",
-  "iconColorCoral": "Koralle"
+  "iconColorCoral": "Koralle",
+  "reelsTab": "Reels",
+  "reelsScope": "Reels anzeigen aus",
+  "reelsScopeList": "Diese Liste",
+  "reelsScopeAll": "Alle Listen",
+  "reelsEmptyList": "Noch keine Videos in dieser Liste. Füge einer Figur ein Video hinzu, dann erscheint es hier.",
+  "reelsEmptyAll": "Noch keine Videos in irgendeiner Liste.",
+  "reelsPlay": "Video abspielen",
+  "reelsPause": "Video anhalten",
+  "reelsVideoPosition": "Video {{n}} von {{total}}"
 }

@@ -413,5 +413,14 @@
   "appIconColorHint": "হোম স্ক্রিনে আইকনের রং। এটি বদলালে অ্যাপটি বন্ধ হয়ে যায়।",
   "iconColorIndigo": "নীল",
   "iconColorAmber": "অ্যাম্বার",
-  "iconColorCoral": "প্রবাল"
+  "iconColorCoral": "প্রবাল",
+  "reelsTab": "রিলস",
+  "reelsScope": "রিলস দেখাও",
+  "reelsScopeList": "এই তালিকা",
+  "reelsScopeAll": "সব তালিকা",
+  "reelsEmptyList": "এই তালিকায় এখনও কোনো ভিডিও নেই। কোনো প্যাটার্নে ভিডিও যোগ করলে এখানে দেখা যাবে।",
+  "reelsEmptyAll": "কোনো তালিকায় এখনও কোনো ভিডিও নেই।",
+  "reelsPlay": "ভিডিও চালাও",
+  "reelsPause": "ভিডিও থামাও",
+  "reelsVideoPosition": "ভিডিও {{n}} / {{total}}"
 }

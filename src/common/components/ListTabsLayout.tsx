@@ -6,7 +6,7 @@ import { Icon } from "@/src/common/ui/Icon";
 import { LIST_TABS } from "@/src/common/components/DrawerRoutes";
 
 /**
- * The active list's views — List and Map — as bottom tabs. The drawer above them holds the
+ * The active list's views — List, Map and Reels — as bottom tabs. The drawer above them holds the
  * places (the lists, Settings), so the views of one list are a thumb away and the menu no
  * longer says "pattern" twice.
  */
