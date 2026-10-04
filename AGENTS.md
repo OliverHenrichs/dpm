@@ -199,6 +199,9 @@ variables. Copy `.env.example` to `.env` (gitignored); without the Firebase vari
   `expo-alternate-app-icons` registers at build time. A new colour means icon files in
   `assets/images/icon-colors/`, entries in the plugin list, `APP_ICON_COLORS` (tokens.ts) and
   `appIcon.ts`, and a rebuilt dev client. The splash stays indigo.
+- **EAS uploads by `.easignore`, not `.gitignore`.** It exists so the gitignored model weights
+  reach Android builds, and the `eas-build-pre-install` hook fails a build without them
+  (`modules/AGENTS.md`). A new `.gitignore` entry belongs in `.easignore` too.
 - `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo run:*`; revert that, the
   project uses the `--dev-client` workflow.
 

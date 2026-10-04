@@ -29,7 +29,14 @@ and `pose_landmarker_full.task`, about 130 MB. They come from the scripts in `sc
 - `convert_edgetam_video.py` exports EdgeTAM (adapted from john-rocky/LiteRT-Models; see its header).
 
 A build without them still reports the module as available and still shortens, but anonymizing
-fails when it opens the assets. When a graph changes, bump `MODEL_VERSION` in the class that loads
+fails when it opens the assets (`Silhouette render failed: edgetam/encode.tflite`); a production
+build shipped that way once. Two things keep them in builds:
+
+- **`.easignore`** at the root: with it present EAS ignores every `.gitignore`, so the weights on the
+  machine running `eas build` are uploaded. It mirrors `.gitignore` otherwise; keep the two in step.
+- **`npm run assets:check`** (`scripts/check-model-assets.js`) lists every file the native code
+  opens and fails when one is missing. It runs as the `eas-build-pre-install` hook, so an Android
+  EAS build without the weights fails instead of shipping. A new asset goes in its list. When a graph changes, bump `MODEL_VERSION` in the class that loads
 it (`EdgeTamTracker`, `PersonDetector`): models are copied out of the APK once, and a stale copy is
 otherwise reused. Keep the third-party licences (`LICENSE`, the scripts' headers) with the code.
 

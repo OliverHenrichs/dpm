@@ -1,0 +1,67 @@
+# What `eas build` leaves out of the upload. With this file present EAS ignores every
+# .gitignore, so it mirrors them, with one deliberate difference: the silhouette pipeline's
+# model weights (modules/video-anonymize/android/src/main/assets/) are gitignored for their
+# size but must reach the build, or Anonymize fails at run time. The eas-build-pre-install
+# hook (scripts/check-model-assets.js) fails an Android build that lacks them.
+# Keep the rest in step with .gitignore.
+
+# dependencies
+node_modules/
+
+# idea
+.idea/*
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
+
+# generated native folders
+/ios
+/android
+/coverage/
+audit.json
+
+# Firebase emulator
+firestore-debug.log
+firebase-debug.log
+
+# local modules' build output (from their own .gitignore files)
+modules/*/android/build/
+
+# local outputs that are not part of the app
+dist-web/
+dist-android/
+modules/video-anonymize/scripts/build/
