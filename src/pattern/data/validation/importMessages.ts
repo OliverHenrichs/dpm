@@ -40,6 +40,7 @@ export const IMPORT_MESSAGE_KEYS = [
   "importWarnModifierRefUnknown",
   "importWarnDuplicateModifierRef",
   "importWarnUnknownType",
+  "importWarnRhythmMismatch",
   "importWarnPrerequisiteNotNumber",
   "importWarnPrerequisitesMissing",
   "importWarnPrerequisiteNotInFile",

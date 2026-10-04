@@ -210,7 +210,11 @@ const PatternListManager = () => {
         >
           <ModalOverlay padding="none">
             <View style={styles.modalContent}>
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+              <ScrollView
+                // Tapping a rhythm step keeps the keyboard up, so typing can go on.
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ flexGrow: 1 }}
+              >
                 <EditPatternForm
                   // Remount when a picked video seeds the form: it reads initialVideos once.
                   key={initialVideos?.[0]?.value ?? "new"}
@@ -233,7 +237,11 @@ const PatternListManager = () => {
         >
           <ModalOverlay padding="none">
             <View style={styles.modalContent}>
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+              <ScrollView
+                // Tapping a rhythm step keeps the keyboard up, so typing can go on.
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ flexGrow: 1 }}
+              >
                 <EditPatternForm
                   patterns={patterns}
                   patternTypes={patternTypes}

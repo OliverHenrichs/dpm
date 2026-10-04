@@ -108,6 +108,17 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
           </View>
         )}
       </View>
+      {/* A row of its own: a long rhythm wraps, and would push the labels beside it out of line. */}
+      {!!selectedPattern.rhythm && (
+        <View style={styles.patternDetailsRow}>
+          <View style={styles.patternDetailsCol}>
+            <Text style={styles.label}>{t("rhythm")}:</Text>
+            <Text style={styles.patternDetailsValue}>
+              {selectedPattern.rhythm}
+            </Text>
+          </View>
+        </View>
+      )}
       {getPrerequisiteView(selectedPattern, patterns, t, styles)}
       {getBuildsIntoView(selectedPattern, patterns, t, styles)}
       {getTagView(selectedPattern, t, styles)}
@@ -260,6 +271,8 @@ const styles = StyleSheet.create((theme) => {
     },
     patternDetailsRow: {
       ...getCommonRow(),
+      // Labels line up across the row even when a value wraps.
+      alignItems: "flex-start",
       marginBottom: theme.space.sm,
     },
     patternDetailsCol: { flex: 1 },

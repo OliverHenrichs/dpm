@@ -6,10 +6,7 @@ import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
 import { router, useNavigation, usePathname } from "expo-router";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
-import {
-  DRAWER_ROUTES,
-  HOME_ROUTE,
-} from "@/src/common/components/DrawerRoutes";
+import { ALL_ROUTES, HOME_ROUTE } from "@/src/common/components/DrawerRoutes";
 
 /** The slots already clear the 48dp minimum; hit slop is margin for error. */
 const HEADER_BUTTON_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
@@ -35,7 +32,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title: titleOverride }) => {
   const pathname = usePathname();
   const { theme } = useUnistyles();
   const { activeList } = useActivePatternList();
-  const route = DRAWER_ROUTES.find((r) => r.href === pathname);
+  const route = ALL_ROUTES.find((r) => r.href === pathname);
   const screenTitle =
     route?.name === "index" ? t("appTitle") : route && t(route.titleKey);
   const title = route?.showsActiveListName

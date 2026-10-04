@@ -5,6 +5,8 @@ import { extractYouTubeVideoId } from "@/src/common/utils/YouTubeUtils";
 export type YouTubeVideoItemProps = {
   videoRef: IVideoReference;
   width: number;
+  /** Defaults to the 200 the pattern details use. */
+  height?: number;
 };
 
 /**
@@ -15,7 +17,11 @@ export type YouTubeVideoItemProps = {
  * installed here. On web the embed is available natively, so we render the
  * YouTube iframe directly instead of pulling that dependency in.
  */
-const YouTubeVideoItem: FC<YouTubeVideoItemProps> = ({ videoRef, width }) => {
+const YouTubeVideoItem: FC<YouTubeVideoItemProps> = ({
+  videoRef,
+  width,
+  height = 200,
+}) => {
   const videoId = extractYouTubeVideoId(videoRef.value) ?? "";
   const query =
     videoRef.startTime != null ? `?start=${videoRef.startTime}` : "";
@@ -24,7 +30,7 @@ const YouTubeVideoItem: FC<YouTubeVideoItemProps> = ({ videoRef, width }) => {
       title={videoRef.value}
       src={`https://www.youtube.com/embed/${videoId}${query}`}
       width={width}
-      height={200}
+      height={height}
       style={{ border: 0 }}
       allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen

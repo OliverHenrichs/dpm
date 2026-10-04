@@ -75,7 +75,7 @@ describe("canImport", () => {
   it("refuses a newer minor rather than guessing at it", () => {
     // The writer added something this build cannot carry; parsing it anyway
     // would silently drop that data on the next save.
-    expect(canImport("3.3.0")).toEqual({
+    expect(canImport("3.4.0")).toEqual({
       supported: false,
       reason: "tooNew",
     });
@@ -236,6 +236,61 @@ describe("validateExportData", () => {
 
       expect(result.valid).toBe(false);
       expect(result.data).toBeUndefined();
+    });
+  });
+
+  describe("rhythm and dance", () => {
+    it("keeps a rhythm that fits the counts, and the list's dance", () => {
+      const result = validateExportData(
+        fileWithList(
+          baseList({
+            dance: "wcs",
+            patterns: [
+              createTestPattern(TYPE.id, {
+                id: 1,
+                counts: 6,
+                rhythm: "1 2  3&4 5&6",
+              }),
+            ],
+          }),
+        ),
+      );
+
+      expect(result.warnings).toEqual([]);
+      expect(result.data!.patternLists[0].dance).toBe("wcs");
+      expect(result.data!.patternLists[0].patterns[0].rhythm).toBe(
+        "1 2 3&4 5&6",
+      );
+    });
+
+    it("drops a rhythm that does not fit, with a warning", () => {
+      const result = validateExportData(
+        fileWithList(
+          baseList({
+            patterns: [
+              createTestPattern(TYPE.id, {
+                id: 1,
+                counts: 8,
+                rhythm: "1 2 3&4 5&6",
+              }),
+            ],
+          }),
+        ),
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.data!.patternLists[0].patterns[0]).not.toHaveProperty(
+        "rhythm",
+      );
+      expect(importText(result.warnings)).toMatch(/rhythm/);
+    });
+
+    it("forgets a dance it does not know", () => {
+      const result = validateExportData(
+        fileWithList(baseList({ dance: "polka" })),
+      );
+
+      expect(result.data!.patternLists[0]).not.toHaveProperty("dance");
     });
   });
 

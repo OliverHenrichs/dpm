@@ -48,3 +48,7 @@ from props on every read, or key the body so it remounts — `PatternListTemplat
 second route, keying on what the modal is open on so opening it re-seeds drafts fresh. What is
 not correct is snapshotting once with a lazy `useState` initialiser and leaving it. The import
 side of this is written up in `src/pattern/data/AGENTS.md`.
+
+## Rhythm
+
+A pattern's optional `rhythm` is written the way dancers count it (`src/pattern/rhythm/rhythm.ts`): `3` a step, `3&4` or `3a4` a triple, `(4)` a beat without a weight change, beats running from 1 without gaps. It **always matches `counts`**, both ways, in `EditPatternForm`: typing a valid rhythm sets the counts, and changing the counts drops a rhythm that no longer fits. Text that is not yet a rhythm stays in the field with an explanation and is not saved. While the field is empty, whole rhythms are suggested from the list's `dance` (`rhythmSuggestions`: the dance's basic rhythms for those counts, then a step on every beat). Below them, `nextRhythmSteps` offers the next step to append (a step, a triple, a swung triple, a held beat); the form's scroll views keep the keyboard up on those taps (`keyboardShouldPersistTaps`), so typing can go on. Only add a dance's rhythm when it is the standard one; Argentine tango deliberately has none. The dance is chosen in the list's setup (`PatternListTemplateModal`), where a template presets it.

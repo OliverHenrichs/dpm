@@ -3,6 +3,7 @@ import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
   createTestPattern,
+  createTestPatternList,
   createTestPatternType,
 } from "@/utils/testFactories";
 import {
@@ -165,5 +166,100 @@ describe("EditPatternForm level", () => {
     await waitFor(() => expect(onAccepted).toHaveBeenCalled());
     // The key is gone rather than undefined, which Firestore would reject.
     expect(onAccepted.mock.calls[0][0]).not.toHaveProperty("level");
+  });
+});
+
+describe("EditPatternForm rhythm", () => {
+  function renderNew(lists?: Parameters<typeof renderWithProviders>[1]) {
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+      />,
+      lists,
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    return onAccepted;
+  }
+
+  const save = async (onAccepted: jest.Mock) => {
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() => expect(onAccepted).toHaveBeenCalled());
+    return onAccepted.mock.calls[0][0];
+  };
+
+  it("sets the counts to the rhythm typed", async () => {
+    const onAccepted = renderNew();
+
+    fireEvent.changeText(screen.getByLabelText("Rhythm"), "1 2 3&4 5 6 7&8");
+
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("8");
+    expect(await save(onAccepted)).toMatchObject({
+      counts: 8,
+      rhythm: "1 2 3&4 5 6 7&8",
+    });
+  });
+
+  it("clears a rhythm the new counts no longer fit", async () => {
+    const onAccepted = renderNew();
+    fireEvent.changeText(screen.getByLabelText("Rhythm"), "1 2 3&4 5&6");
+
+    fireEvent.changeText(screen.getByPlaceholderText("Counts"), "8");
+
+    expect(screen.getByLabelText("Rhythm").props.value).toBe("");
+    expect(await save(onAccepted)).not.toHaveProperty("rhythm");
+  });
+
+  it("says what is wrong with a rhythm that is not one, and saves without it", async () => {
+    const onAccepted = renderNew();
+
+    fireEvent.changeText(screen.getByLabelText("Rhythm"), "1 2 4");
+
+    expect(screen.getByText(/Not a rhythm yet/)).toBeOnTheScreen();
+    expect(await save(onAccepted)).not.toHaveProperty("rhythm");
+  });
+
+  it("suggests the list's dance rhythms for the counts", async () => {
+    const list = createTestPatternList({ dance: "wcs" });
+    const onAccepted = renderNew({ lists: [list] });
+
+    // A new pattern starts at 6 counts.
+    fireEvent.press(await screen.findByText("1 2 3&4 5&6"));
+
+    expect(screen.getByLabelText("Rhythm").props.value).toBe("1 2 3&4 5&6");
+    expect(await save(onAccepted)).toMatchObject({ rhythm: "1 2 3&4 5&6" });
+  });
+});
+
+describe("EditPatternForm composing a rhythm", () => {
+  it("builds a rhythm from the next-step bubbles", async () => {
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+      />,
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+
+    for (const step of ["1", "2", "3&4", "5", "6", "7a8"]) {
+      fireEvent.press(screen.getByLabelText(`Add ${step}`));
+    }
+
+    expect(screen.getByLabelText("Rhythm").props.value).toBe("1 2 3&4 5 6 7a8");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("8");
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(onAccepted).toHaveBeenCalledWith(
+        expect.objectContaining({ counts: 8, rhythm: "1 2 3&4 5 6 7a8" }),
+      ),
+    );
   });
 });

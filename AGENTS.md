@@ -29,7 +29,8 @@ there first.
 app/_layout.tsx        ← root layout (imports @/src/i18n)
   ThemeProvider        ← global light/dark theme
     ActivePatternListProvider  ← global state: active list + its patterns
-      Drawer           ← expo-router/drawer, 4 file-based routes
+      Drawer           ← expo-router/drawer: Lists, the (list) group, Settings
+        Tabs           ← app/(list)/: the active list's List, Map and Reels, as bottom tabs
 ```
 
 Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (SDK 56 forbids importing those from app code — Metro fails the bundle). Import `Drawer` from `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from `expo-router`. Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop.
@@ -37,11 +38,12 @@ Navigation is **file-based expo-router**; there is no `@react-navigation/*` depe
 | File | Path | Screen component |
 |---|---|---|
 | `app/index.tsx` | `/` | `src/pattern/list/PatternListSelector.tsx` |
-| `app/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` |
-| `app/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` |
+| `app/(list)/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` (the *List* tab) |
+| `app/(list)/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` (the *Map* tab) |
+| `app/(list)/reels.tsx` | `/reels` | `src/reels/ReelsScreen.tsx` (the *Reels* tab) |
 | `app/settings.tsx` | `/settings` | `src/settings/SettingsScreen.tsx` |
 
-Each route file is a one-line re-export; the screens live in `src/`. `src/common/components/DrawerRoutes.ts` is the single source of truth for the route list (name, href, i18n title key, whether the header shows the active list's name) and is consumed by the navigator, the drawer menu (`DrawerContent.tsx`) and `AppHeader.tsx` — add a route there and in `app/`, not in three places.
+Each route file is a one-line re-export; the screens live in `src/`. The drawer holds the places (*Lists*, Settings, and an entry back into the open list); the views of the active list are bottom tabs in the `(list)` group (`ListTabsLayout.tsx`). A group does not change a URL, so `/patterns` and `/graph` are what they were. `src/common/components/DrawerRoutes.ts` is the single source of truth for both (`DRAWER_ROUTES`, `LIST_TABS`: name, href, i18n title key, icon, whether the header shows the active list's name) and is consumed by both navigators, the drawer menu (`DrawerContent.tsx`) and `AppHeader.tsx` — add a route there and in `app/`, not in three places. A new view of a list is a tab; a new place is a drawer entry.
 
 All screens share state through `ActivePatternListContext` (`src/pattern/data/components/ActivePatternListContext.tsx`). Every screen reads `activeList`, `patterns`, `isLoading`, and `hasLists` from `useActivePatternList()` and mutates via `setActiveList`, `updatePatterns`, `updateActiveList(list, patternsOverride?)`, `refreshActiveList` — **never loads storage directly**. Pattern and modifier mutations go through `usePatternCrud`, never through the context directly.
 
@@ -51,9 +53,9 @@ Everything lives in `src/pattern/types/IPatternList.ts` (plus `PatternType.ts`, 
 
 | Type | Id type | Key detail |
 |---|---|---|
-| `IPatternList` | `string` (UUID) | Owns its own `PatternType[]` **and** `IModifier[]` — both are **per-list**, not global; optional `readonly?: boolean` (subscriber/read-only copy) and `shareCode?: string` (Firestore doc ID) |
+| `IPatternList` | `string` (UUID) | Owns its own `PatternType[]` **and** `IModifier[]` — both are **per-list**, not global; optional `readonly?: boolean` (subscriber/read-only copy), `shareCode?: string` (Firestore doc ID) and `dance?: Dance` (`Dance.ts`; picks rhythm suggestions) |
 | `PatternType` | `string` (UUID) | `slug` = display name; `color` = hex; referenced from patterns via `typeId` |
-| `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `tags: string[]`; optional `level` (`PatternLevel` value); `videoRefs: IVideoReference[]`; `modifierRefs: IPatternModifierRef[]` |
+| `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `tags: string[]`; optional `level` (`PatternLevel` value); optional `rhythm` ("1 2 3&4 5&6"), which always matches `counts` (`src/pattern/rhythm/`); `videoRefs: IVideoReference[]`; `modifierRefs: IPatternModifierRef[]` |
 | `IModifier` | `string` (UUID) | `position: "prefix" \| "postfix" \| "amends"`; `universal: boolean`; `videoRefs` are only used when `universal === true` |
 | `IPatternModifierRef` | — | `{ modifierId, videoRefs }` — a non-universal modifier attached to one pattern, with videos of that pattern **executed with** the modifier |
 | `IVideoReference` | — | `{ type: "url" \| "local", value: string, startTime?: number, generated?, transcript? }` — `startTime` for URL videos only; `generated: { method, createdAt }` marks a video the app made (a silhouette); `transcript: IVideoTranscript` (`{ language, model, createdAt, segments: { start, end, text }[] }`) is what was said in it |
@@ -88,6 +90,10 @@ Android only for now. Edit Pattern → Videos → **Edit video** (`src/anonymize
 - **Theming.** Styles are Unistyles sheets declared at module level, `StyleSheet.create((theme) => …)` imported from `react-native-unistyles`, and every colour, spacing step, radius, text style and shadow comes from the design tokens in `src/common/theme/tokens.ts` — never a literal. Non-style values (icon colours, SVG fills) come from `useUnistyles()`. Text on a coloured fill uses that fill's `on*` role. The app has two styles, After Hours and Clipboard, each light and dark, sharing every token name; add a token to both. Details, and the setup's traps, in `src/common/AGENTS.md`.
 - **Screen edges.** `SCREEN_EDGE_INSET` is applied once as `PageContainer`'s horizontal padding, to stay clear of the Android system back-gesture band. Do not pad individual scrollers.
 - **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The five that exist are `YouTubeVideoItem`, `PatternNodeGroup`, `ServerStyles` (web's static-render CSS), `src/transcribe/whisper` and `src/suggest/llama` (whisper.rn and llama.rn read their native module at import, which fails web's static render); route node presses through `PatternNodeGroup` rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.
+
+## Reels
+
+The *Reels* tab (`src/reels/`) shows the patterns that have a video, from the open list or from every list on the phone. The overview lists them as stills (`ReelCard`), several to a screen; a tap opens them one per screen (`ReelPage`), where swiping up or down moves between patterns and sideways through a pattern's videos (its own, then those danced with a modifier), and the grid button or Android's back returns to the overview. Videos use the platform's own controls (play, time bar, fullscreen in landscape), as elsewhere in the app, on the style's background rather than black. `collectReels` (`reels.ts`) is pure. `useReels` takes the open list from the context and reads the other lists from storage on each visit. Only the video on screen holds a player, and only while the tab is in front: the tabs keep the screen mounted, so leaving it has to unmount the player to stop the video. Reels only reads, so it needs no read-only guard.
 
 ## Filtering & sorting
 

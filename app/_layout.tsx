@@ -15,7 +15,10 @@ import ServerStyles from "@/src/common/theme/ServerStyles";
 import { ActivePatternListProvider } from "@/src/pattern/data/components/ActivePatternListContext";
 import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import DrawerContent from "@/src/common/components/DrawerContent";
-import { DRAWER_ROUTES } from "@/src/common/components/DrawerRoutes";
+import {
+  DRAWER_ROUTES,
+  LIST_GROUP,
+} from "@/src/common/components/DrawerRoutes";
 
 // Reading the stored language and theme are round trips to AsyncStorage, and
 // the app has already come up in English and the system theme by then.
@@ -106,6 +109,9 @@ function AppDrawer() {
                 options={{ title: t(route.titleKey) }}
               />
             ))}
+            {/* The active list's tabs (app/(list)/). Declared after the lists, so the app
+                still opens on them. */}
+            <Drawer.Screen name={LIST_GROUP} />
           </Drawer>
         </SafeAreaView>
       </AnonymizeJobsProvider>

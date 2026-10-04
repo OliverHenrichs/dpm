@@ -1,4 +1,6 @@
 import { IPatternList, NewPattern } from "../types/IPatternList";
+import type { Dance } from "../types/Dance";
+import { defaultRhythm } from "@/src/pattern/rhythm/rhythm";
 import {
   generateUUID,
   PATTERN_TYPE_COLORS,
@@ -121,6 +123,8 @@ export function createPatternType(slug: string, color: string): PatternType {
 export function resolveTemplatePatterns(
   templatePatterns: TemplatePattern[],
   types: PatternType[],
+  /** Gives each pattern its dance's basic rhythm for its counts, when there is one. */
+  dance?: Dance,
 ): NewPattern[] {
   const result: NewPattern[] = [];
   for (const tp of templatePatterns) {
@@ -128,11 +132,13 @@ export function resolveTemplatePatterns(
       (t) => t.slug.toLowerCase() === tp.typeSlug.toLowerCase(),
     );
     if (!type) continue;
+    const rhythm = defaultRhythm(dance, tp.counts);
     result.push({
       name: tp.name,
       typeId: type.id,
       counts: tp.counts,
       level: tp.level,
+      ...(rhythm && { rhythm }),
       prerequisites: [],
       description: tp.description,
       tags: [],

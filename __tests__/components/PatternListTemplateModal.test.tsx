@@ -463,6 +463,45 @@ describe("PatternListTemplateModal", () => {
     });
   });
 
+  describe("dance", () => {
+    it("comes from the template, and starts its patterns on its rhythms", () => {
+      const { created } = renderModal();
+
+      pickTemplate("West Coast Swing");
+      fireEvent.press(screen.getByText("Create"));
+
+      expect(created().list.dance).toBe("wcs");
+      const sixes = created().patterns.filter((p) => p.counts === 6);
+      expect(sixes.length).toBeGreaterThan(0);
+      for (const pattern of sixes) expect(pattern.rhythm).toBe("1 2 3&4 5&6");
+    });
+
+    it("is none for a blank list, and can be picked", () => {
+      const { created } = renderModal();
+
+      pickTemplate("Blank");
+      fireEvent.changeText(nameInput(), "Festival");
+      expect(
+        screen.getByRole("button", { name: "None" }).props.accessibilityState
+          ?.selected,
+      ).toBe(true);
+      fireEvent.press(screen.getByText("Lindy Hop"));
+      fireEvent.press(screen.getByText("Create"));
+
+      expect(created().list.dance).toBe("lindy");
+    });
+
+    it("can be taken off a list being edited", () => {
+      const list = { ...createTestPatternList(), dance: "salsa" as const };
+      const { onSaveList } = renderModal({ editList: list });
+
+      fireEvent.press(screen.getByText("None"));
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(onSaveList.mock.calls[0][0]).not.toHaveProperty("dance");
+    });
+  });
+
   describe("edit mode", () => {
     const editable = () =>
       createTestPatternList({

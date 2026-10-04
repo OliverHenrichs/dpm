@@ -334,7 +334,7 @@ describe("export → import round trip", () => {
           { includeTranscripts: true },
         );
 
-        expect(exported.version).toBe("3.2.0");
+        expect(exported.version).toBe("3.3.0");
         expect(exported.includesTranscripts).toBe(true);
         const [restored] = importResult.patternLists![0].patterns;
         expect(restored.videoRefs[0].transcript).toEqual(transcript);
