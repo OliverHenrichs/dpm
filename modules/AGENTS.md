@@ -17,7 +17,8 @@ One native call does both edits. It always transcodes the selection with Media3 
 drops the audio, scales down, then tracks the dancers and renders silhouettes: EdgeTAM tracks each
 dancer from the user's tap on the GPU (`EdgeTamTracker.kt`, `EdgeTamSegmenter.kt`), RF-DETR person
 detection re-anchors a dancer lost behind their partner, occasionally and on the CPU
-(`PersonDetector.kt`), MediaPipe pose adds the skeleton lines (`PoseSkeletons.kt`), and
+(`PersonDetector.kt`), MediaPipe pose adds the skeleton lines (`PoseSkeletons.kt`; on the tracked
+frames only, joints interpolated between, like the masks), and
 `SilhouetteDrawer` / `SilhouetteRenderer` / `SurfaceEncoder` draw and encode.
 
 **The model weights are not in git** (`modules/video-anonymize/.gitignore`): `android/src/main/assets/`

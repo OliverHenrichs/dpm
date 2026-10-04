@@ -65,11 +65,18 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
               />
             </View>
           ) : (
+            // An icon, not the word: no language's word for it fits beside the edit button.
             ref.generated && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {t("videoBadgeSilhouette")}
-                </Text>
+              <View
+                style={styles.badge}
+                accessible
+                accessibilityLabel={t("videoBadgeSilhouette")}
+              >
+                <Icon
+                  name="incognito"
+                  size={theme.iconSize.sm}
+                  color={theme.media.onScrim}
+                />
               </View>
             )
           )}
@@ -179,25 +186,30 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
 /** Thumbnail edge, in dp: small enough for three in a row beside the add button. */
 const THUMB = 64;
 
+/*
+ * Everything on a thumbnail sits inside its corners: transcript top left, remove top right,
+ * edit bottom left, what kind of video bottom right. They used to hang over the edges, and the
+ * horizontal scroller clipped them (Android clips a ScrollView's content to its bounds).
+ */
+
 const styles = StyleSheet.create((theme) => ({
   prereqContainer: {
     ...getCommonPrereqContainer(theme),
     position: "relative",
   },
   label: { ...getCommonLabel(theme) },
-  videosRow: { ...getCommonRow(), gap: theme.space.xs },
+  videosRow: { ...getCommonRow(), gap: theme.space.sm },
   videosInputRow: {
     ...getCommonRow(),
     minHeight: THUMB,
-    height: THUMB + theme.space.md + 2,
+    marginTop: theme.space.sm,
   },
   thumbnailWrapper: {
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
     width: THUMB,
-    marginTop: theme.space.sm,
-    marginRight: theme.space.xs,
+    height: THUMB,
   },
   thumbImage: {
     width: THUMB,
@@ -224,30 +236,24 @@ const styles = StyleSheet.create((theme) => ({
   },
   badge: {
     position: "absolute",
-    bottom: theme.space.xs,
+    bottom: theme.space.xxs,
     right: theme.space.xxs,
     backgroundColor: theme.media.scrim,
     borderRadius: theme.radius.xs,
-    paddingHorizontal: theme.space.xs,
-    paddingVertical: 1,
+    padding: theme.space.xxs,
   },
   transcriptBadge: {
     position: "absolute",
-    top: theme.space.xs,
+    top: theme.space.xxs,
     left: theme.space.xxs,
     backgroundColor: theme.media.scrim,
     borderRadius: theme.radius.xs,
     padding: theme.space.xxs,
   },
-  badgeText: {
-    ...theme.typography.badge,
-    color: theme.media.onScrim,
-    fontWeight: "bold",
-  },
   removeButton: {
     position: "absolute",
-    top: -theme.space.sm,
-    right: -theme.space.sm,
+    top: theme.space.xxs,
+    right: theme.space.xxs,
     zIndex: 2,
   },
   fullHint: {
@@ -257,8 +263,8 @@ const styles = StyleSheet.create((theme) => ({
   },
   editButton: {
     position: "absolute",
-    bottom: -theme.space.xs,
-    left: -theme.space.sm,
+    bottom: theme.space.xxs,
+    left: theme.space.xxs,
     zIndex: 2,
   },
   addButtonContainer: {

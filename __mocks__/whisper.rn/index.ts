@@ -36,6 +36,7 @@ export const whisperCalls = {
   initVad: 0,
   transcribe: [] as { path: string; options: TranscribeOptions }[],
   stops: 0,
+  releases: 0,
 };
 
 /** What voice-activity detection reports, in centiseconds, as whisper.cpp does. */
@@ -62,6 +63,7 @@ export function resetWhisperMock(): void {
   whisperCalls.initVad = 0;
   whisperCalls.transcribe = [];
   whisperCalls.stops = 0;
+  whisperCalls.releases = 0;
 }
 
 export async function initWhisper(_options: { filePath: string }) {
@@ -80,6 +82,9 @@ export async function initWhisper(_options: { filePath: string }) {
         promise: Promise.resolve(answer(options, call)),
       };
     },
+    release: async () => {
+      whisperCalls.releases++;
+    },
   };
 }
 
@@ -87,5 +92,8 @@ export async function initWhisperVad(_options: { filePath: string }) {
   whisperCalls.initVad++;
   return {
     detectSpeech: async (_path: string) => vadSegments,
+    release: async () => {
+      whisperCalls.releases++;
+    },
   };
 }

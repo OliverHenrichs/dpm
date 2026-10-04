@@ -9,6 +9,7 @@ import { installedModels } from "@/src/transcribe/modelStore";
 import {
   ModelsMissingError,
   NoAudioError,
+  releaseTranscriptionContexts,
   resetTranscriptionContexts,
   transcribeVideo,
 } from "@/src/transcribe/transcribeVideo";
@@ -192,5 +193,18 @@ describe("transcribeVideo", () => {
 
     expect(whisperCalls.initWhisper).toBe(1);
     expect(whisperCalls.initVad).toBe(1);
+  });
+
+  it("unloads the models when released, and loads them again when next needed", async () => {
+    setVadSegments([{ t0: 100, t1: 400 }]);
+
+    await run();
+    await releaseTranscriptionContexts();
+    expect(whisperCalls.releases).toBe(2);
+    await releaseTranscriptionContexts(); // nothing loaded: nothing to do
+    expect(whisperCalls.releases).toBe(2);
+
+    await run();
+    expect(whisperCalls.initWhisper).toBe(2);
   });
 });

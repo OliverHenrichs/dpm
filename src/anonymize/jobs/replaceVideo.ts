@@ -39,10 +39,9 @@ export function replaceVideoInPattern(
   let changed = false;
   const swap = (refs: IVideoReference[]) => {
     if (!refs.some((ref) => ref.value === oldUri)) return refs;
-    changed = true;
     const present = new Set(refs.map((ref) => ref.value));
     let room = MAX_VIDEOS - refs.length;
-    return refs.flatMap((ref) => {
+    const next = refs.flatMap((ref) => {
       if (ref.value !== oldUri) return [ref];
       const [first, ...added] = applyUpdate(update, ref);
       const fresh = added.filter((next) => {
@@ -53,13 +52,33 @@ export function replaceVideoInPattern(
       });
       return [first, ...fresh];
     });
+    // An update already applied (a transcript added to the same video, both kept) yields the
+    // same references again. Reporting that as a change made an open edit form treat every job
+    // progress tick as a new set of videos.
+    if (
+      next.length === refs.length &&
+      next.every((ref, i) => sameVideoRef(ref, refs[i]))
+    ) {
+      return refs;
+    }
+    changed = true;
+    return next;
   };
   const videoRefs = swap(pattern.videoRefs);
-  const modifierRefs = pattern.modifierRefs.map((m) => ({
-    ...m,
-    videoRefs: swap(m.videoRefs),
-  }));
+  const modifierRefs = pattern.modifierRefs.map((m) => {
+    const swapped = swap(m.videoRefs);
+    return swapped === m.videoRefs ? m : { ...m, videoRefs: swapped };
+  });
   return changed ? { ...pattern, videoRefs, modifierRefs } : pattern;
+}
+
+/** Whether two references hold the same fields, each the same value or object. */
+function sameVideoRef(a: IVideoReference, b: IVideoReference): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a) as (keyof IVideoReference)[];
+  return (
+    keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
+  );
 }
 
 /** Whether [pattern] references the video at [uri] — its own, or a modifier combination's. */

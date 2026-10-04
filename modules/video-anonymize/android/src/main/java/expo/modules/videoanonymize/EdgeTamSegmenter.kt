@@ -69,18 +69,22 @@ class EdgeTamSegmenter(
   private var h = 0
   private var pixels = IntArray(0)
 
-  /** A frame waiting to be drawn. [masks] stays null until an untracked frame is interpolated. */
+  /**
+   * A frame waiting to be drawn. [masks] and [joints] stay null until an untracked frame is
+   * interpolated.
+   */
   private class Pending(
     var masks: List<FloatArray>?,
     val guide: FloatArray,
     /** Per dancer: 33 joints as [x, y, visibility] normalised to the frame, or null. */
-    val joints: List<FloatArray?>,
+    var joints: List<FloatArray?>?,
   )
 
   private val pending = ArrayDeque<Pending>()
   private var received = 0
   private var submitted = 0
   private var lastTracked: List<FloatArray>? = null
+  private var lastJoints: List<FloatArray?>? = null
 
   private class Drawn(val labels: ByteArray, val found: Int)
 
@@ -91,18 +95,19 @@ class EdgeTamSegmenter(
 
   override fun segment(frame: Bitmap, timestampMs: Long, labels: ByteArray): Int {
     val track = frameIndex % TRACK_EVERY == 0
-    if (track) {
+    val tracked = if (track) {
       val masks = if (trackedCount == 0) {
         tracker.start(frame, prompts)
       } else {
         tracker.track(trackedCount, frame) { t -> if (reanchorEnabled) reanchor(frame, t) else emptyMap() }
       }
       trackedCount++
-      interpolateGap(masks)
-      lastTracked = masks
+      masks
+    } else {
+      null
     }
     frameIndex++
-    val cropMasks = lastTracked!!
+    val cropMasks = tracked ?: lastTracked!!
     cropMasks.forEachIndexed { i, m -> maskArea[i].add(if (track) m.count { it > 0f } else -1) }
 
     if (w != frame.width || h != frame.height) {
@@ -110,21 +115,43 @@ class EdgeTamSegmenter(
       h = frame.height
     }
     val guide = FloatArray(w * h).also { luminance(frame, it) }
-    val joints = skeletons?.detect(frame, cropMasks, timestampMs) ?: cropMasks.map { null }
-    pending.addLast(Pending(if (track) cropMasks.map { it.copyOf() } else null, guide, joints))
+    // Pose runs on the tracked frames only (it was ~135 ms of ~700 per frame); the frames
+    // between get their joints interpolated along with their masks.
+    if (tracked != null) {
+      val joints = skeletons?.detect(frame, tracked, timestampMs) ?: tracked.map { null }
+      interpolateGap(tracked, joints)
+      lastTracked = tracked
+      lastJoints = joints
+      pending.addLast(Pending(tracked.map { it.copyOf() }, guide, joints))
+    } else {
+      pending.addLast(Pending(null, guide, null))
+    }
     received++
     submitReady(atEnd = false)
     return take(labels, block = results.size > MAX_IN_FLIGHT)
   }
 
-  /** Fills the untracked frames just before this tracked one by interpolating the logits. */
-  private fun interpolateGap(next: List<FloatArray>) {
+  /**
+   * Fills the untracked frames just before this tracked one by interpolating the logits, and
+   * the joints once this frame's are known ([nextJoints]).
+   */
+  private fun interpolateGap(next: List<FloatArray>, nextJoints: List<FloatArray?>) {
     val gap = pending.takeLastWhile { it.masks == null }
     if (gap.isEmpty()) return
     val prev = lastTracked ?: return
+    val prevJoints = lastJoints ?: prev.map { null }
     gap.forEachIndexed { g, p ->
       val a = (g + 1).toFloat() / (gap.size + 1)
       p.masks = prev.indices.map { i -> FloatArray(prev[i].size) { k -> (1 - a) * prev[i][k] + a * next[i][k] } }
+      p.joints = prev.indices.map { i -> lerpJoints(prevJoints[i], nextJoints[i], a) }
+    }
+  }
+
+  /** Joints between two tracked frames: positions blended, the lower visibility kept. */
+  private fun lerpJoints(from: FloatArray?, to: FloatArray?, a: Float): FloatArray? {
+    if (from == null || to == null) return (if (a < 0.5f) from else to)?.copyOf()
+    return FloatArray(from.size) { k ->
+      if (k % 3 == 2) minOf(from[k], to[k]) else (1 - a) * from[k] + a * to[k]
     }
   }
 
@@ -140,7 +167,7 @@ class EdgeTamSegmenter(
       if ((from..to).any { pending[it - first].masks == null }) break
       val window = (from..to).map { j ->
         val p = pending[j - first]
-        SilhouetteDrawer.Entry((SMOOTH_RADIUS + 1 - kotlin.math.abs(j - k)).toFloat(), p.masks!!, p.joints)
+        SilhouetteDrawer.Entry((SMOOTH_RADIUS + 1 - kotlin.math.abs(j - k)).toFloat(), p.masks!!, p.joints!!)
       }
       val guide = pending[k - first].guide
       val current = k - from
@@ -176,7 +203,12 @@ class EdgeTamSegmenter(
 
   override fun drain(labels: ByteArray): Int {
     // Trailing untracked frames have no later tracked frame: they hold the last masks.
-    lastTracked?.let { last -> pending.filter { it.masks == null }.forEach { it.masks = last.map { m -> m.copyOf() } } }
+    lastTracked?.let { last ->
+      pending.filter { it.masks == null }.forEach {
+        it.masks = last.map { m -> m.copyOf() }
+        it.joints = lastJoints ?: last.map { null }
+      }
+    }
     submitReady(atEnd = true)
     return take(labels, block = true)
   }
