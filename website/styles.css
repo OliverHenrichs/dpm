@@ -1,22 +1,118 @@
 /*
- * DPM website. Colours mirror the app's design tokens (src/common/theme/tokens.ts) so the site
- * and the app read as one product. No web fonts are loaded: the system UI stack keeps the page
- * light and avoids a third-party font request (which, from the EU, is itself a privacy issue).
+ * DPM website. It comes in the app's two styles, After Hours (the default) and Clipboard, each
+ * in light and dark, and the colours, fonts and corner radii mirror the app's design tokens
+ * (src/common/theme/tokens.ts) so the site and the app read as one product. The visitor picks
+ * the style with the switcher in the header (site.js sets data-style on <html>); light and dark
+ * follow the system.
+ *
+ * The fonts are the app's own (OFL, assets/fonts/), subset to Latin and served from this site:
+ * no third-party font request, which from the EU would itself be a privacy issue. A browser
+ * only downloads the faces the shown style uses.
  */
 
+@font-face {
+  font-family: "DM Serif Display";
+  src: url("fonts/DMSerifDisplay_400Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DM Serif Display";
+  src: url("fonts/DMSerifDisplay_400Regular_Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Manrope;
+  src: url("fonts/Manrope_400Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Manrope;
+  src: url("fonts/Manrope_600SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Manrope;
+  src: url("fonts/Manrope_700Bold.woff2") format("woff2");
+  font-weight: 700 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("fonts/IBMPlexSansCondensed_400Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("fonts/IBMPlexSansCondensed_600SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("fonts/IBMPlexSansCondensed_700Bold.woff2") format("woff2");
+  font-weight: 700 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("fonts/IBMPlexMono_400Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("fonts/IBMPlexMono_600SemiBold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-display: swap;
+}
+
+/* ── Styles ─────────────────────────────────────────────────────────────── */
+
+/* After Hours, the default: warm and roomy, a serif voice for headings. */
 :root {
-  --background: #f5f3ff;
+  --background: #f6f2f7;
   --surface: #ffffff;
-  --surface-variant: #ede9fe;
-  --on-surface-variant: #6d28d9;
-  --text: #1e1b4b;
-  --text-muted: #57557a;
-  --primary: #4f46e5;
+  --surface-variant: #ece5ef;
+  --on-surface-variant: #6a3b86;
+  --text: #21182c;
+  --text-muted: #5f546b;
+  --primary: #93500d;
   --on-primary: #ffffff;
-  --border: #d1d5db;
-  --edge: #8b8aa6;
-  --frame: #1e1b4b;
-  --shadow: 0 1px 2px rgb(30 27 75 / 6%), 0 8px 24px rgb(30 27 75 / 8%);
+  --border: #ddd3e3;
+  --edge: #8a7e95;
+  --frame: #21182c;
+  --shadow: 0 1px 2px rgb(33 24 44 / 6%), 0 8px 24px rgb(33 24 44 / 9%);
+  --card-border: none;
+
+  --font-display: "DM Serif Display", Georgia, "Times New Roman", serif;
+  --font-body:
+    Manrope, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  /* DM Serif Display has one weight; asking for bold would make the browser fake it. */
+  --display-weight: 400;
+  --display-tracking: 0;
+
+  --radius: 16px;
+  --radius-lg: 24px;
+  --radius-sm: 12px;
+  --radius-pill: 999px;
+  --phone-radius: 36px;
 
   /* Pattern-type colours, from PATTERN_TYPE_COLORS. */
   --coral: #ff6b6b;
@@ -24,7 +120,6 @@
   --violet: #9b59b6;
   --amber: #f39c12;
 
-  --radius: 16px;
   --max: 1080px;
   --gutter: 20px;
 
@@ -33,20 +128,76 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #18181b;
-    --surface: #23232b;
-    --surface-variant: #2e2e38;
-    --on-surface-variant: #a78bfa;
-    --text: #f1f5f9;
-    --text-muted: #a1a1aa;
-    --primary: #818cf8;
-    --on-primary: #1e1b4b;
-    --border: #3f3f46;
-    --edge: #71717a;
-    --frame: #3f3f46;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 25%);
+    --background: #15121d;
+    --surface: #201b2b;
+    --surface-variant: #2b2439;
+    --on-surface-variant: #d9c2ff;
+    --text: #f1e8dc;
+    --text-muted: #b0a6bd;
+    --primary: #f3b46a;
+    --on-primary: #2a1b0b;
+    --border: #3a3149;
+    --edge: #7d7290;
+    --frame: #3a3149;
+    --shadow: 0 1px 2px rgb(0 0 0 / 35%), 0 8px 24px rgb(0 0 0 / 30%);
   }
 }
+
+/* Clipboard: dense, condensed and squared-off, with mono labels. */
+:root[data-style="clipboard"] {
+  --background: #eef1ee;
+  --surface: #ffffff;
+  --surface-variant: #e1e7e2;
+  --on-surface-variant: #24503f;
+  --text: #141815;
+  --text-muted: #515953;
+  --primary: #b3300f;
+  --on-primary: #ffffff;
+  --border: #d0d7d1;
+  --edge: #7c867e;
+  --frame: #141815;
+  /* Clipboard separates by rule rather than by depth. */
+  --shadow: 0 1px 2px rgb(20 24 21 / 6%);
+  --card-border: 1px solid var(--border);
+
+  --font-display:
+    "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --display-weight: 700;
+  --display-tracking: -0.01em;
+
+  --radius: 4px;
+  --radius-lg: 6px;
+  --radius-sm: 3px;
+  --radius-pill: 4px;
+  --phone-radius: 18px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-style="clipboard"] {
+    --background: #111513;
+    --surface: #1a1f1c;
+    --surface-variant: #262d28;
+    --on-surface-variant: #9fd8c0;
+    --text: #e6ebe7;
+    --text-muted: #a0a9a2;
+    --primary: #ff7a5c;
+    --on-primary: #2a0a02;
+    --border: #333b35;
+    --edge: #737d75;
+    --frame: #333b35;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%);
+  }
+}
+
+/* Each screenshot comes once per style; only the shown style's copy is displayed (and, being
+   lazy, downloaded). */
+:root[data-style="clipboard"] .for-ah,
+:root:not([data-style="clipboard"]) .for-cb {
+  display: none !important;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
 
 *,
 *::before,
@@ -69,17 +220,13 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--text);
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
+  font-family: var(--font-body);
   font-size: 17px;
   line-height: 1.6;
+}
+
+[data-style="clipboard"] body {
+  line-height: 1.5;
 }
 
 img,
@@ -97,19 +244,23 @@ a {
 h1,
 h2,
 h3 {
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  line-height: 1.15;
   margin: 0 0 0.5em;
 }
 
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+}
+
 h1 {
-  font-size: clamp(2.1rem, 5vw, 3.4rem);
-  font-weight: 800;
+  font-size: clamp(2.3rem, 5.4vw, 3.7rem);
 }
 
 h2 {
-  font-size: clamp(1.6rem, 3.4vw, 2.2rem);
-  font-weight: 750;
+  font-size: clamp(1.7rem, 3.6vw, 2.4rem);
 }
 
 h3 {
@@ -142,7 +293,7 @@ p {
   z-index: 10;
   background: var(--surface);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
@@ -153,13 +304,12 @@ p {
   z-index: 5;
   background: color-mix(in srgb, var(--background) 85%, transparent);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 
 .site-header .wrap {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   height: 64px;
 }
@@ -170,8 +320,10 @@ p {
   gap: 10px;
   color: var(--text);
   text-decoration: none;
-  font-weight: 800;
-  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: 1.35rem;
+  margin-right: auto;
 }
 
 .brand img {
@@ -195,10 +347,65 @@ p {
   color: var(--primary);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .site-nav .optional {
     display: none;
   }
+}
+
+@media (max-width: 560px) {
+  .site-header .site-nav {
+    display: none;
+  }
+}
+
+/* The style switcher: a segmented control, like the app's. Hidden until site.js runs, since
+   without the script it could not do anything. */
+.style-switch {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface-variant);
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.style-switch[hidden] {
+  display: none;
+}
+
+.style-switch button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: 600 0.85rem/1 var(--font-body);
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.style-switch button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.style-switch button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.style-switch .ah-label {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
+.style-switch .cb-label {
+  font-family: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  font-weight: 600;
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
@@ -215,8 +422,8 @@ p {
   align-items: center;
   gap: 8px;
   padding: 12px 22px;
-  border-radius: 999px;
-  font-weight: 650;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
   text-decoration: none;
   border: 2px solid var(--primary);
 }
@@ -252,6 +459,7 @@ p {
   align-items: center;
 }
 
+/* A small label above a heading: a tag in After Hours, a mono rubric in Clipboard. */
 .eyebrow {
   display: inline-block;
   font-size: 0.8rem;
@@ -261,8 +469,20 @@ p {
   color: var(--on-surface-variant);
   background: var(--surface-variant);
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   margin-bottom: 18px;
+}
+
+[data-style="clipboard"] .eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  background: none;
+  padding: 0;
+  border-left: 3px solid var(--primary);
+  padding-left: 8px;
+  border-radius: 0;
 }
 
 .lead {
@@ -275,13 +495,6 @@ p {
   margin-top: 18px;
   font-size: 0.9rem;
   color: var(--text-muted);
-}
-
-.hero-art {
-  background: var(--surface);
-  border-radius: 24px;
-  box-shadow: var(--shadow);
-  padding: 20px;
 }
 
 @media (max-width: 860px) {
@@ -313,7 +526,7 @@ section {
 
 .band {
   background: var(--surface);
-  border-block: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  border-block: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 
 /* Who it's for: one card per audience. */
@@ -326,6 +539,7 @@ section {
 .audience {
   background: var(--background);
   border-radius: var(--radius);
+  border: var(--card-border);
   padding: 24px;
 }
 
@@ -356,8 +570,10 @@ section {
 
 .steps li {
   counter-increment: step;
-  background: var(--background);
+  background: var(--surface);
   border-radius: var(--radius);
+  border: var(--card-border);
+  box-shadow: var(--shadow);
   padding: 22px;
 }
 
@@ -367,16 +583,24 @@ section {
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--primary);
   color: var(--on-primary);
   font-weight: 800;
   margin-bottom: 12px;
 }
 
-section:not(.band) .steps li {
-  background: var(--surface);
-  box-shadow: var(--shadow);
+[data-style="clipboard"] .steps li::before {
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  width: auto;
+  height: auto;
+  display: block;
+  background: none;
+  color: var(--primary);
+  border-radius: 0;
+  margin-bottom: 6px;
 }
 
 .steps p {
@@ -410,13 +634,14 @@ section:not(.band) .steps li {
 .feature-art {
   background: var(--surface);
   border-radius: var(--radius);
+  border: var(--card-border);
   box-shadow: var(--shadow);
   padding: 18px;
 }
 
 .feature ul {
   padding-left: 1.2em;
-  margin: 0;
+  margin: 0 0 1em;
 }
 
 .feature li {
@@ -434,6 +659,48 @@ section:not(.band) .steps li {
   }
 }
 
+/* The three views of a list, named and drawn like the app's bottom tabs. */
+.tabs-legend {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0 0 1.2em;
+  list-style: none;
+}
+
+.tabs-legend li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  column-gap: 14px;
+  align-items: start;
+  background: var(--background);
+  border-radius: var(--radius-sm);
+  border: var(--card-border);
+  padding: 12px 16px;
+  margin: 0;
+}
+
+.tabs-legend svg {
+  grid-row: span 2;
+  width: 26px;
+  height: 26px;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+[data-style="clipboard"] .tabs-legend strong {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tabs-legend span {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
 /* Card grid. */
 .cards {
   display: grid;
@@ -444,6 +711,7 @@ section:not(.band) .steps li {
 .card {
   background: var(--surface);
   border-radius: var(--radius);
+  border: var(--card-border);
   padding: 22px;
   box-shadow: var(--shadow);
 }
@@ -462,7 +730,7 @@ section:not(.band) .steps li {
 .card .icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: var(--surface-variant);
   color: var(--on-surface-variant);
   display: grid;
@@ -475,26 +743,13 @@ section:not(.band) .steps li {
   height: 22px;
 }
 
-.tag {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-  background: var(--surface-variant);
-  padding: 2px 8px;
-  border-radius: 999px;
-  vertical-align: middle;
-  margin-left: 6px;
-}
-
-/* App screenshots, framed as a phone. They come in a light and a dark take, picked by
-   prefers-color-scheme in the <picture>, so they follow the page's theme. */
+/* App screenshots, framed as a phone. Each comes in a light and a dark take, picked by
+   prefers-color-scheme in the <picture>, so it follows the page's theme. */
 .hero-art.shot,
 .feature-art.shot {
   background: none;
   box-shadow: none;
+  border: 0;
   padding: 0;
 }
 
@@ -503,8 +758,30 @@ section:not(.band) .steps li {
   max-width: 300px;
   margin: 0 auto;
   border: 8px solid var(--frame);
-  border-radius: 36px;
+  border-radius: var(--phone-radius);
   box-shadow: var(--shadow);
+}
+
+/* Two shots side by side: a phone and a crop. */
+.shot-pair {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.shot-pair .shot-crop {
+  margin-top: 48px;
+}
+
+@media (max-width: 480px) {
+  .shot-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .shot-pair .shot-crop {
+    margin-top: 0;
+  }
 }
 
 /* The video tools, step by step: crops of the app's sheets, so a lighter frame than a phone. */
@@ -526,7 +803,7 @@ section:not(.band) .steps li {
   height: auto;
   margin: 0 auto;
   border: 6px solid var(--frame);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
 
@@ -548,54 +825,31 @@ section:not(.band) .steps li {
   fill: var(--surface);
 }
 
-.art-variant {
-  fill: var(--surface-variant);
-}
-
-.art-edge {
-  stroke: var(--edge);
-  fill: none;
-  stroke-width: 2;
-}
-
-.art-dim {
-  opacity: 0.28;
-}
-
-.art-label {
-  fill: var(--text);
-  /* A halo in the card colour keeps labels readable where an edge passes behind them. */
-  paint-order: stroke;
-  stroke: var(--surface);
-  stroke-width: 4px;
-  stroke-linejoin: round;
-  font:
-    600 12px system-ui,
-    sans-serif;
-}
-
 .art-label-muted {
   fill: var(--text-muted);
-  font:
-    600 11px system-ui,
-    sans-serif;
+  font: 600 11px var(--font-body);
 }
 
-.art-on-fill {
-  fill: #1e1b4b;
-  font:
-    700 12px system-ui,
-    sans-serif;
+.art-code {
+  fill: var(--text);
+  font: 600 34px var(--font-mono);
+  letter-spacing: 3px;
 }
 
 /* ── FAQ ────────────────────────────────────────────────────────────────── */
 
 .faq details {
   background: var(--surface);
-  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border-radius: var(--radius-sm);
+  border: var(--card-border);
   padding: 16px 20px;
   margin-bottom: 12px;
-  box-shadow: var(--shadow);
+}
+
+.band.faq details {
+  background: var(--background);
+  box-shadow: none;
 }
 
 .faq summary {
@@ -614,7 +868,7 @@ section:not(.band) .steps li {
   padding: 40px 0 56px;
   font-size: 0.92rem;
   color: var(--text-muted);
-  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 
 .site-footer .wrap {
@@ -646,7 +900,7 @@ section:not(.band) .steps li {
 }
 
 .prose h2 {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   margin-top: 2em;
 }
 

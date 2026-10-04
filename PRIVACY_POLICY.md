@@ -176,7 +176,7 @@ Downloaded models are checked against a fixed SHA-256 checksum before use, so a 
 
 ## 10. This website
 
-The DPM website (https://oliverhenrichs.github.io/dpm/) is hosted on **GitHub Pages** by GitHub, Inc. It uses no cookies, no analytics and no third-party fonts or scripts. GitHub records the IP address of visitors in its server logs for security purposes; see the [GitHub General Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement). Links to the GitHub repository and to email take you to those services.
+The DPM website (https://oliverhenrichs.github.io/dpm/) is hosted on **GitHub Pages** by GitHub, Inc. It uses no cookies, no analytics and no third-party fonts or scripts; its fonts and its one small script are served from the site itself. If you switch the page between its two styles, your choice is kept in your browser's local storage so the next page you open looks the same; it never leaves your browser, and clearing your browsing data removes it. GitHub records the IP address of visitors in its server logs for security purposes; see the [GitHub General Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement). Links to the GitHub repository and to email take you to those services.
 
 ---
 

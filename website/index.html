@@ -8,11 +8,13 @@
       name="description"
       content="DPM keeps the figures from your dance course, with your own videos, in one place and maps how they connect. For dancers who want to remember what they learned, and for teachers who want to give their groups a list that grows from course to course."
     />
-    <meta name="theme-color" content="#f5f3ff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f2f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#15121d" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
+    <link rel="preload" href="fonts/DMSerifDisplay_400Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="styles.css" />
+    <script src="site.js"></script>
 
     <!-- Social previews. Update SITE_URL here once the site has its final address. -->
     <link rel="canonical" href="https://oliverhenrichs.github.io/dpm/" />
@@ -42,11 +44,16 @@
         </a>
         <nav class="site-nav" aria-label="Main">
           <a href="#who">Who it's for</a>
-          <a class="optional" href="#graph">Features</a>
+          <a class="optional" href="#views">Features</a>
+          <a class="optional" href="#reels">Reels</a>
           <a class="optional" href="#video">Video tools</a>
           <a class="optional" href="#faq">FAQ</a>
           <a href="https://github.com/OliverHenrichs/dpm">GitHub</a>
         </nav>
+        <div class="style-switch" role="group" aria-label="Page style, as in the app" hidden>
+          <button type="button" data-style-choice="after-hours" aria-pressed="true"><span class="ah-label">After Hours</span></button>
+          <button type="button" data-style-choice="clipboard" aria-pressed="false"><span class="cb-label">Clipboard</span></button>
+        </div>
       </div>
     </header>
 
@@ -81,15 +88,13 @@
           </div>
 
           <div class="hero-art shot">
-            <picture>
-                <source srcset="img/shots/network-dark.webp" media="(prefers-color-scheme: dark)" />
-                <img
-                  src="img/shots/network.webp"
-                  width="600"
-                  height="1267"
-                  fetchpriority="high"
-                  alt="DPM showing a West Coast Swing course as a network: the sugar push leads to the sugar tuck, the left side pass to the tuck turn, and the basic whip to the basket, behind-the-back and hustle whips"
-                />
+              <picture class="for-ah">
+                <source srcset="img/shots/network-ah-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/network-ah.webp" width="600" height="1267" fetchpriority="high" alt="DPM showing a West Coast Swing course as a network on its Map tab: the sugar push leads to the sugar tuck, the left side pass to the tuck turn, and the basic whip to the basket, behind-the-back and hustle whips" />
+              </picture>
+              <picture class="for-cb">
+                <source srcset="img/shots/network-cb-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/network-cb.webp" width="600" height="1267" loading="lazy" alt="DPM showing a West Coast Swing course as a network on its Map tab: the sugar push leads to the sugar tuck, the left side pass to the tuck turn, and the basic whip to the basket, behind-the-back and hustle whips" />
               </picture>
           </div>
         </div>
@@ -157,18 +162,64 @@
             <li>
               <h3>Add each figure as it comes</h3>
               <p>
-                Name, type, counts, level, notes, your videos from class, tags such as the course or
-                festival, and the figures it builds on.
+                Name, type, counts and rhythm, level, notes, your videos from class, tags such as
+                the course or festival, and the figures it builds on.
               </p>
             </li>
             <li>
-              <h3>See the whole map</h3>
+              <h3>Look it up, map it, watch it</h3>
               <p>
-                DPM lays out your repertoire as a timeline or a network, and you can filter it down
-                to exactly what you're working on.
+                The list for looking things up, the map for how it all connects, and reels for
+                watching your videos one after another.
               </p>
             </li>
           </ol>
+        </div>
+      </section>
+
+      <!-- ── List · Map · Reels ───────────────────────────────────────────── -->
+      <section class="band" id="views">
+        <div class="wrap">
+          <div class="feature">
+            <div>
+              <h2>One list, three ways to see it</h2>
+              <p>
+                Open a list and the bar at the bottom switches between three views of the same
+                figures. The menu holds everything else: your other lists, and Settings.
+              </p>
+              <ul class="tabs-legend">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 9h10M7 13h10M7 17h6" /></svg>
+                  <strong>List</strong>
+                  <span>Every figure with its type and level. Sort it, filter it, open one for the details.</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" /></svg>
+                  <strong>Map</strong>
+                  <span>Which figure builds on which, as a timeline or a network.</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="14" height="14" rx="2" /><path d="M3 7v12a2 2 0 0 0 2 2h12M12 7.5v5l4-2.5z" /></svg>
+                  <strong>Reels</strong>
+                  <span>The videos of your figures, one per screen.</span>
+                </li>
+              </ul>
+              <p class="muted">
+                Open a figure and you get its counts and rhythm (1 2 3&amp;4 5&amp;6 for a six-count
+                pattern), its notes, its videos and its variations.
+              </p>
+            </div>
+            <div class="feature-art shot">
+              <picture class="for-ah">
+                <source srcset="img/shots/list-ah-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/list-ah.webp" width="600" height="1267" loading="lazy" alt="The List tab of a West Coast Swing course: basic, basket, behind-the-back and hustle whips, left side pass, sugar push, sugar tuck, tuck turn and underarm turn, each with its type and level, and the List, Map and Reels tabs at the bottom" />
+              </picture>
+              <picture class="for-cb">
+                <source srcset="img/shots/list-cb-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/list-cb.webp" width="600" height="1267" loading="lazy" alt="The List tab of a West Coast Swing course: basic, basket, behind-the-back and hustle whips, left side pass, sugar push, sugar tuck, tuck turn and underarm turn, each with its type and level, and the List, Map and Reels tabs at the bottom" />
+              </picture>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -179,9 +230,9 @@
             <div>
               <h2>Two views of one map</h2>
               <p>
-                The <strong>timeline</strong> gives each pattern type its own lane and flows left to
-                right by how many steps a pattern is from the basics. The <strong>network</strong>
-                is a zoomable graph you can pan, pinch and arrange by hand.
+                On the Map tab, the <strong>timeline</strong> gives each pattern type its own lane
+                and flows left to right by how many steps a pattern is from the basics. The
+                <strong>network</strong> is a zoomable graph you can pan, pinch and arrange by hand.
               </p>
               <ul>
                 <li>Colours show the pattern type, shading shows the level</li>
@@ -191,15 +242,13 @@
               </ul>
             </div>
             <div class="feature-art shot">
-              <picture>
-                <source srcset="img/shots/timeline-dark.webp" media="(prefers-color-scheme: dark)" />
-                <img
-                  src="img/shots/timeline.webp"
-                  width="600"
-                  height="1267"
-                  loading="lazy"
-                  alt="The timeline view: one lane per pattern type, flowing left to right from the foundations, such as the basic whip leading to the basket, behind-the-back and hustle whips"
-                />
+              <picture class="for-ah">
+                <source srcset="img/shots/timeline-ah-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/timeline-ah.webp" width="600" height="1267" loading="lazy" alt="The timeline view: one lane per pattern type, flowing left to right from the foundations, such as the basic whip leading to the basket, behind-the-back and hustle whips" />
+              </picture>
+              <picture class="for-cb">
+                <source srcset="img/shots/timeline-cb-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/timeline-cb.webp" width="600" height="1267" loading="lazy" alt="The timeline view: one lane per pattern type, flowing left to right from the foundations, such as the basic whip leading to the basket, behind-the-back and hustle whips" />
               </picture>
             </div>
           </div>
@@ -223,15 +272,13 @@
               </p>
             </div>
             <div class="feature-art shot">
-              <picture>
-                <source srcset="img/shots/filter-dark.webp" media="(prefers-color-scheme: dark)" />
-                <img
-                  src="img/shots/filter.webp"
-                  width="600"
-                  height="1267"
-                  loading="lazy"
-                  alt="The timeline filtered to a festival tag: the behind-the-back and hustle whips stand out, with the basic whip they build on faded behind them"
-                />
+              <picture class="for-ah">
+                <source srcset="img/shots/filter-ah-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/filter-ah.webp" width="600" height="1267" loading="lazy" alt="The timeline filtered to a festival tag: the behind-the-back and hustle whips stand out, with the basic whip they build on faded behind them" />
+              </picture>
+              <picture class="for-cb">
+                <source srcset="img/shots/filter-cb-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/filter-cb.webp" width="600" height="1267" loading="lazy" alt="The timeline filtered to a festival tag: the behind-the-back and hustle whips stand out, with the basic whip they build on faded behind them" />
               </picture>
             </div>
           </div>
@@ -261,15 +308,13 @@
               </p>
             </div>
             <div class="feature-art shot">
-              <picture>
-                <source srcset="img/shots/modifiers-dark.webp" media="(prefers-color-scheme: dark)" />
-                <img
-                  src="img/shots/modifiers.webp"
-                  width="600"
-                  height="1267"
-                  loading="lazy"
-                  alt="The modifiers of a course list: with Inside Turn is applied to the left side pass and the basic whip; Hesitation and with Hand Change are universal"
-                />
+              <picture class="for-ah">
+                <source srcset="img/shots/modifiers-ah-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/modifiers-ah.webp" width="600" height="1267" loading="lazy" alt="The modifiers of a course list: with Inside Turn, with Outside Turn and with Free Spin change a pattern, with Duck comes after it, and Hesitation and with Hand Change are universal" />
+              </picture>
+              <picture class="for-cb">
+                <source srcset="img/shots/modifiers-cb-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/modifiers-cb.webp" width="600" height="1267" loading="lazy" alt="The modifiers of a course list: with Inside Turn, with Outside Turn and with Free Spin change a pattern, with Duck comes after it, and Hesitation and with Hand Change are universal" />
               </picture>
             </div>
           </div>
@@ -305,7 +350,7 @@
                   </g>
                 </g>
                 <text class="art-label-muted" x="190" y="74">SHARE CODE</text>
-                <text x="190" y="116" fill="var(--text)" style="font: 800 34px ui-monospace, monospace; letter-spacing: 3px">K7QM2XRA</text>
+                <text class="art-code" x="190" y="116">K7QM2XRA</text>
                 <text class="art-label-muted" x="190" y="148">Live copy · read-only for subscribers</text>
               </svg>
             </div>
@@ -313,8 +358,59 @@
         </div>
       </section>
 
+      <!-- ── Reels ────────────────────────────────────────────────────────── -->
+      <section class="band" id="reels">
+        <div class="wrap">
+          <div class="feature">
+            <div>
+              <span class="eyebrow">New</span>
+              <h2>Reels: your figures, one video at a time</h2>
+              <p>
+                The Reels tab gathers every pattern that has a video. The overview shows a still of
+                each; tap one to watch them one per screen. Swipe up or down to the next pattern,
+                and sideways through its videos: its own first, then those of it danced with a
+                modifier.
+              </p>
+              <ul>
+                <li>Reels from the list you have open, or from every list on your phone</li>
+                <li>The phone's own video controls, with fullscreen in landscape</li>
+                <li>Back to the overview with the grid button, or with Android's back</li>
+              </ul>
+              <p class="muted">
+                Before class or a social, flick through what you've learned so far. Reels only
+                plays the videos already in your lists: the ones you recorded, and the links you
+                or your teacher added.
+              </p>
+            </div>
+            <div class="feature-art shot shot-pair">
+              <div>
+                <picture class="for-ah">
+                <source srcset="img/shots/reels-ah-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/reels-ah.webp" width="600" height="1267" loading="lazy" alt="A reel of the basic whip, the first of its two videos: an anonymized clip in which the two dancers are coloured silhouettes" />
+              </picture>
+              <picture class="for-cb">
+                <source srcset="img/shots/reels-cb-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/reels-cb.webp" width="600" height="1267" loading="lazy" alt="A reel of the basic whip, the first of its two videos: an anonymized clip in which the two dancers are coloured silhouettes" />
+              </picture>
+              </div>
+              <figure class="shot-crop">
+                <picture class="for-ah">
+                <source srcset="img/shots/reels-overview-ah-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/reels-overview-ah.webp" width="600" height="620" loading="lazy" alt="The Reels overview for this list: a still of the basic whip, marked as having two videos" />
+              </picture>
+              <picture class="for-cb">
+                <source srcset="img/shots/reels-overview-cb-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img src="img/shots/reels-overview-cb.webp" width="600" height="620" loading="lazy" alt="The Reels overview for this list: a still of the basic whip, marked as having two videos" />
+              </picture>
+                <figcaption>The overview: this list or all lists, a still for each pattern.</figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ── Video tools ──────────────────────────────────────────────────── -->
-      <section class="band" id="video">
+      <section id="video">
         <div class="wrap">
           <div class="feature">
             <div>
@@ -374,7 +470,7 @@
       </section>
 
       <!-- ── Everything else ──────────────────────────────────────────────── -->
-      <section id="more">
+      <section class="band" id="more">
         <div class="wrap">
           <div class="section-head">
             <h2>And the details</h2>
@@ -394,8 +490,11 @@
               <div class="icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 12 12 20 4 12V4h8z" /><circle cx="8.5" cy="8.5" r="1.5" /></svg>
               </div>
-              <h3>Levels, counts and tags</h3>
-              <p>Beginner to advanced, the count of the pattern, and free-form tags to filter by.</p>
+              <h3>Levels, counts, rhythm and tags</h3>
+              <p>
+                Beginner to advanced, the counts and rhythm of a pattern, and free-form tags to
+                filter by. Pick the dance and DPM suggests the rhythms that fit the counts.
+              </p>
             </div>
             <div class="card">
               <div class="icon">
@@ -421,8 +520,12 @@
               <div class="icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z" /></svg>
               </div>
-              <h3>Light and dark</h3>
-              <p>Follow the system or pick one. Colour contrast meets accessibility minimums in both.</p>
+              <h3>Two styles, light and dark</h3>
+              <p>
+                After Hours is warm and roomy; Clipboard is dense enough to keep a whole course on
+                one screen. Each in light and dark, with contrast that meets accessibility minimums.
+                This page has both: switch at the top.
+              </p>
             </div>
             <div class="card">
               <div class="icon">
@@ -440,7 +543,7 @@
       </section>
 
       <!-- ── FAQ ──────────────────────────────────────────────────────────── -->
-      <section class="band faq" id="faq">
+      <section class="faq" id="faq">
         <div class="wrap">
           <div class="section-head">
             <h2>Questions</h2>
