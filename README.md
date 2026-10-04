@@ -8,22 +8,29 @@
 > **Status:** Work in Progress 🚧 · **Website:** [oliverhenrichs.github.io/dpm](https://oliverhenrichs.github.io/dpm/)
 
 A React Native / Expo mobile app for mapping partner-dance patterns as a prerequisite graph.  
-Organise patterns into dance-style-specific lists, visualise their dependencies in a swimlane timeline or a zoomable network graph, and share your lists with other dancers via export/import or live cloud sync.
+Organise patterns into dance-style-specific lists, visualise their dependencies in a swimlane timeline or a zoomable network graph, browse their videos as reels, and share your lists with other dancers via export/import or live cloud sync.
 
 ---
 
 ## Features
 
+### Navigation
+- The **drawer** holds the places: **Lists** (all your pattern lists) and **Settings**
+- Inside the open list, **bottom tabs** switch between its views: **List** · **Map** · **Reels**
+
 ### Pattern Lists
 - Create pattern lists for any dance style — choose from **five built-in templates** (West Coast Swing, Salsa, Bachata, Argentine Tango, Lindy Hop) or start from a **blank list**
 - Templates come with preset pattern types *and* a handful of foundational starter patterns
 - Each list owns its own set of **custom pattern types** with individually assigned colours
-- Edit list name and pattern types at any time (types with patterns cannot be removed)
+- A list can name its **dance** (West Coast Swing, Lindy Hop, Salsa, Bachata, Argentine Tango), which picks the rhythms suggested for its patterns; templates set it
+- Edit list name, dance and pattern types at any time (types with patterns cannot be removed)
 - Delete lists individually; the active list persists across sessions
 
 ### Pattern Management
 - Full **CRUD** for patterns within a list
-- Per-pattern fields: name, type, counts, level (Beginner / Intermediate / Advanced), description, free-form **tags**, **prerequisite links** to other patterns, one or more **videos** (local file or URL with optional start time), and attached **modifiers**
+- Per-pattern fields: name, type, counts, an optional **rhythm**, an optional level (Beginner / Intermediate / Advanced), description, free-form **tags**, **prerequisite links** to other patterns, one or more **videos** (local file or URL with optional start time), and attached **modifiers**
+- **Rhythm** is written the way dancers count it (`1 2 3&4 5&6` for a West Coast Swing six-count pattern, `a` for a swung triple, `(4)` for a beat without a weight change) and always matches the counts: typing a rhythm sets the counts, and changing the counts drops a rhythm that no longer fits. While the field is empty it suggests the dance's basic rhythms for those counts, then offers the next step to append
+- Rows show the type, the level when set and the number of videos; the counts are in the opened details
 - Supports **online videos** including YouTube links with in-app playback
 - Inline video thumbnails with a swipeable carousel in both the edit form and the detail view
 - Start a new pattern **from a video**, picked from the gallery or **recorded** with the system camera; the video seeds the form. Picked videos are copied into the app's own storage, so they survive the OS clearing its cache
@@ -37,7 +44,7 @@ Modifiers are affixes that change how a pattern is danced ("with a spin", "slow"
 - A modifier's detail view lists every pattern it is attached to; deleting a modifier detaches it from all patterns
 
 ### Video Tools (Android)
-**Edit Pattern → Videos → Edit video** opens a sheet with the clip and a trim bar. Everything below runs **on the device**. No video, audio or transcript is uploaded, and each tool runs as a background job reported in a banner on the pattern list.
+**Edit Pattern → Videos → Edit video** opens a sheet with the clip and a trim bar. Everything below runs **on the device**. No video, audio or transcript is uploaded, and each tool runs as a background job reported in a banner on the pattern list, with a phone notification when it finishes while the app is in the background.
 
 - **Shorten** cuts the selection out at the source's size, audio kept
 - **Anonymize** turns a 1–30 s selection into a **silhouette** video: tap each dancer (one, or a couple) on a frame and they are tracked through the clip. The result replaces the video in the pattern, with a *Silhouette* badge; the original stays in the gallery
@@ -47,8 +54,8 @@ Modifiers are affixes that change how a pattern is danced ("with a spin", "slow"
 
 The native parts are local Expo modules in `modules/` (`video-anonymize`, `audio-extract`); on iOS and web these tools are hidden.
 
-### Graph Visualisation
-Two switchable views driven by the prerequisite graph:
+### Map
+The **Map** tab shows the prerequisite graph in two switchable views:
 
 | View | Description |
 |---|---|
@@ -64,10 +71,18 @@ Both views render from a single graph model, so they cannot disagree about depth
 - **Circular prerequisites are surfaced to the user** as a banner naming how many patterns are caught in a loop, not buried in a console warning
 - Collapsible **legend** explaining type colours, level shading and the badges
 
+### Reels
+The **Reels** tab pages through every pattern that has a video, for browsing before a social rather than looking something up:
+
+- An **overview** shows the patterns as stills, from the open list or from **every list** on the phone
+- Tapping one opens them **one per screen**: swipe up and down between patterns, sideways through a pattern's videos (its own first, then those danced with a modifier)
+- Only the video on screen holds a player, and leaving the tab stops it
+
 ### Filtering & Sorting
 - Filter by **name** (substring), **type**, **level**, **exact counts**, and **tags**
 - The same filter works on the **pattern list** and on the **graph**, where it additionally decides how much of a match's chain to draw
 - Sort by name, type, level, counts, or id/date created (ascending / descending)
+- Sorting by type, level or counts splits the list into **sections** with pinned headers and counts; types follow the list's own order, levels run beginner to advanced, and patterns without a value come last
 - Both panels slide up as bottom sheets
 
 ### Import & Export
@@ -83,10 +98,13 @@ Both views render from a single graph model, so they cannot disagree about depth
 - **Publish** a list to the cloud — generates an 8-character **share code** and a **QR code**
 - Other users can **subscribe** by entering the code or scanning the QR code; their copy stays live-synced via Firestore
 - Subscribed copies are marked **read-only**; if the publisher stops sharing the list is detached and becomes fully editable
+- **Only the publisher can update or stop sharing a list.** Publishing signs in to Firebase anonymously (no account, no personal data), and each list carries a secret **share key** that stays on the publisher's phone; an editable export carries it, so the publisher keeps control on a new phone or after a reinstall. Subscribing never signs in
 - Requires optional Firebase configuration (see [Firebase Setup](#firebase-setup))
 
 ### Settings
 - **Theme**: Light, Dark, or System default
+- **Style**: *After Hours* (the default, made for dancers) or *Clipboard* (dense and structured, made for running a course), each in light and dark with its own typefaces
+- **App icon**: the launcher icon in indigo (the default), amber or coral, independent of the style; offered where the platform supports alternate icons
 - **Language**: nine locales — English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Deutsch. A fresh install follows the device language; your pick is remembered from then on
 - **Data transfer**: export and import pattern lists
 - **On-device models**: the speech and suggestion models, with their size and a *Delete* button (Android)
@@ -100,7 +118,7 @@ Both views render from a single graph model, so they cannot disagree about depth
 | Framework | [Expo](https://expo.dev) ~57 / React Native 0.86 / React 19 |
 | Navigation | [Expo Router](https://expo.github.io/router) file-based routing + its built-in `Drawer` layout |
 | Persistence | [@react-native-async-storage/async-storage](https://github.com/react-native-async-storage/async-storage) |
-| Cloud sync | [Firebase](https://firebase.google.com) (Firestore) ^12 |
+| Cloud sync | [Firebase](https://firebase.google.com) (Firestore, anonymous Authentication) ^12 |
 | Styling | [react-native-unistyles](https://www.unistyl.es) 3 — every colour, spacing step and text style comes from the design tokens in `src/common/theme/tokens.ts` |
 | Graphics | [react-native-svg](https://github.com/software-mansion/react-native-svg) 15 |
 | Gestures & animation | [react-native-gesture-handler](https://docs.swmansion.com/react-native-gesture-handler) + [react-native-reanimated](https://docs.swmansion.com/react-native-reanimated) — pan, pinch and node dragging all run on the UI thread |
@@ -110,9 +128,11 @@ Both views render from a single graph model, so they cannot disagree about depth
 | YouTube | [react-native-youtube-iframe](https://lonelycpp.github.io/react-native-youtube-iframe) |
 | QR codes | [react-native-qrcode-svg](https://github.com/awesomejerry/react-native-qrcode-svg) + [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera) |
 | File / Share | [expo-file-system](https://docs.expo.dev/versions/latest/sdk/filesystem) + [expo-sharing](https://docs.expo.dev/versions/latest/sdk/sharing) + [expo-document-picker](https://docs.expo.dev/versions/latest/sdk/document-picker) |
+| App icon | [expo-alternate-app-icons](https://github.com/pchalupa/expo-alternate-app-icons) |
+| Notifications | [expo-notifications](https://docs.expo.dev/versions/latest/sdk/notifications) (local only, for finished video work) |
 | i18n | [i18next](https://www.i18next.com) + [react-i18next](https://react.i18next.com) |
 | Language | TypeScript ~6.0 |
-| Testing | Jest 30 + ts-jest + @testing-library/react-native — **1265 tests** across two projects |
+| Testing | Jest 30 + ts-jest + @testing-library/react-native — **1481 tests** across two projects, plus the Firestore rules tests |
 
 The new architecture, typed routes and the React Compiler are enabled in `app.config.ts`.
 
@@ -122,6 +142,7 @@ The new architecture, typed routes and the React Compiler are enabled in `app.co
 
 ```
 app/                     Expo Router routes: _layout (drawer) + one file per screen
+  └─ (list)/             The open list's tabs: patterns (List), graph (Map), reels
 locales/                 one <code>.json translation resource per language
 src/common/              Theme, palette, drawer menu, shared components (dialogs, bottom sheet, video)
 src/i18n.ts              i18next bootstrap, imported by the root layout
@@ -130,17 +151,19 @@ src/pattern/data/        AsyncStorage layer, export/import, id allocation, templ
   ├─ validation/         Runtime validation of imported files
   └─ migrations/         Versioned, forward-only schema migrations
 src/pattern/list/        List & modifier screens, edit forms, share/subscribe modals
+src/pattern/rhythm/      Rhythm notation, its link to counts, per-dance suggestions
 src/pattern/filter/      Filter bottom sheet, its sub-panels and the shared filter hook
 src/pattern/graph/       Timeline + network views, details modal
   ├─ model/              Pure graph maths: adjacency, cycles, depth, filtering, layout merge
   ├─ render/             Shared SVG primitives and the drag overlay
   └─ data/               Per-list manual layout storage
+src/reels/               The Reels tab: overview, one-per-screen pager, players
 src/anonymize/           Edit-video sheet, shorten / anonymize jobs and the job banner
   ├─ jobs/               Background job store, one native job at a time
   └─ providers/          Anonymization methods (on-device tracking)
 src/transcribe/          Speech-to-text jobs, model downloads, transcript sheet
 src/suggest/             Name and description suggestions from a transcript
-src/firebase/            Optional Firestore config and list-sharing service
+src/firebase/            Optional Firestore config, anonymous sign-in and list-sharing service
 src/settings/            Settings screen, data-transfer hook, on-device model management
 modules/                 Local native Expo modules: video-anonymize, audio-extract (Android)
 website/                 Static project website, deployed to GitHub Pages (see website/README.md)
@@ -173,6 +196,15 @@ The app runs in a **development build** (`expo-dev-client`), not Expo Go: it shi
 native module is added or changed. Note that `expo prebuild` / `expo run:*` rewrite the `android` and
 `ios` npm scripts; revert that.
 
+### On-device model weights
+
+The Anonymize models (about 130 MB) are **not in git**. Fetch or export them into
+`modules/video-anonymize/android/src/main/assets/` with the scripts in `scripts/` (see
+[modules/AGENTS.md](modules/AGENTS.md)). `.easignore` lets EAS upload them although `.gitignore`
+excludes them, and `npm run assets:check` runs as the `eas-build-pre-install` hook, so an Android
+EAS build started from a checkout without them fails instead of shipping a build whose Anonymize
+cannot work. Keep `.easignore` in step with `.gitignore`.
+
 ### Build variants and signing
 
 Android will not install an update signed with a different certificate than the installed app
@@ -185,7 +217,7 @@ application id, chosen by `APP_VARIANT` in `app.config.ts`, and they install sid
 |---|---|---|---|---|
 | `development` | `com.teholi.DancePatternMapper.dev` | DPM (Dev) | `eas build --profile development`, or `APP_VARIANT=development npx expo run:android` | EAS keystore, or the local debug keystore |
 | `preview` | `com.teholi.DancePatternMapper.preview` | DPM (Preview) | `eas build --profile preview` (APK, sideload) | EAS keystore |
-| unset / `production` | `com.teholi.DancePatternMapper` | DPM | `eas build --profile production` (AAB, for Play) | EAS keystore as **upload key**; Play re-signs with the app signing key |
+| unset / `production` | `com.teholi.DancePatternMapper` | DPM | `eas build --profile production` (AAB, for Play), or `--profile production-apk` (an APK of the same build, to install directly) | EAS keystore as **upload key**; Play re-signs with the app signing key |
 
 `eas.json` sets the variable for each profile. Locally, set it yourself for a development client;
 without it you build the production id, which then collides with whatever is installed under it.
@@ -218,6 +250,7 @@ npm run test:coverage     # coverage, with per-file thresholds enforced
 npm run lint              # ESLint via expo lint
 npm run typecheck         # tsc --noEmit
 npm run format:check      # Prettier, same glob CI uses
+npm run test:rules        # Firestore security rules in the emulator (needs Java 21+)
 ```
 
 CI runs all of the above on every push and pull request, plus an `expo export` for **both** web and
@@ -244,6 +277,13 @@ FIREBASE_APP_TOKEN=...   # write token used by the publish flow, checked by your
 `app.config.ts` reads these into `extra.firebase` at build time — no credentials are committed to the repository.  
 Expo loads `.env` automatically when running `expo start` or `eas build`.  
 For EAS cloud builds, add each variable as an [EAS Secret](https://docs.expo.dev/build-reference/variables/#using-secrets-in-eas-build).
+
+In the Firebase console, enable **Anonymous** sign-in (Authentication → Sign-in method); publishing
+fails without it. The security rules live in `firestore.rules`: only a list's publisher may update
+or delete it, and nobody can browse the published lists. Test them with `npm run test:rules` and
+deploy them with `npm run rules:deploy` (`firebase login` once; the project id comes from `.env`).
+Deploying changes production for every installed app, so deploy rules that require sign-in only once
+builds that sign in are what people run. Details in [src/firebase/AGENTS.md](src/firebase/AGENTS.md).
 
 ---
 
