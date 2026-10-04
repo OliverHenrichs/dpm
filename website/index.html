@@ -6,7 +6,7 @@
     <title>DPM · Dance Pattern Mapper</title>
     <meta
       name="description"
-      content="DPM maps partner-dance patterns as a graph of what builds on what. Keep your patterns, videos and variations in one place, see how they connect, and share lists with your dance partners."
+      content="DPM keeps the figures from your dance course, with your own videos, in one place and maps how they connect. For dancers who want to remember what they learned, and for teachers who want to give their groups a list that grows from course to course."
     />
     <meta name="theme-color" content="#f5f3ff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
@@ -20,7 +20,7 @@
     <meta property="og:title" content="DPM · Dance Pattern Mapper" />
     <meta
       property="og:description"
-      content="See how your dance patterns build on each other. Patterns, videos and variations in one place, mapped as a graph."
+      content="Keep what you learn in class. Your figures, your videos and how they connect, in one list you can share with your class."
     />
     <meta property="og:url" content="https://oliverhenrichs.github.io/dpm/" />
     <meta
@@ -41,7 +41,8 @@
           DPM
         </a>
         <nav class="site-nav" aria-label="Main">
-          <a href="#graph">Features</a>
+          <a href="#who">Who it's for</a>
+          <a class="optional" href="#graph">Features</a>
           <a class="optional" href="#video">Video tools</a>
           <a class="optional" href="#faq">FAQ</a>
           <a href="https://github.com/OliverHenrichs/dpm">GitHub</a>
@@ -55,11 +56,11 @@
         <div class="wrap">
           <div>
             <span class="eyebrow">Dance Pattern Mapper</span>
-            <h1>See how your dance fits together.</h1>
+            <h1>Keep what you learn in class.</h1>
             <p class="lead">
-              Every partner-dance pattern builds on others. DPM keeps your patterns, their videos
-              and their variations in one place, and draws them as a map of what leads to what,
-              so you know what to practise next and what you've forgotten.
+              DPM is a pattern library for partner dancers and the people who teach them. Collect
+              the figures from your course with your own videos, see how they connect, and share
+              the list with your classmates or your students.
             </p>
             <div class="actions">
               <a class="btn btn-primary" href="https://github.com/OliverHenrichs/dpm">
@@ -70,7 +71,7 @@
                 </svg>
                 View on GitHub
               </a>
-              <a class="btn btn-secondary" href="#graph">Take the tour</a>
+              <a class="btn btn-secondary" href="#who">Take the tour</a>
             </div>
             <!-- When the store listings are live, replace this line with the official
                  Google Play and App Store badges linking to them. -->
@@ -79,77 +80,70 @@
             </p>
           </div>
 
-          <div class="hero-art">
-            <svg
-              viewBox="0 0 480 380"
-              role="img"
-              aria-label="A network graph of West Coast Swing patterns: Sugar Push leads to the side passes, which lead to turns and whips."
-            >
-              <defs>
-                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                  <path d="M0 0 10 5 0 10z" fill="var(--edge)" />
-                </marker>
-              </defs>
-              <g class="art-edge" marker-end="url(#arr)">
-                <path d="M226 64 136 124" />
-                <path d="M254 64 344 124" />
-                <path d="M110 158 86 212" />
-                <path d="M136 152 222 218" />
-                <path d="M344 152 258 218" />
-                <path d="M370 158 394 212" />
-                <path d="M226 256 186 306" />
-                <path d="M254 256 294 306" />
-                <path d="M100 248 C 150 310 240 320 290 322" />
-              </g>
-              <g>
-                <circle cx="240" cy="46" r="20" fill="var(--coral)" />
-                <circle cx="120" cy="140" r="20" fill="var(--teal)" />
-                <circle cx="360" cy="140" r="20" fill="var(--teal)" />
-                <circle cx="80" cy="230" r="20" fill="var(--teal)" />
-                <circle cx="240" cy="236" r="20" fill="var(--violet)" />
-                <circle cx="400" cy="230" r="20" fill="var(--amber)" />
-                <circle cx="176" cy="322" r="20" fill="var(--violet)" />
-                <circle cx="310" cy="322" r="20" fill="var(--violet)" />
-              </g>
-              <!-- Badges: a play mark for a video, dots for attached modifiers. -->
-              <g fill="var(--primary)">
-                <circle cx="256" cy="30" r="8" />
-                <circle cx="256" cy="220" r="8" />
-                <circle cx="96" cy="214" r="8" />
-              </g>
-              <g fill="var(--on-primary)">
-                <path d="M253 26v8l6-4z" />
-                <path d="M253 216v8l6-4z" />
-                <path d="M93 210v8l6-4z" />
-              </g>
-              <g fill="var(--primary)">
-                <circle cx="326" cy="342" r="3.5" />
-                <circle cx="335" cy="342" r="3.5" />
-                <circle cx="416" cy="250" r="3.5" />
-              </g>
-              <g class="art-label" text-anchor="middle">
-                <text x="240" y="84">Sugar Push</text>
-                <text x="120" y="178">Left Side Pass</text>
-                <text x="360" y="178">Right Side Pass</text>
-                <text x="80" y="268">Underarm Turn</text>
-                <text x="240" y="274">Basic Whip</text>
-                <text x="400" y="268">Tuck Turn</text>
-                <text x="176" y="362">Reverse Whip</text>
-                <text x="310" y="362">Inside-Turn Whip</text>
-              </g>
-            </svg>
+          <div class="hero-art shot">
+            <picture>
+                <source srcset="img/shots/network-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="img/shots/network.webp"
+                  width="600"
+                  height="1267"
+                  fetchpriority="high"
+                  alt="DPM showing a West Coast Swing course as a network: the sugar push leads to the sugar tuck, the left side pass to the tuck turn, and the basic whip to the basket, behind-the-back and hustle whips"
+                />
+              </picture>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Who it's for ──────────────────────────────────────────────────── -->
+      <section class="band" id="who">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>Made for the dance course</h2>
+            <p>
+              A course teaches a new figure every week, and by the last week the first ones have
+              faded. DPM gives what you learn a place to stay.
+            </p>
+          </div>
+          <div class="audiences">
+            <div class="audience">
+              <h3>For dancers</h3>
+              <p>
+                Film each figure while it's fresh, add the teacher's tips, and keep a reference you
+                can come back to long after the course ends.
+              </p>
+              <p>
+                Share the list with your classmates and take turns recording the latest figure, so
+                nobody has to film every week.
+              </p>
+            </div>
+            <div class="audience">
+              <h3>For dance teachers</h3>
+              <p>
+                Keep one list per group and add each figure as you teach it, with a tag for each
+                course. Your students subscribe with a code, and their copy keeps growing as the
+                group moves on from one course to the next.
+              </p>
+              <p>
+                Your course material, digital and always at hand, without building a website or
+                handing out logins.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- ── The idea ─────────────────────────────────────────────────────── -->
-      <section class="band" id="idea">
+      <section id="idea">
         <div class="wrap">
           <div class="section-head">
-            <h2>Patterns build on patterns</h2>
+            <h2>See how your figures connect</h2>
             <p>
-              You can't dance a whip before you can lead a pass. DPM makes that structure explicit.
-              You record the prerequisites, and the app shows you the rest.
+              Some figures are foundations of the dance. In West Coast Swing, the sugar push, the
+              left side pass, the underarm turn and the whip each stand on their own. Others grow
+              out of them: the sugar tuck out of the sugar push, the tuck turn out of the left side
+              pass, the basket whip out of the basic whip. You record which figure builds on which,
+              and DPM draws the map.
             </p>
           </div>
           <ol class="steps">
@@ -161,10 +155,10 @@
               </p>
             </li>
             <li>
-              <h3>Add what you learn</h3>
+              <h3>Add each figure as it comes</h3>
               <p>
-                Name, type, counts, level, notes, tags and videos from class, plus the patterns it
-                builds on.
+                Name, type, counts, level, notes, your videos from class, tags such as the course or
+                festival, and the figures it builds on.
               </p>
             </li>
             <li>
@@ -194,54 +188,19 @@
                 <li>Badges show which patterns have videos or variations</li>
                 <li>Drag nodes into your own arrangement. DPM remembers it for each list</li>
                 <li>Tap any pattern to open its details and videos</li>
-                <li>Circular prerequisites are flagged, never silently dropped</li>
               </ul>
             </div>
-            <div class="feature-art">
-              <svg
-                viewBox="0 0 530 280"
-                role="img"
-                aria-label="Timeline view: one lane per pattern type (push, pass, whip, tuck), patterns placed left to right by dependency depth."
-              >
-                <defs>
-                  <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                    <path d="M0 0 10 5 0 10z" fill="var(--edge)" />
-                  </marker>
-                </defs>
-                <rect class="art-variant" x="0" y="20" width="530" height="60" rx="8" opacity=".55" />
-                <rect class="art-variant" x="0" y="140" width="530" height="60" rx="8" opacity=".55" />
-                <g class="art-label-muted">
-                  <text x="12" y="54">push</text>
-                  <text x="12" y="114">pass</text>
-                  <text x="12" y="174">whip</text>
-                  <text x="12" y="234">tuck</text>
-                </g>
-                <g class="art-edge" marker-end="url(#arr2)">
-                  <path d="M180 50 C200 50 172 110 188 110" />
-                  <path d="M180 50 C204 50 166 230 188 230" />
-                  <path d="M290 110 298 110" />
-                  <path d="M290 110 C306 110 284 170 298 170" />
-                  <path d="M400 110 C416 110 394 168 408 168" />
-                  <path d="M400 170 408 170" />
-                  <path d="M290 230 C380 252 392 184 408 176" />
-                </g>
-                <g>
-                  <rect x="80" y="35" width="100" height="30" rx="8" fill="var(--coral)" />
-                  <rect x="190" y="95" width="100" height="30" rx="8" fill="var(--teal)" />
-                  <rect x="300" y="95" width="100" height="30" rx="8" fill="var(--teal)" />
-                  <rect x="300" y="155" width="100" height="30" rx="8" fill="var(--violet)" />
-                  <rect x="410" y="155" width="110" height="30" rx="8" fill="var(--violet)" />
-                  <rect x="190" y="215" width="100" height="30" rx="8" fill="var(--amber)" />
-                </g>
-                <g class="art-on-fill" text-anchor="middle">
-                  <text x="130" y="54">Sugar Push</text>
-                  <text x="240" y="114">Left Side Pass</text>
-                  <text x="350" y="114">Underarm Turn</text>
-                  <text x="350" y="174">Basic Whip</text>
-                  <text x="465" y="174">Inside-Turn Whip</text>
-                  <text x="240" y="234">Tuck Turn</text>
-                </g>
-              </svg>
+            <div class="feature-art shot">
+              <picture>
+                <source srcset="img/shots/timeline-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="img/shots/timeline.webp"
+                  width="600"
+                  height="1267"
+                  loading="lazy"
+                  alt="The timeline view: one lane per pattern type, flowing left to right from the foundations, such as the basic whip leading to the basket, behind-the-back and hustle whips"
+                />
+              </picture>
             </div>
           </div>
 
@@ -250,58 +209,30 @@
               <h2>Find a pattern, and everything around it</h2>
               <p>
                 Filter by name, type, level, counts or tags. On the graph, the filter doesn't just
-                hide what doesn't match. It shows the chain a match belongs to, from the path that
-                leads to it to everything connected to it. The matches stay bright and the rest
-                fades back.
+                hide what doesn't match. It can keep the path that leads to a match, or everything
+                connected to it, in view. The matches stay bright and the rest fades back.
+              </p>
+              <p>
+                Back from a festival weekend with more figures than you can remember? Tag them, filter
+                for the tag in the weeks after, and you see each new figure together with the ones it
+                builds on.
               </p>
               <p class="muted">
                 The same filter works on the list, alongside sorting by name, type, level, counts or
                 date added.
               </p>
             </div>
-            <div class="feature-art">
-              <svg
-                viewBox="0 0 480 330"
-                role="img"
-                aria-label="The network graph filtered for 'whip': the whip patterns and the path leading to them stay bright, other patterns are dimmed."
-              >
-                <defs>
-                  <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                    <path d="M0 0 10 5 0 10z" fill="var(--edge)" />
-                  </marker>
-                </defs>
-                <rect class="art-variant" x="120" y="4" width="240" height="36" rx="18" />
-                <g fill="none" stroke="var(--text-muted)" stroke-width="2">
-                  <circle cx="144" cy="21" r="6" />
-                  <path d="M149 26l5 5" />
-                </g>
-                <text class="art-label" x="164" y="27">whip</text>
-                <g class="art-edge" marker-end="url(#arr3)">
-                  <path d="M226 84 136 134" />
-                  <path d="M136 162 222 212" />
-                  <path d="M226 250 186 290" class="art-dim" />
-                  <path d="M254 250 294 290" />
-                  <path d="M254 84 344 134" class="art-dim" />
-                  <path d="M344 162 258 212" class="art-dim" />
-                  <path d="M110 166 86 206" class="art-dim" />
-                </g>
-                <circle cx="240" cy="68" r="18" fill="var(--coral)" />
-                <circle cx="120" cy="148" r="18" fill="var(--teal)" />
-                <circle cx="240" cy="230" r="20" fill="var(--violet)" stroke="var(--primary)" stroke-width="4" />
-                <circle cx="310" cy="306" r="20" fill="var(--violet)" stroke="var(--primary)" stroke-width="4" />
-                <g class="art-dim">
-                  <circle cx="360" cy="148" r="18" fill="var(--teal)" />
-                  <circle cx="80" cy="222" r="18" fill="var(--teal)" />
-                  <circle cx="176" cy="306" r="18" fill="var(--violet)" />
-                  <circle cx="410" cy="232" r="18" fill="var(--amber)" />
-                </g>
-                <g class="art-label">
-                  <text x="268" y="72">Sugar Push</text>
-                  <text x="8" y="130">Left Side Pass</text>
-                  <text x="270" y="234">Basic Whip</text>
-                  <text x="340" y="310">Inside-Turn Whip</text>
-                </g>
-              </svg>
+            <div class="feature-art shot">
+              <picture>
+                <source srcset="img/shots/filter-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="img/shots/filter.webp"
+                  width="600"
+                  height="1267"
+                  loading="lazy"
+                  alt="The timeline filtered to a festival tag: the behind-the-back and hustle whips stand out, with the basic whip they build on faded behind them"
+                />
+              </picture>
             </div>
           </div>
 
@@ -309,64 +240,55 @@
             <div>
               <h2>Variations without duplicates</h2>
               <p>
-                "With a spin", "hesitation", "slow": <strong>modifiers</strong> change how a pattern
-                is danced without making it a new pattern. Each one comes before, after or inside
-                the pattern it's attached to.
+                "With an inside turn", "with a free spin", "hesitation": <strong>modifiers</strong> change how a
+                pattern is danced without making it a new pattern. Each one comes before, after or
+                inside the pattern it's attached to.
               </p>
               <ul>
                 <li>
-                  <strong>Universal</strong> modifiers apply to every pattern in the list and carry
-                  their own demo videos
+                  <strong>Universal</strong> modifiers apply to every pattern in the list and can
+                  carry demo videos of their own
                 </li>
                 <li>
-                  Others attach to individual patterns, each with videos of <em>that</em> pattern
-                  danced <em>that</em> way
+                  Others attach to individual patterns and can carry their own demo videos per
+                  pattern: <em>that</em> pattern danced <em>that</em> way
                 </li>
                 <li>A modifier's page lists every pattern it's used with</li>
               </ul>
+              <p class="muted">
+                DPM doesn't come with videos. Every clip is one you or your class recorded, or a
+                link you added.
+              </p>
             </div>
-            <div class="feature-art">
-              <svg viewBox="0 0 440 250" role="img" aria-label="A pattern card for Basic Whip with attached modifiers: hesitation (prefix), with a spin (postfix), and slow (universal).">
-                <rect class="art-variant" x="0" y="0" width="440" height="250" rx="14" opacity=".5" />
-                <rect x="20" y="20" width="6" height="56" rx="3" fill="var(--violet)" />
-                <text class="art-label" x="40" y="42" style="font-size: 18px; font-weight: 700; stroke: none">Basic Whip</text>
-                <text class="art-label-muted" x="40" y="66">whip · 8 counts · Intermediate</text>
-                <text class="art-label-muted" x="20" y="112">MODIFIERS</text>
-                <g>
-                  <rect class="art-surface" x="20" y="124" width="188" height="36" rx="18" />
-                  <text class="art-label" x="38" y="147">Hesitation</text>
-                  <text class="art-label-muted" x="124" y="147">prefix</text>
-
-                  <rect class="art-surface" x="220" y="124" width="200" height="36" rx="18" />
-                  <text class="art-label" x="238" y="147">With a spin</text>
-                  <text class="art-label-muted" x="330" y="147">postfix</text>
-                  <circle cx="400" cy="142" r="8" fill="var(--primary)" />
-                  <path d="M397 138v8l6-4z" fill="var(--on-primary)" />
-
-                  <rect class="art-surface" x="20" y="172" width="188" height="36" rx="18" />
-                  <text class="art-label" x="38" y="195">Slow</text>
-                  <text class="art-label-muted" x="100" y="195">universal</text>
-                  <circle cx="190" cy="190" r="8" fill="var(--primary)" />
-                  <path d="M187 186v8l6-4z" fill="var(--on-primary)" />
-                </g>
-                <text class="art-label-muted" x="20" y="234">Hesitation Basic Whip with a spin, danced slow.</text>
-              </svg>
+            <div class="feature-art shot">
+              <picture>
+                <source srcset="img/shots/modifiers-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="img/shots/modifiers.webp"
+                  width="600"
+                  height="1267"
+                  loading="lazy"
+                  alt="The modifiers of a course list: with Inside Turn is applied to the left side pass and the basic whip; Hesitation and with Hand Change are universal"
+                />
+              </picture>
             </div>
           </div>
 
           <div class="feature flip" id="share">
             <div>
-              <h2>Share a list with your partner or class</h2>
+              <h2>Share a list with your class</h2>
               <p>
-                <strong>Publish</strong> a list and DPM gives you an 8-character code and a QR code.
-                Anyone who enters or scans it gets a live copy that updates when you do. It's
-                read-only for them, and it becomes theirs to edit if you stop sharing.
+                <strong>Teachers</strong> publish a course list and get an 8-character code and a QR
+                code to show in class. Students who scan it get a live copy that grows every time a
+                figure is added. It's read-only for them, and becomes theirs to keep and edit if you
+                stop sharing. A published list carries video links, not files, so link clips you've
+                put on a video site.
               </p>
               <p>
-                Or <strong>export</strong> lists to a file and send it however you like. Your own
-                videos can travel inside it. You can mark the export read-only, and imports are
-                checked before anything is written, so a damaged file can't half-overwrite your
-                data.
+                <strong>Classmates</strong> can pass a list round instead. Export it to a file with
+                your videos inside and send it on, and whoever records the next figure adds it and
+                sends the list on again. You can mark an export read-only, and imports are checked
+                before anything is written, so a damaged file can't half-overwrite your data.
               </p>
             </div>
             <div class="feature-art">
@@ -406,8 +328,8 @@
               <ul>
                 <li><strong>Shorten</strong> a long recording to just the pattern</li>
                 <li>
-                  <strong>De-identify</strong> a clip by turning the dancers into silhouettes, so
-                  you can share it without sharing faces
+                  <strong>Anonymize</strong> a clip by hiding the dancers' faces and looks, so
+                  everyone in it can be comfortable with it being shared
                 </li>
                 <li>
                   <strong>Transcribe</strong> what the teacher says, then tap a line to jump to it,
@@ -420,36 +342,33 @@
               </ul>
               <p class="muted">
                 All of it runs on the phone. The speech and language models download once, and
-                your videos never leave the device. De-identifying, transcribing and suggestions
+                your videos never leave the device. Anonymizing, transcribing and suggestions
                 are available on Android first.
               </p>
             </div>
-            <div class="feature-art">
-              <svg viewBox="0 0 420 330" role="img" aria-label="A de-identified video of two dancers shown as silhouettes, with a transcript below and a suggested pattern name.">
-                <rect x="0" y="0" width="420" height="170" rx="12" fill="#18181b" />
-                <g fill="#818cf8">
-                  <circle cx="170" cy="46" r="13" />
-                  <path d="M156 64c-10 6-14 30-10 52l-8 44h12l10-40 8 40h12l-4-48c6-12 6-34-2-44z" />
-                  <circle cx="246" cy="50" r="12" />
-                  <path d="M234 66c-8 8-10 26-6 44l-14 52h12l14-42 10 42h12l-8-50c4-14 2-34-6-44z" />
-                  <path d="M186 80l40 6" stroke="#818cf8" stroke-width="6" stroke-linecap="round" />
-                </g>
-                <rect x="14" y="14" width="80" height="22" rx="11" fill="rgb(0 0 0 / 65%)" />
-                <text x="54" y="29" text-anchor="middle" fill="#fff" style="font: 700 10px system-ui, sans-serif; letter-spacing: 0.5px">SILHOUETTE</text>
-                <rect x="14" y="150" width="392" height="6" rx="3" fill="rgb(255 255 255 / 25%)" />
-                <rect x="120" y="150" width="140" height="6" rx="3" fill="#818cf8" />
-
-                <g class="art-label">
-                  <text x="0" y="200"><tspan class="art-label-muted">0:04</tspan>  Anchor on five and six, don't rush it</text>
-                  <text x="0" y="226"><tspan class="art-label-muted">0:09</tspan>  Lead's hand stays low through the turn</text>
-                </g>
-                <rect class="art-variant" x="0" y="250" width="420" height="80" rx="12" />
-                <text class="art-label-muted" x="16" y="274">SUGGESTED</text>
-                <text class="art-label" x="16" y="298" style="font-size: 15px; font-weight: 700; stroke: none">Inside-Turn Whip</text>
-                <rect x="300" y="282" width="104" height="30" rx="15" fill="var(--primary)" />
-                <text x="352" y="302" text-anchor="middle" fill="var(--on-primary)" style="font: 700 12px system-ui, sans-serif">Use suggestion</text>
-              </svg>
+            <div class="feature-art shot">
+              <img
+                src="img/shots/video-review.webp"
+                width="600"
+                height="1263"
+                loading="lazy"
+                alt="Checking an anonymized clip of a basic whip: the two dancers are coloured silhouettes, and the sheet offers to replace the original, keep both, or discard the new video"
+              />
             </div>
+          </div>
+          <div class="video-steps">
+            <figure class="shot-crop">
+              <img src="img/shots/video-trim.webp" width="600" height="840" loading="lazy" alt="The Edit video sheet: a 19-second part of a long class video is selected, with Shorten and Anonymize below and an option to transcribe the full video first" />
+              <figcaption>Pick the part that shows the figure, up to 30 seconds.</figcaption>
+            </figure>
+            <figure class="shot-crop">
+              <img src="img/shots/video-tap.webp" width="600" height="789" loading="lazy" alt="Anonymizing a clip: the two dancers are marked 1 and 2 on a frame of the video" />
+              <figcaption>Tap the dancers, and the phone does the rest.</figcaption>
+            </figure>
+            <figure class="shot-crop">
+              <img src="img/shots/video-jobs.webp" width="600" height="886" loading="lazy" alt="The pattern list with a banner: the basic whip is being transcribed, and its anonymizing waits its turn" />
+              <figcaption>The work runs in the background, and you get a notification when it's done.</figcaption>
+            </figure>
           </div>
         </div>
       </section>
@@ -465,10 +384,10 @@
               <div class="icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
               </div>
-              <h3>One list per dance</h3>
+              <h3>One list per group or dance</h3>
               <p>
-                Each list has its own pattern types, colours and modifiers. The five templates come
-                with starter patterns.
+                Each list has its own pattern types, colours and modifiers. The five dance templates
+                come with starter patterns.
               </p>
             </div>
             <div class="card">
@@ -535,6 +454,24 @@
             </p>
           </details>
           <details>
+            <summary>I teach a course. How do I set it up?</summary>
+            <p>
+              Create a list for the group, add each figure as you teach it, and tag it with the
+              course. Publish the list and show the code or QR code in class. Your students' copies
+              follow every change you make, so the next figure appears on their phones as soon as
+              you add it, and the list carries on when the group moves up to the next course.
+            </p>
+          </details>
+          <details>
+            <summary>How can my class share the filming?</summary>
+            <p>
+              Agree who records which week. Either one person keeps and publishes the list and links the
+              clips once they're on a video site, or you pass the list round as an exported file with the videos inside,
+              each of you adding the figure you filmed. Anonymize a clip first if not everyone
+              wants to be recognisable in it.
+            </p>
+          </details>
+          <details>
             <summary>Do I need an account?</summary>
             <p>
               No. DPM has no accounts and no sign-in. Your lists live on your phone. Sharing works
@@ -551,7 +488,7 @@
           <details>
             <summary>Does the AI send my videos to a server?</summary>
             <p>
-              No. Silhouettes, transcripts and suggestions are computed on the phone. The models
+              No. Anonymizing, transcribing and suggesting all run on the phone. The models
               download once (Wi-Fi recommended), and you can delete them in Settings.
             </p>
           </details>
