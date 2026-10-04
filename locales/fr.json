@@ -410,7 +410,7 @@
   "videosCountA11y": "Vidéos : {{n}}",
   "levelClearHint": "Touchez à nouveau le niveau choisi pour le retirer.",
   "appIconColor": "Icône de l'app",
-  "appIconColorHint": "La couleur de l'icône sur votre écran d'accueil. En la changeant, l'app peut se fermer un instant.",
+  "appIconColorHint": "La couleur de l'icône sur votre écran d'accueil. La changer ferme l'app.",
   "iconColorIndigo": "Indigo",
   "iconColorAmber": "Ambre",
   "iconColorCoral": "Corail"

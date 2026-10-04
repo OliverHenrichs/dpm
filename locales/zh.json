@@ -410,7 +410,7 @@
   "videosCountA11y": "视频：{{n}}",
   "levelClearHint": "再次点按已选难度即可取消。",
   "appIconColor": "应用图标",
-  "appIconColorHint": "主屏幕上图标的颜色。更改时应用可能会短暂关闭。",
+  "appIconColorHint": "主屏幕上图标的颜色。更改后应用会关闭。",
   "iconColorIndigo": "靛蓝",
   "iconColorAmber": "琥珀",
   "iconColorCoral": "珊瑚"

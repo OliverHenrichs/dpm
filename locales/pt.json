@@ -410,7 +410,7 @@
   "videosCountA11y": "Vídeos: {{n}}",
   "levelClearHint": "Toque de novo no nível escolhido para o deixar sem nível.",
   "appIconColor": "Ícone do app",
-  "appIconColorHint": "A cor do ícone na sua tela inicial. Ao mudá-la, o app pode fechar por um momento.",
+  "appIconColorHint": "A cor do ícone na sua tela inicial. Ao mudá-la, o app fecha.",
   "iconColorIndigo": "Índigo",
   "iconColorAmber": "Âmbar",
   "iconColorCoral": "Coral"

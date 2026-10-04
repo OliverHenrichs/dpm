@@ -141,30 +141,6 @@ const SettingsScreen: React.FC = () => {
           ))}
         </View>
 
-        {/* App Icon Section: a colour of its own, whichever style is chosen */}
-        {showIconColors && (
-          <>
-            <View style={commonStyles.sectionHeaderRow}>
-              <Text style={commonStyles.sectionTitle}>{t("appIconColor")}</Text>
-            </View>
-            <Text style={styles.sectionHint}>{t("appIconColorHint")}</Text>
-            <View style={styles.styleList}>
-              {APP_ICON_COLOR_OPTIONS.map((color) => (
-                <ListRow
-                  key={color}
-                  title={t(ICON_COLOR_LABEL_KEYS[color])}
-                  leading={
-                    <View style={styles.swatch(APP_ICON_COLORS[color])} />
-                  }
-                  selection="single"
-                  selected={iconColor === color}
-                  onPress={() => void chooseIconColor(color)}
-                />
-              ))}
-            </View>
-          </>
-        )}
-
         {/* Theme Section */}
         <View style={commonStyles.sectionHeaderRow}>
           <Text style={commonStyles.sectionTitle}>{t("theme")}</Text>
@@ -207,6 +183,31 @@ const SettingsScreen: React.FC = () => {
         )}
 
         <DeviceModelsSection />
+
+        {/* App Icon Section: last, since switching closes the app. A colour of its own,
+            whichever style is chosen. */}
+        {showIconColors && (
+          <>
+            <View style={commonStyles.sectionHeaderRow}>
+              <Text style={commonStyles.sectionTitle}>{t("appIconColor")}</Text>
+            </View>
+            <Text style={styles.sectionHint}>{t("appIconColorHint")}</Text>
+            <View style={styles.styleList}>
+              {APP_ICON_COLOR_OPTIONS.map((color) => (
+                <ListRow
+                  key={color}
+                  title={t(ICON_COLOR_LABEL_KEYS[color])}
+                  leading={
+                    <View style={styles.swatch(APP_ICON_COLORS[color])} />
+                  }
+                  selection="single"
+                  selected={iconColor === color}
+                  onPress={() => void chooseIconColor(color)}
+                />
+              ))}
+            </View>
+          </>
+        )}
 
         {/* SPIKE (L3): dev-only, not for merge. */}
         {__DEV__ && (

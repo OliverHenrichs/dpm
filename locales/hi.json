@@ -410,7 +410,7 @@
   "videosCountA11y": "वीडियो: {{n}}",
   "levelClearHint": "स्तर हटाने के लिए चुने गए स्तर पर फिर टैप करें।",
   "appIconColor": "ऐप आइकन",
-  "appIconColorHint": "होम स्क्रीन पर आइकन का रंग। इसे बदलने पर ऐप कुछ पल के लिए बंद हो सकता है।",
+  "appIconColorHint": "होम स्क्रीन पर आइकन का रंग। इसे बदलने पर ऐप बंद हो जाता है।",
   "iconColorIndigo": "नील",
   "iconColorAmber": "कहरुबा",
   "iconColorCoral": "मूँगा"

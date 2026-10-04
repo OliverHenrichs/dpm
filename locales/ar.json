@@ -410,7 +410,7 @@
   "videosCountA11y": "مقاطع الفيديو: {{n}}",
   "levelClearHint": "اضغط على المستوى المحدد مرة أخرى لإزالته.",
   "appIconColor": "أيقونة التطبيق",
-  "appIconColorHint": "لون الأيقونة على شاشتك الرئيسية. قد يُغلق التطبيق للحظة عند تغييره.",
+  "appIconColorHint": "لون الأيقونة على شاشتك الرئيسية. يُغلق التطبيق عند تغييره.",
   "iconColorIndigo": "نيلي",
   "iconColorAmber": "كهرماني",
   "iconColorCoral": "مرجاني"
