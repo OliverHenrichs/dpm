@@ -73,6 +73,31 @@ describe("replaceVideoInPattern", () => {
     const p = createTestPattern("t", { videoRefs: [other] });
     expect(replaceVideoInPattern(p, OLD, NEW)).toBe(p);
   });
+
+  it("returns the same object when the update is already applied", () => {
+    // A transcript on the same video, or both kept: the update matches every time it runs.
+    const transcript = {
+      language: "en",
+      model: "whisper",
+      createdAt: 1,
+      segments: [],
+    };
+    const addTranscript = (ref: IVideoReference) => ({ ...ref, transcript });
+    const keepBoth = (ref: IVideoReference) => [ref, NEW];
+    const p = createTestPattern("t", {
+      videoRefs: [{ type: "local", value: OLD }],
+      modifierRefs: [
+        { modifierId: "m", videoRefs: [{ type: "local", value: OLD }] },
+      ],
+    });
+    const transcribed = replaceVideoInPattern(p, OLD, addTranscript);
+    expect(transcribed).not.toBe(p);
+    expect(replaceVideoInPattern(transcribed, OLD, addTranscript)).toBe(
+      transcribed,
+    );
+    const kept = replaceVideoInPattern(p, OLD, keepBoth);
+    expect(replaceVideoInPattern(kept, OLD, keepBoth)).toBe(kept);
+  });
 });
 
 describe("applyReplacements", () => {

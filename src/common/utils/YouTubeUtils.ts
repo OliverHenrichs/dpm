@@ -69,15 +69,37 @@ export async function generateVideoThumbnails(
       }
       continue;
     }
-    try {
-      const { uri } = await VideoThumbnails.getThumbnailAsync(ref.value, {
+    let pending = localThumbnails.get(ref.value);
+    if (!pending) {
+      pending = VideoThumbnails.getThumbnailAsync(ref.value, {
         time: 1000,
         quality: 0.7,
-      });
-      results.push(uri);
+      }).then(({ uri }) => uri);
+      rememberThumbnail(ref.value, pending);
+    }
+    try {
+      results.push(await pending);
     } catch {
+      localThumbnails.delete(ref.value);
       results.push("");
     }
   }
   return results;
+}
+
+/**
+ * Frames already taken, by video URI. Taking one decodes the video, and forms ask again on
+ * every change to their videos: while a job ran, that was every progress tick, which made
+ * the thumbnails flicker (each attempt is a new file) and took the decoder from the job.
+ * A video at a URI does not change; an edit makes a new file.
+ */
+const localThumbnails = new Map<string, Promise<string>>();
+const MAX_REMEMBERED_THUMBNAILS = 64;
+
+function rememberThumbnail(uri: string, thumbnail: Promise<string>) {
+  if (localThumbnails.size >= MAX_REMEMBERED_THUMBNAILS) {
+    const oldest = localThumbnails.keys().next().value;
+    if (oldest !== undefined) localThumbnails.delete(oldest);
+  }
+  localThumbnails.set(uri, thumbnail);
 }

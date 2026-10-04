@@ -168,10 +168,21 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     );
   })();
 
+  // Keyed by the videos themselves, not the draft's objects: the draft is rebuilt for reasons
+  // that leave the videos as they were (a transcript, a job's progress).
+  const activeVideoKey = activeVideoRefs
+    .map((ref) => `${ref.type}:${ref.value}`)
+    .join("\n");
   useEffect(() => {
-    generateVideoThumbnails(activeVideoRefs).then(setThumbnails);
+    let cancelled = false;
+    generateVideoThumbnails(activeVideoRefs).then((uris) => {
+      if (!cancelled) setThumbnails(uris);
+    });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedModifierId, newPattern.videoRefs, newPattern.modifierRefs]);
+  }, [activeVideoKey]);
 
   const handleFinish = async () => {
     // Only clear the form once the caller has taken the pattern. It used to
