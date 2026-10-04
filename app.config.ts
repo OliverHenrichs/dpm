@@ -36,6 +36,56 @@ function resolveVariant(raw: string | undefined): Variant {
   );
 }
 
+/** Embedded font files, one family per entry (see the expo-font plugin below). */
+export const FONT_FAMILIES: {
+  family: string;
+  files: { path: string; weight: number; style?: "italic" }[];
+}[] = [
+  {
+    family: "Manrope",
+    files: [
+      { path: "./assets/fonts/Manrope_400Regular.ttf", weight: 400 },
+      { path: "./assets/fonts/Manrope_600SemiBold.ttf", weight: 600 },
+      { path: "./assets/fonts/Manrope_700Bold.ttf", weight: 700 },
+    ],
+  },
+  {
+    family: "DM Serif Display",
+    files: [
+      { path: "./assets/fonts/DMSerifDisplay_400Regular.ttf", weight: 400 },
+      {
+        path: "./assets/fonts/DMSerifDisplay_400Regular_Italic.ttf",
+        weight: 400,
+        style: "italic",
+      },
+    ],
+  },
+  {
+    family: "IBM Plex Sans Condensed",
+    files: [
+      {
+        path: "./assets/fonts/IBMPlexSansCondensed_400Regular.ttf",
+        weight: 400,
+      },
+      {
+        path: "./assets/fonts/IBMPlexSansCondensed_600SemiBold.ttf",
+        weight: 600,
+      },
+      {
+        path: "./assets/fonts/IBMPlexSansCondensed_700Bold.ttf",
+        weight: 700,
+      },
+    ],
+  },
+  {
+    family: "IBM Plex Mono",
+    files: [
+      { path: "./assets/fonts/IBMPlexMono_400Regular.ttf", weight: 400 },
+      { path: "./assets/fonts/IBMPlexMono_600SemiBold.ttf", weight: 600 },
+    ],
+  },
+];
+
 const variant = VARIANTS[resolveVariant(process.env.APP_VARIANT)];
 const appId = APP_ID + variant.idSuffix;
 
@@ -131,39 +181,25 @@ export default (): ExpoConfig => ({
       },
     ],
     "expo-localization",
-    // Inter, embedded natively (SIL Open Font License, assets/fonts/Inter-OFL.txt). On Android the
-    // weights form one "Inter" family, so `fontWeight` picks the right file as it does on iOS,
-    // where the family name comes from the files themselves. Only the weights the type scale
-    // uses are shipped. Web uses a system font stack instead (see theme/unistyles.ts).
+    // The two styles' typefaces, embedded natively (SIL Open Font License, assets/fonts/*-OFL.txt):
+    // Manrope and DM Serif Display for After Hours, IBM Plex Sans Condensed and Plex Mono for
+    // Clipboard. On Android each family is registered under the files' own family name, so
+    // `fontWeight` picks the right file as it does on iOS, where the name comes from the files.
+    // Only the weights the type scales use are shipped (src/common/theme/tokens.ts). Web uses
+    // system stacks instead.
     [
       "expo-font",
       {
         ios: {
-          fonts: [
-            "./assets/fonts/Inter_400Regular.ttf",
-            "./assets/fonts/Inter_400Regular_Italic.ttf",
-            "./assets/fonts/Inter_500Medium.ttf",
-            "./assets/fonts/Inter_600SemiBold.ttf",
-            "./assets/fonts/Inter_700Bold.ttf",
-          ],
+          fonts: FONT_FAMILIES.flatMap(({ files }) =>
+            files.map(({ path }) => path),
+          ),
         },
         android: {
-          fonts: [
-            {
-              fontFamily: "Inter",
-              fontDefinitions: [
-                { path: "./assets/fonts/Inter_400Regular.ttf", weight: 400 },
-                {
-                  path: "./assets/fonts/Inter_400Regular_Italic.ttf",
-                  weight: 400,
-                  style: "italic",
-                },
-                { path: "./assets/fonts/Inter_500Medium.ttf", weight: 500 },
-                { path: "./assets/fonts/Inter_600SemiBold.ttf", weight: 600 },
-                { path: "./assets/fonts/Inter_700Bold.ttf", weight: 700 },
-              ],
-            },
-          ],
+          fonts: FONT_FAMILIES.map(({ family, files }) => ({
+            fontFamily: family,
+            fontDefinitions: files,
+          })),
         },
       },
     ],

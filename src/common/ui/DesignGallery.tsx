@@ -6,7 +6,7 @@ import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 import type { ThemeType } from "@/src/settings/types/Themes";
-import type { ColorTokens } from "@/src/common/theme/tokens";
+import { APP_STYLES, type ColorTokens } from "@/src/common/theme/tokens";
 import { PATTERN_TYPE_COLORS } from "@/src/pattern/types/PatternType";
 import {
   AppText,
@@ -29,7 +29,12 @@ import {
  */
 const DesignGallery: React.FC = () => {
   const { theme } = useUnistyles();
-  const { theme: preference, setTheme } = useThemeContext();
+  const {
+    theme: preference,
+    setTheme,
+    appStyle,
+    setAppStyle,
+  } = useThemeContext();
   const [selected, setSelected] = useState<string[]>(["Salsa"]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"patterns" | "modifiers">("patterns");
@@ -55,6 +60,16 @@ const DesignGallery: React.FC = () => {
                 label={value}
                 selected={preference === value}
                 onPress={() => setTheme(value)}
+              />
+            ))}
+          </View>
+          <View style={styles.row}>
+            {APP_STYLES.map((value) => (
+              <Chip
+                key={value}
+                label={value}
+                selected={appStyle === value}
+                onPress={() => setAppStyle(value)}
               />
             ))}
           </View>

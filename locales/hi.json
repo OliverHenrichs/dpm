@@ -398,5 +398,15 @@
   "importContextList": "सूची \"{{list}}\"",
   "importContextPattern": "सूची \"{{list}}\", पैटर्न \"{{pattern}}\"",
   "importContextModifier": "सूची \"{{list}}\", मॉडिफ़ायर \"{{modifier}}\"",
-  "importMessageInContext": "{{context}}: {{message}}"
+  "importMessageInContext": "{{context}}: {{message}}",
+  "appStyle": "शैली",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "गर्म और खुला। अभ्यास और सोशल डांस के लिए।",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "घना और व्यवस्थित। कोर्स चलाने के लिए।",
+  "noLevel": "कोई स्तर नहीं",
+  "noType": "कोई प्रकार नहीं",
+  "countsSection": "{{n}} काउंट",
+  "videosCountA11y": "वीडियो: {{n}}",
+  "levelClearHint": "स्तर हटाने के लिए चुने गए स्तर पर फिर टैप करें।"
 }

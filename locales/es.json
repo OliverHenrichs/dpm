@@ -398,5 +398,15 @@
   "importContextList": "Lista \"{{list}}\"",
   "importContextPattern": "Lista \"{{list}}\", figura \"{{pattern}}\"",
   "importContextModifier": "Lista \"{{list}}\", modificador \"{{modifier}}\"",
-  "importMessageInContext": "{{context}}: {{message}}"
+  "importMessageInContext": "{{context}}: {{message}}",
+  "appStyle": "Estilo",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "Cálido y espacioso. Pensado para practicar y para los sociales.",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "Denso y estructurado. Pensado para dar un curso.",
+  "noLevel": "Sin nivel",
+  "noType": "Sin tipo",
+  "countsSection": "{{n}} tiempos",
+  "videosCountA11y": "Vídeos: {{n}}",
+  "levelClearHint": "Toca otra vez el nivel elegido para dejarlo sin nivel."
 }

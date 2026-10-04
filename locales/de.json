@@ -398,5 +398,15 @@
   "importContextList": "Liste \"{{list}}\"",
   "importContextPattern": "Liste \"{{list}}\", Figur \"{{pattern}}\"",
   "importContextModifier": "Liste \"{{list}}\", Modifikator \"{{modifier}}\"",
-  "importMessageInContext": "{{context}}: {{message}}"
+  "importMessageInContext": "{{context}}: {{message}}",
+  "appStyle": "Stil",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "Warm und luftig. Für Training und Partys.",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "Dicht und strukturiert. Für die Kursleitung.",
+  "noLevel": "Ohne Niveau",
+  "noType": "Ohne Typ",
+  "countsSection": "{{n}} Counts",
+  "videosCountA11y": "Videos: {{n}}",
+  "levelClearHint": "Tippe das gewählte Niveau erneut an, um es zu entfernen."
 }

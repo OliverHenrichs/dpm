@@ -398,5 +398,15 @@
   "importContextList": "القائمة \"{{list}}\"",
   "importContextPattern": "القائمة \"{{list}}\"، الخطوة \"{{pattern}}\"",
   "importContextModifier": "القائمة \"{{list}}\"، المُعدِّل \"{{modifier}}\"",
-  "importMessageInContext": "{{context}}: {{message}}"
+  "importMessageInContext": "{{context}}: {{message}}",
+  "appStyle": "النمط",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "دافئ ورحب. مصمم للتدريب والحفلات الراقصة.",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "كثيف ومنظم. مصمم لإدارة دورة.",
+  "noLevel": "بلا مستوى",
+  "noType": "بلا نوع",
+  "countsSection": "{{n}} عدّات",
+  "videosCountA11y": "مقاطع الفيديو: {{n}}",
+  "levelClearHint": "اضغط على المستوى المحدد مرة أخرى لإزالته."
 }

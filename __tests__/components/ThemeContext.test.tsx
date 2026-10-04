@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
+import { UnistylesRuntime } from "react-native-unistyles";
 import {
   ThemeProvider,
   useThemeContext,
@@ -17,12 +18,16 @@ import {
 } from "@/__mocks__/@react-native-async-storage/async-storage";
 
 function Probe() {
-  const { theme, setTheme } = useThemeContext();
+  const { theme, setTheme, appStyle, setAppStyle } = useThemeContext();
   return (
     <>
       <Text testID="theme">{theme}</Text>
+      <Text testID="style">{appStyle}</Text>
       <Pressable onPress={() => setTheme("light")}>
         <Text>choose light</Text>
+      </Pressable>
+      <Pressable onPress={() => setAppStyle("clipboard")}>
+        <Text>choose clipboard</Text>
       </Pressable>
     </>
   );
@@ -95,5 +100,52 @@ describe("ThemeProvider persistence", () => {
     await waitFor(() => expect(onRestored).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId("theme")).toHaveTextContent("system");
     consoleError.mockRestore();
+  });
+});
+
+describe("ThemeProvider style", () => {
+  it("starts in After Hours without touching the registered themes", async () => {
+    const updateTheme = jest.spyOn(UnistylesRuntime, "updateTheme");
+
+    const onRestored = renderTheme();
+
+    await waitFor(() => expect(onRestored).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("style")).toHaveTextContent("afterHours");
+    expect(updateTheme).not.toHaveBeenCalled();
+  });
+
+  it("comes up in the stored style and fills both themes with it", async () => {
+    seedAsyncStorage({ "@appStyle": "clipboard" });
+    const updateTheme = jest.spyOn(UnistylesRuntime, "updateTheme");
+
+    const onRestored = renderTheme();
+
+    await waitFor(() => expect(onRestored).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("style")).toHaveTextContent("clipboard");
+    await waitFor(() => expect(updateTheme).toHaveBeenCalledTimes(2));
+    const [[first, update]] = updateTheme.mock.calls;
+    expect(first).toBe("light");
+    expect(update({} as never).list.typeMarker).toBe("letter");
+  });
+
+  it("ignores a stored style the app no longer ships", async () => {
+    seedAsyncStorage({ "@appStyle": "neon" });
+
+    const onRestored = renderTheme();
+
+    await waitFor(() => expect(onRestored).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("style")).toHaveTextContent("afterHours");
+  });
+
+  it("stores a choice", async () => {
+    const onRestored = renderTheme();
+    await waitFor(() => expect(onRestored).toHaveBeenCalled());
+
+    fireEvent.press(screen.getByText("choose clipboard"));
+
+    await waitFor(() =>
+      expect(peekAsyncStorage()["@appStyle"]).toBe("clipboard"),
+    );
+    expect(screen.getByTestId("style")).toHaveTextContent("clipboard");
   });
 });

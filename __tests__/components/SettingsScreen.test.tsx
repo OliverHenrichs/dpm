@@ -192,6 +192,20 @@ describe("SettingsScreen", () => {
     });
   });
 
+  describe("style", () => {
+    it("starts on After Hours and remembers a switch to Clipboard", async () => {
+      await renderSettings();
+
+      expect(screen.getByRole("radio", { name: "After Hours" })).toBeSelected();
+      fireEvent.press(screen.getByText("Clipboard"));
+
+      await waitFor(() =>
+        expect(peekAsyncStorage()["@appStyle"]).toBe("clipboard"),
+      );
+      expect(screen.getByRole("radio", { name: "Clipboard" })).toBeSelected();
+    });
+  });
+
   describe("export", () => {
     it("opens the list picker when there is something to export", async () => {
       await renderSettings([createTestPatternList({ name: "Salsa" })]);

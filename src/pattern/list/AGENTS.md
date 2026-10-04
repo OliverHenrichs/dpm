@@ -27,8 +27,18 @@ Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pa
 
 `SortConfig` (`SortBottomSheet.tsx`): `{ field, order }` with
 `SortField = "name" | "typeId" | "level" | "counts" | "id"` and `SortOrder = "asc" | "desc"`,
-applied by `usePatternSort`. Rendered through the shared `BottomSheet`
-(`src/common/components/BottomSheet.tsx`).
+applied by `usePatternSort` over the pure `sortPatterns` in `hooks/patternSections.ts`. Types sort
+in the list's own order and levels from beginner to advanced; a pattern without a value goes last
+whichever way the sort runs. Sorting by type, level or counts splits the list into sections
+(`buildListEntries`), each under a pinned `PatternSectionHeader` with a count; name and date added
+stay one list. `PatternList` renders the entries in one `FlatList` with `stickyHeaderIndices`, so a
+reveal must look its pattern up among the entries, not among the patterns. The sheet renders
+through the shared `BottomSheet` (`src/common/components/BottomSheet.tsx`).
+
+A row shows the pattern's type and level (when set) and how many videos it has; counts and the
+rest wait in the opened details. Level is optional throughout: the form starts without one,
+tapping the chosen level clears it (removing the key, since Firestore rejects `undefined`), and
+details and the graph legend leave it out when unset.
 
 ## Always-mounted modals must not snapshot props
 

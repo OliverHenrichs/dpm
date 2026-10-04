@@ -8,9 +8,11 @@ import Svg, { Circle, Path } from "react-native-svg";
 
 interface LegendProps {
   patternTypes: PatternType[];
+  /** Level is optional; a list that uses none has no shading to explain. */
+  showLevels?: boolean;
 }
 
-const Legend: React.FC<LegendProps> = ({ patternTypes }) => {
+const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -51,45 +53,47 @@ const Legend: React.FC<LegendProps> = ({ patternTypes }) => {
       </View>
 
       {/* Level Shading */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t("levelShading")}:</Text>
-        <View style={styles.legendItem}>
-          <View
-            style={[
-              styles.colorBox,
-              {
-                backgroundColor: theme.colors.surface,
-                opacity: 0.3,
-              },
-            ]}
-          />
-          <Text style={styles.legendText}>{t("beginner")}</Text>
+      {showLevels && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("levelShading")}:</Text>
+          <View style={styles.legendItem}>
+            <View
+              style={[
+                styles.colorBox,
+                {
+                  backgroundColor: theme.colors.surface,
+                  opacity: 0.3,
+                },
+              ]}
+            />
+            <Text style={styles.legendText}>{t("beginner")}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View
+              style={[
+                styles.colorBox,
+                {
+                  backgroundColor: theme.colors.surface,
+                  opacity: 0.5,
+                },
+              ]}
+            />
+            <Text style={styles.legendText}>{t("intermediate")}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View
+              style={[
+                styles.colorBox,
+                {
+                  backgroundColor: theme.colors.surface,
+                  opacity: 0.7,
+                },
+              ]}
+            />
+            <Text style={styles.legendText}>{t("advanced")}</Text>
+          </View>
         </View>
-        <View style={styles.legendItem}>
-          <View
-            style={[
-              styles.colorBox,
-              {
-                backgroundColor: theme.colors.surface,
-                opacity: 0.5,
-              },
-            ]}
-          />
-          <Text style={styles.legendText}>{t("intermediate")}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View
-            style={[
-              styles.colorBox,
-              {
-                backgroundColor: theme.colors.surface,
-                opacity: 0.7,
-              },
-            ]}
-          />
-          <Text style={styles.legendText}>{t("advanced")}</Text>
-        </View>
-      </View>
+      )}
 
       {/* Special Indicators */}
       <View style={styles.section}>

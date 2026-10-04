@@ -398,5 +398,15 @@
   "importContextList": "List \"{{list}}\"",
   "importContextPattern": "List \"{{list}}\", pattern \"{{pattern}}\"",
   "importContextModifier": "List \"{{list}}\", modifier \"{{modifier}}\"",
-  "importMessageInContext": "{{context}}: {{message}}"
+  "importMessageInContext": "{{context}}: {{message}}",
+  "appStyle": "Style",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "Warm and roomy. Made for practising and socials.",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "Dense and structured. Made for running a course.",
+  "noLevel": "No level",
+  "noType": "No type",
+  "countsSection": "{{n}} counts",
+  "videosCountA11y": "Videos: {{n}}",
+  "levelClearHint": "Tap the selected level again to leave it unset."
 }

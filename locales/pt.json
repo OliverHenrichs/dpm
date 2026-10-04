@@ -398,5 +398,15 @@
   "importContextList": "Lista \"{{list}}\"",
   "importContextPattern": "Lista \"{{list}}\", passo \"{{pattern}}\"",
   "importContextModifier": "Lista \"{{list}}\", modificador \"{{modifier}}\"",
-  "importMessageInContext": "{{context}}: {{message}}"
+  "importMessageInContext": "{{context}}: {{message}}",
+  "appStyle": "Estilo",
+  "styleAfterHours": "After Hours",
+  "styleAfterHoursHint": "Acolhedor e espaçoso. Feito para praticar e para os bailes.",
+  "styleClipboard": "Clipboard",
+  "styleClipboardHint": "Denso e estruturado. Feito para dar um curso.",
+  "noLevel": "Sem nível",
+  "noType": "Sem tipo",
+  "countsSection": "{{n}} tempos",
+  "videosCountA11y": "Vídeos: {{n}}",
+  "levelClearHint": "Toque de novo no nível escolhido para o deixar sem nível."
 }

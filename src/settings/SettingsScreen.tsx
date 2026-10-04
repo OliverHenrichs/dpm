@@ -22,11 +22,17 @@ import PatternListImportModal from "@/src/pattern/data/components/PatternListImp
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
 import AppDialog from "@/src/common/components/AppDialog";
 import DeviceModelsSection from "@/src/settings/components/DeviceModelsSection";
+import { AppStyle } from "@/src/common/theme/tokens";
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
-  const { theme: themePreference, setTheme } = useThemeContext();
+  const {
+    theme: themePreference,
+    setTheme,
+    appStyle,
+    setAppStyle,
+  } = useThemeContext();
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const selectedLanguage = findLanguage(currentLang);
   const { theme } = useUnistyles();
@@ -35,6 +41,19 @@ const SettingsScreen: React.FC = () => {
     { value: "system", label: t("themeSystem"), icon: "theme-light-dark" },
     { value: "light", label: t("themeLight"), icon: "white-balance-sunny" },
     { value: "dark", label: t("themeDark"), icon: "weather-night" },
+  ];
+
+  const styleOptions: { value: AppStyle; label: string; hint: string }[] = [
+    {
+      value: "afterHours",
+      label: t("styleAfterHours"),
+      hint: t("styleAfterHoursHint"),
+    },
+    {
+      value: "clipboard",
+      label: t("styleClipboard"),
+      hint: t("styleClipboardHint"),
+    },
   ];
 
   // Data transfer logic extracted to custom hook
@@ -83,6 +102,23 @@ const SettingsScreen: React.FC = () => {
           onPress={() => setShowLanguagePicker(true)}
           accessibilityLabel={`${t("language")}: ${selectedLanguage.label}`}
         />
+
+        {/* Style Section */}
+        <View style={commonStyles.sectionHeaderRow}>
+          <Text style={commonStyles.sectionTitle}>{t("appStyle")}</Text>
+        </View>
+        <View style={styles.styleList}>
+          {styleOptions.map((opt) => (
+            <ListRow
+              key={opt.value}
+              title={opt.label}
+              subtitle={opt.hint}
+              selection="single"
+              selected={appStyle === opt.value}
+              onPress={() => setAppStyle(opt.value)}
+            />
+          ))}
+        </View>
 
         {/* Theme Section */}
         <View style={commonStyles.sectionHeaderRow}>
@@ -179,6 +215,7 @@ const styles = StyleSheet.create((theme) => ({
     ...getCommonListContainer(theme),
   },
   indented: { marginLeft: theme.space.sm },
+  styleList: { gap: theme.space.xs, marginBottom: theme.space.xxl },
   galleryLink: { alignSelf: "flex-start", marginTop: theme.space.xl },
   loadingContainer: {
     paddingVertical: theme.space.xl,
