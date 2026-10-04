@@ -5,6 +5,9 @@ import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
 import { clearReplacements } from "@/src/anonymize/jobs/replaceVideo";
 import { AnonymizeProvider } from "@/src/anonymize/providers/AnonymizeProvider";
+import { shortenVideo } from "@/src/anonymize/shortenVideo";
+import * as modelStore from "@/src/transcribe/modelStore";
+import * as transcribeModule from "@/src/transcribe/transcribeVideo";
 import { IPattern, NewPattern } from "@/src/pattern/types/IPatternList";
 import {
   createTestPattern,
@@ -108,7 +111,9 @@ const editButton = () => screen.findByLabelText("Edit a video");
 /** Opens the finished video from its line in the form, and puts it in place of the original. */
 async function reviewAndReplace() {
   fireEvent.press(await screen.findByText("Review"));
-  fireEvent.press(await screen.findByText("Replace the original"));
+  fireEvent.press(
+    await screen.findByText("Replace the original in this pattern"),
+  );
   await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
 }
 
@@ -153,6 +158,53 @@ describe("EditPatternForm — editing a video", () => {
     await waitFor(() =>
       expect(saved().videoRefs[0].value).toMatch(/^file:\/\/\/document\//),
     );
+  });
+
+  it("names the kind of each job, so a failed one is not read as the one still running", async () => {
+    const { list } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        name: "Whip",
+        videoRefs: [{ type: "local", value: SOURCE }],
+      }),
+    );
+    await editButton();
+    jest
+      .spyOn(modelStore, "installedModels")
+      .mockReturnValue({} as ReturnType<typeof modelStore.installedModels>);
+    jest.spyOn(transcribeModule, "transcribeVideo").mockReturnValue({
+      promise: Promise.reject(new transcribeModule.NoAudioError()),
+      stop: jest.fn(),
+    } as unknown as ReturnType<typeof transcribeModule.transcribeVideo>);
+    let finishCut: (uri: string) => void = () => {};
+    (shortenVideo as jest.Mock).mockImplementationOnce(
+      () => new Promise<string>((resolve) => (finishCut = resolve)),
+    );
+
+    await act(async () => {
+      jobStore.start({
+        kind: "transcribe",
+        listId: list.id,
+        patternName: "Whip",
+        request: { sourceUri: SOURCE },
+      });
+      jobStore.start({
+        kind: "shorten",
+        listId: list.id,
+        patternName: "Whip",
+        request: { sourceUri: SOURCE, startSeconds: 1, endSeconds: 4 },
+      });
+    });
+
+    expect(
+      await screen.findByText(
+        "Could not transcribe the video: the video has no sound",
+      ),
+    ).toBeTruthy();
+    expect(await screen.findByText(/^Shortening the video/)).toBeTruthy();
+    expect(screen.queryByText(/Processing/)).toBeNull();
+    await act(async () => finishCut(OUTPUT));
+    jest.restoreAllMocks();
   });
 
   it("puts a finished job's video into the open form", async () => {
@@ -300,7 +352,7 @@ describe("EditPatternForm — editing a video", () => {
       screen.getByText("Add the whole transcript to the description"),
     );
     expect(screen.getByText("Added to the description")).toBeOnTheScreen();
-    fireEvent.press(screen.getByText("Replace the original"));
+    fireEvent.press(screen.getByText("Replace the original in this pattern"));
     await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
 
     fireEvent.press(screen.getByText("Save"));

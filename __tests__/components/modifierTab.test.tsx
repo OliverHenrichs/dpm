@@ -336,7 +336,7 @@ describe("EditModifierForm", () => {
         }),
       );
 
-      fireEvent.press(screen.getAllByLabelText("Remove video")[0]);
+      fireEvent.press(screen.getAllByLabelText("Remove video from pattern")[0]);
       saveModifier();
 
       expect(saved().videoRefs).toEqual([localVideo("file:///b.mp4")]);
