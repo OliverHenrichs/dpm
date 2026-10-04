@@ -45,6 +45,13 @@ export interface IPatternList {
   readonly?: boolean; // When true, the list was exported as read-only and cannot be edited by the importer
   shareCode?: string; // Firestore document ID when this list is published to the cloud
   /**
+   * The publisher's secret for the published list (`src/firebase/shareKey.ts`).
+   * Present exactly when the list has a `shareCode` and is not `readonly`;
+   * `savePatternList` keeps that true. Never published; left out of read-only
+   * exports.
+   */
+  shareKey?: string;
+  /**
    * High-water mark for pattern ids: the next one to hand out, never one that
    * has been used before.
    *

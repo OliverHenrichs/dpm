@@ -44,7 +44,10 @@ const mockedUnpublish = unpublishList as jest.MockedFunction<
 
 beforeEach(() => {
   mockFirebaseAvailable = true;
-  mockedPublish.mockResolvedValue("ABCD1234");
+  mockedPublish.mockResolvedValue({
+    shareCode: "ABCD1234",
+    shareKey: "test-share-key",
+  });
   mockedUnpublish.mockResolvedValue(undefined);
 });
 
@@ -105,14 +108,18 @@ describe("ShareListModal", () => {
       );
     });
 
-    it("hands back the list carrying its new share code", async () => {
+    it("hands back the list carrying its new share code and key", async () => {
       const { onPublished, list } = renderShare();
 
       fireEvent.press(screen.getByText("Publish"));
 
       await waitFor(() =>
         expect(onPublished).toHaveBeenCalledWith(
-          expect.objectContaining({ id: list.id, shareCode: "ABCD1234" }),
+          expect.objectContaining({
+            id: list.id,
+            shareCode: "ABCD1234",
+            shareKey: "test-share-key",
+          }),
         ),
       );
     });
@@ -188,12 +195,17 @@ describe("ShareListModal", () => {
       fireEvent.press(screen.getAllByText("Stop Sharing")[1]);
 
       await waitFor(() =>
-        expect(mockedUnpublish).toHaveBeenCalledWith("ABCD1234"),
+        expect(mockedUnpublish).toHaveBeenCalledWith(
+          expect.objectContaining({ shareCode: "ABCD1234" }),
+        ),
       );
     });
 
-    it("hands back a list with the share code removed", async () => {
-      const { onUnpublished } = renderShare(published());
+    it("hands back a list with the share code and key removed", async () => {
+      const { onUnpublished } = renderShare({
+        ...published(),
+        shareKey: "test-share-key",
+      });
 
       fireEvent.press(screen.getByText("Stop Sharing"));
       fireEvent.press(screen.getAllByText("Stop Sharing")[1]);
@@ -205,6 +217,7 @@ describe("ShareListModal", () => {
 
       const handedBack = onUnpublished.mock.calls.at(-1)![0];
       expect(handedBack).not.toHaveProperty("shareCode");
+      expect(handedBack).not.toHaveProperty("shareKey");
     });
 
     it("reports a failure rather than claiming it stopped", async () => {

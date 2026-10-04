@@ -25,6 +25,9 @@ if (firebaseAvailable && cfg) {
   _db = getFirestore(_app);
 }
 
+/** Firebase app — undefined when Firebase is not configured. */
+export const app: FirebaseApp | undefined = _app;
+
 /** Firestore instance — undefined when Firebase is not configured. */
 export const db: Firestore | undefined = _db;
 
@@ -34,3 +37,10 @@ export const APP_TOKEN: string =
 
 /** Firestore collection that holds all shared lists. */
 export const SHARED_LISTS_COLLECTION = "sharedLists";
+
+/**
+ * Firestore collection of owner records, one per shared list under the same
+ * share code: `{ ownerUid, key }`. Nobody can read it; the security rules use
+ * it to let only the publisher update or delete a list.
+ */
+export const SHARED_LIST_OWNERS_COLLECTION = "sharedListOwners";

@@ -13,8 +13,9 @@ export const SUPPORTED_MAJOR = 3;
  * 1: video references may carry `generated` (anonymized videos, L3).
  * 2: video references may carry `transcript` (what was said in them, L4).
  * 3: patterns may carry `rhythm`, lists `dance`.
+ * 4: lists may carry `shareKey` (control of a published list).
  */
-export const SUPPORTED_MINOR = 3;
+export const SUPPORTED_MINOR = 4;
 
 export interface ParsedVersion {
   major: number;

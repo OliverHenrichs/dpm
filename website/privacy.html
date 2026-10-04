@@ -25,7 +25,7 @@
     </header>
     <main class="wrap prose">
 <h1>Privacy Policy — DancePatternMapper (DPM)</h1>
-<p><strong>Last updated: October 3, 2026</strong></p>
+<p><strong>Last updated: October 4, 2026</strong></p>
 <hr>
 <h2>1. Who we are</h2>
 <p><strong>App name:</strong> DancePatternMapper (DPM)<br>
@@ -81,7 +81,7 @@
 </tr>
 </tbody>
 </table>
-<p>None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature. Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts".</p>
+<p>None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature. Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts". An editable export of a list you have published also carries that list's share key, so whoever imports it can update or stop sharing the published list (that is how you move it to a new phone); a read-only export never does.</p>
 <h3>3.2 On-device video tools</h3>
 <p>Shortening a video, anonymizing it (turning the dancers into silhouettes), transcribing its speech and suggesting a pattern name and description are all processed <strong>entirely on your device</strong>. The video, its audio, the transcript and the suggestion are never sent to us or to anyone else.</p>
 <p>An anonymized video shows the dancers as silhouettes and contains no sound. People may still be recognisable from their body shape, movement or surroundings, so treat it with the same care as the original.</p>
@@ -112,9 +112,14 @@
 <td>Timestamps (<code>publishedAt</code>, <code>publisherVersion</code>)</td>
 <td>Detecting updates on subscriber devices</td>
 </tr>
+<tr>
+<td>An owner record: your anonymous user ID and the list's share key (a random secret created on your phone)</td>
+<td>Making sure only you can update or stop sharing your list. Nobody can read this record, including subscribers</td>
+</tr>
 </tbody>
 </table>
-<p><strong>We do not collect:</strong> your name, email address, phone number, location, or any account credentials. The app has no user accounts.</p>
+<p><strong>Anonymous sign-in.</strong> The first time you publish, the app signs in to <strong>Google Firebase Authentication</strong> anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists. Subscribing to a list never signs in.</p>
+<p><strong>We do not collect:</strong> your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID above is the only identifier, and it is not linked to you as a person.</p>
 <p><strong>Local video files and transcripts are never uploaded.</strong> Only URL-based video references are included in the cloud document.</p>
 <p>When you publish or subscribe, Google Firebase automatically records:</p>
 <ul>
@@ -173,6 +178,10 @@
 <td>Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time</td>
 </tr>
 <tr>
+<td>Anonymous sign-in and the owner record when you publish</td>
+<td>Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b))</td>
+</tr>
+<tr>
 <td>IP address collection by Firebase</td>
 <td>Legitimate interest in operating a secure service (Art. 6(1)(f))</td>
 </tr>
@@ -185,12 +194,12 @@
 <hr>
 <h2>5. Who we share your data with</h2>
 <p>We use the following third-party data processor:</p>
-<p><strong>Google LLC</strong> (Firebase / Firestore)<br>
+<p><strong>Google LLC</strong> (Firebase / Firestore, Firebase Authentication)<br>
 Role: Data Processor<br>
-Purpose: Cloud storage of published pattern lists<br>
+Purpose: Cloud storage of published pattern lists, and the anonymous sign-in of publishers<br>
 Privacy policy: https://policies.google.com/privacy<br>
 Data Processing Terms: https://firebase.google.com/terms/data-processing-terms<br>
-Data location: <strong>Europe (europe-west, Belgium).</strong> All Firestore data is stored exclusively on Google servers within the European Union. No cross-border transfer outside the EU/EEA takes place for stored data.</p>
+Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Published lists and owner records are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.</p>
 <p>When you use the features in sections 3.4 and 3.5, your device connects directly to these services. They process your IP address as <strong>independent controllers</strong> under their own policies, and may do so outside the EU/EEA, including in the United States:</p>
 <ul>
 <li><strong>YouTube / Google LLC</strong> (online videos): https://policies.google.com/privacy</li>
@@ -221,6 +230,14 @@ Data location: <strong>Europe (europe-west, Belgium).</strong> All Firestore dat
 <td>Until you stop sharing the list in the app (Dances → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.</td>
 </tr>
 <tr>
+<td>Owner record of a published list</td>
+<td>Removed together with the list when you stop sharing it</td>
+</tr>
+<tr>
+<td>Anonymous user ID (Firebase Authentication)</td>
+<td>Kept while you might still publish from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time</td>
+</tr>
+<tr>
 <td>Firebase infrastructure logs (IP, timestamps)</td>
 <td>Governed by Google's own retention policy (typically 30–180 days)</td>
 </tr>
@@ -240,15 +257,15 @@ Data location: <strong>Europe (europe-west, Belgium).</strong> All Firestore dat
 <li><strong>Objection</strong> — object to processing based on legitimate interest</li>
 <li><strong>Lodge a complaint</strong> — with your national data protection authority (e.g. the <a href="https://www.bfdi.bund.de/">BfDI</a> in Germany, the <a href="https://ico.org.uk/">ICO</a> in the UK)</li>
 </ul>
-<p><strong>How to delete your published data:</strong> Open the app → Dances → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document. For anything else, contact us at dance-pattern-mapper@pm.me.</p>
-<p>Because the app has no user accounts, we cannot identify which Firestore documents belong to you without you providing the share code. Please include it in any erasure request.</p>
+<p><strong>How to delete your published data:</strong> Open the app → Dances → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document and its owner record. For anything else, contact us at dance-pattern-mapper@pm.me.</p>
+<p>Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.</p>
 <p>For data held by YouTube, Hugging Face or GitHub, please use their own privacy tools or contact them directly; we have no access to it.</p>
 <hr>
 <h2>8. Children</h2>
 <p>The app is not directed at children under 13 (or under 16 in the EU). We do not knowingly collect personal data from children. If you believe a child has submitted personal data through the cloud sharing feature, please contact us and we will delete it.</p>
 <hr>
 <h2>9. Security</h2>
-<p>We use cryptographically secure random number generation (CSPRNG) to create share codes. Published lists are protected by Firestore Security Rules that require a valid app token to write. However, any person who obtains a share code can read the corresponding list — do not publish lists containing sensitive personal information.</p>
+<p>We use cryptographically secure random number generation (CSPRNG) to create share codes and share keys. Published lists are protected by Firestore Security Rules: only the publisher's anonymous ID, or whoever holds the list's share key, can update or delete a list, and nobody can list or browse the published lists. However, any person who obtains a share code can read the corresponding list — do not publish lists containing sensitive personal information.</p>
 <p>Downloaded models are checked against a fixed SHA-256 checksum before use, so a corrupted or altered file is rejected.</p>
 <hr>
 <h2>10. This website</h2>

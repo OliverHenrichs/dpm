@@ -75,7 +75,7 @@ describe("canImport", () => {
   it("refuses a newer minor rather than guessing at it", () => {
     // The writer added something this build cannot carry; parsing it anyway
     // would silently drop that data on the next save.
-    expect(canImport("3.4.0")).toEqual({
+    expect(canImport("3.5.0")).toEqual({
       supported: false,
       reason: "tooNew",
     });

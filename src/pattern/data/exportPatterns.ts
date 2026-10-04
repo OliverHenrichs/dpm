@@ -145,6 +145,10 @@ async function createExportData(
       ...list,
       modifiers: exportedModifiers,
       readonly: exportAsReadonly ? true : undefined,
+      // The share key lets whoever holds it take over the published list. An
+      // editable export is how the publisher moves the list to a new phone; a
+      // read-only one goes to other people, so it must not carry the key.
+      shareKey: exportAsReadonly ? undefined : list.shareKey,
       patterns: exportedPatterns,
     });
   }

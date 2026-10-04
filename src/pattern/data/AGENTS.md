@@ -45,6 +45,9 @@ user installed an older APK over a newer one), nothing runs and the marker is le
 downgrading the data would discard whatever the newer build added. A failed migration is logged
 and does not block startup; the read-time repairs still cope.
 
+Migration 002 re-saves every list so that lists published before share keys existed get one
+(`savePatternList` mints it); see `src/firebase/AGENTS.md`.
+
 The read-time normalisation in `PatternListStorage` stays even though migration 001 materialises
 it — data still arrives from imports and cloud syncs after migrations have run.
 
@@ -94,7 +97,7 @@ is equally correct. What is not correct is snapshotting once and leaving it.
 
 ## Export / Import format
 
-Version `"3.3.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.4.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -104,6 +107,7 @@ Version `"3.3.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `
 - 3.1 added `IVideoReference.generated` (`{ method, createdAt }`), the provenance of a video the app made — today the anonymized clips from `src/anonymize/`. `validateExportData` keeps it when well-formed and drops only the field, with a warning, when not; `ImportPatterns` spreads the ref when relocating a local video so it survives the trip.
 - 3.2 added `IVideoReference.transcript` (L4: what was said in the video). It is **left out unless `includeTranscripts`**, the export sheet's opt-in, which is offered only when a selected list has a transcript and is off every time the sheet opens; it needs `includeVideos`, since a transcript sits on a local video ref. `validateExportData` keeps a well-formed transcript, drops single malformed lines with a warning, and drops the whole field (never the video) when it is not a transcript at all. Published lists (`src/firebase/`) never carry transcripts — `withoutTranscripts` in `transcripts.ts`.
 - 3.3 added `IPattern.rhythm` and `IPatternList.dance`. `validateExportData` keeps a rhythm only when it matches the pattern's counts (the app never stores one that does not), dropping it with `importWarnRhythmMismatch` otherwise, and keeps a dance only when this build knows it.
+- 3.4 added `IPatternList.shareKey`, control of a list this device published (`src/firebase/AGENTS.md`). An editable export carries it, so importing it on a new phone hands over the published list; a read-only export leaves it out, since it goes to other people. `savePatternList` drops it again from any read-only copy.
 - Picked videos go through `persistVideo` / `persistPickedVideos` (`videoFiles.ts`), which copy them into the document directory: the picker hands out cache URIs the OS may clear.
 - Videos are keyed in the `videos` map by their **original local path**; pattern videos, universal-modifier videos and per-pattern modifier-combination videos are all embedded.
 - `importPatternLists()` (`ImportPatterns.ts`) picks a file via `expo-document-picker`, decodes base64 videos back to the local filesystem via `expo-file-system`, and returns the lists — collecting non-fatal `warnings` for missing/unreadable videos.

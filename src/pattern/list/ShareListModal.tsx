@@ -17,7 +17,7 @@ interface ShareListModalProps {
   list: IPatternList;
   patterns: IPattern[];
   onClose: () => void;
-  /** Called after a successful publish/sync with the updated list (carrying shareCode). */
+  /** Called after a successful publish/sync with the updated list (carrying shareCode and shareKey). */
   onPublished: (updatedList: IPatternList) => void;
   /** Called after the user confirms unpublishing. */
   onUnpublished: (updatedList: IPatternList) => void;
@@ -50,8 +50,8 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
     setError(null);
     setIsLoading(true);
     try {
-      const shareCode = await publishList(list, patterns);
-      onPublished({ ...list, shareCode });
+      const { shareCode, shareKey } = await publishList(list, patterns);
+      onPublished({ ...list, shareCode, shareKey });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -64,8 +64,8 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
     setError(null);
     setIsLoading(true);
     try {
-      await unpublishList(list.shareCode);
-      const { shareCode: _removed, ...rest } = list;
+      await unpublishList(list);
+      const { shareCode: _removed, shareKey: _key, ...rest } = list;
       // Show success dialog before propagating — the modal stays visible until dismissed
       setUnpublishPending(rest as IPatternList);
     } catch (e) {
