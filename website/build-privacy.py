@@ -25,6 +25,7 @@ TEMPLATE = """<!doctype html>
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="site.js"></script>
   </head>
   <body>
     <header class="site-header">

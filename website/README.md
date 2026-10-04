@@ -1,16 +1,24 @@
 # DPM website
 
 The public introduction to DPM: what the app is and what it does, plus its privacy policy. It is
-plain static HTML and CSS, with no build step, no JavaScript, no web fonts and no third-party
-requests. That keeps it cheap to host anywhere and free of cookie banners.
+plain static HTML and CSS with no build step and no third-party requests: the fonts are the app's
+own, served from this folder, and the one script is the style switcher. That keeps it cheap to
+host anywhere and free of cookie banners.
+
+The site comes in the app's two styles, **After Hours** (the default) and **Clipboard**, each in
+light and dark. The switcher in the header sets `data-style="clipboard"` on `<html>` and remembers
+the choice in the browser's `localStorage` (the privacy policy says so); light and dark follow the
+system. Without JavaScript the switcher stays hidden and the page is After Hours.
 
 | File | What it is |
 |---|---|
-| `index.html` | The landing page. Graph, filter, modifier and video-tool examples are real app screenshots (`img/shots/`); the sharing illustration is inline SVG drawn with the site's colour variables. The web-build shots and the SVG follow light and dark mode |
-| `styles.css` | All styling. The colours mirror `src/common/theme/tokens.ts` and the pattern-type colours in `PatternType.ts` |
+| `index.html` | The landing page. The list, map, filter, modifier, Reels and video-tool examples are real app screenshots (`img/shots/`); the sharing illustration is inline SVG drawn with the site's colour variables. The web-build shots and the SVG follow the style and light or dark |
+| `styles.css` | All styling. Both styles' colours, fonts and radii mirror `src/common/theme/tokens.ts` (`palettes`, `nativeFonts`, `radii`); the pattern-type colours are from `PatternType.ts`. A token changed in the app should change here too |
+| `site.js` | The style switcher, loaded in every page's `<head>` so a returning visitor's style is set before the first paint |
+| `fonts/` | DM Serif Display, Manrope, IBM Plex Sans Condensed and IBM Plex Mono as WOFF2, subset to Latin from `assets/fonts/`, with their OFL licences |
 | `privacy.html` | **Generated** from `/PRIVACY_POLICY.md` by `build-privacy.py`. Edit the Markdown, not the HTML |
 | `404.html` | Not-found page, with absolute paths (see "Moving the site" below) |
-| `img/shots/` | App screenshots, 600 px wide: a light and a dark take of each web-build shot (`name.webp`, `name-dark.webp`), and the video tools (`video-*.webp`), light only |
+| `img/shots/` | App screenshots, 600 px wide. Each web-build shot comes four times: `name-ah.webp`, `name-ah-dark.webp` (After Hours) and `name-cb.webp`, `name-cb-dark.webp` (Clipboard); the page shows the copy for the current style (`.for-ah`, `.for-cb`). The video tools (`video-*.webp`) are a single light take |
 | `img/` | Logo, favicons and the social preview image, derived from `assets/images/app-icon.png` and `store-assets/play-store-feature-graphic.png` |
 | `.nojekyll`, `robots.txt` | Hosting housekeeping |
 
@@ -41,12 +49,19 @@ These addresses are hard-coded and must change together when the site gets its o
 
 - **Store badges.** When the listings go live, replace the "In active development" line in the
   hero with the official Google Play and App Store badges.
-- **Screenshots.** The screenshots come from the app's web build at phone size (412 × 870), with a
-  West Coast Swing group list ("WCS · Thursday group", tagged by course and festival) seeded into
-  storage. The video tools are Android-only, so `video-*.webp` were taken on a phone with the dev
-  build (status bar cropped off; the original class video blurred, since its dancers haven't
-  consented). Sharing can't be shot on the web build (no Firebase) and is still drawn; replace it
-  with a device screenshot when a phone is at hand.
+- **Screenshots.** The screenshots come from the app's web build at phone size (412 × 870, saved
+  600 px wide), with a West Coast Swing group list ("WCS · Thursday group", tagged by course and
+  festival, with a rhythm on each figure and a manual network layout) seeded into storage, once
+  per style and theme. The web build has no embedded fonts, so the shots load the app's font
+  files and point `webFonts` at them; graph labels are set in a Roboto-like sans, as on Android.
+  The Reels shots use two frames of the basic whip from the class video, the anonymized one and
+  the blurred original, since there is no other footage with the dancers' consent; a device
+  screenshot of a list with more videos would show the overview better.
+- **Video-tool screenshots.** These are Android-only, so `video-*.webp` were taken on a phone with
+  the dev build (status bar cropped off; the original class video blurred, since its dancers
+  haven't consented). They still show the app's previous indigo look and need retaking on the
+  phone in both styles. Sharing can't be shot on the web build (no Firebase) and is still drawn;
+  replace it with a device screenshot when a phone is at hand.
 - **Privacy policy.** Keep `PRIVACY_POLICY.md` in step with the app: a new network connection,
   permission or kind of stored data belongs in it before it ships.
 - **Impressum.** A site run from Germany may need an Impressum (§ 5 DDG), depending on whether it
