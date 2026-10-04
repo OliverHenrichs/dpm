@@ -405,7 +405,7 @@ describe("SubscribeListModal", () => {
 
       // Wait for something to *appear* — the preview the scan triggers — then
       // assert the scanner is gone synchronously. Polling for a node's absence
-      // inside `waitFor` is unreliable on a loaded runner; see AGENTS.md.
+      // inside `waitFor` is unreliable on a loaded runner; see __tests__/AGENTS.md.
       await waitFor(() =>
         expect(screen.getByText("Shared Salsa")).toBeOnTheScreen(),
       );

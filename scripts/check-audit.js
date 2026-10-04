@@ -1,7 +1,7 @@
 // Compares `npm audit --json` (path in argv, default audit.json) against the
 // advisories we have reviewed and accepted. Any advisory not listed here fails
 // the check, whatever its severity; an accepted one that no longer appears is
-// reported so its entry can be removed. Keep this list and AGENTS.md in step.
+// reported so its entry can be removed. Each entry says why it is accepted.
 //
 // Every acceptance expires: past `until` (a UTC date) the advisory fails the
 // check again, so it is re-reviewed rather than accepted indefinitely. Check
@@ -55,7 +55,7 @@ const resolved = Object.keys(ACCEPTED).filter((id) => !found.has(id));
 console.log("npm audit counts:", audit.metadata.vulnerabilities);
 for (const id of resolved) {
   console.log(
-    `::warning::${id} (${ACCEPTED[id].name}) no longer reported; remove it from scripts/check-audit.js and AGENTS.md`,
+    `::warning::${id} (${ACCEPTED[id].name}) no longer reported; remove it from scripts/check-audit.js`,
   );
 }
 for (const [id] of expiring) {
@@ -80,7 +80,7 @@ if (unexpected.length > 0) {
   );
   for (const [id, desc] of unexpected) console.error(`  ${id}: ${desc}`);
   console.error(
-    "Fix them (an override in package.json), or review and add them to ACCEPTED in scripts/check-audit.js and to AGENTS.md.",
+    "Fix them (an override in package.json), or review and add them to ACCEPTED in scripts/check-audit.js with the reason.",
   );
   failed = true;
 }

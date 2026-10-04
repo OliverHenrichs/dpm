@@ -136,7 +136,7 @@ export function usePatternCrud(): PatternCrud {
       // scrubs modifierRefs. A left-behind prerequisite id is not cosmetic:
       // the network layout cannot place a node whose prerequisites are not all
       // positioned, so the dependent — and its whole subtree — would vanish
-      // from the graph with no error. See AGENTS.md, "Prerequisite integrity".
+      // from the graph with no error. See src/pattern/graph/AGENTS.md, "Prerequisite integrity".
       await commitPatterns(
         repairDanglingPrerequisites(patterns.filter((p) => p.id !== id)),
       );

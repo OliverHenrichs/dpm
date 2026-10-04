@@ -72,7 +72,7 @@ jobs:
       # Both targets are built because Metro resolves `.web.tsx` in preference
       # to `.tsx`, so a bad import can break exactly one platform. Web also
       # builds an SSR bundle (static rendering is on), surfacing such a fault
-      # twice. See AGENTS.md, "Platform-specific code".
+      # twice. See AGENTS.md, "Platform splits".
       - name: Export web bundle
         run: npx expo export --platform web --output-dir dist-web
 
@@ -120,7 +120,7 @@ jobs:
         run: npm ci
 
       # scripts/check-audit.js lists the advisories we have reviewed and accept
-      # (no patched release, or dev tooling only); see AGENTS.md. Any other
+      # (no patched release, or dev tooling only), each with its reason. Any other
       # advisory, at any severity, fails the job.
       - name: Fail on unreviewed vulnerabilities
         run: |
