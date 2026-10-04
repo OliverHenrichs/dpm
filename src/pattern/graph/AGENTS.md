@@ -35,7 +35,7 @@ It replaced `@openspacelabs/react-native-zoomable-view`, which is implemented wi
 - Everything is on the UI thread: shared values and `useAnimatedStyle`, never `setState` from a handler. Use `.get()` / `.set()`, not `.value` — the React Compiler is on and cannot see through bare `.value` access.
 - The transform array is `[{ translateX }, { translateY }, { scale }]`. Translate before scale, so offsets stay in screen pixels and a drag tracks the finger 1:1 at any zoom.
 - Pinch reports _cumulative_ scale; the canvas converts it to a per-frame factor so pinch and pan can both write `translate` without fighting.
-- **No `GestureHandlerRootView` is mounted in `src/` screens, deliberately** — the one exception is inside a React Native `Modal`. On native the drawer supplies a real one (`react-native-drawer-layout`'s `Drawer.native` renders one around its children, so every screen is inside it). On web RNGH's root view is a plain `View` plus a context flag, so gestures work without one. Nesting another around the graph would take that area out of the drawer's own gesture tree. A `Modal`, though, renders in its own native window outside the drawer, and an RNGH gesture in it never activates on Android without a root of its own — which is why `AnonymizeModal` (the video editor's trim bar) mounts one.
+- **No `GestureHandlerRootView` is mounted in screens, deliberately.** On native the drawer supplies one (`react-native-drawer-layout`'s `Drawer.native` wraps its children); on web RNGH's root is a plain `View` plus a context flag. Nesting another around the graph would take that area out of the drawer's gesture tree. The exception is inside a React Native `Modal`, which renders in its own window: `BottomSheet` and `AnonymizeModal` mount their own (`src/common/AGENTS.md`).
 
 ## Manual layout
 
@@ -56,8 +56,8 @@ a node outside that box could not be dragged back, because it would never be on 
   reports them stale because it only sees the patterns it was handed, so the caller passes the
   _unfiltered_ set when deciding what to persist.
 - A manual layout is **never written to the Firestore shared document**. A subscriber's
-  arrangement is theirs, and `syncPublishedList` runs after every pattern CRUD — a layout in there
-  would fire a network write on every drag.
+  arrangement is theirs, and a published list is pushed after every edit (`usePatternCrud`), so a
+  layout in there would fire a network write on every drag.
 - Dragging is allowed on read-only lists. It is a local view preference, not a content edit, so it
   is a deliberate exception to the `isReadonly` guard every mutating path has.
 
@@ -116,10 +116,10 @@ Both draw through the shared primitives in `render/GraphPrimitives.tsx` (`Arrowh
 
 `IPattern.prerequisites` is the data model — both graph views are built from it — and two ways of
 corrupting it used to make patterns disappear from the network view while the list and timeline
-still showed them. Three rules keep that shut, and all three live in
-`src/pattern/graph/utils/GenericGraphUtils.ts`:
+still showed them. Three rules keep that shut, all built on the helpers in
+`utils/GenericGraphUtils.ts`:
 
-- **Never remove a pattern without scrubbing references to it.** `deletePattern` composes deletion
+- **Never remove a pattern without scrubbing references to it.** `deletePattern` (`usePatternCrud`) composes deletion
   as `repairDanglingPrerequisites(patterns.filter(...))` rather than filtering alone. The helper
   returns the same array reference when there is nothing to repair, so the healthy path is free.
 - **`loadPatterns` repairs on read**, so lists corrupted by older builds heal themselves as they
@@ -151,4 +151,4 @@ degenerate input: imports, shared lists and old devices still supply both kinds 
 
 - **The modal's card is sized to its content**, capped at 80% of the screen rather than fixed at it. React Native puts `flexGrow: 1` on a ScrollView's content container, so both the ScrollView's own style _and_ its `contentContainerStyle` need `flexGrow: 0` or the card fills its whole allowance however little is in it.
 - **Empty sections are not all alike.** Prerequisites and "builds into" say so explicitly when empty — "nothing comes before this" answers a question someone opened a _graph_ detail view to ask. Tags render nothing at all, because an absent tag list carries no information and a bare label is just height.
-- **Backdrop tap dismisses via a sibling `Pressable` behind the card, never a wrapper around it.** A press handler wrapping content claims the touch, and native children never receive it — the video player's controls stopped responding inside this modal while the same details rendered in a list row were fine. A sibling only receives touches where it is the topmost view, which is exactly outside the card. `BottomSheet` still uses the nested-`Pressable` form; that works for ordinary touchables, which win the responder over an ancestor, but do not put a native player inside it without changing it to this shape.
+- **Backdrop tap dismisses through a sibling `Pressable` behind the card**, so the video player's controls inside keep working; see "Dismissal touches" in `src/common/AGENTS.md`.

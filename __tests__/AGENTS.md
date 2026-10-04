@@ -1,43 +1,126 @@
 # Testing — `__tests__/`
 
-This file also governs `__mocks__/` and `utils/` (the test helpers), which sit outside this
-directory and therefore will not pull it in on their own.
+Also governs `__mocks__/`, `utils/` (test helpers) and the `jest.setup.*.ts` files, which sit
+outside this directory and will not pull this file in on their own.
 
-All tests live in `__tests__/` (not co-located), named `*.test.ts(x)`. Jest runs **two projects** (`jest.config.js`), and a test must go in the directory matching its project:
+## Layout
 
-| Project      | Directory               | Environment        | Use it for                                                                                    |
-| ------------ | ----------------------- | ------------------ | --------------------------------------------------------------------------------------------- |
-| `unit`       | `__tests__/unit/`       | `node` + `ts-jest` | Pure logic — storage, graph maths, hooks-free helpers. Fast; this is where most tests belong. |
-| `components` | `__tests__/components/` | `jest-expo` preset | Anything that renders.                                                                        |
+All tests live here (not co-located), named `*.test.ts(x)`. Jest runs **two projects**
+(`jest.config.js`); a test in the wrong directory is **silently never run**.
 
-`npm test` runs both; `npm run test:unit` / `npm run test:components` run one. A test placed in the wrong directory is silently never run.
+| Project | Directory | Environment | Use it for |
+|---|---|---|---|
+| `unit` | `__tests__/unit/` | `node` + `ts-jest` | Pure logic: storage, graph maths, parsers, helpers. Fast; most tests belong here. |
+| `components` | `__tests__/components/` | `jest-expo` preset | Anything that renders, and hooks that need the providers. |
 
-A third directory, `__tests__/rules/`, holds the Firestore security-rules tests. It is outside `jest.config.js` on purpose: it needs the Firestore emulator (Java 21+), so it has its own `jest.rules.config.js` and runs only through `npm run test:rules`. See `src/firebase/AGENTS.md`.
+`npm test` runs both, `npm run test:unit` / `test:components` one. `__tests__/rules/` holds the
+Firestore security-rules tests, outside `jest.config.js` on purpose: they need the emulator (Java
+21+), have their own `jest.rules.config.js`, and run only through `npm run test:rules`.
 
-- **AsyncStorage is mocked globally and behaviourally.** `__mocks__/@react-native-async-storage/async-storage.ts` is a real in-memory store implementing the v3 surface, applied automatically (a `__mocks__` directory beside `node_modules` needs no `jest.mock()` call). Both setup files reset it per test. Assert on observable state (`await loadPatterns(id)`) rather than on mock bookkeeping (`setItem.mock.calls[0][1]`), so tests survive refactors of the storage internals. `seedAsyncStorage` / `peekAsyncStorage` are there for setup and assertions.
-- **`expo-crypto` is mocked globally too** (`__mocks__/expo-crypto.ts`), backed by Node's CSPRNG, because storage mints share keys (`src/firebase/shareKey.ts`) and the native module does not exist under jest. It implements only `getRandomValues`.
-- **`expo-localization` is mocked globally too** (`__mocks__/expo-localization.ts`), defaulting to a US-English device so suites written before it keep the behaviour they were written against. `setDeviceLocales` picks another device for one test; both setup files reset it. It implements only `getLocales`, the single call the app makes.
-- **The filesystem is mocked globally too.** `__mocks__/expo-file-system.ts` is an in-memory `File` / `Paths` implementation that stores real bytes and does real base64, so no test can touch the real disk and an export→import round trip has to preserve bytes exactly. `seedFile` / `seedBinaryFile` set fixtures up, `readFileBytes` / `readFileText` / `listFileUris` assert on the result. It implements only the surface the app uses and throws on anything else, so a new call site surfaces here rather than silently no-oping.
-- **Export and import are tested as a round trip**, not separately (`__tests__/unit/ExportImportRoundTrip.test.ts`): the two modules only agree through the on-disk format, so exercising them apart proves very little. Add a case there when changing either side or the format version.
-- **Component tests render through `renderWithProviders`** (`utils/renderWithProviders.tsx`), which supplies the real provider stack — i18n, `ThemeProvider`, `ActivePatternListProvider` — and seeds storage before mounting. It re-exports everything from `@testing-library/react-native`, so import `screen`, `fireEvent`, `within` from it rather than from the library directly.
-- **Native modules are mocked in `jest.setup.components.ts`** (expo-video, expo-camera, the pickers, haptics, sharing, the YouTube player, QR codes). The firebase SDK (`firebase/app`, `firebase/firestore`, `firebase/auth`) is mocked there too: it ships untranspiled ESM that jest cannot parse, and mocking matches how the app behaves without credentials (`firebaseAvailable === false`). Tests that need sharing should mock `@/src/firebase/FirebaseListService` directly.
-- Use factory helpers from `utils/testFactories.ts` (`createTestPattern`, `createTestPatternList`, `createTestPatternType`) — do not inline raw object literals in tests. They already supply `modifiers: []` / `modifierRefs: []`, so new required fields belong there too.
-- `IPattern.id` in tests should be a plain integer; `PatternType.id` / `IPatternList.id` / `IModifier.id` should use `generateUUID()`.
-- **`tsconfig.jest.json` must not override `jsx`.** Expo's base sets `react-jsx` (the automatic runtime), and several components rely on it by importing only `FC`/`ReactNode` rather than `React`. An override to the classic `"react"` transform makes those files fail to compile under ts-jest with `TS2686: 'React' refers to a UMD global` — which surfaces only as `Failed to collect coverage from …` on stderr, does **not** fail the run, and quietly drops those files from the coverage report.
-- **Timeouts are sized for a cold CI runner, not for a warm laptop.** `npm ci` wipes the Babel cache, so the first component test in a run transforms the whole React Native + Expo tree before it can render: a test that takes ~300ms warm takes ~3.5s with caches cleared, and more on a slower runner. Hence a single `testTimeout` of 60s and an `asyncUtilTimeout` of 10s for RNTL's `waitFor` (whose 1s default would fail as a confusing assertion error instead of a timeout). **`testTimeout` works only at the config root**: Jest accepts it inside a project entry, ignores it, and says so only as an "Unknown option" warning. Reproduce the cold path with `npx jest --clearCache && rm -rf node_modules/.cache` before assuming a CI-only failure is a fluke.
-- **Coverage thresholds are a ratchet**, set just under measured reality so CI is green on arrival (`jest.config.js` → `coverageThreshold`). Raise them as suites land; never lower them. Three mechanics to know before touching them. A file with its own entry is **removed from the `global` pool**, so pinning well-covered files pushes the global number _down_ — it measures the leftovers, not the project. A file imported by both projects is instrumented by two transforms, so its percentages drift between run modes; set a floor under the lowest of `npx jest --coverage`, `--ci --maxWorkers=2` and `--maxWorkers=1`. And the **global figure itself varies by several points between otherwise identical runs**, because that merge depends on which worker saw a shared file first — so measure it a few times and floor it under the worst, never under the best. The numbers jest prints when a threshold is _missed_ are the ones to key off, not the summary table's — they use different denominators.
-- **Both projects set `clearMocks: true`**, which resets call history _and_ factory implementations before each test. A mock whose return value matters must (re)establish it in `beforeEach`, not only in the `jest.mock` factory — otherwise it returns `undefined` and code that calls `.catch()` on it fails in a way React reports as `window.dispatchEvent is not a function`.
-- **`renderHookWithProviders`** (`utils/renderWithProviders.tsx`) mounts a hook in the same provider stack. Wait for `activeList` to be non-null before acting: the provider loads storage on mount, and an assertion like "zero patterns" is already true on the first render, before anything has loaded.
-- **Mocking `FirebaseListService` means mocking `subscribeToSharedList` too**, not just `syncPublishedList` — a list with a `shareCode` activates the provider's live-subscription hook.
-- **`firebaseAvailable` is `false` under jest**, always: it derives from `Constants.expoConfig.extra.firebase`, which jest-expo does not populate. That is at least consistent between a dev machine (which has a `.env`) and CI (which does not), but it means the sharing screens render their "not configured" branch by default. A suite that tests the _available_ path mocks `@/src/firebase/firebaseConfig` with a getter it can flip, rather than depending on the environment — see `ShareListModal.test.tsx`.
-- **`VideoCarousel` renders nothing until it is measured.** It keeps `containerWidth` at 0 and mounts its list only once `onLayout` fires, which nothing does under jest — fire it yourself (`fireEvent(view, "layout", { nativeEvent: { layout: { width: 320 } } })`) or the component looks empty and untestable.
-- **A callback that is not a touch event** — `onViewableItemsChanged`, say — is invoked through the prop rather than `fireEvent`, so wrap it in `act()` or its state update never lands.
-- **Never poll for a node's _absence_ with `waitFor`.** `waitFor(() => expect(screen.queryByX(...)).toBeNull())` is unreliable on a loaded CI runner: it re-runs its check inside `act`, and under contention it can still be observing the pre-update tree when its budget expires — even though the state itself settled in tens of milliseconds. Wait on something positive instead — a node appearing, a mock being called, storage reaching its expected value — and then assert the absence synchronously. This cost a red CI run; it reproduces locally with `for i in $(seq 8); do (while :; do :; done) & done` to saturate the CPU.
+## Writing a test
 
-- **A render helper must wait on something the _data_ produced, not on chrome.** `renderSelector` used to wait for the "Pattern Lists" header, which renders synchronously and therefore says nothing about whether the read from storage has landed; under CPU contention a run lost a list row between that wait and the assertion. Anchor on a value only the loaded data can produce (`await screen.findByText(lists[0].name)`). Where a screen loads from more than one key — `PatternListManager` reads `@patternLists` and `@patterns_<id>` separately — anchor on each, or the rows can still be missing while the chrome for the list is already up.
+- **Render through `renderWithProviders`** (`utils/renderWithProviders.tsx`): the real provider
+  stack (i18n, `ThemeProvider`, `ActivePatternListProvider`), with storage seeded before mounting.
+  It re-exports `@testing-library/react-native`; import `screen`, `fireEvent`, `within` from it.
+  `renderHookWithProviders` mounts a hook the same way.
+- **Build data with `utils/testFactories.ts`** (`createTestPattern`, `createTestPatternList`,
+  `createTestPatternType`), not raw literals. A new required field belongs in the factories.
+  Pattern ids are plain integers; type, list and modifier ids use `generateUUID()`.
+- **Assert on observable state**, `await loadPatterns(id)`, not on mock bookkeeping
+  (`setItem.mock.calls[0][1]`), so tests survive refactors of storage internals.
+- **Export and import are tested as a round trip** (`unit/ExportImportRoundTrip.test.ts`): the two
+  only agree through the on-disk format. Add a case there when changing either side or the version.
+- **The Android back button is testable**: `fireEvent(modal, "requestClose")` exercises
+  `onRequestClose`, a real user action worth covering.
+- **`test.failing` marks a known defect**: it passes while the bug exists and fails once fixed.
+  Prefer it to deleting or skipping a test that documents real broken behaviour.
 
-- **Unistyles runs on its shipped mock** (`react-native-unistyles/mocks`, imported in `jest.setup.components.ts`, followed by the app's theme registration). The mock resolves every `StyleSheet.create` against the first registered theme — light — at import time, so a component test sees light-theme values and cannot observe a theme switch. `useUnistyles()` returns the same theme.
-- **The Reanimated mock never re-runs animated styles**: `useAnimatedStyle` returns its factory's first result. A view whose animated opacity starts at 0 — `BottomSheet`'s scrim — therefore counts as hidden to RNTL's queries; pass `{ includeHiddenElements: true }`. Layout animations (`FadeIn`, `FadeOut`, …) are chainable no-ops. `withTiming`/`withSpring` land at once and report finished; `setTimingFinishes(false)` models an interrupted animation and `setReducedMotion(true)` the system setting, both reset before each test (`resetReanimatedMock`).
-- **Reanimated and Gesture Handler are mocked by hand** (`__mocks__/react-native-reanimated.tsx`, `__mocks__/react-native-gesture-handler.tsx`), picked up automatically because they are node modules. Reanimated's real entry point initialises the worklets runtime on import, which under jest reaches a native module that does not exist and fails the suite before a test runs; its own shipped mock re-imports that entry point, so it does not help, and resolving worklets to its web build only moves the problem to Gesture Handler. The mocks are behavioural where it is useful — shared values really hold and update, and the gesture mock records every handler a component registers, so `peekGestures()` / `findGesture()` let a test call those handlers with synthetic events. That is how `ZoomableCanvas.test.tsx` covers the pan/pinch/zoom arithmetic. The same trick covers the node drag (`useNodeDrag.test.tsx`), including that it tracks the finger at every zoom. What no test here can cover: whether gestures arbitrate correctly, how motion feels, and whether a tap still reaches a node under a pan. Those are device checks.
-- **The Android back button is testable.** Each `Modal` handles it through `onRequestClose`; `fireEvent(modal, "requestClose")` exercises that path, and it is a real user action worth covering rather than a formality.
-- **`test.failing` marks a known defect**, passing while the bug exists and failing the moment it is fixed. Prefer it over deleting or skipping a test that documents real broken behaviour. Nothing uses it at present — every defect it pinned has since been fixed — which is the outcome it exists for.
+## Global mocks
+
+Every file in `__mocks__/` beside `node_modules` applies automatically, with no `jest.mock()` call.
+Both setup files reset the stateful ones before each test.
+
+| Mock | What it gives a test |
+|---|---|
+| `@react-native-async-storage/async-storage` | A real in-memory store (v3 surface). `seedAsyncStorage` / `peekAsyncStorage`. |
+| `expo-file-system` (+ `/legacy`) | In-memory `File` / `Paths` with real bytes and base64, so no test touches disk and a round trip must preserve bytes. `seedFile` / `seedBinaryFile`, `readFileBytes` / `readFileText` / `listFileUris`. Throws on any surface the app does not use, so a new call site shows up here. jest-expo mocks `/legacy` itself, so `jest.setup.components.ts` re-registers ours (the legacy API has the download progress callback). |
+| `expo-crypto` | `getRandomValues` from Node's CSPRNG (storage mints share keys). |
+| `expo-localization` | A US-English device by default; `setDeviceLocales` picks another. |
+| `expo-alternate-app-icons` | A device that supports alternate icons; `setAlternateIconsSupported(false)` one that does not. |
+| `whisper.rn` | Contexts with `transcribe` / `detectSpeech`; a test sets what speech is found and what each call returns, and sees every call. |
+| `llama.rn` | `initLlama` with `completion` / `release`; `setLlamaAnswer` sets the model's answer (an `Error` rejects), `llamaCalls` records calls. |
+| `react-native-reanimated`, `react-native-worklets` | Hand-written; see below. |
+| `react-native-gesture-handler` | Hand-written; records every gesture a component registers. |
+
+Mocked in `jest.setup.components.ts` instead: expo-video, expo-camera, the pickers, haptics,
+sharing, the YouTube player, QR codes, and the firebase SDK (`firebase/app`, `/firestore`, `/auth`
+ship untranspiled ESM jest cannot parse). The local native modules in `modules/` resolve to
+nothing under Jest, so `isAnonymizeAvailable` and `isAudioExtractAvailable` are false and the video
+tools are hidden unless a test mocks them in.
+
+**Reanimated and Gesture Handler.** Reanimated's real entry initialises the worklets runtime on
+import, which reaches a native module that does not exist; its shipped mock re-imports that entry,
+so it does not help. Ours are behavioural where it is useful:
+
+- Shared values really hold and update. `useAnimatedStyle` returns its factory's **first** result
+  and never re-runs, so a view whose animated opacity starts at 0 (`BottomSheet`'s scrim) counts as
+  hidden; query with `{ includeHiddenElements: true }`.
+- Layout animations are chainable no-ops. `withTiming` / `withSpring` land at once and report
+  finished; `setTimingFinishes(false)` models an interrupted animation, `setReducedMotion(true)`
+  the system setting (both reset by `resetReanimatedMock`).
+- `peekGestures()` / `findGesture()` let a test call a component's gesture handlers with synthetic
+  events. That covers the pan/pinch/zoom arithmetic (`ZoomableCanvas.test.tsx`) and the node drag
+  at every zoom (`useNodeDrag.test.tsx`). What no test here covers: whether gestures arbitrate
+  correctly, how motion feels, and whether a tap still reaches a node under a pan. Device checks.
+
+**Unistyles** runs on its shipped mock (`react-native-unistyles/mocks`, then the app's theme
+registration). Every sheet resolves against the light theme at import, insets are zero, and a test
+cannot observe a theme or style switch.
+
+**Firebase** is unavailable under Jest, always: `firebaseAvailable` derives from
+`Constants.expoConfig.extra.firebase`, which jest-expo does not populate, so the sharing screens
+render their "not configured" branch. A suite testing the available path mocks
+`@/src/firebase/firebaseConfig` with a getter it can flip (`ShareListModal.test.tsx`). Tests that
+need sharing mock `@/src/firebase/FirebaseListService`, **including `subscribeToSharedList`**: a list
+with a `shareCode` activates the provider's live subscription.
+
+## Traps
+
+- **`clearMocks: true`** (both projects) resets call history _and_ factory implementations before
+  each test. A mock whose return value matters must set it in `beforeEach`; otherwise it returns
+  `undefined`, and code calling `.catch()` on it fails as `window.dispatchEvent is not a function`.
+- **Wait on something the _data_ produced, not on chrome.** The provider loads storage on mount, so
+  "zero patterns" is true on the first render, and a header renders before the read lands. Anchor
+  on a value only loaded data can produce (`await screen.findByText(lists[0].name)`), and on each
+  key when a screen reads several (`PatternListManager` reads `@patternLists` and `@patterns_<id>`).
+- **Never poll for absence with `waitFor`.** `waitFor(() => expect(queryByX()).toBeNull())` can
+  still observe the pre-update tree when its budget expires on a loaded CI runner. Wait on something
+  positive (a node appearing, a mock called, storage reaching a value), then assert absence
+  synchronously. Reproduce contention with `for i in $(seq 8); do (while :; do :; done) & done`.
+- **`VideoCarousel` renders nothing until measured**: fire
+  `fireEvent(view, "layout", { nativeEvent: { layout: { width: 320 } } })`.
+- **A callback that is not a touch event** (`onViewableItemsChanged`) is called through the prop;
+  wrap it in `act()` or its state update never lands.
+- **Timeouts are sized for a cold CI runner.** `npm ci` wipes the Babel cache, so the first
+  component test transforms the whole RN + Expo tree (~300ms warm, ~3.5s cold). Hence `testTimeout`
+  60s and RNTL's `asyncUtilTimeout` 10s. **`testTimeout` works only at the config root**; inside a
+  project entry Jest ignores it with only an "Unknown option" warning. Reproduce the cold path with
+  `npx jest --clearCache && rm -rf node_modules/.cache`.
+- **`tsconfig.jest.json` must not override `jsx`.** Components rely on the automatic runtime
+  (importing only `FC`/`ReactNode`); the classic transform fails them with `TS2686: 'React' refers
+  to a UMD global`, which shows only as `Failed to collect coverage from …`, does not fail the run,
+  and silently drops those files from coverage.
+
+## Coverage thresholds
+
+A ratchet in `jest.config.js` → `coverageThreshold`, set just under measured reality. Raise them as
+suites land; never lower them.
+
+- A file with its own entry is **removed from the `global` pool**, so pinning well-covered files
+  pushes the global number _down_.
+- A file imported by both projects is instrumented twice and drifts between run modes; floor it
+  under the lowest of `npx jest --coverage`, `--ci --maxWorkers=2` and `--maxWorkers=1`.
+- The global figure varies by several points between identical runs; measure a few times and floor
+  under the worst.
+- Key off the numbers Jest prints when a threshold is _missed_, not the summary table's; they use
+  different denominators.

@@ -1,105 +1,157 @@
 # AGENTS.md — DancePatternMapper
 
-Expo/React Native (TypeScript) app for mapping partner-dance prerequisite graphs.
+Expo/React Native (TypeScript) app for mapping partner-dance prerequisite graphs: a list of
+patterns (figures), each with prerequisites, videos and modifiers, shown as a list, a graph and
+video reels. Android first (Play Store), iOS later, plus a static website in `website/`.
 
-This file is the orientation layer: architecture, the shared data model, and the rules that
-apply wherever you are working. Depth lives next to the code it governs, in a nested
-`AGENTS.md` that loads when you open a file in that directory:
+This file is the orientation layer: architecture, the shared data model, and the rules that apply
+everywhere. Depth lives next to the code it governs, in a nested `AGENTS.md` that loads when you
+open a file in that directory. Creating a _new_ file in a directory does not pull its `AGENTS.md`
+in, so read the one listed below before you add code there.
 
-| File | Covers |
+| File | Read it before touching |
 |---|---|
-| `src/common/AGENTS.md` | Theming and design tokens, the UI primitives (`Button`, `Chip`, …) and design gallery, `AppHeader`, the Android edge band, dismissal touches, the web split |
-| `src/pattern/data/AGENTS.md` | Storage, pattern ids, migrations, import validation, export format |
-| `src/pattern/graph/AGENTS.md` | Graph model, layouts, gestures, node drag, badges, prerequisite integrity |
+| `src/common/AGENTS.md` | App chrome: `AppHeader`, drawer and tabs, the Android edge band, modals and the system bars, dismissal touches |
+| `src/common/theme/AGENTS.md` | Styles: Unistyles, design tokens, colour roles, fonts, the two app styles, the setup's traps |
+| `src/common/ui/AGENTS.md` | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery |
+| `src/pattern/data/AGENTS.md` | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates |
 | `src/pattern/list/AGENTS.md` | `usePatternCrud`, modifiers, sorting, always-mounted modals |
-| `src/settings/AGENTS.md` | i18n machinery, device locale, language persistence |
-| `src/firebase/AGENTS.md` | Firestore sharing and its configuration |
-| `__tests__/AGENTS.md` | Jest projects, the global mocks, and the traps in this suite |
+| `src/pattern/rhythm/AGENTS.md` | Rhythm notation, its link to counts, per-dance suggestions |
+| `src/pattern/graph/AGENTS.md` | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity |
+| `src/reels/AGENTS.md` | The Reels tab |
+| `src/anonymize/AGENTS.md` | Video jobs (`jobStore`), review, Shorten and Anonymize, providers |
+| `src/transcribe/AGENTS.md` | Speech transcription (Whisper), the model store |
+| `src/suggest/AGENTS.md` | Name and description suggestions (on-device LLM) |
+| `modules/AGENTS.md` | The local native Expo modules and their gitignored model weights |
+| `src/settings/AGENTS.md` | Settings screen, i18n machinery, device locale, language/style/icon persistence |
+| `src/firebase/AGENTS.md` | Firestore sharing, ownership, security rules, configuration |
+| `__tests__/AGENTS.md` | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite |
 
-The video tools (`src/anonymize/`, `src/transcribe/`, `src/suggest/`, `modules/`) have no nested
-file yet; their rules are in "On-device video tools" below, and the design history in
-`AGENT_TASKS.md` (L3, L4).
+`AGENT_TASKS.md` is the design history (bugs B*, changes S*/M*/L*, foundation F*): why things are
+the way they are, with device findings. It is long; read the section a code comment cites
+(`AGENT_TASKS.md L3`), not the whole file. Rules that still hold have been lifted into the
+`AGENTS.md` files, which win where the two disagree.
 
-Creating a *new* file in a directory does not pull its `AGENTS.md` in — read or search something
-there first.
-
-## Architecture overview
+## Architecture
 
 ```
-app/_layout.tsx        ← root layout (imports @/src/i18n)
-  ThemeProvider        ← global light/dark theme
+index.ts               ← entry: registers the Unistyles themes, then expo-router
+app/_layout.tsx        ← root layout (imports the themes again for web, and @/src/i18n)
+  ThemeProvider        ← system/light/dark + app style
     ActivePatternListProvider  ← global state: active list + its patterns
-      Drawer           ← expo-router/drawer: Lists, the (list) group, Settings
-        Tabs           ← app/(list)/: the active list's List, Map and Reels, as bottom tabs
+      AnonymizeJobsProvider    ← the video job queue, exposed to React
+        Drawer         ← expo-router/drawer: Lists, the (list) group, Settings
+          Tabs         ← app/(list)/: the active list's List, Map and Reels
 ```
 
-Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (SDK 56 forbids importing those from app code — Metro fails the bundle). Import `Drawer` from `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from `expo-router`. Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop.
+Navigation is **file-based expo-router**; there is no `@react-navigation/*` dependency (Expo SDK
+56+ forbids importing it from app code; Metro fails the bundle). Import `Drawer` from
+`expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from
+`expo-router`. Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop.
 
-| File | Path | Screen component |
+| Route file | Path | Screen |
 |---|---|---|
-| `app/index.tsx` | `/` | `src/pattern/list/PatternListSelector.tsx` |
-| `app/(list)/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` (the *List* tab) |
-| `app/(list)/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` (the *Map* tab) |
-| `app/(list)/reels.tsx` | `/reels` | `src/reels/ReelsScreen.tsx` (the *Reels* tab) |
+| `app/index.tsx` | `/` | `src/pattern/list/PatternListSelector.tsx` (*Lists*) |
+| `app/(list)/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` (*List* tab) |
+| `app/(list)/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` (*Map* tab) |
+| `app/(list)/reels.tsx` | `/reels` | `src/reels/ReelsScreen.tsx` (*Reels* tab) |
 | `app/settings.tsx` | `/settings` | `src/settings/SettingsScreen.tsx` |
+| `app/gallery.tsx` | `/gallery` | `src/common/ui/DesignGallery.tsx` (dev builds only) |
 
-Each route file is a one-line re-export; the screens live in `src/`. The drawer holds the places (*Lists*, Settings, and an entry back into the open list); the views of the active list are bottom tabs in the `(list)` group (`ListTabsLayout.tsx`). A group does not change a URL, so `/patterns` and `/graph` are what they were. `src/common/components/DrawerRoutes.ts` is the single source of truth for both (`DRAWER_ROUTES`, `LIST_TABS`: name, href, i18n title key, icon, whether the header shows the active list's name) and is consumed by both navigators, the drawer menu (`DrawerContent.tsx`) and `AppHeader.tsx` — add a route there and in `app/`, not in three places. A new view of a list is a tab; a new place is a drawer entry.
+Every file in `app/` becomes a route, so route files are one-line re-exports and the code lives in
+`src/`. A group does not change a URL. `src/common/components/DrawerRoutes.ts` is the single source
+of truth for both navigators (`DRAWER_ROUTES`, `LIST_TABS`: name, href, i18n title key, icon,
+whether the header shows the list's name), read by the drawer, the tab layout
+(`ListTabsLayout.tsx`), the drawer menu and `AppHeader`. A new view of a list is a tab; a new place
+is a drawer entry; either way, add it there and in `app/`.
 
-All screens share state through `ActivePatternListContext` (`src/pattern/data/components/ActivePatternListContext.tsx`). Every screen reads `activeList`, `patterns`, `isLoading`, and `hasLists` from `useActivePatternList()` and mutates via `setActiveList`, `updatePatterns`, `updateActiveList(list, patternsOverride?)`, `refreshActiveList` — **never loads storage directly**. Pattern and modifier mutations go through `usePatternCrud`, never through the context directly.
+**State.** Screens read `activeList`, `patterns`, `isLoading` and `hasLists` from
+`useActivePatternList()` (`src/pattern/data/components/ActivePatternListContext.tsx`) and **never
+load storage directly** (Reels' all-lists view is the one reader of other lists). The context
+mutates through `setActiveList`, `updatePatterns`, `updateActiveList(list, patternsOverride?)` and
+`refreshActiveList`; pattern and modifier edits go through `usePatternCrud`, never the context
+directly.
 
 ## Core data model
 
-Everything lives in `src/pattern/types/IPatternList.ts` (plus `PatternType.ts`, `PatternLevel.ts`).
+All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.ts`, `Dance.ts`).
 
-| Type | Id type | Key detail |
+| Type | Id | Key detail |
 |---|---|---|
-| `IPatternList` | `string` (UUID) | Owns its own `PatternType[]` **and** `IModifier[]` — both are **per-list**, not global; optional `readonly?: boolean` (subscriber/read-only copy), `shareCode?: string` (Firestore doc ID), `shareKey?: string` (publisher's secret for that list; never published) and `dance?: Dance` (`Dance.ts`; picks rhythm suggestions) |
-| `PatternType` | `string` (UUID) | `slug` = display name; `color` = hex; referenced from patterns via `typeId` |
-| `IPattern` | `number` (integer) | `prerequisites: number[]` drives both graph views; `typeId` is a UUID string; `tags: string[]`; optional `level` (`PatternLevel` value); optional `rhythm` ("1 2 3&4 5&6"), which always matches `counts` (`src/pattern/rhythm/`); `videoRefs: IVideoReference[]`; `modifierRefs: IPatternModifierRef[]` |
-| `IModifier` | `string` (UUID) | `position: "prefix" \| "postfix" \| "amends"`; `universal: boolean`; `videoRefs` are only used when `universal === true` |
-| `IPatternModifierRef` | — | `{ modifierId, videoRefs }` — a non-universal modifier attached to one pattern, with videos of that pattern **executed with** the modifier |
-| `IVideoReference` | — | `{ type: "url" \| "local", value: string, startTime?: number, generated?, transcript? }` — `startTime` for URL videos only; `generated: { method, createdAt }` marks a video the app made (a silhouette); `transcript: IVideoTranscript` (`{ language, model, createdAt, segments: { start, end, text }[] }`) is what was said in it |
+| `IPatternList` | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (picks rhythm suggestions), `nextPatternId` (id high-water mark) |
+| `PatternType` | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId` |
+| `IPattern` | integer | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs` |
+| `IModifier` | UUID string | `position: "prefix" \| "postfix" \| "amends"`; `universal`; `videoRefs` used only when universal |
+| `IPatternModifierRef` | — | `{ modifierId, videoRefs }`: a non-universal modifier attached to one pattern, with videos of that pattern danced with it |
+| `IVideoReference` | — | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it |
 
-Creation helper types: `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`.
+`NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`. `PatternType.ts` also
+exports `PATTERN_TYPE_COLORS`, `generateUUID()`, `normalizeSlug()` and `isSlugUnique()`.
 
-`PatternType.ts` also exports `PATTERN_TYPE_COLORS` (12 named hex colours), `generateUUID()`, `normalizeSlug()`, and `isSlugUnique()`.
+Modifiers are affixes ("with inside turn", "hesitation") that live on the list. **Universal** ones
+apply to every pattern and carry their own videos; **non-universal** ones are attached per pattern
+through `modifierRefs`, each attachment with its own videos. A variation of a pattern is a modifier
+on it, not a new pattern.
 
-Modifiers are affixes ("with a spin", "slow") that live on the list, not on a pattern. **Universal** ones implicitly apply to every pattern and carry their own `videoRefs`; **non-universal** ones are attached per-pattern through `IPattern.modifierRefs`, each attachment carrying its own videos of that combination.
-
-**Pattern ids are never reused.** `IPatternList.nextPatternId` is a high-water mark; `nextPatternId(list, patterns)` in `src/pattern/data/patternIds.ts` is the only way to mint one. The manual graph layout outlives individual patterns, so a reused id would inherit a stranger's stored position.
-
-## On-device video tools
-
-Android only for now. Edit Pattern → Videos → **Edit video** (`src/anonymize/components/VideoEditPanel.tsx`) offers *Shorten*, *Anonymize* and *Transcribe speech*, from the labelled button beside + or the button on each video saved on the phone; the transcript sheet (`src/transcribe/components/TranscriptSheet.tsx`) hosts *Suggest name and description* (`src/suggest/`). Settings → *On-device models* (`src/settings/components/DeviceModelsSection.tsx`) lists the models, downloads them ahead of first use, and deletes them.
-
-- **Native pieces.** `modules/video-anonymize` (Media3 trim/transcode, LiteRT person tracking, silhouette render; also backs *Shorten*) and `modules/audio-extract` (16 kHz mono PCM for Whisper) are local Expo modules, autolinked. `whisper.rn` and `llama.rn` are npm native modules. All of them need a rebuilt dev client.
-- **Gate on availability, never on `Platform.OS`.** `isAnonymizeAvailable` / `canShortenVideos()`, `isAudioExtractAvailable`, and `canSuggest()` (Android, ≥ 6 GB RAM, native hash check) are false on iOS, web and Jest, and the UI hides the action.
-- **One job at a time.** `jobStore` (`src/anonymize/jobs/`) queues shorten / anonymize / transcribe jobs and runs them one by one; anything else heavy (suggestions) goes through `jobStore.runExclusive`, except a transcription asked to go on and suggest, which calls `runSuggestion` inside its own turn and then waits for review like a cut. The phone cannot hold two models at once. `AnonymizeJobsProvider` exposes it to React, keeps the screen awake while jobs run, and posts one phone notification when a batch finishes while the app is in the background (`jobNotifications.ts`; the permission is asked when a batch starts, and `PRIVACY_POLICY.md` lists it); `AnonymizeJobsBanner` reports them.
-- **A shortened or anonymized video waits for review** (status `review`, `VideoReviewModal`): nothing in the pattern changes until the user replaces the original, keeps both, or discards it (`jobStore.keep` / `discard`). Keeping goes through `replaceVideo.ts`: the mounted tree's attach handler when it can take it, otherwise straight to storage, since the user may have switched lists meanwhile. The new video carries only the transcript lines inside the cut, retimed (`trimTranscript`); a transcription finishes straight onto its video. Edit video offers to transcribe the whole video before a cut, queued ahead of it.
-- **Providers** are pluggable (`src/anonymize/providers/`). `runAnonymize` is the only entry point, and enforces in code the trim limits and that a provider which sends footage off the device has recorded consent. The one shipped provider is on-device.
-- **Models** are downloaded on first use from pinned URLs and SHA-256 checked (`src/transcribe/modelStore.ts`, specs in `src/transcribe/models.ts` and `src/suggest/models.ts`). The size is shown before any download.
-- **Transcripts are private by default.** They never go into a published list (`withoutTranscripts`), and exports carry them only on the export sheet's opt-in; see `src/pattern/data/AGENTS.md`. The description is never written without the user: *Add to description* and *Use suggestion* are explicit, and a suggestion fills the name only when it is empty.
-- **Web.** `src/transcribe/whisper.web.ts` stubs `whisper.rn` and `src/suggest/llama.web.ts` stubs `llama.rn`; both read their native module at import (see Platform splits below).
+**Pattern ids are never reused**: mint them only with `nextPatternId(list, patterns)`
+(`src/pattern/data/patternIds.ts`). The manual graph layout outlives patterns, so a reused id would
+inherit a stranger's position.
 
 ## Rules that apply everywhere
 
-- **Path alias.** `@/` resolves to the **project root** (not `src/`). Use `@/src/...` for source imports and `@/utils/...` for test utilities. The same mapping is configured in `tsconfig.json` and in `jest.config.js` (`moduleNameMapper`).
-- **Read-only lists.** `IPatternList.readonly` is set on imported read-only exports and on subscribed cloud lists. Every mutating path must guard on it (`const isReadonly = !!activeList?.readonly`). The one deliberate exception is dragging a graph node, which is a local view preference.
-- **Translations.** All user-facing strings use `const { t } = useTranslation()`. The app ships **nine** locales — `en`, `zh`, `hi`, `es`, `fr`, `ar`, `bn`, `pt`, `de` — and a key must be added to **every** `locales/*.json` (flat key/value, no nesting), with `en` written first as the source of truth. `__tests__/unit/i18n.test.ts` fails on a key missing from any locale, an empty value, a mismatched `{{placeholder}}` set, or a `t("…")` call with no key behind it.
-- **UI primitives.** Build touchables and text from `@/src/common/ui` (`Button`, `IconButton`, `Chip`, `Card`, `AppText`), not raw `TouchableOpacity`; see `src/common/AGENTS.md`. Try visual changes in the dev-only design gallery (`/gallery`, linked from Settings).
-- **Theming.** Styles are Unistyles sheets declared at module level, `StyleSheet.create((theme) => …)` imported from `react-native-unistyles`, and every colour, spacing step, radius, text style and shadow comes from the design tokens in `src/common/theme/tokens.ts` — never a literal. Non-style values (icon colours, SVG fills) come from `useUnistyles()`. Text on a coloured fill uses that fill's `on*` role. The app has two styles, After Hours and Clipboard, each light and dark, sharing every token name; add a token to both. Details, and the setup's traps, in `src/common/AGENTS.md`.
-- **Screen edges.** `SCREEN_EDGE_INSET` is applied once as `PageContainer`'s horizontal padding, to stay clear of the Android system back-gesture band. Do not pad individual scrollers.
-- **Platform splits.** Metro resolves `Foo.web.tsx` in preference to `Foo.tsx` when bundling for web, and the two files must export the same shape. The six that exist are `YouTubeVideoItem`, `PatternNodeGroup`, `ServerStyles` (web's static-render CSS), `src/transcribe/whisper` and `src/suggest/llama` (whisper.rn and llama.rn read their native module at import, which fails web's static render), and `src/firebase/auth` (only firebase/auth's react-native build has `getReactNativePersistence`); route node presses through `PatternNodeGroup` rather than putting `onPress` on an SVG element directly. Verify both targets with `npx expo export --platform web` and `--platform android` — web also builds an SSR bundle, so a bad import surfaces twice.
+- **Path alias.** `@/` is the **project root**, not `src/`: `@/src/...` for source, `@/utils/...`
+  for test helpers, `@/modules/...` for the native modules. Mapped in `tsconfig.json` and
+  `jest.config.js`.
+- **Read-only lists.** Every mutating path guards on `const isReadonly = !!activeList?.readonly`.
+  The one deliberate exception is dragging a graph node, a local view preference.
+- **Translations.** Every user-facing string is `t("key")` from `useTranslation()`. A key goes in
+  **all nine** `locales/*.json` (`en`, `zh`, `hi`, `es`, `fr`, `ar`, `bn`, `pt`, `de`; flat
+  key/value), `en` first. `__tests__/unit/i18n.test.ts` fails on a missing key, an empty value, a
+  mismatched `{{placeholder}}` set, or a `t("…")` with no key behind it. The dev-only gallery is
+  the one untranslated screen.
+- **UI primitives.** Touchables and text come from `@/src/common/ui` (`Button`, `IconButton`,
+  `Chip`, `Card`, `ListRow`, `AppText`, …), not raw `TouchableOpacity`/`Text`.
+- **Styles.** Unistyles sheets at module level, `StyleSheet.create((theme) => …)` from
+  `react-native-unistyles`; every colour, spacing, radius, text style and shadow is a token from
+  `src/common/theme/tokens.ts`, never a literal (colour literals fail lint). Non-style values (icon
+  colours, SVG fills, navigator options) come from `useUnistyles()`. Text on a fill uses that
+  fill's `on*` role. Two app styles, each light and dark, share every token name.
+- **Screen edges.** `SCREEN_EDGE_INSET` is applied once, as `PageContainer`'s horizontal padding,
+  to keep clear of Android's back-gesture band. Do not pad individual scrollers.
+- **Platform splits.** Metro prefers `Foo.web.tsx` over `Foo.tsx` for web; both must export the
+  same shape. The six today: `YouTubeVideoItem`, `PatternNodeGroup`, `theme/ServerStyles`,
+  `src/transcribe/whisper`, `src/suggest/llama`, `src/firebase/auth`. Route graph node presses
+  through `PatternNodeGroup`, never `onPress` on an SVG element.
+- **A package that reads its native module at import** takes the app down on a build without it,
+  before any `try` runs. Either split it per platform (above) or `require` it inside a function
+  wrapped in `try`, as `src/settings/data/DeviceLocale.ts`, `src/settings/appIcon.ts` and
+  `src/anonymize/jobs/jobNotifications.ts` do; keep those requires where they are.
+- **Gate on availability, not `Platform.OS`**, for anything native and optional
+  (`isAnonymizeAvailable`, `isAudioExtractAvailable`, `canSuggest()`, `supportsAlternateIcons`).
+  Those are false on web and under Jest, and the UI hides the action.
+- **Native changes need a rebuilt dev client.** Metro will happily serve JS the installed client
+  has no native side for.
+- **Verify both bundles** with `npx expo export --platform web` and `--platform android`. Web also
+  builds an SSR bundle, so a bad import surfaces twice.
 
-## Reels
+## On-device video tools (Android only for now)
 
-The *Reels* tab (`src/reels/`) shows the patterns that have a video, from the open list or from every list on the phone. The overview lists them as stills (`ReelCard`), several to a screen; a tap opens them one per screen (`ReelPage`), where swiping up or down moves between patterns and sideways through a pattern's videos (its own, then those danced with a modifier), and the grid button or Android's back returns to the overview. Videos use the platform's own controls (play, time bar, fullscreen in landscape), as elsewhere in the app, on the style's background rather than black. `collectReels` (`reels.ts`) is pure. `useReels` takes the open list from the context and reads the other lists from storage on each visit. Only the video on screen holds a player, and only while the tab is in front: the tabs keep the screen mounted, so leaving it has to unmount the player to stop the video. Reels only reads, so it needs no read-only guard.
+Edit Pattern → Videos → **Edit video** (`src/anonymize/components/VideoEditPanel.tsx`) offers
+*Shorten*, *Anonymize* (a silhouette) and *Transcribe speech*; the transcript sheet offers *Suggest
+name and description*. Settings → *On-device models* downloads and deletes the models. Everything
+heavy runs through one queue, `jobStore`, one job at a time, because the phone cannot hold two
+models. A shortened or anonymized video waits for the user's review before the pattern changes,
+and nothing is written into a description without an explicit tap. Transcripts never go into a
+published list and leave in an export only on opt-in. Details in `src/anonymize/`,
+`src/transcribe/`, `src/suggest/` and `modules/` (their `AGENTS.md`).
 
-## Filtering & sorting
+## Filtering
 
-`PatternFilter` (`src/pattern/filter/components/PatternFilterBottomSheet.tsx`): `{ name, types, levels, counts?, tags }`, applied by `usePatternFilter` (`src/pattern/filter/hooks/usePatternFilter.ts`) and shared by the list and graph screens. Sub-panels: `NameFilter`, `TypeFilter`, `LevelFilter`, `CountsFilter`, `TagFilter`. Sorting is in `src/pattern/list/`. Both panels render through the shared `BottomSheet` (`src/common/components/BottomSheet.tsx`).
-
-**Never hand a filtered `patterns` array to a graph layout function** — see `src/pattern/graph/AGENTS.md`.
+`PatternFilter` (`{ name, types, levels, counts?, tags }`, in
+`src/pattern/filter/components/PatternFilterBottomSheet.tsx`) is applied by `usePatternFilter`
+(`src/pattern/filter/hooks/`) and shared by the List and Map tabs. Sorting is in
+`src/pattern/list/`. **Never hand a filtered `patterns` array to a graph layout function**; see
+`src/pattern/graph/AGENTS.md`.
 
 ## Developer workflows
 
@@ -107,50 +159,76 @@ The *Reels* tab (`src/reels/`) shows the patterns that have a video, from the op
 npm install              # install deps
 npm start                # expo start --dev-client (a development build, not Expo Go)
 npm run android          # expo start --android
-npm run ios              # expo start --ios
 npm test                 # Jest, both projects (no device needed)
-npm run test:unit        # pure-logic project only — sub-second feedback loop
+npm run test:unit        # pure-logic project only, sub-second loop
 npm run test:components  # rendering project only (jest-expo)
 npm run test:rules       # Firestore rules in the emulator (needs Java 21+)
-npm run test:watch       # watch mode
-npm run test:coverage    # coverage over all of src/, with thresholds enforced
+npm run test:coverage    # coverage over all of src/, thresholds enforced
 npm run lint             # ESLint over the whole project (expo lint .)
-npm run format:check     # Prettier, same glob CI uses
-npm run format           # Prettier, write
+npm run format:check     # Prettier, same glob CI uses (npm run format writes)
 npm run typecheck        # tsc --noEmit
 ```
 
-Stack: Expo SDK ~57 / React Native 0.86 / React 19 / TypeScript ~6, `newArchEnabled`, typed routes and the React Compiler are on (`app.config.ts` → `experiments`). Styling is Unistyles 3 (a Nitro native module, configured through `babel.config.js` and the `index.ts` entry).
+Stack: Expo SDK ~57, React Native 0.86, React 19, TypeScript ~6, new architecture, typed routes and
+the React Compiler on (`app.config.ts` → `experiments`). Styling is Unistyles 3. Animation and
+gestures are Reanimated 4 and Gesture Handler 3. Because the React Compiler is on, read and write
+shared values with `.get()` / `.set()`, never `.value`.
 
-Tests live in `__tests__/`, split into a `unit` project and a `components` project; a test in the wrong directory is silently never run. See `__tests__/AGENTS.md`.
+Tests live in `__tests__/unit/` or `__tests__/components/`; a test in the wrong directory is
+silently never run.
 
-## Configuration
+## Configuration and builds
 
-Config is **dynamic** — `app.config.ts` (there is no `app.json`) reads credentials from environment variables, so nothing secret is committed. Copy `.env.example` to `.env` (gitignored); the Firebase variables are listed in `src/firebase/AGENTS.md`. Without them the app runs local-only.
+Config is **dynamic**: `app.config.ts` (there is no `app.json`) reads credentials from environment
+variables. Copy `.env.example` to `.env` (gitignored); without the Firebase variables
+(`src/firebase/AGENTS.md`) the app runs local-only.
 
-**Config plugins are applied only when listed in `app.config.ts` → `plugins`; autolinking does not apply them.** `expo-camera`, `expo-image-picker`, `expo-localization` and `expo-font` (the embedded Inter typeface) are listed there for that reason — the first two purely so their iOS usage strings (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSMicrophoneUsageDescription`) reach the generated `Info.plist`, which iOS terminates the app without; Android's equivalent arrives via manifest merging regardless, so the omission is invisible until an iOS device runs it. "Record a video" hands over to the system camera, which on iOS records sound and so needs the microphone string; **both plugins write these iOS keys and `expo-camera`'s win** (listed first, its mods run last), so both carry the same strings — a `false` in either deletes the key. On Android the camera app records the audio itself, so camera's `recordAudioAndroid: false` keeps `RECORD_AUDIO` blocked, also against a transitive dependency merging it in. Check the resolved result with `npx expo config --type introspect`. `ios.bundleIdentifier` must stay in `app.config.ts` too: there is no `app.json`, so the CLI cannot write it, and without it `expo prebuild --platform ios` and EAS iOS builds both refuse to run.
-
-**App icon colour.** Settings → *App icon* (`src/settings/appIcon.ts`) switches the launcher icon between indigo (the default `icon` / `adaptiveIcon`) and the alternate sets `expo-alternate-app-icons` registers in `app.config.ts` (`assets/images/icon-colors/`; Android activity aliases, iOS alternate icons). It is independent of the style, offered only where `supportsAlternateIcons`, and also tints the job notification. The splash is fixed at build time and stays indigo. A new colour means new icon files, an entry in the plugin list, in `APP_ICON_COLORS` (tokens.ts) and in `appIcon.ts`, and a rebuilt dev client.
-
-**Build variants.** `APP_VARIANT` (`development` / `preview` / unset = production, set per profile in `eas.json`) picks the application id, launcher name and URL scheme, so the variants install side by side despite being signed by different keys. Nothing in the app may depend on the application id. Signing and Play App Signing are described in the README; no keystore is ever committed.
-
-Note that `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo run:*` — revert that, the project uses the `--dev-client` workflow. Adding a native module means rebuilding the dev client; Metro will happily serve JS the installed client has no native side for.
+- **Config plugins apply only when listed in `app.config.ts` → `plugins`;** autolinking does not
+  apply them. `expo-camera` and `expo-image-picker` are listed for their iOS usage strings, without
+  which iOS kills the app. **Both write the same keys and `expo-camera`'s win** (listed first, its
+  mods run last), so both carry the same strings; a `false` in either deletes the key. Camera's
+  `recordAudioAndroid: false` keeps `RECORD_AUDIO` out on Android (the camera app records the
+  sound). Check the result with `npx expo config --type introspect`.
+- `ios.bundleIdentifier` must stay in `app.config.ts`: with no `app.json` the CLI cannot write it,
+  and iOS prebuild and EAS iOS builds refuse to run without it.
+- **Build variants.** `APP_VARIANT` (`development` / `preview` / unset = production, per profile in
+  `eas.json`) picks the application id, launcher name and URL scheme, so the variants install side
+  by side. Nothing in the app may depend on the application id. Signing is in the README; no
+  keystore is ever committed.
+- **App icon colour** (Settings, `src/settings/appIcon.ts`) switches between icon sets that
+  `expo-alternate-app-icons` registers at build time. A new colour means icon files in
+  `assets/images/icon-colors/`, entries in the plugin list, `APP_ICON_COLORS` (tokens.ts) and
+  `appIcon.ts`, and a rebuilt dev client. The splash stays indigo.
+- `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo run:*`; revert that, the
+  project uses the `--dev-client` workflow.
 
 ## Dependencies
 
-- Do **not** run `npx expo install --fix`. Several packages are deliberately ahead of the versions SDK 57 bundles — `@react-native-async-storage/async-storage@3`, `react-native-gesture-handler@3`, `jest@30`, `react@19.2.7`, `react-native-safe-area-context`, `react-native-svg` — and `--fix` would downgrade them, two across a major. `npx expo install --check` listing them is expected.
-- `react-test-renderer` is pinned to the exact `react` version and must be bumped with it. `jest-expo` must track the SDK major.
-- `npm audit` findings are checked against an allowlist of reviewed advisories in `scripts/check-audit.js` (`npm run audit:check`), not a count. Accepted today: `decode-uri-component` (GHSA-vcc3-ghjq-m6fr, via `expo-router` → `query-string@7`, whose fix is ESM-only and cannot be forced under a CJS parent; waits for expo-router upstream), and `node-forge` (GHSA-86w9-cpqp-85rv, via `@expo/cli`) and `braces` (GHSA-vfj7-8cjw-p6xm, via `micromatch` under metro, jest and `@expo/cli`), both dev tooling only and with no patched release yet. Each acceptance carries an `until` date: past it the advisory fails CI again until someone re-reviews it and either fixes it or sets a new date, and the check warns in the week before. The raw counts are large because every package above them is flagged too. Any advisory not on the list is new. `overrides` in `package.json` carries the rest; each entry exists because a parent pins a range below the fix.
+- Do **not** run `npx expo install --fix`. Several packages are deliberately ahead of SDK 57's
+  versions (`@react-native-async-storage/async-storage@3`, `react-native-gesture-handler@3`,
+  `jest@30`, `react@19.2.7`, `react-native-safe-area-context`, `react-native-svg`), and `--fix`
+  would downgrade them. `npx expo install --check` listing them is expected.
+- `react-test-renderer` is pinned to the exact `react` version and moves with it. `jest-expo`
+  tracks the SDK major.
+- **Audit.** `npm run audit:check` (`scripts/check-audit.js`) fails on any advisory not in its
+  allowlist, and on an acceptance past its `until` date; it warns a week before. Each acceptance
+  there carries its reason. To accept a new one, add it there with a reason and a date. The raw
+  `npm audit` counts are large because every parent of a flagged package is flagged too.
+  `overrides` in `package.json` carries the rest; each entry exists because a parent pins a range
+  below the fix.
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push to `master` and every PR, in four jobs, and every Monday runs the audit job alone so an expired acceptance or a new advisory shows up without a push:
+`.github/workflows/ci.yml` runs on every push to `master` and every PR (and the audit job alone
+every Monday):
 
-- **verify** — `npm run lint`, `npm run format:check`, `npm run typecheck`, `npx jest --coverage --ci`. Lint and the format check cover the tests, mocks and root config files too: `expo lint` with no path would lint only `src/`, `app/` and `components/`, and did, until a lint error in a test went unnoticed.
-- **bundle** — `npx expo export` for **both** `web` and `android`, which is the gate that catches a platform-split import fault.
-- **rules** — `npm run test:rules`: `firestore.rules` in the Firestore emulator, against the documents the app writes.
-- **audit** — fails if `npm audit` reports any advisory not in the accepted list in `scripts/check-audit.js`, fails when an acceptance's `until` date has passed, and warns when one is about to expire or an accepted advisory disappears. Accepting a new advisory means adding it there and to this file.
+- **verify**: lint, format check, typecheck, `npx jest --coverage --ci`. Lint and format cover
+  tests, mocks and root config too.
+- **bundle**: `npx expo export` for `web` and `android`, the gate for platform-split faults.
+- **rules**: `firestore.rules` in the emulator.
+- **audit**: `scripts/check-audit.js`.
 
-Run the same checks locally before pushing; every one of them passes on `master`.
-
-`.github/workflows/pages.yml` is separate: on a push to `master` that touches `website/` or `PRIVACY_POLICY.md`, it renders the privacy page (`website/build-privacy.py`) and publishes `website/` to GitHub Pages. The site is static HTML and CSS with no build step; see `website/README.md`.
+All four pass on `master`; run the same checks locally before pushing.
+`.github/workflows/pages.yml` publishes `website/` (static HTML/CSS, see `website/README.md`) and
+the rendered `PRIVACY_POLICY.md` to GitHub Pages on a push to `master` touching either. A new
+permission or data flow belongs in `PRIVACY_POLICY.md`.

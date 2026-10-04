@@ -25,7 +25,7 @@ const CONTENT = { width: 2000, height: 1600 };
  * handlers the canvas registered and assert on the transform it exposes. That
  * covers the arithmetic — deltas, focal points, clamping — which is where the
  * bugs that survive a device check live. Feel, arbitration and whether a tap
- * still reaches a node are verified on hardware; see AGENTS.md.
+ * still reaches a node are verified on hardware; see __tests__/AGENTS.md.
  */
 let captured: CanvasTransform | null = null;
 

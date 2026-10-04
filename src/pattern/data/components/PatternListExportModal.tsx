@@ -22,7 +22,7 @@ interface PatternListExportModalProps {
  * Settings mounts this permanently and toggles `visible`, so the body is mounted per opening:
  * the selection is then taken from the lists as they are now — all of them — and the options
  * start from their defaults. Taken once at the first mount, it saw no lists yet and opened with
- * nothing selected (see src/pattern/data/AGENTS.md, "Import conflict resolution").
+ * nothing selected (see src/pattern/list/AGENTS.md, "Always-mounted modals").
  */
 const PatternListExportModal: React.FC<PatternListExportModalProps> = ({
   visible,

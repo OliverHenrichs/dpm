@@ -1,119 +1,150 @@
 # Pattern data — `src/pattern/data/`
 
-Storage, id allocation, migrations, and the import/export format. Unqualified paths below
-are relative to `src/pattern/data/`.
-
-## Pattern ids are never reused
-
-`IPatternList.nextPatternId` is a high-water mark and `nextPatternId(list, patterns)` in `patternIds.ts` is the only way to mint one; `usePatternCrud` keeps the mark ahead of every id the list has ever used, measured over the patterns before _and_ after each write so a delete cannot lower it. They used to be `max(id) + 1` over the patterns present, which is unique at any instant but not over time — the manual graph layout, which outlives individual patterns, then attached a stored position to whichever pattern later inherited the id. The allocator also takes `max(id) + 1` into account, so a missing or corrupt mark can never produce a collision; that is why there is no migration.
+Storage, id allocation, migrations, the shared list context, and the import/export format.
+Unqualified paths are relative to `src/pattern/data/`.
 
 ## Persistence (AsyncStorage)
 
-Storage keys in `PatternListStorage.ts`:
+| Key | Holds | Owner |
+|---|---|---|
+| `@patternLists` | `IPatternList[]`, **without** patterns | `PatternListStorage.ts` |
+| `@patterns_{listId}` | `IPattern[]` of one list | `PatternListStorage.ts` |
+| `@activeListId` | the active list's UUID | `PatternListStorage.ts` |
+| `@schemaVersion` | the migrated data's version | `migrations/index.ts` |
+| `@graphLayout_{listId}` | a user-arranged network layout | `src/pattern/graph/data/` |
+| `@language`, `@theme`, `@appStyle` | settings | `src/settings/data/` |
+| `@graphDragHintDismissed` | the drag hint was dismissed | `src/pattern/graph/data/GraphHintStorage.ts` |
 
-- `@patternLists` — serialised `IPatternList[]` (no patterns)
-- `@patterns_{listId}` — serialised `IPattern[]` for a given list
-- `@activeListId` — UUID of the currently active list
+Settings live under their own keys, outside any list, so they survive deleting every list.
 
-App-wide settings live under their own single-purpose keys, outside any list, so they survive deleting every list: `@language` (`src/settings/data/LanguageStorage.ts`), `@theme` (`src/settings/data/ThemeStorage.ts`) and `@graphDragHintDismissed` (`src/pattern/graph/data/GraphHintStorage.ts`).
+- **UI code never calls `AsyncStorage`.** Use the helpers in `PatternListStorage.ts`
+  (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`,
+  `getActiveListId` / `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`,
+  `hasPatternLists`, `clearAllData`, `collectOrphanedPatternKeys`), and in screens the context
+  (`components/ActivePatternListContext.tsx`) rather than those.
+- **Writes to the same key are serialised.** `savePatternList` and `deletePatternList` are
+  read-modify-write over the whole array, and two overlapping calls used to lose the first's change
+  (`PatternListSelector.handleSaveList` and the context's `updateActiveList` can overlap).
+  `withWriteLock` queues the **entire operation**, read included. Reads are not queued, so a locked
+  operation can read without deadlocking itself.
+- **`@patternLists` holds lists without patterns.** Import and cloud subscribe hand over a
+  `PatternListWithPatterns`, whose extra `patterns` TypeScript cannot see on `IPatternList`, so
+  `savePatternList` strips it and `loadAllPatternLists` strips it again from records an older build
+  bloated. Do not "simplify" that away: it would store a second, stale copy of every pattern.
+- `savePatternList` also owns the share key (`src/firebase/AGENTS.md`): present exactly when the
+  list has a `shareCode` and is not `readonly`.
+- `clearAllData` removes the two top-level keys and every `@patterns_*` and `@graphLayout_*` key.
+  `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list is gone; it runs once,
+  unawaited, after the provider's first load and must never delay or fail first paint.
+- **Read-time repair stays even with migrations**: `loadPatterns` normalises shape and scrubs
+  dangling prerequisites (`src/pattern/graph/AGENTS.md`, "Prerequisite integrity"), because imports
+  and cloud syncs arrive after migrations have run.
 
-**Writes to the same key are serialised.** `savePatternList` and `deletePatternList` are
-read-modify-write over the whole list array, so two overlapping calls used to both read the
-pre-change array and the second silently discarded the first's change — reachable in the app,
-since `PatternListSelector.handleSaveList` and the context's `updateActiveList` can be in flight
-together. `withWriteLock` queues the **entire operation**, not just its final `setItem`; the read
-has to be inside the critical section too. Reads are not queued, so a locked operation can read
-freely without deadlocking against itself.
+## Pattern ids
 
-Patterns and lists are stored under **separate keys**. Always use the helpers in `PatternListStorage.ts` (`loadAllPatternLists`, `savePatternList`, `deletePatternList`, `getPatternListById`, `getActiveListId`, `setActiveListId`, `getActiveList`, `loadPatterns`, `savePatterns`, `hasPatternLists`, `clearAllData`, `collectOrphanedPatternKeys`) — never call `AsyncStorage` directly from UI code.
+`IPatternList.nextPatternId` is a high-water mark and `nextPatternId(list, patterns)`
+(`patternIds.ts`) is the only way to mint an id. `usePatternCrud` keeps the mark ahead of every id
+the list has used, measured before _and_ after each write so a delete cannot lower it. The
+allocator also takes `max(id) + 1`, so a missing or corrupt mark cannot collide; that is why there
+is no migration. Ids used to be `max(id) + 1`, unique at any instant but not over time, and the
+manual layout then gave a deleted pattern's position to whichever pattern inherited its id.
 
-**`@patternLists` holds lists without patterns.** The import and cloud-subscribe paths both hand over a `PatternListWithPatterns`, whose extra `patterns` array TypeScript cannot see because `IPatternList` has no such field — so `savePatternList` strips it rather than trusting callers, and `loadAllPatternLists` strips it again to clean up records an older build already bloated. Do not "simplify" that away: it writes a second copy of every pattern that nothing reads and nothing keeps in step.
+## Migrations
 
-`clearAllData` removes the per-list `@patterns_*` keys as well as the two top-level ones. `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list no longer exists and is called once, unawaited, from `ActivePatternListProvider` after the initial load — it must never delay or fail first paint.
+Stored data carries `@schemaVersion`, and `runMigrations()` (`migrations/`) brings it to
+`SCHEMA_VERSION` **before anything reads pattern data**: it is awaited first in
+`ActivePatternListProvider`'s mount effect, behind the loading state.
 
-## Schema versioning and migrations
-
-Stored data carries a version under `@schemaVersion`, and `runMigrations()`
-(`migrations/`) brings it up to `SCHEMA_VERSION` **before anything reads pattern
-data** — it is awaited first in `ActivePatternListProvider`'s mount effect, behind the loading
-state that was already there.
-
-Rules for adding one: bump `SCHEMA_VERSION`, add the migration to `MIGRATIONS`, and make it
-**idempotent** — a crash part-way through leaves the version marker unchanged, so it runs again
-next launch. Migrations never run backwards: if the stored version is _ahead_ of the build (the
-user installed an older APK over a newer one), nothing runs and the marker is left alone, because
-downgrading the data would discard whatever the newer build added. A failed migration is logged
-and does not block startup; the read-time repairs still cope.
-
-Migration 002 re-saves every list so that lists published before share keys existed get one
-(`savePatternList` mints it); see `src/firebase/AGENTS.md`.
-
-The read-time normalisation in `PatternListStorage` stays even though migration 001 materialises
-it — data still arrives from imports and cloud syncs after migrations have run.
+To add one: bump `SCHEMA_VERSION`, add it to `MIGRATIONS`, and make it **idempotent** (a crash
+part-way leaves the marker unchanged, so it runs again). Migrations never run backwards: a stored
+version ahead of the build (an older APK over a newer one) runs nothing and leaves the marker, since
+downgrading would discard what the newer build added. A failed migration is logged and does not
+block startup. Existing: 001 normalises shape; 002 re-saves every list so lists published before
+share keys existed get one.
 
 ## Import validation
 
-**Never trust an import file.** It comes from a document picker, so it comes from anywhere, and
-everything downstream writes it to storage and then to the screen.
-`validateExportData` (`validation/`) is the only gate, and `ImportPatterns` calls
-it before touching anything. It splits problems in two:
+**Never trust an import file**: it comes from a document picker, and everything downstream writes
+it to storage and the screen. `validateExportData` (`validation/`) is the only gate, and
+`ImportPatterns` calls it before touching anything.
 
-- **Fatal** — not an object, an unsupported version, `patternLists` not an array, a list with no
-  id, a pattern whose id is not an integer, duplicate ids. The whole file is refused, because a
-  half-import leaves the user unable to tell what landed.
-- **Repairable** — a pattern pointing at a type that is not in its list, a prerequisite matching
-  no pattern, a malformed video reference. Cleaned, reported through the existing `warnings`
-  channel, and the import proceeds.
+- **Fatal** (the whole file is refused, since a half-import leaves the user unable to tell what
+  landed): not an object, an unsupported version, `patternLists` not an array, a list with no id, a
+  non-integer pattern id, duplicate ids.
+- **Repairable** (cleaned, reported as a warning, import proceeds): a type not in its list, a
+  prerequisite matching no pattern, a malformed video reference, transcript or `generated` field,
+  a rhythm that does not match its counts, an unknown dance.
 
-What it returns is normalised: optional fields filled in, references resolvable. Nothing
-downstream re-checks it.
+What it returns is normalised (optional fields filled, references resolvable); nothing downstream
+re-checks it.
 
-**Problems are i18n keys, not English.** `errors` and `warnings` (from the validator and from
-`importPatternLists`) are `ImportMessage`s, `{ key, params?, context? }` from
-`validation/importMessages.ts`, and the screen renders them with `formatImportMessages(t, …)`;
-`context` names the list and the pattern or modifier the problem is on. A new message means a key
-in `IMPORT_MESSAGE_KEYS` and in all nine locales: the keys are chosen at runtime, so the static
-`t("…")` scan cannot see them, and `__tests__/unit/importMessages.test.ts` checks them instead.
+**Problems are i18n keys, not English.** `errors` and `warnings` are `ImportMessage`s
+(`{ key, params?, context? }`, `validation/importMessages.ts`), rendered with
+`formatImportMessages(t, …)`; `context` names the list and pattern or modifier. A new message needs
+a key in `IMPORT_MESSAGE_KEYS` and all nine locales; the keys are chosen at runtime, so the static
+`t("…")` scan cannot see them and `__tests__/unit/importMessages.test.ts` checks them instead.
 
-`canImport` (`types/ExportVersion.ts`) owns compatibility, separate from `exportDataVersion` which
-is what we _write_. A newer **minor** is refused rather than parsed best-effort: the writer added
-a field this build cannot carry, and saving over it would silently drop the user's data. Bumping
-the format means bumping `SUPPORTED_MINOR` here too.
+**Conflicts.** `useImportDecisions` (`ImportAction = "skip" | "replace"` per list) derives each
+default from props on every read (`skip` when the id exists locally, `replace` when not) and keeps
+only the user's explicit choices in state. It once snapshotted defaults in a lazy `useState`, which
+ran while the always-mounted modal still had empty data, so every conflicting list was silently
+replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
 
-## Import conflict resolution
+## Export / import format
 
-`useImportDecisions` derives each list's default from its props on every read — `skip` when the id
-already exists locally, `replace` when it does not — and keeps only the user's explicit choices in
-state. It must stay that way. The defaults used to be snapshotted by a lazy `useState`
-initialiser, which never saw real data: `SettingsScreen` mounts `PatternListImportModal`
-permanently and only toggles `visible`, so the hook first ran with an empty list and the real one
-arrived as a prop change. Every conflicting list then fell through to `replace` and was silently
-overwritten.
-
-The same shape applies to any hook behind one of these always-mounted modals: derive from props,
-or remount so the snapshot is retaken. `PatternListTemplateModal` takes the second route — it keys
-its body on what the modal is open on, so opening it re-mounts with drafts seeded fresh — and that
-is equally correct. What is not correct is snapshotting once and leaving it.
-
-## Export / Import format
-
-Version `"3.4.0"` JSON — `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.4.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
 ```
 
-- `exportPatternLists(lists, { includeVideos, exportAsReadonly, includeTranscripts })` (`exportPatterns.ts`) writes the file to the document directory and hands it to `expo-sharing`. With `includeVideos === false` local refs are stripped instead of embedded (URL refs always survive); with `exportAsReadonly` each list gets `readonly: true`.
-- 3.1 added `IVideoReference.generated` (`{ method, createdAt }`), the provenance of a video the app made — today the anonymized clips from `src/anonymize/`. `validateExportData` keeps it when well-formed and drops only the field, with a warning, when not; `ImportPatterns` spreads the ref when relocating a local video so it survives the trip.
-- 3.2 added `IVideoReference.transcript` (L4: what was said in the video). It is **left out unless `includeTranscripts`**, the export sheet's opt-in, which is offered only when a selected list has a transcript and is off every time the sheet opens; it needs `includeVideos`, since a transcript sits on a local video ref. `validateExportData` keeps a well-formed transcript, drops single malformed lines with a warning, and drops the whole field (never the video) when it is not a transcript at all. Published lists (`src/firebase/`) never carry transcripts — `withoutTranscripts` in `transcripts.ts`.
-- 3.3 added `IPattern.rhythm` and `IPatternList.dance`. `validateExportData` keeps a rhythm only when it matches the pattern's counts (the app never stores one that does not), dropping it with `importWarnRhythmMismatch` otherwise, and keeps a dance only when this build knows it.
-- 3.4 added `IPatternList.shareKey`, control of a list this device published (`src/firebase/AGENTS.md`). An editable export carries it, so importing it on a new phone hands over the published list; a read-only export leaves it out, since it goes to other people. `savePatternList` drops it again from any read-only copy.
-- Picked videos go through `persistVideo` / `persistPickedVideos` (`videoFiles.ts`), which copy them into the document directory: the picker hands out cache URIs the OS may clear.
-- Videos are keyed in the `videos` map by their **original local path**; pattern videos, universal-modifier videos and per-pattern modifier-combination videos are all embedded.
-- `importPatternLists()` (`ImportPatterns.ts`) picks a file via `expo-document-picker`, decodes base64 videos back to the local filesystem via `expo-file-system`, and returns the lists — collecting non-fatal `warnings` for missing/unreadable videos.
+- `canImport` (`types/ExportVersion.ts`) owns compatibility, separately from what we write. A newer
+  **minor** is refused rather than parsed best-effort: saving over a field this build cannot carry
+  would silently drop the user's data. **Bumping the format means bumping `exportDataVersion`,
+  `SUPPORTED_MINOR`, adding a case to `__tests__/unit/ExportImportRoundTrip.test.ts`, and a line
+  below.**
+- `exportPatternLists(lists, { includeVideos, exportAsReadonly, includeTranscripts })`
+  (`exportPatterns.ts`) writes the file and hands it to `expo-sharing`. Without `includeVideos`
+  local refs are dropped (URL refs survive); `exportAsReadonly` marks each list `readonly`. Videos
+  are keyed by their **original local path**: pattern, universal-modifier and modifier-combination
+  videos alike.
+- `importPatternLists()` (`ImportPatterns.ts`) picks a file, validates it, decodes the videos back
+  into the document directory, and warns (never fails) on a missing or unreadable video. A relocated
+  ref is spread, so its other fields survive.
+- Picked videos go through `persistVideo` / `persistPickedVideos` (`videoFiles.ts`), which copy them
+  into the document directory: the picker hands out cache URIs the OS may clear.
+- The UI is `components/PatternListExportModal` and `PatternListImportModal` with their row
+  components, backed by `hooks/useExportSelection` and `hooks/useImportDecisions`;
+  `src/settings/hooks/useDataTransfer.ts` runs the flow from `SettingsScreen`.
 
-Export/import UI lives in `components/` (`PatternListExportModal`, `PatternListImportModal`, and helpers `ConflictBadge`, `ExportListItem`, `ImportListItem`, `ImportSummary`, `SelectAllButton`, `ImportActionButtons`). The backing hooks are `useExportSelection` and `useImportDecisions` (`ImportAction = "skip" | "replace"` per list, defaulting to `skip` on id conflict) in `hooks/`; `src/settings/hooks/useDataTransfer.ts` orchestrates the full flow from `SettingsScreen`.
+Version history (what each minor added):
+
+- **3.1** `IVideoReference.generated` (`{ method, createdAt }`), provenance of a video the app made.
+  A malformed one is dropped with a warning, never the video.
+- **3.2** `IVideoReference.transcript`. **Left out unless `includeTranscripts`**, the export sheet's
+  opt-in: offered only when a selected list has a transcript, off each time the sheet opens, and
+  needs `includeVideos`. Malformed lines are dropped with a warning, a malformed transcript is
+  dropped whole, never the video. Published lists never carry transcripts (`withoutTranscripts` in
+  `transcripts.ts`).
+- **3.3** `IPattern.rhythm` (kept only when it matches the counts, else
+  `importWarnRhythmMismatch`) and `IPatternList.dance` (kept only when this build knows it).
+- **3.4** `IPatternList.shareKey`. An editable export carries it, so importing on a new phone hands
+  over control of the published list; a read-only export leaves it out.
+
+## Shared list context
+
+`components/ActivePatternListContext.tsx` (`ActivePatternListProvider`, `useActivePatternList`)
+holds the active list and its patterns, runs migrations then the first load, and calls
+`useSharedList` (`hooks/useSharedList.ts`) for a subscribed list's live updates. `updateActiveList`
+pushes a published list to Firestore; pass `patternsOverride` when patterns changed in the same
+step, or it pushes the pre-change snapshot.
 
 ## Default list templates
 
-`DefaultPatternLists.ts` exposes factory functions (`createWestCoastSwingList`, `createSalsaList`, `createBachataList`, `createTangoList`, `createLindyHopList`, `createBlankList`) built on `createPatternList` / `createPatternType`. Each returns a fresh `IPatternList` with UUID-stamped `PatternType`s and an empty `modifiers` array. `TEMPLATE_FOUNDATIONAL_PATTERNS` maps a template id (`wcs`, `salsa`, …) to starter `TemplatePattern[]`; `resolveTemplatePatterns` converts those to `NewPattern[]` by matching `typeSlug` → `typeId`, so templates stay stable across renames, and gives each the dance's basic rhythm for its counts when it has one. Each template but blank sets the list's `dance`. Picking a template happens in `PatternListTemplateModal`.
+`DefaultPatternLists.ts`: `createWestCoastSwingList`, `createSalsaList`, `createBachataList`,
+`createTangoList`, `createLindyHopList`, `createBlankList`, each a fresh `IPatternList` with UUID
+types and no modifiers; every template but blank sets `dance`. `TEMPLATE_FOUNDATIONAL_PATTERNS`
+maps a template id to starter patterns, and `resolveTemplatePatterns` resolves their `typeSlug` to
+`typeId` (stable across renames) and gives each the dance's basic rhythm for its counts. Templates
+are picked in `PatternListTemplateModal`. Dance content must be accurate: real pattern names,
+verified terms, variations as modifiers rather than patterns.

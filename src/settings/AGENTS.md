@@ -1,6 +1,13 @@
 # Settings & internationalisation — `src/settings/`
 
-Also governs `src/i18n.ts` and `locales/*.json`, which sit outside this directory. The root
+`SettingsScreen` hosts: language, theme and app style (persisted by `data/ThemeStorage.ts` and
+`data/StyleStorage.ts`, applied by `ThemeProvider`; see `src/common/theme/AGENTS.md`), app icon
+colour (`appIcon.ts`, offered only where `supportsAlternateIcons`), import and export
+(`hooks/useDataTransfer.ts`, `src/pattern/data/AGENTS.md`), the on-device models
+(`components/DeviceModelsSection.tsx`, `src/transcribe/AGENTS.md`), and in development builds a
+link to the design gallery.
+
+This file also governs `src/i18n.ts` and `locales/*.json`, which sit outside this directory. The root
 `AGENTS.md` carries the rule every feature needs (a new key goes in **all nine** `locales/*.json`,
 `en` first, enforced by `__tests__/unit/i18n.test.ts`); this file is the machinery behind it.
 
@@ -21,7 +28,7 @@ because every file in there becomes a route. Available languages are listed in
 
 Device matching is split in two on purpose. `resolveDeviceLanguage` (`src/settings/types/Languages.ts`) is pure — ordered preferences in, a shipped code or `null` out — and holds all the edge cases: region and script subtags fall back to the base language (`pt-BR` → `pt`, `zh-Hant-TW` → our Simplified `zh`), matching is case-insensitive, and the device's order of preference wins. `getDeviceLocales` (`src/settings/data/DeviceLocale.ts`) is the whole native surface, one `expo-localization` call wrapped so a missing or misbehaving module costs the device default and not the launch.
 
-**That wrapper `require`s expo-localization inside the function instead of importing it at the top, and must keep doing so.** The package reads its native module at _module_ scope (`export const getLocales = ExpoLocalization.getLocales`), so a static import throws while the bundle is still evaluating — before any `try`/`catch` in the function can run. On a build without the native module (an older dev client, or Expo Go) that took the whole app down, and it surfaces misleadingly: the visible symptom is `Route "./_layout.tsx" is missing the required default export`, because the layout never finished evaluating, with `Cannot find native module 'ExpoLocalization'` further up the log. `__tests__/unit/DeviceLocaleMissingNativeModule.test.ts` pins this by mocking the package into throwing on require; all three of its cases fail if the import is moved back to the top of the file. **Adding a native module also means rebuilding the dev client** — `npx expo run:android` / `run:ios`, or a new EAS dev build. Metro will happily serve JS that the installed client has no native side for. `__mocks__/expo-localization.ts` stands in for it everywhere, defaulting to a US-English device; call `setDeviceLocales` to test another one.
+**That wrapper `require`s expo-localization inside the function instead of importing it at the top, and must keep doing so.** The package reads its native module at _module_ scope (`export const getLocales = ExpoLocalization.getLocales`), so a static import throws while the bundle is still evaluating — before any `try`/`catch` in the function can run. On a build without the native module (an older dev client, or Expo Go) that took the whole app down, and it surfaces misleadingly: the visible symptom is `Route "./_layout.tsx" is missing the required default export`, because the layout never finished evaluating, with `Cannot find native module 'ExpoLocalization'` further up the log. `__tests__/unit/DeviceLocaleMissingNativeModule.test.ts` pins this by mocking the package into throwing on require; all three of its cases fail if the import is moved back to the top of the file. `__mocks__/expo-localization.ts` stands in for it everywhere, defaulting to a US-English device; call `setDeviceLocales` to test another one.
 
 `app/_layout.tsx` holds the splash screen (`preventAutoHideAsync`, then `hideAsync` once both the language restore and `ThemeProvider`'s `onRestored` have settled) so the swap to the stored language and theme (`@theme`, `data/ThemeStorage.ts`) happens behind it. It does **not** gate rendering on the restore: returning `null` until then hides the swap just as well on a device, but static rendering is on for web, and it silently turns every pre-rendered route into an empty shell — the exported `/settings` route drops from 29 KB to 18 KB. The `expo export` bundle job is what catches that.
 

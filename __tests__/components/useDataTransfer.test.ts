@@ -322,7 +322,7 @@ describe("useDataTransfer", () => {
     it("does not copy the patterns into the list record", async () => {
       // `@patternLists` holds lists without patterns; `@patterns_{id}` holds
       // the patterns. Writing a PatternListWithPatterns into the first key
-      // duplicates every pattern into it — see AGENTS.md, "Persistence".
+      // duplicates every pattern into it — see src/pattern/data/AGENTS.md, "Persistence".
       const incoming = importable({
         patterns: [createTestPattern("t", { id: 1 })],
       });

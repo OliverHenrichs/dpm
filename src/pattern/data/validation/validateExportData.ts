@@ -42,7 +42,7 @@ import {
  *   pattern pointing at a type that is not in its list, a prerequisite id that
  *   matches no pattern, a malformed video reference. These are cleaned and
  *   reported as warnings, matching what the storage layer already does on read
- *   (see AGENTS.md, "Prerequisite integrity").
+ *   (see src/pattern/graph/AGENTS.md, "Prerequisite integrity").
  *
  * Problems are reported as i18n keys (`ImportMessage`), not English: the
  * screen translates them with `formatImportMessages`.
