@@ -562,14 +562,24 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             />
           </View>
         ) : (
-          <Text key={job.id} style={styles.jobLine}>
+          // Each line names its kind: a transcription that failed for want of sound sat above
+          // a cut still running, and "processing" for both read as one job failing and going on.
+          <Text
+            key={job.id}
+            style={[
+              styles.jobLine,
+              job.status === "failed" && styles.jobLineFailed,
+            ]}
+          >
             {job.status === "queued"
-              ? t("videoJobInFormQueued")
+              ? t(`${job.kind}JobInFormQueued`)
               : job.status === "running"
-                ? t("videoJobInFormRunning", {
+                ? t(`${job.kind}JobInFormRunning`, {
                     percent: Math.round(job.progress * 100),
                   })
-                : t("anonymizeFailed", { message: job.error ?? "" })}
+                : t(`${job.kind}JobInFormFailed`, {
+                    error: job.errorKey ? t(job.errorKey) : (job.error ?? ""),
+                  })}
           </Text>
         ),
       )}
@@ -756,6 +766,7 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.space.sm,
       color: theme.colors.textMuted,
     },
+    jobLineFailed: { color: theme.colors.danger },
     jobRow: {
       ...getCommonRow(),
       gap: theme.space.sm,

@@ -85,7 +85,7 @@ describe("PatternVideos", () => {
       thumbnails: ["", ""],
     });
 
-    fireEvent.press(screen.getAllByLabelText("Remove video")[1]);
+    fireEvent.press(screen.getAllByLabelText("Remove video from pattern")[1]);
     expect(onRemoveVideo).toHaveBeenCalledWith(1);
   });
 

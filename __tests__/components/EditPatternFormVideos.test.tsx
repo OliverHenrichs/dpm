@@ -68,7 +68,8 @@ function renderForm(
 
 const save = () => fireEvent.press(screen.getByText("Save"));
 const addVideoButton = () => screen.getByLabelText("Add");
-const removeButtons = () => screen.queryAllByLabelText("Remove video");
+const removeButtons = () =>
+  screen.queryAllByLabelText("Remove video from pattern");
 
 /** Open the add-video sheet and enter a URL. */
 async function addUrlVideo(url: string, startTime?: string) {

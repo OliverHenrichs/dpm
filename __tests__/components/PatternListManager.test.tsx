@@ -248,7 +248,9 @@ describe("PatternListManager", () => {
     /** Opens the finished video from the banner and puts it in place of the original. */
     const reviewAndReplace = async () => {
       fireEvent.press(await screen.findByText("Review"));
-      fireEvent.press(await screen.findByText("Replace the original"));
+      fireEvent.press(
+        await screen.findByText("Replace the original in this pattern"),
+      );
     };
 
     it("links a finished job to its pattern, opening it in the list", async () => {
