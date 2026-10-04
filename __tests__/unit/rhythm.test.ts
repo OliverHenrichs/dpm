@@ -1,5 +1,7 @@
 import {
+  appendRhythmStep,
   defaultRhythm,
+  nextRhythmSteps,
   normalizeRhythm,
   rhythmCounts,
   rhythmMatchesCounts,
@@ -48,6 +50,7 @@ describe("rhythmSuggestions", () => {
   it("offers a dance's own rhythm first, then a step on every beat", () => {
     expect(rhythmSuggestions("wcs", 8)).toEqual([
       "1 2 3&4 5 6 7&8",
+      "1 2 3a4 5 6 7a8",
       "1 2 3 4 5 6 7 8",
     ]);
     expect(rhythmSuggestions("salsa", 8)[0]).toBe("1 2 3 (4) 5 6 7 (8)");
@@ -95,5 +98,34 @@ describe("template rhythms", () => {
     expect(push.rhythm).toBe("1 2 3&4 5&6");
     expect(other).not.toHaveProperty("rhythm");
     expect(defaultRhythm(undefined, 6)).toBeUndefined();
+  });
+});
+
+describe("composing a rhythm a step at a time", () => {
+  it("offers a step, a triple, a swung triple and a held beat on the next beat", () => {
+    expect(nextRhythmSteps("1 2")).toEqual(["3", "3&4", "3a4", "(3)"]);
+    expect(nextRhythmSteps("")).toEqual(["1", "1&2", "1a2", "(1)"]);
+  });
+
+  it("goes on after a triple", () => {
+    expect(nextRhythmSteps("1 2 3&4")[0]).toBe("5");
+  });
+
+  it("offers nothing after something that is not a rhythm", () => {
+    expect(nextRhythmSteps("1 3")).toEqual([]);
+  });
+
+  it("appends with a single space", () => {
+    expect(appendRhythmStep("1 2 ", "3&4")).toBe("1 2 3&4");
+    expect(appendRhythmStep("", "1")).toBe("1");
+  });
+
+  it("only ever composes rhythms", () => {
+    let written = "";
+    for (let i = 0; i < 6; i++) {
+      const steps = nextRhythmSteps(written);
+      written = appendRhythmStep(written, steps[i % steps.length]);
+      expect(rhythmCounts(written)).not.toBeNull();
+    }
   });
 });

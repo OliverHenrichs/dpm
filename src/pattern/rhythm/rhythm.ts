@@ -48,15 +48,24 @@ export function normalizeRhythm(rhythm: string): string {
  *
  * - West Coast Swing and Lindy Hop: six-count patterns are walk walk, triple, triple (in Lindy,
  *   rock step, triple, triple); eight-count patterns, such as the whip or the swing out, put
- *   two more steps before the last triple.
+ *   two more steps before the last triple. Each also swung, counted "3a4".
  * - Salsa and bachata: eight counts, three steps and a pause or tap on 4 and 8.
  * - Argentine tango has no fixed count pattern, so it gets only the plain suggestion.
  */
+const SWING: Record<number, string[]> = {
+  6: ["1 2 3&4 5&6", "1 2 3a4 5a6"],
+  8: ["1 2 3&4 5 6 7&8", "1 2 3a4 5 6 7a8"],
+};
+// Salsa and bachata figures often run over two bars of eight.
+const LATIN: Record<number, string[]> = {
+  8: ["1 2 3 (4) 5 6 7 (8)"],
+  16: ["1 2 3 (4) 5 6 7 (8) 9 10 11 (12) 13 14 15 (16)"],
+};
 const DANCE_RHYTHMS: Record<Dance, Record<number, string[]>> = {
-  wcs: { 6: ["1 2 3&4 5&6"], 8: ["1 2 3&4 5 6 7&8"] },
-  lindy: { 6: ["1 2 3&4 5&6"], 8: ["1 2 3&4 5 6 7&8"] },
-  salsa: { 8: ["1 2 3 (4) 5 6 7 (8)"] },
-  bachata: { 8: ["1 2 3 (4) 5 6 7 (8)"] },
+  wcs: SWING,
+  lindy: SWING,
+  salsa: LATIN,
+  bachata: LATIN,
   tango: {},
 };
 
@@ -82,4 +91,22 @@ export function defaultRhythm(
   counts: number,
 ): string | undefined {
   return dance ? DANCE_RHYTHMS[dance][counts]?.[0] : undefined;
+}
+
+/**
+ * The steps that can follow what is written so far, for composing a rhythm a tap at a time: a
+ * step, a triple (straight or swung) or a beat held, each starting on the next beat. Nothing
+ * when what is written is not a rhythm, since no next beat follows from it.
+ */
+export function nextRhythmSteps(written: string): string[] {
+  const counts = written.trim() ? rhythmCounts(written) : 0;
+  if (counts === null) return [];
+  const beat = counts + 1;
+  return [`${beat}`, `${beat}&${beat + 1}`, `${beat}a${beat + 1}`, `(${beat})`];
+}
+
+/** `written` with one more step on the end. */
+export function appendRhythmStep(written: string, step: string): string {
+  const trimmed = written.trim();
+  return trimmed ? `${trimmed} ${step}` : step;
 }

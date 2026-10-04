@@ -420,8 +420,6 @@
   "reelsScopeAll": "सभी सूचियाँ",
   "reelsEmptyList": "इस सूची में अभी कोई वीडियो नहीं है। किसी पैटर्न में वीडियो जोड़ें, वह यहाँ दिखेगा।",
   "reelsEmptyAll": "किसी भी सूची में अभी कोई वीडियो नहीं है।",
-  "reelsPlay": "वीडियो चलाएँ",
-  "reelsPause": "वीडियो रोकें",
   "reelsVideoPosition": "वीडियो {{n}} / {{total}}",
   "importWarnRhythmMismatch": "इसकी लय इसके काउंट से मेल नहीं खाती थी, इसलिए छोड़ दी गई।",
   "rhythm": "लय",
@@ -430,5 +428,8 @@
   "rhythmSuggestionHint": "यह लय अपनाता है और काउंट उसके अनुसार करता है।",
   "dance": "नृत्य",
   "danceHint": "तय करता है कि पैटर्न के काउंट के लिए कौन-सी लय सुझाई जाए।",
-  "danceNone": "कोई नहीं"
+  "danceNone": "कोई नहीं",
+  "reelsOpen": "{{name}} देखें",
+  "reelsBack": "सभी रील्स पर वापस जाएँ",
+  "rhythmAddStep": "{{step}} जोड़ें"
 }

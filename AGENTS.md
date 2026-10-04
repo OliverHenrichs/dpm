@@ -93,7 +93,7 @@ Android only for now. Edit Pattern → Videos → **Edit video** (`src/anonymize
 
 ## Reels
 
-The *Reels* tab (`src/reels/`) pages through the patterns that have a video, one per page, from the open list or from every list on the phone. Swiping up or down moves between patterns, swiping sideways moves through a pattern's videos (its own, then those danced with a modifier), and a tap plays or pauses. `collectReels` (`reels.ts`) is pure. `useReels` takes the open list from the context and reads the other lists from storage on each visit, since nothing else holds them in memory. Only the video on screen holds a player, because a phone cannot decode a page of them. Reels only reads, so it needs no read-only guard.
+The *Reels* tab (`src/reels/`) shows the patterns that have a video, from the open list or from every list on the phone. The overview lists them as stills (`ReelCard`), several to a screen; a tap opens them one per screen (`ReelPage`), where swiping up or down moves between patterns and sideways through a pattern's videos (its own, then those danced with a modifier), and the grid button or Android's back returns to the overview. Videos use the platform's own controls (play, time bar, fullscreen in landscape), as elsewhere in the app, on the style's background rather than black. `collectReels` (`reels.ts`) is pure. `useReels` takes the open list from the context and reads the other lists from storage on each visit. Only the video on screen holds a player, and only while the tab is in front: the tabs keep the screen mounted, so leaving it has to unmount the player to stop the video. Reels only reads, so it needs no read-only guard.
 
 ## Filtering & sorting
 

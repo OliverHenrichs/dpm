@@ -420,8 +420,6 @@
   "reelsScopeAll": "Toutes les listes",
   "reelsEmptyList": "Pas encore de vidéos dans cette liste. Ajoutez-en une à une figure et elle apparaîtra ici.",
   "reelsEmptyAll": "Pas encore de vidéos dans aucune liste.",
-  "reelsPlay": "Lire la vidéo",
-  "reelsPause": "Mettre la vidéo en pause",
   "reelsVideoPosition": "Vidéo {{n}} sur {{total}}",
   "importWarnRhythmMismatch": "Son rythme ne correspondait pas à ses temps et a été ignoré.",
   "rhythm": "Rythme",
@@ -430,5 +428,8 @@
   "rhythmSuggestionHint": "Utilise ce rythme et ajuste les temps.",
   "dance": "Danse",
   "danceHint": "Choisit les rythmes suggérés pour les temps d'une figure.",
-  "danceNone": "Aucune"
+  "danceNone": "Aucune",
+  "reelsOpen": "Regarder {{name}}",
+  "reelsBack": "Retour à tous les reels",
+  "rhythmAddStep": "Ajouter {{step}}"
 }

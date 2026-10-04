@@ -23,6 +23,8 @@ import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
+  appendRhythmStep,
+  nextRhythmSteps,
   normalizeRhythm,
   rhythmCounts,
   rhythmMatchesCounts,
@@ -418,10 +420,12 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 
   const rhythmInvalid =
     rhythmDraft.trim().length > 0 && rhythmCounts(rhythmDraft) === null;
-  const suggestedRhythms = rhythmSuggestions(
-    activeList?.dance,
-    newPattern.counts,
-  ).filter((rhythm) => rhythm !== newPattern.rhythm);
+  // Whole rhythms for the counts while the field is empty; the next steps to tap on as soon
+  // as there is something to go on from.
+  const suggestedRhythms = rhythmDraft.trim()
+    ? []
+    : rhythmSuggestions(activeList?.dance, newPattern.counts);
+  const nextSteps = nextRhythmSteps(rhythmDraft);
 
   return (
     <View style={styles.addPatternContainer}>
@@ -510,6 +514,21 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 icon="music-note-outline"
                 accessibilityHint={t("rhythmSuggestionHint")}
                 onPress={() => changeRhythm(rhythm)}
+              />
+            ))}
+          </View>
+        )}
+        {nextSteps.length > 0 && (
+          <View style={styles.rhythmSuggestions}>
+            {nextSteps.map((step) => (
+              <Chip
+                key={step}
+                label={step}
+                icon="plus"
+                accessibilityLabel={t("rhythmAddStep", { step })}
+                onPress={() =>
+                  changeRhythm(appendRhythmStep(rhythmDraft, step))
+                }
               />
             ))}
           </View>

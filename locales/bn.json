@@ -420,8 +420,6 @@
   "reelsScopeAll": "সব তালিকা",
   "reelsEmptyList": "এই তালিকায় এখনও কোনো ভিডিও নেই। কোনো প্যাটার্নে ভিডিও যোগ করলে এখানে দেখা যাবে।",
   "reelsEmptyAll": "কোনো তালিকায় এখনও কোনো ভিডিও নেই।",
-  "reelsPlay": "ভিডিও চালাও",
-  "reelsPause": "ভিডিও থামাও",
   "reelsVideoPosition": "ভিডিও {{n}} / {{total}}",
   "importWarnRhythmMismatch": "এর ছন্দ কাউন্টের সঙ্গে মেলেনি, তাই বাদ দেওয়া হয়েছে।",
   "rhythm": "ছন্দ",
@@ -430,5 +428,8 @@
   "rhythmSuggestionHint": "এই ছন্দটি নেয় এবং কাউন্ট মিলিয়ে দেয়।",
   "dance": "নাচ",
   "danceHint": "প্যাটার্নের কাউন্টের জন্য কোন ছন্দ প্রস্তাব করা হবে তা ঠিক করে।",
-  "danceNone": "কোনোটি নয়"
+  "danceNone": "কোনোটি নয়",
+  "reelsOpen": "{{name}} দেখুন",
+  "reelsBack": "সব রিলসে ফিরে যান",
+  "rhythmAddStep": "{{step}} যোগ করুন"
 }

@@ -420,8 +420,6 @@
   "reelsScopeAll": "All lists",
   "reelsEmptyList": "No videos in this list yet. Add one to a pattern and it shows up here.",
   "reelsEmptyAll": "No videos in any list yet.",
-  "reelsPlay": "Play video",
-  "reelsPause": "Pause video",
   "reelsVideoPosition": "Video {{n}} of {{total}}",
   "importWarnRhythmMismatch": "Its rhythm did not match its counts and was left out.",
   "rhythm": "Rhythm",
@@ -430,5 +428,8 @@
   "rhythmSuggestionHint": "Uses this rhythm and sets the counts to match.",
   "dance": "Dance",
   "danceHint": "Picks which rhythms are suggested for a pattern's counts.",
-  "danceNone": "None"
+  "danceNone": "None",
+  "reelsOpen": "Watch {{name}}",
+  "reelsBack": "Back to all reels",
+  "rhythmAddStep": "Add {{step}}"
 }

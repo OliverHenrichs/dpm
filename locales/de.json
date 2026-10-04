@@ -420,8 +420,6 @@
   "reelsScopeAll": "Alle Listen",
   "reelsEmptyList": "Noch keine Videos in dieser Liste. Füge einer Figur ein Video hinzu, dann erscheint es hier.",
   "reelsEmptyAll": "Noch keine Videos in irgendeiner Liste.",
-  "reelsPlay": "Video abspielen",
-  "reelsPause": "Video anhalten",
   "reelsVideoPosition": "Video {{n}} von {{total}}",
   "importWarnRhythmMismatch": "Der Rhythmus passte nicht zu den Counts und wurde weggelassen.",
   "rhythm": "Rhythmus",
@@ -430,5 +428,8 @@
   "rhythmSuggestionHint": "Übernimmt diesen Rhythmus und passt die Counts an.",
   "dance": "Tanz",
   "danceHint": "Bestimmt, welche Rhythmen zu den Counts einer Figur vorgeschlagen werden.",
-  "danceNone": "Keiner"
+  "danceNone": "Keiner",
+  "reelsOpen": "{{name}} ansehen",
+  "reelsBack": "Zurück zu allen Reels",
+  "rhythmAddStep": "{{step}} anhängen"
 }

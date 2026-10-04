@@ -420,8 +420,6 @@
   "reelsScopeAll": "كل القوائم",
   "reelsEmptyList": "لا توجد مقاطع فيديو في هذه القائمة بعد. أضف مقطعًا إلى خطوة وسيظهر هنا.",
   "reelsEmptyAll": "لا توجد مقاطع فيديو في أي قائمة بعد.",
-  "reelsPlay": "تشغيل الفيديو",
-  "reelsPause": "إيقاف الفيديو مؤقتًا",
   "reelsVideoPosition": "الفيديو {{n}} من {{total}}",
   "importWarnRhythmMismatch": "لم يطابق إيقاعها عدد عدّاتها فتم حذفه.",
   "rhythm": "الإيقاع",
@@ -430,5 +428,8 @@
   "rhythmSuggestionHint": "يستخدم هذا الإيقاع ويضبط العدّات لتطابقه.",
   "dance": "الرقصة",
   "danceHint": "تحدد الإيقاعات المقترحة لعدّات الخطوة.",
-  "danceNone": "لا شيء"
+  "danceNone": "لا شيء",
+  "reelsOpen": "مشاهدة {{name}}",
+  "reelsBack": "العودة إلى كل المقاطع",
+  "rhythmAddStep": "إضافة {{step}}"
 }

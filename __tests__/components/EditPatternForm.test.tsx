@@ -234,3 +234,32 @@ describe("EditPatternForm rhythm", () => {
     expect(await save(onAccepted)).toMatchObject({ rhythm: "1 2 3&4 5&6" });
   });
 });
+
+describe("EditPatternForm composing a rhythm", () => {
+  it("builds a rhythm from the next-step bubbles", async () => {
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+      />,
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+
+    for (const step of ["1", "2", "3&4", "5", "6", "7a8"]) {
+      fireEvent.press(screen.getByLabelText(`Add ${step}`));
+    }
+
+    expect(screen.getByLabelText("Rhythm").props.value).toBe("1 2 3&4 5 6 7a8");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("8");
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(onAccepted).toHaveBeenCalledWith(
+        expect.objectContaining({ counts: 8, rhythm: "1 2 3&4 5 6 7a8" }),
+      ),
+    );
+  });
+});

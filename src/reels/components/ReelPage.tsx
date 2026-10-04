@@ -1,7 +1,14 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, Text, View, ViewToken } from "react-native";
+import {
+  FlatList,
+  LayoutChangeEvent,
+  Text,
+  View,
+  ViewToken,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
+import ReelCaption from "@/src/reels/components/ReelCaption";
 import ReelVideoView from "@/src/reels/components/ReelVideoView";
 import { Reel, ReelVideo } from "@/src/reels/reels";
 
@@ -10,7 +17,7 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 60 };
 
 interface ReelPageProps {
   reel: Reel;
-  /** The page on screen; only its current video holds a player. */
+  /** The page on screen, while the tab is; only its current video holds a player. */
   active: boolean;
   width: number;
   height: number;
@@ -18,7 +25,7 @@ interface ReelPageProps {
   showListName: boolean;
 }
 
-/** One pattern: its videos side by side, its name over them. */
+/** One pattern, one screen: its videos side by side, and what it is underneath. */
 export default function ReelPage({
   reel,
   active,
@@ -28,6 +35,7 @@ export default function ReelPage({
 }: ReelPageProps) {
   const { t } = useTranslation();
   const [index, setIndex] = useState(0);
+  const [videoHeight, setVideoHeight] = useState(0);
   const current = reel.videos[index];
 
   const onViewableItemsChanged = useCallback(
@@ -37,50 +45,42 @@ export default function ReelPage({
     [],
   );
 
-  const meta = [
-    reel.typeName,
-    reel.pattern.level ? t(reel.pattern.level) : undefined,
-    showListName ? reel.listName : undefined,
-  ].filter(Boolean);
+  const onVideoLayout = (event: LayoutChangeEvent) =>
+    setVideoHeight(event.nativeEvent.layout.height);
 
   return (
-    <View style={{ width, height }}>
-      <FlatList
-        data={reel.videos}
-        keyExtractor={(item) => item.key}
-        renderItem={({ item, index: i }) => (
-          <ReelVideoView
-            video={item.video}
-            active={active && i === index}
-            width={width}
-            height={height}
+    <View style={[styles.page, { width, height }]}>
+      <View style={styles.videos} onLayout={onVideoLayout}>
+        {videoHeight > 0 && (
+          <FlatList
+            data={reel.videos}
+            keyExtractor={(item) => item.key}
+            renderItem={({ item, index: i }) => (
+              <ReelVideoView
+                video={item.video}
+                active={active && i === index}
+                width={width}
+                height={videoHeight}
+              />
+            )}
+            horizontal
+            pagingEnabled
+            decelerationRate="fast"
+            showsHorizontalScrollIndicator={false}
+            getItemLayout={(_, i) => ({
+              length: width,
+              offset: width * i,
+              index: i,
+            })}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={VIEWABILITY_CONFIG}
           />
         )}
-        horizontal
-        pagingEnabled
-        decelerationRate="fast"
-        showsHorizontalScrollIndicator={false}
-        getItemLayout={(_, i) => ({
-          length: width,
-          offset: width * i,
-          index: i,
-        })}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={VIEWABILITY_CONFIG}
-      />
-      <View style={styles.caption} pointerEvents="none">
-        <Text style={styles.name} numberOfLines={2}>
-          {reel.pattern.name}
-        </Text>
-        {current?.modifierName && (
-          <Text style={styles.modifier} numberOfLines={1}>
-            {current.modifierName}
-          </Text>
-        )}
-        <View style={styles.metaLine}>
-          {reel.typeColor && <View style={styles.dot(reel.typeColor)} />}
-          <Text style={styles.meta} numberOfLines={1}>
-            {meta.join(" · ")}
+      </View>
+      <View style={styles.caption}>
+        <View style={styles.titleLine}>
+          <Text style={styles.name} numberOfLines={2}>
+            {reel.pattern.name}
           </Text>
           {reel.videos.length > 1 && (
             <Text
@@ -94,36 +94,32 @@ export default function ReelPage({
             </Text>
           )}
         </View>
+        {current?.modifierName && (
+          <Text style={styles.modifier} numberOfLines={1}>
+            {current.modifierName}
+          </Text>
+        )}
+        <ReelCaption reel={reel} showListName={showListName} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
+  page: { backgroundColor: theme.colors.background },
+  videos: { flex: 1 },
   caption: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: theme.space.lg,
-    paddingTop: theme.space.md,
-    paddingBottom: theme.space.lg,
-    backgroundColor: theme.media.scrim,
+    paddingHorizontal: theme.space.xs,
+    paddingTop: theme.space.sm,
+    paddingBottom: theme.space.md,
     gap: theme.space.xxs,
   },
-  name: { ...theme.typography.title, color: theme.media.onScrim },
-  modifier: { ...theme.typography.label, color: theme.media.onScrim },
-  metaLine: { flexDirection: "row", alignItems: "center", gap: theme.space.xs },
-  dot: (color: string) => ({
-    width: theme.space.sm,
-    height: theme.space.sm,
-    borderRadius: theme.radius.pill,
-    backgroundColor: color,
-  }),
-  meta: {
-    ...theme.typography.bodySmall,
-    color: theme.media.onScrim,
-    flex: 1,
+  titleLine: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: theme.space.sm,
   },
-  counter: { ...theme.typography.micro, color: theme.media.onScrim },
+  name: { ...theme.typography.title, color: theme.colors.text, flex: 1 },
+  counter: { ...theme.typography.micro, color: theme.colors.textMuted },
+  modifier: { ...theme.typography.label, color: theme.colors.primary },
 }));
