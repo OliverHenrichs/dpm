@@ -1,3 +1,4 @@
+import { importText } from "@/utils/importMessageText";
 import { validateExportData } from "@/src/pattern/data/validation/validateExportData";
 import {
   canImport,
@@ -148,7 +149,9 @@ describe("validateExportData", () => {
       const result = validateExportData(validFile({ version: "4.0.0" }));
 
       expect(result.valid).toBe(false);
-      expect(result.errors[0]).toMatch(/newer version of the app/);
+      expect(importText([result.errors[0]])).toMatch(
+        /newer version of the app/,
+      );
     });
 
     it("refuses a file whose patternLists is not a list", () => {
@@ -163,7 +166,7 @@ describe("validateExportData", () => {
       const result = validateExportData(fileWithList(rest));
 
       expect(result.valid).toBe(false);
-      expect(result.errors.join(" ")).toMatch(/no id/);
+      expect(importText(result.errors)).toMatch(/no id/);
     });
 
     it("refuses two lists sharing an id", () => {
@@ -173,7 +176,7 @@ describe("validateExportData", () => {
       );
 
       expect(result.valid).toBe(false);
-      expect(result.errors.join(" ")).toMatch(/share the id/);
+      expect(importText(result.errors)).toMatch(/share the id/);
     });
 
     it("refuses a pattern whose id is not a number", () => {
@@ -186,7 +189,7 @@ describe("validateExportData", () => {
       );
 
       expect(result.valid).toBe(false);
-      expect(result.errors.join(" ")).toMatch(/no usable id/);
+      expect(importText(result.errors)).toMatch(/no usable id/);
     });
 
     it("refuses a pattern whose id is fractional", () => {
@@ -214,7 +217,7 @@ describe("validateExportData", () => {
       );
 
       expect(result.valid).toBe(false);
-      expect(result.errors.join(" ")).toMatch(/share the id 1/);
+      expect(importText(result.errors)).toMatch(/share the id 1/);
     });
 
     it("refuses patterns that are not a list", () => {
@@ -252,7 +255,7 @@ describe("validateExportData", () => {
       expect(result.data!.patternLists[0].patterns[0].prerequisites).toEqual(
         [],
       );
-      expect(result.warnings.join(" ")).toMatch(/prerequisite/);
+      expect(importText(result.warnings)).toMatch(/prerequisite/);
     });
 
     it("drops a self-referencing prerequisite", () => {
@@ -299,7 +302,7 @@ describe("validateExportData", () => {
 
       expect(result.valid).toBe(true);
       expect(result.data!.patternLists[0].patterns[0].typeId).toBe(TYPE.id);
-      expect(result.warnings.join(" ")).toMatch(
+      expect(importText(result.warnings)).toMatch(
         /pattern type is not in the list/,
       );
     });
@@ -414,7 +417,7 @@ describe("validateExportData", () => {
       expect(result.data!.patternLists[0].patterns[0].videoRefs).toEqual([
         { type: "local", value: "/v.mp4" },
       ]);
-      expect(result.warnings.join(" ")).toMatch(/provenance/);
+      expect(importText(result.warnings)).toMatch(/provenance/);
     });
 
     describe("transcripts (3.2)", () => {
@@ -469,7 +472,7 @@ describe("validateExportData", () => {
           result.data!.patternLists[0].patterns[0].videoRefs[0].transcript!
             .segments,
         ).toEqual([TRANSCRIPT.segments[1]]);
-        expect(result.warnings.join(" ")).toMatch(/4 malformed transcript/);
+        expect(importText(result.warnings)).toMatch(/4 malformed transcript/);
       });
 
       it.each([
@@ -483,7 +486,7 @@ describe("validateExportData", () => {
         expect(result.data!.patternLists[0].patterns[0].videoRefs).toEqual([
           { type: "local", value: "/v.mp4" },
         ]);
-        expect(result.warnings.join(" ")).toMatch(/malformed transcript/);
+        expect(importText(result.warnings)).toMatch(/malformed transcript/);
       });
     });
 
@@ -564,7 +567,7 @@ describe("validateExportData", () => {
       );
 
       expect(result.data!.videos).toEqual({ "b.mp4": "base64==" });
-      expect(result.warnings.join(" ")).toMatch(/a\.mp4/);
+      expect(importText(result.warnings)).toMatch(/a\.mp4/);
     });
   });
 

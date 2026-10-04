@@ -35,7 +35,7 @@ const mockedImport = importPatternLists as jest.MockedFunction<
 
 beforeEach(() => {
   mockedExport.mockResolvedValue({ success: true, message: "ok" });
-  mockedImport.mockResolvedValue({ success: true, message: "ok" });
+  mockedImport.mockResolvedValue({ success: true, errors: [], warnings: [] });
   (subscribeToSharedList as jest.Mock).mockReturnValue(() => {});
 });
 
@@ -218,7 +218,8 @@ describe("SettingsScreen", () => {
     it("opens the decision modal with what was read", async () => {
       mockedImport.mockResolvedValue({
         success: true,
-        message: "ok",
+        errors: [],
+        warnings: [],
         patternLists: [importable({ name: "Incoming" })],
       });
       await renderSettings();
@@ -237,7 +238,8 @@ describe("SettingsScreen", () => {
       const existing = createTestPatternList({ name: "Mine" });
       mockedImport.mockResolvedValue({
         success: true,
-        message: "ok",
+        errors: [],
+        warnings: [],
         patternLists: [importable({ id: existing.id, name: "Mine" })],
       });
       await renderSettings([existing]);
@@ -258,7 +260,8 @@ describe("SettingsScreen", () => {
       mockedImport.mockResolvedValue({
         success: false,
         cancelled: true,
-        message: "",
+        errors: [],
+        warnings: [],
       });
       await renderSettings();
 
@@ -271,7 +274,8 @@ describe("SettingsScreen", () => {
     it("reports an unreadable file", async () => {
       mockedImport.mockResolvedValue({
         success: false,
-        message: "Invalid import file format",
+        errors: [{ key: "importErrorNotAnExport" }],
+        warnings: [],
       });
       await renderSettings();
 
@@ -279,9 +283,37 @@ describe("SettingsScreen", () => {
 
       await waitFor(() =>
         expect(
-          screen.getByText("Invalid import file format"),
+          screen.getByText("The file is not a pattern list export."),
         ).toBeOnTheScreen(),
       );
+    });
+
+    it("explains a refused file in the language the app is in", async () => {
+      mockedImport.mockResolvedValue({
+        success: false,
+        errors: [
+          {
+            key: "importErrorDuplicatePatternId",
+            params: { id: 7 },
+            context: { list: "WCS" },
+          },
+        ],
+        warnings: [],
+      });
+      renderWithProviders(<SettingsScreen />, {
+        lists: [],
+        activeListId: null,
+        language: "de",
+      });
+      await waitFor(() => expect(screen.getByText("Design")).toBeOnTheScreen());
+
+      fireEvent.press(screen.getByText("Import"));
+
+      expect(
+        await screen.findByText(
+          'Liste "WCS": Zwei Figuren haben dieselbe ID 7.',
+        ),
+      ).toBeOnTheScreen();
     });
   });
 });

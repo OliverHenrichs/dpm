@@ -7,12 +7,20 @@ import {
 } from "@/src/pattern/data/types/IExportData";
 import { generateUUID } from "@/src/pattern/types/PatternType";
 import { validateExportData } from "@/src/pattern/data/validation/validateExportData";
+import {
+  ImportMessage,
+  ImportMessageContext,
+  importMessage as msg,
+} from "@/src/pattern/data/validation/importMessages";
 
 interface IImportPatternListResult {
   success: boolean;
   cancelled?: boolean;
   patternLists?: PatternListWithPatterns[];
-  message: string;
+  /** Why nothing was imported. Translate with `formatImportMessages`. */
+  errors: ImportMessage[];
+  /** What was repaired or left behind on the way. */
+  warnings: ImportMessage[];
 }
 
 /**
@@ -35,11 +43,11 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
     // filled in, references resolvable, malformed entries already dropped.
     const validation = validateExportData(parsed);
     if (!validation.valid || !validation.data) {
-      return createResult(false, validation.errors.join("\n"));
+      return createResult(false, validation.errors);
     }
     const data = validation.data;
 
-    const warnings: string[] = [...validation.warnings];
+    const warnings: ImportMessage[] = [...validation.warnings];
     const updatedLists: PatternListWithPatterns[] = [];
 
     for (const list of data.patternLists) {
@@ -48,6 +56,7 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
       for (const modifier of list.modifiers ?? []) {
         const videoRefs = await addVideoRefs(
           `modifier:${modifier.id}`,
+          { list: list.name, modifier: modifier.name },
           modifier.videoRefs,
           data,
           warnings,
@@ -57,8 +66,10 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
 
       const updatedPatterns = [];
       for (const pattern of list.patterns) {
+        const where = { list: list.name, pattern: pattern.name };
         const videoRefs = await addVideoRefs(
           `pattern:${pattern.id}`,
+          where,
           pattern.videoRefs,
           data,
           warnings,
@@ -68,6 +79,7 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
         for (const modRef of pattern.modifierRefs ?? []) {
           const modRefVideoRefs = await addVideoRefs(
             `pattern:${pattern.id}+modifier:${modRef.modifierId}`,
+            where,
             modRef.videoRefs,
             data,
             warnings,
@@ -87,14 +99,10 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
       });
     }
 
-    return createResult(
-      true,
-      createSuccessMessage(updatedLists, warnings),
-      updatedLists,
-    );
+    return createResult(true, [], warnings, updatedLists);
   } catch (error) {
-    const message = `Import failed: ${error instanceof Error ? error.message : String(error)}`;
-    return createResult(false, message);
+    const reason = error instanceof Error ? error.message : String(error);
+    return createResult(false, [msg("importFailed", { error: reason })]);
   }
 }
 
@@ -104,7 +112,7 @@ async function getImportDocument() {
     copyToCacheDirectory: true,
   });
   if (result.canceled) {
-    return createResult(false, "", undefined, true);
+    return createResult(false, [], [], undefined, true);
   }
   return result.assets[0].uri;
 }
@@ -120,7 +128,8 @@ async function tryAddLocalVideoRef(
   data: IPatternListExportData,
   videoRef: IVideoReference,
   contextId: string,
-  warnings: string[],
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
 ): Promise<IVideoReference | void> {
   const videoString = data.videos[videoRef.value];
   if (videoString) {
@@ -131,19 +140,20 @@ async function tryAddLocalVideoRef(
       // Spread, not rebuilt: provenance (`generated`) must survive the trip.
       return { ...videoRef, type: "local", value: newVideoUri };
     } catch {
-      warnings.push(`Failed to restore video for context: ${contextId}`);
+      warnings.push(msg("importWarnVideoRestoreFailed", undefined, where));
     }
   } else if (data.includesVideos) {
-    warnings.push(`Video data missing for context: ${contextId}`);
+    warnings.push(msg("importWarnVideoDataMissing", undefined, where));
   }
   // When includesVideos === false the local ref was intentionally stripped — silently skip it
 }
 
 async function addVideoRefs(
   contextId: string,
+  where: ImportMessageContext,
   videoRefs: IVideoReference[] | undefined,
   data: IPatternListExportData,
-  warnings: string[],
+  warnings: ImportMessage[],
 ) {
   const updatedVideoRefs: IVideoReference[] = [];
   for (const videoRef of videoRefs ?? []) {
@@ -152,6 +162,7 @@ async function addVideoRefs(
         data,
         videoRef,
         contextId,
+        where,
         warnings,
       );
       if (addedVideoRef) updatedVideoRefs.push(addedVideoRef);
@@ -181,30 +192,17 @@ function generateVideoUri(contextId: string) {
   return `${Paths.document.uri}imported-${safeId}-${generateUUID()}.mp4`;
 }
 
-function createSuccessMessage(
-  patternLists: PatternListWithPatterns[],
-  warnings: string[],
-) {
-  const totalPatterns = patternLists.reduce(
-    (sum, list) => sum + list.patterns.length,
-    0,
-  );
-  let message = `Successfully imported ${patternLists.length} list(s) with ${totalPatterns} pattern(s)`;
-  if (warnings.length > 0) {
-    message += `\n\nWarnings:\n${warnings.join("\n")}`;
-  }
-  return message;
-}
-
 function createResult(
   success: boolean,
-  message: string,
+  errors: ImportMessage[],
+  warnings: ImportMessage[] = [],
   patternLists?: PatternListWithPatterns[],
   cancelled?: boolean,
 ): IImportPatternListResult {
   return {
     success,
-    message,
+    errors,
+    warnings,
     ...(patternLists && { patternLists }),
     ...(cancelled && { cancelled }),
   };

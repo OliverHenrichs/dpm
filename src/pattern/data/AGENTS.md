@@ -65,6 +65,13 @@ it before touching anything. It splits problems in two:
 What it returns is normalised: optional fields filled in, references resolvable. Nothing
 downstream re-checks it.
 
+**Problems are i18n keys, not English.** `errors` and `warnings` (from the validator and from
+`importPatternLists`) are `ImportMessage`s, `{ key, params?, context? }` from
+`validation/importMessages.ts`, and the screen renders them with `formatImportMessages(t, …)`;
+`context` names the list and the pattern or modifier the problem is on. A new message means a key
+in `IMPORT_MESSAGE_KEYS` and in all nine locales: the keys are chosen at runtime, so the static
+`t("…")` scan cannot see them, and `__tests__/unit/importMessages.test.ts` checks them instead.
+
 `canImport` (`types/ExportVersion.ts`) owns compatibility, separate from `exportDataVersion` which
 is what we _write_. A newer **minor** is refused rather than parsed best-effort: the writer added
 a field this build cannot carry, and saving over it would silently drop the user's data. Bumping

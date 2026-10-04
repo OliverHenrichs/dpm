@@ -32,7 +32,7 @@ const mockedImport = importPatternLists as jest.MockedFunction<
 
 beforeEach(() => {
   mockedExport.mockResolvedValue({ success: true, message: "ok" });
-  mockedImport.mockResolvedValue({ success: true, message: "ok" });
+  mockedImport.mockResolvedValue({ success: true, errors: [], warnings: [] });
 });
 
 const importable = (
@@ -152,7 +152,8 @@ describe("useDataTransfer", () => {
       const incoming = importable();
       mockedImport.mockResolvedValue({
         success: true,
-        message: "ok",
+        errors: [],
+        warnings: [],
         patternLists: [incoming],
       });
       const { result } = await mount();
@@ -169,7 +170,8 @@ describe("useDataTransfer", () => {
       mockedImport.mockResolvedValue({
         success: false,
         cancelled: true,
-        message: "",
+        errors: [],
+        warnings: [],
       });
       const { result } = await mount();
 
@@ -184,7 +186,8 @@ describe("useDataTransfer", () => {
     it("reports an unreadable file", async () => {
       mockedImport.mockResolvedValue({
         success: false,
-        message: "Invalid import file format",
+        errors: [{ key: "importErrorNotAnExport" }],
+        warnings: [],
       });
       const { result } = await mount();
 
@@ -193,7 +196,9 @@ describe("useDataTransfer", () => {
       });
 
       expect(result.current.showImportModal).toBe(false);
-      expect(result.current.dialog?.message).toBe("Invalid import file format");
+      expect(result.current.dialog?.message).toBe(
+        "The file is not a pattern list export.",
+      );
     });
   });
 

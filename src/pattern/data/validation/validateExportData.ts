@@ -13,6 +13,11 @@ import {
   PatternListWithPatterns,
 } from "@/src/pattern/data/types/IExportData";
 import { canImport } from "@/src/pattern/data/types/ExportVersion";
+import {
+  ImportMessage,
+  ImportMessageContext,
+  importMessage as msg,
+} from "@/src/pattern/data/validation/importMessages";
 
 /**
  * Validate and repair an import payload.
@@ -34,15 +39,18 @@ import { canImport } from "@/src/pattern/data/types/ExportVersion";
  *   reported as warnings, matching what the storage layer already does on read
  *   (see AGENTS.md, "Prerequisite integrity").
  *
+ * Problems are reported as i18n keys (`ImportMessage`), not English: the
+ * screen translates them with `formatImportMessages`.
+ *
  * The returned `data` is a normalised copy: every optional field filled in,
  * every reference resolvable. Nothing downstream needs to re-check it.
  */
 export interface ExportValidationResult {
   valid: boolean;
   /** Fatal problems. Non-empty means nothing should be imported. */
-  errors: string[];
+  errors: ImportMessage[];
   /** Repairs that were applied. The import can proceed. */
-  warnings: string[];
+  warnings: ImportMessage[];
   /** Present only when `valid`. Normalised and safe to persist. */
   data?: IPatternListExportData;
 }
@@ -67,10 +75,14 @@ const asStringArray = (v: unknown): string[] =>
 
 const MODIFIER_POSITIONS: ModifierPosition[] = ["prefix", "postfix", "amends"];
 
-function normalizeVideoRefs(raw: unknown, where: string, warnings: string[]) {
+function normalizeVideoRefs(
+  raw: unknown,
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
+) {
   if (raw === undefined) return [];
   if (!Array.isArray(raw)) {
-    warnings.push(`${where}: videos were not a list and have been dropped`);
+    warnings.push(msg("importWarnVideosNotList", undefined, where));
     return [];
   }
   const refs: IVideoReference[] = [];
@@ -80,7 +92,7 @@ function normalizeVideoRefs(raw: unknown, where: string, warnings: string[]) {
       (entry.type !== "url" && entry.type !== "local") ||
       !isNonEmptyString(entry.value)
     ) {
-      warnings.push(`${where}: dropped a malformed video reference`);
+      warnings.push(msg("importWarnMalformedVideo", undefined, where));
       continue;
     }
     const ref: IVideoReference = {
@@ -106,7 +118,7 @@ function normalizeVideoRefs(raw: unknown, where: string, warnings: string[]) {
       ) {
         ref.generated = { method: g.method, createdAt: g.createdAt };
       } else {
-        warnings.push(`${where}: dropped malformed provenance of a video`);
+        warnings.push(msg("importWarnMalformedProvenance", undefined, where));
       }
     }
     // What was said in it (3.2): kept when it is a transcript at all, minus any line that is
@@ -125,8 +137,8 @@ const isFiniteNumber = (v: unknown): v is number =>
 
 function normalizeTranscript(
   raw: unknown,
-  where: string,
-  warnings: string[],
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
 ): IVideoTranscript | undefined {
   if (
     !isObject(raw) ||
@@ -135,7 +147,7 @@ function normalizeTranscript(
     !isFiniteNumber(raw.createdAt) ||
     !Array.isArray(raw.segments)
   ) {
-    warnings.push(`${where}: dropped a malformed transcript of a video`);
+    warnings.push(msg("importWarnMalformedTranscript", undefined, where));
     return undefined;
   }
   const segments: ITranscriptSegment[] = [];
@@ -155,7 +167,9 @@ function normalizeTranscript(
     }
   }
   if (dropped > 0) {
-    warnings.push(`${where}: dropped ${dropped} malformed transcript line(s)`);
+    warnings.push(
+      msg("importWarnMalformedTranscriptLines", { count: dropped }, where),
+    );
   }
   return {
     language: raw.language,
@@ -167,22 +181,22 @@ function normalizeTranscript(
 
 function normalizePatternTypes(
   raw: unknown,
-  listLabel: string,
-  warnings: string[],
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
 ): PatternType[] {
   if (!Array.isArray(raw)) {
-    warnings.push(`${listLabel}: pattern types were missing`);
+    warnings.push(msg("importWarnTypesMissing", undefined, where));
     return [];
   }
   const types: PatternType[] = [];
   const seen = new Set<string>();
   for (const entry of raw) {
     if (!isObject(entry) || !isNonEmptyString(entry.id)) {
-      warnings.push(`${listLabel}: dropped a pattern type with no id`);
+      warnings.push(msg("importWarnTypeNoId", undefined, where));
       continue;
     }
     if (seen.has(entry.id)) {
-      warnings.push(`${listLabel}: dropped a duplicate pattern type`);
+      warnings.push(msg("importWarnDuplicateType", undefined, where));
       continue;
     }
     seen.add(entry.id);
@@ -197,23 +211,23 @@ function normalizePatternTypes(
 
 function normalizeModifiers(
   raw: unknown,
-  listLabel: string,
-  warnings: string[],
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
 ): IModifier[] {
   if (raw === undefined) return [];
   if (!Array.isArray(raw)) {
-    warnings.push(`${listLabel}: modifiers were not a list`);
+    warnings.push(msg("importWarnModifiersNotList", undefined, where));
     return [];
   }
   const modifiers: IModifier[] = [];
   const seen = new Set<string>();
   for (const entry of raw) {
     if (!isObject(entry) || !isNonEmptyString(entry.id)) {
-      warnings.push(`${listLabel}: dropped a modifier with no id`);
+      warnings.push(msg("importWarnModifierNoId", undefined, where));
       continue;
     }
     if (seen.has(entry.id)) {
-      warnings.push(`${listLabel}: dropped a duplicate modifier`);
+      warnings.push(msg("importWarnDuplicateModifier", undefined, where));
       continue;
     }
     seen.add(entry.id);
@@ -229,7 +243,7 @@ function normalizeModifiers(
       universal: entry.universal === true,
       videoRefs: normalizeVideoRefs(
         entry.videoRefs,
-        `${listLabel}: modifier "${asString(entry.name, entry.id)}"`,
+        { list: where.list, modifier: asString(entry.name, entry.id) },
         warnings,
       ),
     });
@@ -240,29 +254,27 @@ function normalizeModifiers(
 function normalizeModifierRefs(
   raw: unknown,
   knownModifierIds: Set<string>,
-  where: string,
-  warnings: string[],
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
 ): IPatternModifierRef[] {
   if (raw === undefined) return [];
   if (!Array.isArray(raw)) {
-    warnings.push(`${where}: modifier attachments were not a list`);
+    warnings.push(msg("importWarnModifierRefsNotList", undefined, where));
     return [];
   }
   const refs: IPatternModifierRef[] = [];
   const seen = new Set<string>();
   for (const entry of raw) {
     if (!isObject(entry) || !isNonEmptyString(entry.modifierId)) {
-      warnings.push(`${where}: dropped a modifier attachment with no id`);
+      warnings.push(msg("importWarnModifierRefNoId", undefined, where));
       continue;
     }
     if (!knownModifierIds.has(entry.modifierId)) {
-      warnings.push(
-        `${where}: dropped an attachment to a modifier that is not in the list`,
-      );
+      warnings.push(msg("importWarnModifierRefUnknown", undefined, where));
       continue;
     }
     if (seen.has(entry.modifierId)) {
-      warnings.push(`${where}: dropped a duplicate modifier attachment`);
+      warnings.push(msg("importWarnDuplicateModifierRef", undefined, where));
       continue;
     }
     seen.add(entry.modifierId);
@@ -283,13 +295,13 @@ function normalizePatterns(
   raw: unknown,
   types: PatternType[],
   modifiers: IModifier[],
-  listLabel: string,
-  errors: string[],
-  warnings: string[],
+  where: ImportMessageContext,
+  errors: ImportMessage[],
+  warnings: ImportMessage[],
 ): IPattern[] {
   if (raw === undefined) return [];
   if (!Array.isArray(raw)) {
-    errors.push(`${listLabel}: patterns were not a list`);
+    errors.push(msg("importErrorPatternsNotList", undefined, where));
     return [];
   }
 
@@ -302,19 +314,24 @@ function normalizePatterns(
 
   for (const entry of raw) {
     if (!isObject(entry) || !isInteger(entry.id)) {
-      errors.push(`${listLabel}: a pattern has no usable id`);
+      errors.push(msg("importErrorPatternNoId", undefined, where));
       continue;
     }
-    const label = `${listLabel}: pattern "${asString(entry.name, String(entry.id))}"`;
+    const label: ImportMessageContext = {
+      list: where.list,
+      pattern: asString(entry.name, String(entry.id)),
+    };
     if (seenIds.has(entry.id)) {
-      errors.push(`${listLabel}: two patterns share the id ${entry.id}`);
+      errors.push(
+        msg("importErrorDuplicatePatternId", { id: entry.id }, where),
+      );
       continue;
     }
     seenIds.add(entry.id);
 
     let typeId = asString(entry.typeId, "");
     if (!knownTypeIds.has(typeId)) {
-      warnings.push(`${label}: its pattern type is not in the list`);
+      warnings.push(msg("importWarnUnknownType", undefined, label));
       typeId = fallbackTypeId;
     }
 
@@ -325,9 +342,9 @@ function normalizePatterns(
       Array.isArray(entry.prerequisites) &&
       prerequisites.length !== entry.prerequisites.length
     ) {
-      warnings.push(`${label}: dropped a prerequisite that was not a number`);
+      warnings.push(msg("importWarnPrerequisiteNotNumber", undefined, label));
     } else if (!Array.isArray(entry.prerequisites)) {
-      warnings.push(`${label}: prerequisites were missing`);
+      warnings.push(msg("importWarnPrerequisitesMissing", undefined, label));
     }
 
     firstPass.push({
@@ -357,7 +374,10 @@ function normalizePatterns(
     );
     if (kept.length !== pattern.prerequisites.length) {
       warnings.push(
-        `${listLabel}: pattern "${pattern.name}" referenced a prerequisite that is not in the file`,
+        msg("importWarnPrerequisiteNotInFile", undefined, {
+          list: where.list,
+          pattern: pattern.name,
+        }),
       );
     }
     return kept.length === pattern.prerequisites.length
@@ -369,18 +389,18 @@ function normalizePatterns(
 function normalizeList(
   raw: unknown,
   index: number,
-  errors: string[],
-  warnings: string[],
+  errors: ImportMessage[],
+  warnings: ImportMessage[],
 ): PatternListWithPatterns | null {
   if (!isObject(raw)) {
-    errors.push(`List ${index + 1} is not an object`);
+    errors.push(msg("importErrorListNotObject", { index: index + 1 }));
     return null;
   }
   if (!isNonEmptyString(raw.id)) {
-    errors.push(`List ${index + 1} has no id`);
+    errors.push(msg("importErrorListNoId", { index: index + 1 }));
     return null;
   }
-  const label = `List "${asString(raw.name, raw.id)}"`;
+  const label: ImportMessageContext = { list: asString(raw.name, raw.id) };
 
   const patternTypes = normalizePatternTypes(raw.patternTypes, label, warnings);
   const modifiers = normalizeModifiers(raw.modifiers, label, warnings);
@@ -409,48 +429,48 @@ function normalizeList(
 
 function normalizeVideoMap(
   raw: unknown,
-  warnings: string[],
+  warnings: ImportMessage[],
 ): Record<string, string> {
   if (raw === undefined) return {};
   if (!isObject(raw)) {
-    warnings.push("The embedded video data was not readable and was ignored");
+    warnings.push(msg("importWarnVideoDataUnreadable"));
     return {};
   }
   const videos: Record<string, string> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (typeof value === "string") videos[key] = value;
-    else warnings.push(`Dropped unreadable video data for "${key}"`);
+    else warnings.push(msg("importWarnVideoEntryUnreadable", { path: key }));
   }
   return videos;
 }
 
 export function validateExportData(raw: unknown): ExportValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+  const errors: ImportMessage[] = [];
+  const warnings: ImportMessage[] = [];
 
   if (!isObject(raw)) {
     return {
       valid: false,
-      errors: ["The file is not a pattern list export"],
+      errors: [msg("importErrorNotAnExport")],
       warnings,
     };
   }
 
   const compatibility = canImport(raw.version);
   if (!compatibility.supported) {
-    const message =
+    const key =
       compatibility.reason === "tooNew"
-        ? "This file was made by a newer version of the app. Update to import it."
+        ? "importErrorTooNew"
         : compatibility.reason === "tooOld"
-          ? "This file was made by a version of the app that is no longer supported."
-          : "The file is not a pattern list export";
-    return { valid: false, errors: [message], warnings };
+          ? "importErrorTooOld"
+          : "importErrorNotAnExport";
+    return { valid: false, errors: [msg(key)], warnings };
   }
 
   if (!Array.isArray(raw.patternLists)) {
     return {
       valid: false,
-      errors: ["The file contains no pattern lists"],
+      errors: [msg("importErrorNoLists")],
       warnings,
     };
   }
@@ -461,7 +481,7 @@ export function validateExportData(raw: unknown): ExportValidationResult {
     const list = normalizeList(entry, index, errors, warnings);
     if (!list) return;
     if (seenListIds.has(list.id)) {
-      errors.push(`Two lists in the file share the id ${list.id}`);
+      errors.push(msg("importErrorDuplicateListId", { id: list.id }));
       return;
     }
     seenListIds.add(list.id);
