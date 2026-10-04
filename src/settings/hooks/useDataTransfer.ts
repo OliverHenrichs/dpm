@@ -16,6 +16,9 @@ import {
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 
+const errorText = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 export const useDataTransfer = () => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +52,7 @@ export const useDataTransfer = () => {
     } catch (error) {
       showDialog(
         t("error"),
-        `Failed to load pattern lists: ${error instanceof Error ? error.message : String(error)}`,
+        t("loadPatternListsFailed", { error: errorText(error) }),
       );
     }
   }, [t]);
@@ -82,10 +85,7 @@ export const useDataTransfer = () => {
           showDialog(t("error"), result.message);
         }
       } catch (error) {
-        showDialog(
-          t("error"),
-          `Export failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        showDialog(t("error"), t("exportFailed", { error: errorText(error) }));
       } finally {
         setIsLoading(false);
       }
@@ -108,10 +108,7 @@ export const useDataTransfer = () => {
         showDialog(t("error"), result.message);
       }
     } catch (error) {
-      showDialog(
-        t("error"),
-        `Import failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      showDialog(t("error"), t("importFailed", { error: errorText(error) }));
     } finally {
       setIsLoading(false);
     }
@@ -139,13 +136,13 @@ export const useDataTransfer = () => {
         await loadPatternLists();
         showDialog(
           t("success"),
-          `Imported ${importedCount} list(s), skipped ${skippedCount}`,
+          t("importSummary", {
+            imported: importedCount,
+            skipped: skippedCount,
+          }),
         );
       } catch (error) {
-        showDialog(
-          t("error"),
-          `Import failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        showDialog(t("error"), t("importFailed", { error: errorText(error) }));
       } finally {
         setIsLoading(false);
       }

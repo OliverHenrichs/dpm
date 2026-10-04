@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Modal, ScrollView, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import { useTranslation } from "react-i18next";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { AppText, Button, IconButton } from "@/src/common/ui";
@@ -101,6 +102,7 @@ const ReviewCard: React.FC<{
   const [added, setAdded] = useState(false);
 
   const player = useVideoPlayer(resultUri, (p) => {
+    capVideoBuffer(p);
     p.loop = true;
     p.play();
   });

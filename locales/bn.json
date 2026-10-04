@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "আপনার ভিডিও প্রসেসিং শেষ হয়েছে",
   "videoJobsNotifyReview": "ফলাফল দেখতে DPM খুলুন।",
   "videoJobsNotifyFailed": "কিছু ভুল হয়েছে। কী হয়েছে দেখতে DPM খুলুন।",
-  "videoJobsNotifyDone": "সবকিছু আপনার প্যাটার্নে সংরক্ষিত হয়েছে।"
+  "videoJobsNotifyDone": "সবকিছু আপনার প্যাটার্নে সংরক্ষিত হয়েছে।",
+  "importSummary": "{{imported}}টি তালিকা আমদানি হয়েছে, {{skipped}}টি বাদ দেওয়া হয়েছে",
+  "loadPatternListsFailed": "প্যাটার্ন তালিকা লোড করা যায়নি: {{error}}",
+  "exportFailed": "রপ্তানি ব্যর্থ: {{error}}",
+  "importFailed": "আমদানি ব্যর্থ: {{error}}"
 }

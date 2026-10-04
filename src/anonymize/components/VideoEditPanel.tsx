@@ -10,6 +10,7 @@ import { Button, Chip } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useEventListener } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import { useTranslation } from "react-i18next";
 import { getCommonRow } from "@/src/common/utils/CommonStyles";
 import TrimWindowBar from "@/src/anonymize/components/TrimWindowBar";
@@ -90,6 +91,7 @@ const VideoEditPanel: React.FC<Props> = ({
   const prompting = step === "prompt";
 
   const player = useVideoPlayer(sourceUri, (p) => {
+    capVideoBuffer(p);
     p.muted = true;
     p.timeUpdateEventInterval = 0.25;
   });

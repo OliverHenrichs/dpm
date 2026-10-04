@@ -4,6 +4,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { useEventListener } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import {
   AppText,
@@ -104,6 +105,7 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
   const [pickLanguage, setPickLanguage] = useState(false);
 
   const player = useVideoPlayer(target.sourceUri, (p) => {
+    capVideoBuffer(p);
     p.timeUpdateEventInterval = 0.25;
   });
   useEventListener(player, "timeUpdate", ({ currentTime }) =>

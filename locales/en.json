@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "Your video work is finished",
   "videoJobsNotifyReview": "Open DPM to review the results.",
   "videoJobsNotifyFailed": "Something went wrong. Open DPM to see what.",
-  "videoJobsNotifyDone": "Everything is saved to your patterns."
+  "videoJobsNotifyDone": "Everything is saved to your patterns.",
+  "importSummary": "Imported {{imported}} list(s), skipped {{skipped}}",
+  "loadPatternListsFailed": "Could not load the pattern lists: {{error}}",
+  "exportFailed": "Export failed: {{error}}",
+  "importFailed": "Import failed: {{error}}"
 }

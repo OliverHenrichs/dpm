@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "你的视频处理已完成",
   "videoJobsNotifyReview": "打开 DPM 查看结果。",
   "videoJobsNotifyFailed": "出了点问题。打开 DPM 查看详情。",
-  "videoJobsNotifyDone": "所有内容都已保存到你的舞步中。"
+  "videoJobsNotifyDone": "所有内容都已保存到你的舞步中。",
+  "importSummary": "已导入 {{imported}} 个列表，跳过 {{skipped}} 个",
+  "loadPatternListsFailed": "无法加载舞步列表：{{error}}",
+  "exportFailed": "导出失败：{{error}}",
+  "importFailed": "导入失败：{{error}}"
 }

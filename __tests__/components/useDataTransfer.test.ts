@@ -273,6 +273,20 @@ describe("useDataTransfer", () => {
       );
     });
 
+    it("reports it in the app's language", async () => {
+      const { result } = renderHookWithProviders(() => useDataTransfer(), {
+        language: "de",
+      });
+
+      await act(async () => {
+        await result.current.handleImport([decision(importable(), "replace")]);
+      });
+
+      expect(result.current.dialog?.message).toBe(
+        "1 Liste(n) importiert, 0 übersprungen",
+      );
+    });
+
     it("refreshes the on-screen lists afterwards", async () => {
       const { result } = await mount();
 

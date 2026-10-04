@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "Deine Videobearbeitung ist fertig",
   "videoJobsNotifyReview": "Öffne DPM, um die Ergebnisse anzusehen.",
   "videoJobsNotifyFailed": "Etwas ist schiefgelaufen. Öffne DPM, um zu sehen, was.",
-  "videoJobsNotifyDone": "Alles ist in deinen Figuren gespeichert."
+  "videoJobsNotifyDone": "Alles ist in deinen Figuren gespeichert.",
+  "importSummary": "{{imported}} Liste(n) importiert, {{skipped}} übersprungen",
+  "loadPatternListsFailed": "Die Figurenlisten konnten nicht geladen werden: {{error}}",
+  "exportFailed": "Export fehlgeschlagen: {{error}}",
+  "importFailed": "Import fehlgeschlagen: {{error}}"
 }

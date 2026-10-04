@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "A edição dos seus vídeos terminou",
   "videoJobsNotifyReview": "Abra o DPM para rever os resultados.",
   "videoJobsNotifyFailed": "Algo deu errado. Abra o DPM para ver o quê.",
-  "videoJobsNotifyDone": "Tudo foi salvo nos seus passos."
+  "videoJobsNotifyDone": "Tudo foi salvo nos seus passos.",
+  "importSummary": "{{imported}} lista(s) importada(s), {{skipped}} ignorada(s)",
+  "loadPatternListsFailed": "Não foi possível carregar as listas de figuras: {{error}}",
+  "exportFailed": "Falha na exportação: {{error}}",
+  "importFailed": "Falha na importação: {{error}}"
 }
