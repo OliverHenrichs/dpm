@@ -152,9 +152,10 @@ describe("PatternList rows and sections", () => {
   it("names type and level under a pattern, not its counts", () => {
     sectioned();
 
-    expect(screen.getByText("push · Beginner")).toBeOnTheScreen();
-    // No level set: the type stands alone.
-    expect(screen.getByText("whip")).toBeOnTheScreen();
+    expect(screen.getByText("push")).toBeOnTheScreen();
+    // Basic Whip has no level, so only two rows name one.
+    expect(screen.getAllByText("whip")).toHaveLength(2);
+    expect(screen.getAllByText("· Beginner")).toHaveLength(2);
     expect(screen.queryByText(/counts/i)).toBeNull();
     expect(screen.getByLabelText("Videos: 1")).toBeOnTheScreen();
   });

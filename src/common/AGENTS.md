@@ -34,7 +34,7 @@ display face, made for dancers) and *Clipboard* (dense, condensed, squared-off, 
 for trainers), picked in Settings next to the theme. Both are built by `buildTheme(style, scheme)`
 in `theme/tokens.ts` and share every token name, so a component never asks which style is on. What
 differs is values (`palettes`, the per-style `radius`, the type scale) plus `theme.list`, the few
-places the pattern list differs in shape (dot or lettered tile for the type, section header tone).
+places the pattern list differs in shape (the type named with a dot or as a filled tag, section header tone).
 Unistyles only knows two themes, `light` and `dark`, so adaptive themes and web's static render keep
 working; `ThemeProvider` persists the style (`@appStyle`) and fills both with it through
 `applyAppStyle` (`UnistylesRuntime.updateTheme`). `tokens.test.ts` checks every palette's contrast

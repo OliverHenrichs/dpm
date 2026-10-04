@@ -125,7 +125,7 @@ describe("ThemeProvider style", () => {
     await waitFor(() => expect(updateTheme).toHaveBeenCalledTimes(2));
     const [[first, update]] = updateTheme.mock.calls;
     expect(first).toBe("light");
-    expect(update({} as never).list.typeMarker).toBe("letter");
+    expect(update({} as never).list.typeLabel).toBe("tag");
   });
 
   it("ignores a stored style the app no longer ships", async () => {

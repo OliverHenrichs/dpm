@@ -54,9 +54,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
       0,
     );
   // The overview names what a pattern is; counts and the rest wait in the opened row.
-  const meta = [type?.slug, pattern.level ? t(pattern.level) : undefined]
-    .filter(Boolean)
-    .join(" · ");
+  const level = pattern.level ? t(pattern.level) : undefined;
 
   return (
     <View
@@ -65,12 +63,12 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
       <ListRow
         title={pattern.name}
         strong
-        leading={<TypeMarker slug={type?.slug} color={type?.color} />}
         subtitle={
           <View style={styles.metaLine}>
-            {!!meta && (
+            {type && <TypeLabel slug={type.slug} color={type.color} />}
+            {!!level && (
               <Text style={styles.metaText} numberOfLines={1}>
-                {meta}
+                {type ? `· ${level}` : level}
               </Text>
             )}
             {videoCount > 0 && (
@@ -144,26 +142,34 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
 };
 
 /**
- * The pattern's type at a glance: a dot in After Hours, a lettered tile in Clipboard
- * (`theme.list.typeMarker`). The colour is the user's, so the letter picks black or white.
+ * The pattern's type, named and in its colour: a dot before the name in After Hours, a filled
+ * tag in Clipboard (`theme.list.typeLabel`). The colour is the user's, so the tag's text picks
+ * black or white.
  */
-const TypeMarker: React.FC<{ slug?: string; color?: string }> = ({
+const TypeLabel: React.FC<{ slug: string; color: string }> = ({
   slug,
   color,
 }) => {
   const { theme } = useUnistyles();
-  const fill = color ?? theme.colors.borderStrong;
-  if (theme.list.typeMarker === "dot") {
-    return <View style={styles.dot(fill)} />;
+  if (theme.list.typeLabel === "dot") {
+    return (
+      <View style={styles.typeDotLabel}>
+        <View style={styles.dot(color)} />
+        <Text style={styles.metaText} numberOfLines={1}>
+          {slug}
+        </Text>
+      </View>
+    );
   }
   return (
-    <View style={styles.tile(fill)}>
+    <View style={styles.tag(color)}>
       <Text
-        style={styles.tileLetter(
-          prefersDarkText(fill) ? theme.media.black : theme.media.onScrim,
+        style={styles.tagText(
+          prefersDarkText(color) ? theme.media.black : theme.media.onScrim,
         )}
+        numberOfLines={1}
       >
-        {(slug?.[0] ?? "·").toUpperCase()}
+        {slug}
       </Text>
     </View>
   );
@@ -193,22 +199,27 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: theme.space.xxs,
   },
+  typeDotLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.xs,
+    flexShrink: 1,
+  },
   dot: (color: string) => ({
-    width: theme.space.md,
-    height: theme.space.md,
+    width: theme.space.sm,
+    height: theme.space.sm,
     borderRadius: theme.radius.pill,
     backgroundColor: color,
   }),
-  tile: (color: string) => ({
-    width: theme.space.xxl,
-    height: theme.space.xxxl,
+  tag: (color: string) => ({
+    flexShrink: 1,
+    paddingHorizontal: theme.space.xs,
+    paddingVertical: theme.space.xxs,
     borderRadius: theme.radius.xs,
-    alignItems: "center",
-    justifyContent: "center",
     backgroundColor: color,
   }),
-  tileLetter: (color: string) => ({
-    ...theme.typography.micro,
+  tagText: (color: string) => ({
+    ...theme.typography.badge,
     color,
   }),
   patternItemSelected: {

@@ -381,8 +381,8 @@ export function typeScale(
  * shape rather than in value.
  */
 export interface ListTokens {
-  /** A dot (After Hours) or a solid letter block (Clipboard) in the pattern's type colour. */
-  typeMarker: "dot" | "letter";
+  /** How a row names its type in the type's colour: a dot before the name, or a filled tag. */
+  typeLabel: "dot" | "tag";
   /** Space between rows. */
   rowGap: number;
   /** Section header colour: the text colour, or the brand colour as a label. */
@@ -393,13 +393,13 @@ export interface ListTokens {
 
 const listTokens: Record<AppStyle, ListTokens> = {
   afterHours: {
-    typeMarker: "dot",
+    typeLabel: "dot",
     rowGap: space.sm,
     sectionColor: "text",
     sectionUppercase: false,
   },
   clipboard: {
-    typeMarker: "letter",
+    typeLabel: "tag",
     rowGap: space.xxs,
     sectionColor: "primary",
     sectionUppercase: true,
