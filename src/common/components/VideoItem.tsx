@@ -1,5 +1,6 @@
 import { FC } from "react";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
@@ -14,6 +15,7 @@ type VideoItemProps = {
 /** Direct-URL / local video player powered by expo-video. */
 const DirectVideoItem: FC<VideoItemProps> = ({ videoRef }) => {
   const player = useVideoPlayer(videoRef.value, (p) => {
+    capVideoBuffer(p);
     p.loop = false;
     if (videoRef.startTime) {
       p.currentTime = videoRef.startTime;
