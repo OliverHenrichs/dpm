@@ -507,6 +507,42 @@ section:not(.band) .steps li {
   box-shadow: var(--shadow);
 }
 
+/* The video tools, step by step: crops of the app's sheets, so a lighter frame than a phone. */
+.video-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.shot-crop {
+  margin: 0;
+}
+
+.shot-crop img {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 0 auto;
+  border: 6px solid var(--frame);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.shot-crop figcaption {
+  max-width: 300px;
+  margin: 12px auto 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 860px) {
+  .video-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Illustrations share the page's colours, so they follow the theme. */
 .art-surface {
   fill: var(--surface);
