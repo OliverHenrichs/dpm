@@ -47,7 +47,7 @@ function generateShareCode(): string {
 function requireDb(): NonNullable<typeof db> {
   if (!firebaseAvailable || !db) {
     throw new Error(
-      "Firebase is not configured. Add firebase credentials to app.json extra.",
+      "Firebase is not configured. Set the FIREBASE_* variables (see .env.example).",
     );
   }
   return db;

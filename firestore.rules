@@ -1,0 +1,73 @@
+rules_version = '2';
+
+// Security rules for list sharing (src/firebase/). Deploy with
+// `npm run rules:deploy`; test with `npm run test:rules`.
+//
+// The app has no sign-in, so there is no identity to check: whoever knows a
+// share code can read that list, and the only write guard is the app token
+// every publish carries. That token ships inside the app and is copied into
+// every published document, so it keeps out drive-by writes, not a determined
+// one. These rules close what can be closed without sign-in:
+//
+// - nothing can enumerate the collection; a list is read by its code only;
+// - a write must be a well-formed shared list stored under its own code;
+// - nothing outside `sharedLists` can be read or written at all.
+//
+// The token is compared by its SHA-256, so the repository (public) holds only
+// the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in every
+// EAS environment, a rebuild, and a new hash below; old builds stop being able
+// to publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /sharedLists/{shareCode} {
+      // FirebaseListService.generateShareCode: 8 characters, 0-9 and A-Z.
+      function isShareCode() {
+        return shareCode.matches('^[0-9A-Z]{8}$');
+      }
+
+      function hasAppToken(data) {
+        return data.appToken is string
+          && hashing.sha256(data.appToken).toHexString().lower()
+            == 'ee5aebaefc65b937e5a9d46f6500688554af84a8d0011f25d835bfb36e90e05b';
+      }
+
+      // SharedListDocument, exactly as publishList() writes it.
+      function isSharedList(data) {
+        return data.keys().hasOnly(
+            ['list', 'patterns', 'publisherVersion', 'publishedAt', 'appToken'])
+          && data.keys().hasAll(
+            ['list', 'patterns', 'publisherVersion', 'publishedAt', 'appToken'])
+          && data.list is map
+          && data.list.id is string
+          && data.list.name is string
+          && data.list.shareCode == shareCode
+          && !('readonly' in data.list)
+          && data.patterns is list
+          && data.patterns.size() <= 5000
+          && data.publisherVersion is int
+          && data.publishedAt is string
+          && data.publishedAt.size() <= 40;
+      }
+
+      allow get: if isShareCode();
+      allow list: if false;
+
+      // publishList() uses setDoc, which is a create the first time and an
+      // update on every sync after it.
+      allow create, update: if isShareCode()
+        && hasAppToken(request.resource.data)
+        && isSharedList(request.resource.data);
+
+      // unpublishList() is a bare delete, which carries no data to check.
+      // Without sign-in there is no owner to compare against, so anyone with
+      // the code can delete. Closing this needs Firebase Auth (e.g. anonymous
+      // sign-in and an owner uid on the document).
+      allow delete: if isShareCode();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

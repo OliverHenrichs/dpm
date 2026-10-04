@@ -48,3 +48,7 @@ app-example
 /android
 /coverage/
 audit.json
+
+# Firebase emulator
+firestore-debug.log
+firebase-debug.log

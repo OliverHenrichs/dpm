@@ -3,26 +3,14 @@ import { getFirestore, Firestore } from "firebase/firestore";
 import Constants from "expo-constants";
 
 /**
- * Firebase configuration is loaded from app.json extra.firebase.
- * When the keys are absent the app runs in local-only mode and all
- * Firebase service calls are no-ops rather than crashes.
+ * Firebase configuration comes from `extra.firebase` in app.config.ts, which
+ * reads the FIREBASE_* environment variables (.env locally, EAS environment
+ * variables for builds; see .env.example). When they are absent the app runs
+ * in local-only mode and all Firebase service calls are no-ops rather than
+ * crashes.
  *
- * To configure, add to app.json:
- *   "extra": {
- *     "firebase": {
- *       "apiKey": "...",
- *       "authDomain": "your-project.firebaseapp.com",
- *       "projectId": "your-project",
- *       "storageBucket": "your-project.appspot.com",
- *       "messagingSenderId": "...",
- *       "appId": "..."
- *     },
- *     "firebaseAppToken": "YOUR_WRITE_TOKEN"
- *   }
- *
- * NOTE: Firestore API keys are NOT secret — they only identify the project.
- * Access is controlled entirely by Firestore Security Rules. It is safe to
- * commit this file to a public repository.
+ * NOTE: Firebase API keys are NOT secret — they only identify the project.
+ * Access is controlled by the Firestore Security Rules in firestore.rules.
  */
 const cfg = Constants.expoConfig?.extra?.firebase as
   Record<string, string> | undefined;
