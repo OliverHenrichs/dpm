@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Modal, ScrollView, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -25,6 +25,10 @@ import {
   segmentAt,
   transcriptExcerpt,
 } from "@/src/transcribe/excerpt";
+import {
+  followScrollTarget,
+  MANUAL_SCROLL_PAUSE_MS,
+} from "@/src/transcribe/followScroll";
 
 export type TranscriptTarget = {
   listId: string;
@@ -113,6 +117,24 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
   );
   const current = segmentAt(segments, playhead);
 
+  // Keep the line being said in view, unless the user scrolled the transcript a moment ago:
+  // following playback then would pull the text out from under their finger.
+  const scrollRef = useRef<ScrollView>(null);
+  const lineLayout = useRef(new Map<number, { y: number; height: number }>());
+  const viewport = useRef({ y: 0, height: 0, contentHeight: 0 });
+  const manualUntil = useRef(0);
+  useEffect(() => {
+    if (current < 0 || Date.now() < manualUntil.current) return;
+    const line = lineLayout.current.get(current);
+    if (!line) return;
+    const { contentHeight, ...view } = viewport.current;
+    const y = followScrollTarget(line, view, contentHeight);
+    if (y !== null) scrollRef.current?.scrollTo({ y, animated: true });
+  }, [current]);
+  const pauseFollowing = () => {
+    manualUntil.current = Date.now() + MANUAL_SCROLL_PAUSE_MS;
+  };
+
   // seekBy rather than assigning currentTime: the React Compiler treats the player returned
   // by a hook as immutable, and a method call is not a mutation to it.
   const playFrom = (seconds: number) => {
@@ -197,8 +219,22 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
       )}
 
       <ScrollView
+        ref={scrollRef}
         style={styles.lines}
         contentContainerStyle={styles.linesContent}
+        scrollEventThrottle={100}
+        onScroll={(e) => {
+          viewport.current.y = e.nativeEvent.contentOffset.y;
+        }}
+        onLayout={(e) => {
+          viewport.current.height = e.nativeEvent.layout.height;
+        }}
+        onContentSizeChange={(_, height) => {
+          viewport.current.contentHeight = height;
+        }}
+        onScrollBeginDrag={pauseFollowing}
+        onScrollEndDrag={pauseFollowing}
+        onMomentumScrollEnd={pauseFollowing}
       >
         {segments.length === 0 && (
           <AppText color="textMuted">{t("transcriptEmpty")}</AppText>
@@ -209,6 +245,10 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
             <View
               key={i}
               style={[styles.line, i === current && styles.currentLine]}
+              onLayout={(e) => {
+                const { y, height } = e.nativeEvent.layout;
+                lineLayout.current.set(i, { y, height });
+              }}
             >
               {onDescriptionChange && (
                 <IconButton
