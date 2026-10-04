@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "اكتملت معالجة مقاطع الفيديو",
   "videoJobsNotifyReview": "افتح DPM لمراجعة النتائج.",
   "videoJobsNotifyFailed": "حدث خطأ ما. افتح DPM لمعرفة السبب.",
-  "videoJobsNotifyDone": "تم حفظ كل شيء في خطواتك."
+  "videoJobsNotifyDone": "تم حفظ كل شيء في خطواتك.",
+  "importSummary": "تم استيراد {{imported}} قائمة، وتخطي {{skipped}}",
+  "loadPatternListsFailed": "تعذّر تحميل قوائم الحركات: {{error}}",
+  "exportFailed": "فشل التصدير: {{error}}",
+  "importFailed": "فشل الاستيراد: {{error}}"
 }

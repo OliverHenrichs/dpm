@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "Le traitement de vos vidéos est terminé",
   "videoJobsNotifyReview": "Ouvrez DPM pour vérifier les résultats.",
   "videoJobsNotifyFailed": "Un problème est survenu. Ouvrez DPM pour voir lequel.",
-  "videoJobsNotifyDone": "Tout est enregistré dans vos figures."
+  "videoJobsNotifyDone": "Tout est enregistré dans vos figures.",
+  "importSummary": "{{imported}} liste(s) importée(s), {{skipped}} ignorée(s)",
+  "loadPatternListsFailed": "Impossible de charger les listes de figures : {{error}}",
+  "exportFailed": "Échec de l'export : {{error}}",
+  "importFailed": "Échec de l'import : {{error}}"
 }

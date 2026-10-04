@@ -351,5 +351,9 @@
   "videoJobsNotifyTitle": "आपकी वीडियो प्रोसेसिंग पूरी हो गई",
   "videoJobsNotifyReview": "नतीजे देखने के लिए DPM खोलें।",
   "videoJobsNotifyFailed": "कुछ गड़बड़ हो गई। क्या हुआ, यह देखने के लिए DPM खोलें।",
-  "videoJobsNotifyDone": "सब कुछ आपके पैटर्न में सहेज दिया गया है।"
+  "videoJobsNotifyDone": "सब कुछ आपके पैटर्न में सहेज दिया गया है।",
+  "importSummary": "{{imported}} सूची आयात की गईं, {{skipped}} छोड़ी गईं",
+  "loadPatternListsFailed": "पैटर्न सूचियाँ लोड नहीं हो सकीं: {{error}}",
+  "exportFailed": "निर्यात विफल: {{error}}",
+  "importFailed": "आयात विफल: {{error}}"
 }
