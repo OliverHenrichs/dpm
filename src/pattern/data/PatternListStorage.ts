@@ -5,6 +5,7 @@ import {
   getGraphLayoutKey,
   GRAPH_LAYOUT_KEY_PREFIX,
 } from "@/src/pattern/graph/data/GraphLayoutKeys";
+import { generateShareKey } from "@/src/firebase/shareKey";
 
 // ---------------------------------------------------------------------------
 // Migration helpers — ensure old data without the modifiers fields still works
@@ -31,6 +32,31 @@ function normalizePatternList(list: IPatternList): IPatternList {
     ...rest,
     modifiers: rest.modifiers ?? [],
   };
+}
+
+/**
+ * Keep `shareKey` present exactly when the list is published by this device:
+ * it has a `shareCode` and is not a read-only (subscribed or imported) copy.
+ *
+ * A caller holding an older in-memory copy of the list may pass it without the
+ * key, so the stored one is kept while the share code is the same. Minting a
+ * new one there would lock this device out of its own published list, whose
+ * owner record holds the old key. A list published before keys existed gets
+ * its first one here (migration 002 re-saves every list for that).
+ */
+function withShareKey(
+  list: IPatternList,
+  previous: IPatternList | undefined,
+): IPatternList {
+  if (!list.shareCode || list.readonly) {
+    const { shareKey: _shareKey, ...rest } = list;
+    return rest;
+  }
+  if (list.shareKey) return list;
+  if (previous?.shareCode === list.shareCode && previous.shareKey) {
+    return { ...list, shareKey: previous.shareKey };
+  }
+  return { ...list, shareKey: generateShareKey() };
 }
 
 function normalizePattern(pattern: IPattern): IPattern {
@@ -104,7 +130,10 @@ export async function savePatternList(list: IPatternList): Promise<void> {
       const existingIndex = lists.findIndex((l) => l.id === list.id);
 
       const normalized = {
-        ...normalizePatternList(list),
+        ...withShareKey(
+          normalizePatternList(list),
+          existingIndex >= 0 ? lists[existingIndex] : undefined,
+        ),
         updatedAt: Date.now(),
       };
       if (existingIndex >= 0) {

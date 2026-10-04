@@ -160,6 +160,18 @@ jest.mock("firebase/firestore", () => ({
   setDoc: jest.fn(async () => undefined),
   deleteDoc: jest.fn(async () => undefined),
   onSnapshot: jest.fn(() => () => {}),
+  writeBatch: jest.fn(() => ({
+    set: jest.fn(),
+    delete: jest.fn(),
+    commit: jest.fn(async () => undefined),
+  })),
+}));
+
+jest.mock("firebase/auth", () => ({
+  initializeAuth: jest.fn(() => ({})),
+  getAuth: jest.fn(() => ({})),
+  getReactNativePersistence: jest.fn(),
+  signInAnonymously: jest.fn(async () => ({ user: { uid: "test-uid" } })),
 }));
 
 beforeEach(() => {

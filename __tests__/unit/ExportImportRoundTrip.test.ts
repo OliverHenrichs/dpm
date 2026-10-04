@@ -334,7 +334,7 @@ describe("export → import round trip", () => {
           { includeTranscripts: true },
         );
 
-        expect(exported.version).toBe("3.3.0");
+        expect(exported.version).toBe("3.4.0");
         expect(exported.includesTranscripts).toBe(true);
         const [restored] = importResult.patternLists![0].patterns;
         expect(restored.videoRefs[0].transcript).toEqual(transcript);
@@ -537,6 +537,30 @@ describe("export → import round trip", () => {
       // comes back editable. Recorded as observed behaviour, not endorsed;
       // see AGENT_TASKS.md.
       expect(importResult.patternLists![0].readonly).toBeUndefined();
+    });
+  });
+
+  describe("published lists (3.4)", () => {
+    const publishedList = () =>
+      listWith([], { shareCode: "ABCD1234", shareKey: "k".repeat(43) });
+
+    it("carries the share key in an editable export, so a new phone can take the list over", async () => {
+      const { importResult } = await roundTrip([publishedList()]);
+
+      expect(importResult.patternLists![0]).toMatchObject({
+        shareCode: "ABCD1234",
+        shareKey: "k".repeat(43),
+      });
+    });
+
+    it("leaves the share key out of a read-only export, which goes to other people", async () => {
+      const { exported, importResult } = await roundTrip([publishedList()], {
+        exportAsReadonly: true,
+      });
+
+      expect(exported.patternLists[0]).not.toHaveProperty("shareKey");
+      expect(importResult.patternLists![0]).not.toHaveProperty("shareKey");
+      expect(importResult.patternLists![0].shareCode).toBe("ABCD1234");
     });
   });
 

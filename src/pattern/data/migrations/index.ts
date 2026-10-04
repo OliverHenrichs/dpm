@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { migration001NormaliseShape } from "./001_normaliseShape";
+import { migration002ShareKeys } from "./002_shareKeys";
 
 /**
  * The shape this build expects stored data to be in.
@@ -10,7 +11,7 @@ import { migration001NormaliseShape } from "./001_normaliseShape";
  * and stops working for three, because nothing records what shape any given
  * record is actually in.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SCHEMA_VERSION_KEY = "@schemaVersion";
 
@@ -21,7 +22,10 @@ export interface Migration {
   run: () => Promise<void>;
 }
 
-const MIGRATIONS: Migration[] = [migration001NormaliseShape];
+const MIGRATIONS: Migration[] = [
+  migration001NormaliseShape,
+  migration002ShareKeys,
+];
 
 export interface MigrationOutcome {
   /** Version found in storage before anything ran. */

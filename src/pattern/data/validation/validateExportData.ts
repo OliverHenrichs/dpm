@@ -444,6 +444,8 @@ function normalizeList(
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : now,
     ...(raw.readonly === true && { readonly: true as const }),
     ...(isNonEmptyString(raw.shareCode) && { shareCode: raw.shareCode }),
+    // 3.4. Storage drops it again from a read-only copy.
+    ...(isNonEmptyString(raw.shareKey) && { shareKey: raw.shareKey }),
     // A dance this build does not know only loses its suggestions.
     ...(isDance(raw.dance) && { dance: raw.dance }),
     patterns,

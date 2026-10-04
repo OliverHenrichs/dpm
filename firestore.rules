@@ -3,36 +3,51 @@ rules_version = '2';
 // Security rules for list sharing (src/firebase/). Deploy with
 // `npm run rules:deploy`; test with `npm run test:rules`.
 //
-// The app has no sign-in, so there is no identity to check: whoever knows a
-// share code can read that list, and the only write guard is the app token
-// every publish carries. That token ships inside the app and is copied into
-// every published document, so it keeps out drive-by writes, not a determined
-// one. These rules close what can be closed without sign-in:
+// Subscribers never sign in: whoever knows a share code can read that list.
+// Publishers sign in anonymously (no account, just a stable id), and every
+// list has an owner record under the same code in `sharedListOwners`, which
+// nobody can read. Only the owner on record may update or delete a list.
+// Ownership moves to whoever presents the list's share key, which the
+// publisher's phone holds and editable exports carry.
 //
-// - nothing can enumerate the collection; a list is read by its code only;
-// - a write must be a well-formed shared list stored under its own code;
-// - nothing outside `sharedLists` can be read or written at all.
+// - nothing can enumerate either collection; a list is read by its code only;
+// - a write must be a well-formed shared list stored under its own code,
+//   carrying the app token;
+// - nothing outside these two collections can be read or written at all.
 //
-// The token is compared by its SHA-256, so the repository (public) holds only
-// the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in every
-// EAS environment, a rebuild, and a new hash below; old builds stop being able
-// to publish.
+// The app token is compared by its SHA-256, so the repository (public) holds
+// only the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in
+// every EAS environment, a rebuild, and a new hash below; old builds stop
+// being able to publish.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /sharedLists/{shareCode} {
-      // FirebaseListService.generateShareCode: 8 characters, 0-9 and A-Z.
-      function isShareCode() {
-        return shareCode.matches('^[0-9A-Z]{8}$');
-      }
+    // FirebaseListService.generateShareCode: 8 characters, 0-9 and A-Z.
+    function isShareCode(code) {
+      return code.matches('^[0-9A-Z]{8}$');
+    }
 
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownerPath(code) {
+      return /databases/$(database)/documents/sharedListOwners/$(code);
+    }
+
+    function listPath(code) {
+      return /databases/$(database)/documents/sharedLists/$(code);
+    }
+
+    match /sharedLists/{shareCode} {
       function hasAppToken(data) {
         return data.appToken is string
           && hashing.sha256(data.appToken).toHexString().lower()
             == 'ee5aebaefc65b937e5a9d46f6500688554af84a8d0011f25d835bfb36e90e05b';
       }
 
-      // SharedListDocument, exactly as publishList() writes it.
+      // SharedListDocument, exactly as publishList() writes it. The share
+      // key must never be in it: subscribers read this document.
       function isSharedList(data) {
         return data.keys().hasOnly(
             ['list', 'patterns', 'publisherVersion', 'publishedAt', 'appToken'])
@@ -43,6 +58,7 @@ service cloud.firestore {
           && data.list.name is string
           && data.list.shareCode == shareCode
           && !('readonly' in data.list)
+          && !('shareKey' in data.list)
           && data.patterns is list
           && data.patterns.size() <= 5000
           && data.publisherVersion is int
@@ -50,20 +66,56 @@ service cloud.firestore {
           && data.publishedAt.size() <= 40;
       }
 
-      allow get: if isShareCode();
+      allow get: if isShareCode(shareCode);
       allow list: if false;
 
-      // publishList() uses setDoc, which is a create the first time and an
-      // update on every sync after it.
-      allow create, update: if isShareCode()
+      // publishList() writes the owner record and the list in one batch, so
+      // the owner is checked as it stands once the batch has applied.
+      allow create, update: if isShareCode(shareCode)
+        && signedIn()
         && hasAppToken(request.resource.data)
-        && isSharedList(request.resource.data);
+        && isSharedList(request.resource.data)
+        && getAfter(ownerPath(shareCode)).data.ownerUid == request.auth.uid;
 
-      // unpublishList() is a bare delete, which carries no data to check.
-      // Without sign-in there is no owner to compare against, so anyone with
-      // the code can delete. Closing this needs Firebase Auth (e.g. anonymous
-      // sign-in and an owner uid on the document).
-      allow delete: if isShareCode();
+      // A delete carries no data, so the caller is compared with the owner on
+      // record; unpublishList() first takes ownership with the key if needed.
+      allow delete: if isShareCode(shareCode)
+        && signedIn()
+        && get(ownerPath(shareCode)).data.ownerUid == request.auth.uid;
+    }
+
+    match /sharedListOwners/{shareCode} {
+      function isOwnerRecord(data) {
+        return data.keys().hasOnly(['ownerUid', 'key'])
+          && data.keys().hasAll(['ownerUid', 'key'])
+          && data.ownerUid == request.auth.uid
+          && data.key is string
+          && data.key.size() >= 32
+          && data.key.size() <= 128;
+      }
+
+      // The record holds the key, so nobody may read it, owner included.
+      allow read: if false;
+
+      // A new list, or a list published before owner records existed. The
+      // second is claimed by the first signed-in publish of it, which in the
+      // app only its publisher's phone makes; a subscriber working outside
+      // the app could claim it first. That window closes on the date below,
+      // after which a list still without an owner can no longer be changed.
+      allow create: if isShareCode(shareCode)
+        && signedIn()
+        && isOwnerRecord(request.resource.data)
+        && (!exists(listPath(shareCode))
+          || request.time < timestamp.date(2027, 4, 1));
+
+      // Same key: either nothing changes, or ownership moves to the caller
+      // (the publisher after a reinstall, or on a new phone).
+      allow update: if signedIn()
+        && isOwnerRecord(request.resource.data)
+        && request.resource.data.key == resource.data.key;
+
+      allow delete: if signedIn()
+        && resource.data.ownerUid == request.auth.uid;
     }
 
     match /{document=**} {
