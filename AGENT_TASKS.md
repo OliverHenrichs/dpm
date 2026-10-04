@@ -1525,7 +1525,8 @@ What the columns changed:
   user saw the same quality on clips 1 and 4.
 
 Further levers, each smaller than those above:
-- pose on every second frame, with joints interpolated
+- pose on every second frame, with joints interpolated — done 2026-10-04: pose had grown to
+  ~135 ms of ~707 ms per frame (19 s couple clip, dev build); it now runs on tracked frames only
 - converting the tracking graphs with batch 2, so both dancers go in one call
 
 The open items moved to the next section.

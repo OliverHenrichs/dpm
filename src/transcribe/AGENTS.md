@@ -25,6 +25,9 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
   sentences through the job's `errorKey`.
 - `whisper.ts` is the one importer of `whisper.rn`; `whisper.web.ts` stubs it for web, because the
   package reads its native module at import.
+- The Whisper and VAD contexts stay loaded between transcriptions, but a shorten or anonymize job
+  unloads them first (`releaseTranscriptionContexts`): Whisper holds ~250 MB of native memory the
+  silhouette pipeline needs.
 
 ## Models (`models.ts`, `modelStore.ts`)
 
