@@ -6,6 +6,7 @@ import {
   exportPatternLists,
 } from "@/src/pattern/data/exportPatterns";
 import { importPatternLists } from "@/src/pattern/data/ImportPatterns";
+import { formatImportMessages } from "@/src/pattern/data/validation/importMessages";
 import { ImportDecision } from "@/src/pattern/data/components/PatternListImportModal";
 import {
   loadAllPatternLists,
@@ -105,7 +106,7 @@ export const useDataTransfer = () => {
         setImportedLists(result.patternLists);
         setShowImportModal(true);
       } else {
-        showDialog(t("error"), result.message);
+        showDialog(t("error"), formatImportMessages(t, result.errors));
       }
     } catch (error) {
       showDialog(t("error"), t("importFailed", { error: errorText(error) }));

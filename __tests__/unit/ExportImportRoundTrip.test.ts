@@ -1,3 +1,4 @@
+import { importText } from "@/utils/importMessageText";
 import * as Sharing from "expo-sharing";
 import { getDocumentAsync } from "expo-document-picker";
 import { File } from "expo-file-system";
@@ -501,7 +502,7 @@ describe("export → import round trip", () => {
         includeVideos: false,
       });
 
-      expect(importResult.message).not.toMatch(/Warning/i);
+      expect(importResult.warnings).toEqual([]);
     });
   });
 
@@ -589,7 +590,9 @@ describe("export → import round trip", () => {
 
       expect(exported.videos).toEqual({});
       expect(importResult.success).toBe(true);
-      expect(importResult.message).toContain("Video data missing");
+      expect(importText(importResult.warnings)).toContain(
+        "The data for a video is missing",
+      );
       expect(importResult.patternLists![0].patterns[0].videoRefs).toEqual([]);
     });
 
@@ -679,7 +682,7 @@ describe("export → import round trip", () => {
       const result = await importPatternLists();
 
       expect(result.success).toBe(false);
-      expect(result.message).toMatch(/Import failed/);
+      expect(importText(result.errors)).toMatch(/Import failed/);
     });
 
     it("rejects a JSON file that is not an export", async () => {
@@ -692,7 +695,9 @@ describe("export → import round trip", () => {
       const result = await importPatternLists();
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("The file is not a pattern list export");
+      expect(importText(result.errors)).toBe(
+        "The file is not a pattern list export.",
+      );
     });
 
     it("rejects an export with no version", async () => {
@@ -708,7 +713,9 @@ describe("export → import round trip", () => {
       const result = await importPatternLists();
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("The file is not a pattern list export");
+      expect(importText(result.errors)).toBe(
+        "The file is not a pattern list export.",
+      );
     });
 
     it("reports a missing file instead of throwing", async () => {
@@ -720,7 +727,7 @@ describe("export → import round trip", () => {
       const result = await importPatternLists();
 
       expect(result.success).toBe(false);
-      expect(result.message).toMatch(/Import failed/);
+      expect(importText(result.errors)).toMatch(/Import failed/);
     });
   });
 
