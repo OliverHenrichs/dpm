@@ -17,6 +17,7 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 | `site.js` | The style switcher, loaded in every page's `<head>` so a returning visitor's style is set before the first paint |
 | `fonts/` | DM Serif Display, Manrope, IBM Plex Sans Condensed and IBM Plex Mono as WOFF2, subset to Latin from `assets/fonts/`, with their OFL licences |
 | `privacy.html` | **Generated** from `/PRIVACY_POLICY.md` by `build-privacy.py`. Edit the Markdown, not the HTML |
+| `alpha.html` | Notes for the closed-test (alpha) testers: what the build does, its known limitations, where to send feedback. Hand-written; keep it in step with the release |
 | `404.html` | Not-found page, with absolute paths (see "Moving the site" below) |
 | `img/shots/` | App screenshots, 600 px wide. Each shot comes four times: `name-ah.webp`, `name-ah-dark.webp` (After Hours) and `name-cb.webp`, `name-cb-dark.webp` (Clipboard); the page shows the copy for the current style (`.for-ah`, `.for-cb`) |
 | `img/` | Logo, favicons and the social preview image, derived from `assets/images/app-icon.png` and `store-assets/play-store-feature-graphic.png` |
