@@ -10,6 +10,10 @@
 const fs = require("fs");
 
 const ACCEPTED = {
+  // jest-expo -> babel-jest -> babel-plugin-istanbul -> js-yaml@3 -> argparse@1 -> sprintf-js.
+  // Test coverage tooling only, never in the app bundle, and fed only our own config.
+  // No patched release exists (1.1.3 is the latest and is affected).
+  "GHSA-hp3w-g68c-fv3c": { name: "sprintf-js", until: "2026-12-01" },
   // expo-router -> query-string@7 -> decode-uri-component. The fix is ESM-only
   // and cannot be forced under a CJS parent; waits for expo-router upstream.
   "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2026-11-01" },
