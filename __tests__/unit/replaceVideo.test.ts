@@ -1,6 +1,7 @@
 import {
   applyReplacements,
   clearReplacements,
+  MAX_VIDEOS,
   recordReplacement,
   replaceVideoInPattern,
 } from "@/src/anonymize/jobs/replaceVideo";
@@ -57,11 +58,13 @@ describe("replaceVideoInPattern", () => {
     ]);
   });
 
-  it("never grows a full group past three videos", () => {
-    const full = [
-      { type: "local" as const, value: OLD },
-      other,
-      { type: "url" as const, value: "https://y.tube/z" },
+  it("never grows a full group past MAX_VIDEOS", () => {
+    const full: IVideoReference[] = [
+      { type: "local", value: OLD },
+      ...Array.from({ length: MAX_VIDEOS - 1 }, (_, i) => ({
+        type: "url" as const,
+        value: `https://y.tube/${i}`,
+      })),
     ];
     const p = createTestPattern("t", { videoRefs: full });
     expect(

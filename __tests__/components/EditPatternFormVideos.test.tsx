@@ -1,6 +1,7 @@
 import React from "react";
 import * as ImagePicker from "expo-image-picker";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
+import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
 import { readFileBytes, seedBinaryFile } from "@/__mocks__/expo-file-system";
 import {
   IModifier,
@@ -203,7 +204,7 @@ describe("EditPatternForm — videos", () => {
       expect(saved().videoRefs).toEqual([]);
     });
 
-    it("only asks for as many as will fit under the cap of three", async () => {
+    it("only asks for as many as will fit under the cap", async () => {
       mockedPicker.mockResolvedValue({ canceled: true } as never);
       renderForm(
         createTestPattern(TYPE.id, {
@@ -221,7 +222,7 @@ describe("EditPatternForm — videos", () => {
 
       await waitFor(() =>
         expect(mockedPicker).toHaveBeenCalledWith(
-          expect.objectContaining({ selectionLimit: 2 }),
+          expect.objectContaining({ selectionLimit: MAX_VIDEOS - 1 }),
         ),
       );
     });
@@ -244,17 +245,15 @@ describe("EditPatternForm — videos", () => {
     });
   });
 
-  describe("the three-video cap", () => {
-    it("disables adding once three are attached", () => {
+  describe("the video cap", () => {
+    it("disables adding once MAX_VIDEOS are attached", () => {
       renderForm(
         createTestPattern(TYPE.id, {
           id: 1,
           name: "Whip",
-          videoRefs: [
-            localVideo("file:///a.mp4"),
-            localVideo("file:///b.mp4"),
-            localVideo("file:///c.mp4"),
-          ],
+          videoRefs: Array.from({ length: MAX_VIDEOS }, (_, i) =>
+            localVideo(`file:///${i}.mp4`),
+          ),
         }),
       );
 

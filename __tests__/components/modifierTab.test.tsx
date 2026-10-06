@@ -2,6 +2,7 @@ import React from "react";
 import { Switch } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import ModifierList from "@/src/pattern/list/ModifierList";
+import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
 import {
   IModifier,
@@ -342,15 +343,13 @@ describe("EditModifierForm", () => {
       expect(saved().videoRefs).toEqual([localVideo("file:///b.mp4")]);
     });
 
-    it("stops at three", () => {
+    it("stops at MAX_VIDEOS", () => {
       renderForm(
         modifier("slow", {
           universal: true,
-          videoRefs: [
-            localVideo("file:///a.mp4"),
-            localVideo("file:///b.mp4"),
-            localVideo("file:///c.mp4"),
-          ],
+          videoRefs: Array.from({ length: MAX_VIDEOS }, (_, i) =>
+            localVideo(`file:///${i}.mp4`),
+          ),
         }),
       );
 
