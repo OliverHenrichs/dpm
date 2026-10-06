@@ -60,6 +60,15 @@ Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB).
   (`excerpt.ts`). It hosts the suggestion panel (`src/suggest/`). Without the form's callbacks it
   is read-only: `PatternDetails` (list rows, the Map's details) opens it from *Show transcript*
   under the video carousel, pausing the carousel's player.
+- **Corrections.** In the form (the Speech tab and the sheet opened from it), each line has a pencil
+  that turns it into a text field (`TranscriptLineEditor.tsx`); emptying a line and saving removes
+  it. `correctTranscriptLine` (`src/pattern/data/transcripts.ts`) is the one place a line changes,
+  old and new text in hand, and stamps `editedAt`, which makes the Speech tab warn that
+  *Transcribe again* replaces the corrections. A correction lives in the form's draft and is
+  stored with the pattern's Save. The read-only view never offers the pencil. A finished job puts
+  its transcript on through `withTranscript`, which leaves a video holding that transcription (or a
+  later one) alone, because `applyReplacements` re-applies the job's update to every draft saved
+  later in the session and would otherwise put the model's words back.
 - `hooks/useStartTranscription.ts` starts a job with the active list's vocabulary, optionally going
   on to suggest.
 - A transcribed video's thumbnail carries a badge that opens the transcript.

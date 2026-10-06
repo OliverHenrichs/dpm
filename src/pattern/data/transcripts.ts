@@ -60,3 +60,56 @@ export function trimTranscript(
       })),
   };
 }
+
+/**
+ * The transcript with the line at [index] corrected to [text] by hand: the model mishears dance
+ * slang ("sugar bush", "whipped"). A line corrected to nothing is removed. Times stay as they
+ * were, so the line still plays from where it was said.
+ */
+export function correctTranscriptLine(
+  transcript: IVideoTranscript,
+  index: number,
+  text: string,
+  now: number = Date.now(),
+): IVideoTranscript {
+  const segment = transcript.segments[index];
+  const corrected = text.trim();
+  if (!segment || corrected === segment.text) return transcript;
+  return {
+    ...transcript,
+    editedAt: now,
+    segments: corrected
+      ? transcript.segments.map((s, i) =>
+          i === index ? { ...s, text: corrected } : s,
+        )
+      : transcript.segments.filter((_, i) => i !== index),
+  };
+}
+
+/**
+ * Puts a finished transcription on a video, unless the video already holds this one or a later
+ * one. A job's update is applied again to every draft saved later in the session
+ * (`applyReplacements`), and must not put the model's words back over the user's corrections.
+ */
+export const withTranscript =
+  (transcript: IVideoTranscript) =>
+  (ref: IVideoReference): IVideoReference =>
+    ref.transcript && ref.transcript.createdAt >= transcript.createdAt
+      ? ref
+      : { ...ref, transcript };
+
+/** The pattern with [transcript] on the video at [uri], wherever it holds it. */
+export function setVideoTranscript<
+  T extends Pick<IPattern, "videoRefs" | "modifierRefs">,
+>(pattern: T, uri: string, transcript: IVideoTranscript): T {
+  const set = (refs: IVideoReference[]) =>
+    refs.map((ref) => (ref.value === uri ? { ...ref, transcript } : ref));
+  return {
+    ...pattern,
+    videoRefs: set(pattern.videoRefs ?? []),
+    modifierRefs: (pattern.modifierRefs ?? []).map((m) => ({
+      ...m,
+      videoRefs: set(m.videoRefs),
+    })),
+  };
+}

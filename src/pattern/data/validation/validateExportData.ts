@@ -180,6 +180,7 @@ function normalizeTranscript(
     language: raw.language,
     model: raw.model,
     createdAt: raw.createdAt,
+    ...(isFiniteNumber(raw.editedAt) && { editedAt: raw.editedAt }),
     segments: segments.sort((a, b) => a.start - b.start),
   };
 }

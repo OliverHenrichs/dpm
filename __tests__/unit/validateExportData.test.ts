@@ -511,6 +511,15 @@ describe("validateExportData", () => {
         expect(result.warnings).toEqual([]);
       });
 
+      it("keeps when the lines were last corrected by hand", () => {
+        const result = withTranscript({ ...TRANSCRIPT, editedAt: 5 });
+
+        expect(
+          result.data!.patternLists[0].patterns[0].videoRefs[0].transcript!
+            .editedAt,
+        ).toBe(5);
+      });
+
       it("drops only the lines that are not lines, with a warning", () => {
         const result = withTranscript({
           ...TRANSCRIPT,

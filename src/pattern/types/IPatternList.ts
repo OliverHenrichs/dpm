@@ -103,6 +103,11 @@ export interface IVideoTranscript {
   model: string;
   /** Epoch milliseconds. */
   createdAt: number;
+  /**
+   * Epoch milliseconds of the user's last correction to a line, when they made one: the model
+   * mishears dance slang. Transcribing again replaces the corrections, so the app says so.
+   */
+  editedAt?: number;
   /** In playback order. Empty when the video has sound but no speech. */
   segments: ITranscriptSegment[];
 }
