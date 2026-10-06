@@ -34,6 +34,9 @@ import {
   installedModels,
   ModelDownloadError,
 } from "@/src/transcribe/modelStore";
+import { applyLearnedCorrections } from "@/src/transcribe/corrections";
+import { loadCorrections } from "@/src/transcribe/data/CorrectionStorage";
+import { promptFromTerms } from "@/src/transcribe/vocabulary";
 import { SUGGESTION_MODEL } from "@/src/suggest/models";
 import {
   runSuggestion,
@@ -130,8 +133,8 @@ export type TranscribeRequest = {
   sourceUri: string;
   /** ISO 639-1, or omitted to detect it. */
   language?: string;
-  /** Whisper's initial prompt — the list's own words (see vocabularyPrompt). */
-  vocabulary?: string;
+  /** The list's words for Whisper's prompt, most likely said first (see vocabularyTerms). */
+  vocabulary?: string[];
   /**
    * Then suggest a name and description from the transcript, downloading the suggestion model
    * first when it is missing (the user agreed to that, told its size, before starting).
@@ -424,6 +427,9 @@ async function process(
  */
 const DOWNLOAD_SHARE = 0.3;
 
+/** How many of the list's newest transcript corrections lead Whisper's prompt. */
+const PROMPT_CORRECTIONS = 5;
+
 /** Share of a transcribe-and-suggest job's count that the transcript takes. */
 const TRANSCRIPT_SHARE = 0.6;
 
@@ -444,9 +450,16 @@ async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
     base = DOWNLOAD_SHARE * end;
   }
   if (cancelled.delete(id)) return;
+  // What the user fixed in the list's earlier transcripts: applied to this one, and the newest
+  // fixes lead the prompt, being words Whisper is known to mishear.
+  const corrections = await loadCorrections(job.listId);
+  const prompt = promptFromTerms([
+    ...corrections.slice(0, PROMPT_CORRECTIONS).map((c) => c.to),
+    ...(job.request.vocabulary ?? []),
+  ]);
   const { promise, stop } = transcribeVideo(job.request.sourceUri, {
     language: job.request.language,
-    prompt: job.request.vocabulary,
+    ...(prompt && { prompt }),
     onProgress: (fraction) =>
       patch(id, { progress: base + fraction * (end - base) }),
   });
@@ -457,6 +470,7 @@ async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
   } finally {
     stopRunning = null;
   }
+  transcript = applyLearnedCorrections(transcript, corrections);
   await attach(job.listId, job.request.sourceUri, withTranscript(transcript));
   if (!suggest || transcript.segments.length === 0) {
     patch(id, {

@@ -303,6 +303,8 @@
   "speechModelInstalled": "على هذا الهاتف",
   "speechModelMissing": "غير مُنزَّل",
   "speechModelHint": "يفرّغ ما يُقال في مقاطع الفيديو. يُنزَّل مع أول عملية تفريغ.",
+  "speechModelAccurate": "نموذج كلام دقيق",
+  "speechModelAccurateHint": "يفهم اللكنات ومصطلحات الرقص بشكل أفضل، لكنه أبطأ. بعد تنزيله، يستخدمه التفريغ بدلًا من نموذج الكلام.",
   "includeTranscriptsInExport": "تضمين النصوص المفرغة",
   "includeTranscriptsHint": "ما قاله المعلمون في مقاطع الفيديو سيُرسَل معها. اتركه مُعطّلاً ما لم يكن على المستلمين قراءته.",
   "includeTranscriptsNeedsVideos": "النصوص المفرغة تنتقل مع مقاطعها: ضمّن مقاطع الفيديو أولاً.",

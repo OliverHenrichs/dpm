@@ -13,13 +13,26 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
 
 - **VAD times are centiseconds**, whatever whisper.rn's README says (`speechRegions.ts`). Regions
   under 0.4 s are dropped, the rest padded by 0.25 s and joined across gaps up to 1.5 s.
-- The language is detected on the first region and fixed for the rest; no speech at all gives an
-  empty transcript in `"und"`. *Wrong language?* in the sheet re-runs with one of the app's nine.
+- The language is detected on the **longest** region, transcribed first, and fixed for the rest
+  (a short opening "okay, so…" guessed it badly); lines are put back in clip order. No speech at
+  all gives an empty transcript in `"und"`. *Wrong language?* in the sheet re-runs with one of the
+  app's nine.
+- Whisper decodes with **beam search** (`BEAM_SIZE` 5), not whisper.cpp's greedy default: more
+  words right and fewer repeated phrases, for some speed.
 - `segments.ts` drops annotations (`[MUSIC]`, `(laughs)`, `♪`) and splits lines longer than
   `MAX_SEGMENT_CHARS` at sentence ends, then commas, sharing time out by length.
-- `vocabulary.ts` builds Whisper's prompt from the list's own words (pattern names first, then
-  types, modifiers, tags) so it hears "sugar push", not "sugar bush". **Capped at 224 characters**:
-  a longer prompt slowed decoding and merged segments.
+- `vocabulary.ts` builds Whisper's prompt from the list's own words so it hears "sugar push", not
+  "sugar bush": the video's own pattern, its modifiers and prerequisites first
+  (`patternWithVideo`, or the form's name for an unsaved pattern), then the list's pattern names,
+  the dance's standard terms (`glossary.ts`, when the list has a dance), types, modifiers, tags.
+  **Capped at 224 characters**: a longer prompt slowed decoding and merged segments. The job puts
+  the list's newest learned corrections in front (below).
+- **Learned corrections** (`corrections.ts`, `data/CorrectionStorage.ts`): when the user fixes a
+  line, the changed words (a run of at most four on each side; not case, punctuation, added or
+  removed words) are remembered per list under `@transcriptCorrections_{listId}`, newest first,
+  at most 100. Every later transcript of the list has them applied as whole words, and the five
+  newest lead the prompt. An edit that undoes a remembered fix forgets it instead of learning the
+  reverse. Local only, never exported or published; the key goes with its list.
 - Returns `{ promise, stop }`; only transcription can be cancelled while running.
   `ModelsMissingError` and `NoAudioError` (a silhouette has no sound) are distinct, and surface as
   sentences through the job's `errorKey`.
@@ -46,7 +59,11 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
 - Settings → *On-device models* (`src/settings/components/DeviceModelsSection.tsx`) lists them,
   downloads ahead of first use, and deletes.
 
-Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB).
+Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB), downloaded with the first
+transcription; and Whisper small q5_1 (190 MB), the optional **accurate** model, downloaded only
+from Settings (its own row). Once it is on the phone `installedModels()` picks it over base, the
+transcript's `model` records which one heard it, and a loaded context of the other model is
+released first. Deleting it goes back to base.
 
 ## UI
 

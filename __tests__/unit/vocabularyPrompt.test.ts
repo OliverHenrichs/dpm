@@ -1,4 +1,8 @@
-import { vocabularyPrompt } from "@/src/transcribe/vocabulary";
+import {
+  patternWithVideo,
+  promptFromTerms,
+  vocabularyPrompt,
+} from "@/src/transcribe/vocabulary";
 import { generateUUID } from "@/src/pattern/types/PatternType";
 import {
   createTestPattern,
@@ -67,5 +71,87 @@ describe("vocabularyPrompt", () => {
     expect(
       vocabularyPrompt(createTestPatternList({ patternTypes: [] }), []),
     ).toBe("");
+  });
+
+  it("puts the video's pattern, its modifiers and prerequisites first", () => {
+    const duck = {
+      id: generateUUID(),
+      name: "with duck",
+      position: "postfix" as const,
+      universal: false,
+      videoRefs: [],
+    };
+    const others = Array.from({ length: 40 }, (_, i) =>
+      createTestPattern(push.id, { id: i + 1, name: `Pattern number ${i}` }),
+    );
+    const basic = createTestPattern(whip.id, { id: 50, name: "Basic Whip" });
+    const inside = createTestPattern(whip.id, {
+      id: 51,
+      name: "Inside Turn Whip",
+      prerequisites: [50],
+      modifierRefs: [{ modifierId: duck.id, videoRefs: [] }],
+    });
+
+    const prompt = vocabularyPrompt(
+      list({ modifiers: [duck] }),
+      [...others, basic, inside],
+      { name: "Inside Turn Whip", pattern: inside },
+    );
+
+    expect(prompt).toMatch(
+      /^Inside Turn Whip, with duck, Basic Whip, Pattern number 0,/,
+    );
+  });
+
+  it("names a new pattern by its name in the form", () => {
+    expect(vocabularyPrompt(list(), [], { name: "Starter Step" })).toBe(
+      "Starter Step, push, whip.",
+    );
+  });
+
+  it("adds the dance's standard terms after the list's own pattern names", () => {
+    const patterns = [
+      createTestPattern(push.id, { id: 1, name: "Sugar Push" }),
+    ];
+
+    const prompt = vocabularyPrompt(list({ dance: "wcs" }), patterns);
+
+    expect(prompt).toMatch(/^Sugar Push, anchor step, left side pass,/);
+    // Said once, though the glossary has it too.
+    expect(prompt.match(/sugar push/gi)).toHaveLength(1);
+  });
+});
+
+describe("promptFromTerms", () => {
+  it("keeps the first of each term and ends with a full stop", () => {
+    expect(promptFromTerms(["sugar push", "Sugar Push", " whip "])).toBe(
+      "sugar push, whip.",
+    );
+  });
+});
+
+describe("patternWithVideo", () => {
+  it("finds the pattern carrying a video, on itself or on a modifier", () => {
+    const own = createTestPattern(push.id, {
+      id: 1,
+      videoRefs: [{ type: "local", value: "file:///a.mp4" }],
+    });
+    const onModifier = createTestPattern(push.id, {
+      id: 2,
+      modifierRefs: [
+        {
+          modifierId: "m",
+          videoRefs: [{ type: "local", value: "file:///b.mp4" }],
+        },
+      ],
+    });
+
+    expect(patternWithVideo([own, onModifier], "file:///a.mp4")).toBe(own);
+    expect(patternWithVideo([own, onModifier], "file:///b.mp4")).toBe(
+      onModifier,
+    );
+    expect(
+      patternWithVideo([own, onModifier], "file:///c.mp4"),
+    ).toBeUndefined();
   });
 });

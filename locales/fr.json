@@ -303,6 +303,8 @@
   "speechModelInstalled": "Sur ce téléphone",
   "speechModelMissing": "Non téléchargé",
   "speechModelHint": "Transcrit ce qui est dit dans les vidéos. Téléchargé lors de la première transcription.",
+  "speechModelAccurate": "Modèle vocal précis",
+  "speechModelAccurateHint": "Comprend mieux les accents et les termes de danse, mais il est plus lent. Une fois téléchargé, la transcription l’utilise à la place du modèle vocal.",
   "includeTranscriptsInExport": "Inclure les transcriptions",
   "includeTranscriptsHint": "Ce que disent les professeurs dans les vidéos les accompagne. À laisser désactivé sauf si les destinataires doivent le lire.",
   "includeTranscriptsNeedsVideos": "Les transcriptions accompagnent leurs vidéos : incluez d'abord les vidéos.",

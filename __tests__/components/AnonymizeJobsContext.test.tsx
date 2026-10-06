@@ -23,6 +23,7 @@ import {
   installedModels,
   ModelDownloadError,
 } from "@/src/transcribe/modelStore";
+import { rememberCorrections } from "@/src/transcribe/data/CorrectionStorage";
 import {
   createTestPattern,
   createTestPatternList,
@@ -131,7 +132,11 @@ const keepWhenReady = async (mode: KeepMode = "replace") => {
 
 beforeEach(() => {
   seedBinaryFile(OUTPUT, Buffer.from([1, 2]));
-  mockedInstalled.mockReturnValue({ whisperUri: "w", vadUri: "v" });
+  mockedInstalled.mockReturnValue({
+    whisperUri: "w",
+    vadUri: "v",
+    whisperModelId: "whisper-base-q5_1",
+  });
 });
 afterEach(async () => {
   await jobStore.reset();
@@ -283,7 +288,7 @@ describe("transcription jobs (L4)", () => {
         kind: "transcribe",
         listId,
         patternName: "Sugar Push",
-        request: { sourceUri: SOURCE, vocabulary: "Sugar Push." },
+        request: { sourceUri: SOURCE, vocabulary: ["Sugar Push"] },
       }),
     );
 
@@ -320,6 +325,42 @@ describe("transcription jobs (L4)", () => {
     ]);
   });
 
+  it("applies the list's remembered corrections, and leads the prompt with them", async () => {
+    mockedTranscribe.mockReturnValue({
+      promise: Promise.resolve({
+        transcript: {
+          ...TRANSCRIPT,
+          segments: [{ start: 0, end: 2, text: "Now a sugar bush." }],
+        },
+        timing: {
+          audioSeconds: 3,
+          speechSeconds: 2,
+          regions: 1,
+          extractMs: 1,
+          transcribeMs: 1,
+        },
+      }),
+      stop: jest.fn(),
+    });
+    const { list } = setup();
+    await waitFor(async () =>
+      expect(await storedPatterns(list.id)).toHaveLength(1),
+    );
+    await rememberCorrections(list.id, "a sugar bush", "a sugar push");
+
+    await startTranscribe(list.id);
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    expect(mockedTranscribe).toHaveBeenCalledWith(
+      SOURCE,
+      expect.objectContaining({ prompt: "push, Sugar Push." }),
+    );
+    const [saved] = await storedPatterns(list.id);
+    expect(saved.videoRefs[0].transcript?.segments[0].text).toBe(
+      "Now a sugar push.",
+    );
+  });
+
   it("reports a video without sound, and leaves the pattern alone", async () => {
     mockedTranscribe.mockReturnValue({
       promise: Promise.reject(new NoAudioError()),
@@ -342,7 +383,11 @@ describe("transcription jobs (L4)", () => {
     mockedEnsure.mockImplementation(async (onProgress) => {
       onProgress?.(0.5);
       onProgress?.(1);
-      return { whisperUri: "w", vadUri: "v" };
+      return {
+        whisperUri: "w",
+        vadUri: "v",
+        whisperModelId: "whisper-base-q5_1",
+      };
     });
     const seen: number[] = [];
     mockedTranscribe.mockImplementation((_uri, options) => {

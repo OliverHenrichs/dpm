@@ -2,8 +2,7 @@ import { File } from "expo-file-system";
 import { AudioExtractModule } from "@/modules/audio-extract";
 import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
 import { installedModels } from "@/src/transcribe/modelStore";
-import { WHISPER_MODEL } from "@/src/transcribe/models";
-import { speechRegions } from "@/src/transcribe/speechRegions";
+import { SpeechRegion, speechRegions } from "@/src/transcribe/speechRegions";
 import {
   initWhisper,
   initWhisperVad,
@@ -57,13 +56,27 @@ export class NoAudioError extends Error {
 // releaseTranscriptionContexts.
 let whisper: WhisperContext | null = null;
 let vad: WhisperVadContext | null = null;
+let whisperModelId: string | null = null;
+
+/**
+ * Beam search instead of whisper.cpp's greedy default: it weighs several readings of each stretch
+ * before committing, which gets more words right and repeats phrases less, at some speed.
+ */
+const BEAM_SIZE = 5;
 
 async function contexts() {
   const models = installedModels();
   if (!models) throw new ModelsMissingError();
+  // A different Whisper model (the accurate one downloaded or deleted) means a fresh context.
+  if (whisper && whisperModelId !== models.whisperModelId) {
+    const stale = whisper;
+    whisper = null;
+    await stale.release().catch(() => undefined);
+  }
   whisper ??= await initWhisper({ filePath: models.whisperUri });
+  whisperModelId = models.whisperModelId;
   vad ??= await initWhisperVad({ filePath: models.vadUri });
-  return { whisper, vad };
+  return { whisper, vad, modelId: models.whisperModelId };
 }
 
 /**
@@ -75,6 +88,7 @@ export async function releaseTranscriptionContexts() {
   const loaded = [whisper, vad];
   whisper = null;
   vad = null;
+  whisperModelId = null;
   await Promise.all(
     loaded.map((context) => context?.release().catch(() => undefined)),
   );
@@ -84,6 +98,16 @@ export async function releaseTranscriptionContexts() {
 export function resetTranscriptionContexts() {
   whisper = null;
   vad = null;
+  whisperModelId = null;
+}
+
+/** The longest stretch first, for language detection; the rest in their order in the clip. */
+export function detectionOrder(regions: SpeechRegion[]): SpeechRegion[] {
+  if (regions.length < 2) return regions;
+  const longest = regions.reduce((a, b) =>
+    b.end - b.start > a.end - a.start ? b : a,
+  );
+  return [longest, ...regions.filter((r) => r !== longest)];
 }
 
 /**
@@ -91,8 +115,9 @@ export function resetTranscriptionContexts() {
  * 1. the audio track is decoded to the 16 kHz mono WAV whisper.cpp reads;
  * 2. voice-activity detection finds the stretches with speech — without it, music-only audio
  *    sent Whisper into slow retries (L4 spike: 3.5× → 0.9× real time with a prompt);
- * 3. Whisper transcribes each stretch. The language is detected on the first and then fixed, so
- *    one transcript is in one language and later stretches skip detection;
+ * 3. Whisper transcribes each stretch. The language is detected on the longest, which goes
+ *    first, and is then fixed, so one transcript is in one language and the other stretches skip
+ *    detection; a short first stretch ("okay, so…") guessed the language badly;
  * 4. long lines are split so that a tap can seek near what it says.
  *
  * Returns at once; `stop` ends the work early and rejects the promise.
@@ -108,7 +133,7 @@ export function transcribeVideo(
     if (!AudioExtractModule) {
       throw new Error("Transcription is not available on this device");
     }
-    const { whisper, vad } = await contexts();
+    const { whisper, vad, modelId } = await contexts();
 
     let speech;
     try {
@@ -131,12 +156,13 @@ export function transcribeVideo(
       const raw: { t0: number; t1: number; text: string }[] = [];
       const started = Date.now();
       let doneSeconds = 0;
-      for (const region of regions) {
+      for (const region of detectionOrder(regions)) {
         if (stopped) throw new Error("Transcription stopped");
         const regionSeconds = region.end - region.start;
         const { stop, promise: regionDone } = whisper.transcribe(speech.uri, {
           language: lang,
           prompt,
+          beamSize: BEAM_SIZE,
           // Absolute: whisper.cpp starts at `offset` and reports times from the file's start.
           offset: Math.round(region.start * 1000),
           duration: Math.round(regionSeconds * 1000),
@@ -160,9 +186,11 @@ export function transcribeVideo(
       return {
         transcript: {
           language: lang === "auto" ? "und" : lang,
-          model: WHISPER_MODEL.id,
+          model: modelId,
           createdAt: Date.now(),
-          segments: splitLongSegments(toTranscriptSegments(raw)),
+          segments: splitLongSegments(
+            toTranscriptSegments(raw.sort((a, b) => a.t0 - b.t0)),
+          ),
         },
         timing: {
           audioSeconds: speech.durationSeconds,

@@ -41,7 +41,11 @@ jest.mock("@/modules/audio-extract", () => ({
 jest.mock("@/src/transcribe/modelStore", () => ({
   ...jest.requireActual("@/src/transcribe/modelStore"),
   installedModels: jest.fn(),
-  ensureModels: jest.fn(async () => ({ whisperUri: "w", vadUri: "v" })),
+  ensureModels: jest.fn(async () => ({
+    whisperUri: "w",
+    vadUri: "v",
+    whisperModelId: "whisper-base-q5_1",
+  })),
   deleteModels: jest.fn(),
 }));
 jest.mock("@/src/transcribe/transcribeVideo", () => ({
@@ -85,7 +89,11 @@ const SOURCE = "file:///document/video-a.mp4";
 const TYPE = createTestPatternType({ slug: "push" });
 
 beforeEach(() => {
-  mockedInstalled.mockReturnValue({ whisperUri: "w", vadUri: "v" });
+  mockedInstalled.mockReturnValue({
+    whisperUri: "w",
+    vadUri: "v",
+    whisperModelId: "whisper-base-q5_1",
+  });
   seedBinaryFile(SOURCE, Buffer.from([1]));
 });
 afterEach(async () => {

@@ -3,6 +3,10 @@ import {
   loadGraphLayout,
   saveGraphLayout,
 } from "@/src/pattern/graph/data/GraphLayoutStorage";
+import {
+  loadCorrections,
+  rememberCorrections,
+} from "@/src/transcribe/data/CorrectionStorage";
 import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
 import {
   clearAllData,
@@ -287,6 +291,16 @@ describe("PatternListStorage", () => {
       await expect(loadGraphLayout(doomed.id)).resolves.toBeNull();
     });
 
+    it("removes the list's remembered transcript corrections too", async () => {
+      const doomed = createTestPatternList();
+      await savePatternList(doomed);
+      await rememberCorrections(doomed.id, "a sugar bush", "a sugar push");
+
+      await deletePatternList(doomed.id);
+
+      await expect(loadCorrections(doomed.id)).resolves.toEqual([]);
+    });
+
     it("leaves another list's graph layout alone", async () => {
       const doomed = createTestPatternList();
       const survivor = createTestPatternList();
@@ -434,6 +448,7 @@ describe("PatternListStorage", () => {
         positions: { "1": { x: 0, y: 0 } },
         updatedAt: 1,
       });
+      await rememberCorrections(b.id, "a sugar bush", "a sugar push");
       await setActiveListId(a.id);
 
       await clearAllData();

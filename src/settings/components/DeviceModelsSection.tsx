@@ -8,12 +8,17 @@ import { isAudioExtractAvailable } from "@/modules/audio-extract";
 import {
   deleteModel,
   deleteModels,
+  downloadMissing,
   downloadModel,
-  ensureModels,
-  installedModels,
   installedModelUri,
 } from "@/src/transcribe/modelStore";
-import { TRANSCRIPTION_DOWNLOAD_MB } from "@/src/transcribe/models";
+import {
+  TRANSCRIPTION_DOWNLOAD_MB,
+  TRANSCRIPTION_MODELS,
+  VAD_MODEL,
+  WHISPER_ACCURATE_DOWNLOAD_MB,
+  WHISPER_ACCURATE_MODEL,
+} from "@/src/transcribe/models";
 import { SUGGESTION_DOWNLOAD_MB, SUGGESTION_MODEL } from "@/src/suggest/models";
 import { canSuggest } from "@/src/suggest/suggestPattern";
 
@@ -36,11 +41,25 @@ const DeviceModelsSection: React.FC = () => {
         title={t("speechModel")}
         hint={t("speechModelHint")}
         sizeMb={TRANSCRIPTION_DOWNLOAD_MB}
-        isInstalled={() => installedModels() !== null}
-        onDownload={async (onFraction) => {
-          await ensureModels(onFraction);
-        }}
+        isInstalled={() =>
+          TRANSCRIPTION_MODELS.every((m) => installedModelUri(m) !== null)
+        }
+        onDownload={(onFraction) =>
+          downloadMissing(TRANSCRIPTION_MODELS, onFraction)
+        }
         onDelete={deleteModels}
+      />
+      <ModelRow
+        icon="account-voice"
+        title={t("speechModelAccurate")}
+        hint={t("speechModelAccurateHint")}
+        sizeMb={WHISPER_ACCURATE_DOWNLOAD_MB}
+        isInstalled={() => installedModelUri(WHISPER_ACCURATE_MODEL) !== null}
+        // With the VAD, which it needs too and which is under a megabyte.
+        onDownload={(onFraction) =>
+          downloadMissing([WHISPER_ACCURATE_MODEL, VAD_MODEL], onFraction)
+        }
+        onDelete={() => deleteModel(WHISPER_ACCURATE_MODEL)}
       />
       {canSuggest() && (
         <ModelRow

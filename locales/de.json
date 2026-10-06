@@ -303,6 +303,8 @@
   "speechModelInstalled": "Auf diesem Telefon",
   "speechModelMissing": "Nicht heruntergeladen",
   "speechModelHint": "Transkribiert, was in Videos gesagt wird. Wird mit der ersten Transkription geladen.",
+  "speechModelAccurate": "Genaues Sprachmodell",
+  "speechModelAccurateHint": "Versteht Akzente und Tanzbegriffe besser, ist aber langsamer. Sobald es geladen ist, transkribiert die App damit statt mit dem Sprachmodell.",
   "includeTranscriptsInExport": "Transkripte einschließen",
   "includeTranscriptsHint": "Was Lehrende in den Videos sagen, geht mit. Nur einschalten, wenn die Empfänger es lesen sollen.",
   "includeTranscriptsNeedsVideos": "Transkripte reisen mit ihren Videos: zuerst Videos einschließen.",

@@ -32,6 +32,7 @@ beforeEach(() => {
   models.mockReturnValue({
     whisperUri: "file:///document/models/w.bin",
     vadUri: "file:///document/models/v.bin",
+    whisperModelId: "whisper-base-q5_1",
   });
   extract.mockImplementation(async () => {
     seedBinaryFile(WAV, Buffer.from([0, 0]));
@@ -69,11 +70,12 @@ describe("transcribeVideo", () => {
 
     const { transcript, timing } = await run();
 
+    // The longer stretch goes first, for language detection; the lines come back in clip order.
     expect(whisperCalls.transcribe.map((c) => c.options.offset)).toEqual([
-      9750, 39750,
+      39750, 9750,
     ]);
     expect(whisperCalls.transcribe.map((c) => c.options.duration)).toEqual([
-      4500, 5500,
+      5500, 4500,
     ]);
     expect(transcript.segments).toEqual([
       { start: 9.75, end: 11.75, text: "Satz bei 9750" },
@@ -83,10 +85,10 @@ describe("transcribeVideo", () => {
     expect(timing.speechSeconds).toBeCloseTo(10);
   });
 
-  it("detects the language on the first stretch and keeps it for the rest", async () => {
+  it("detects the language on the longest stretch and keeps it for the rest", async () => {
     setVadSegments([
-      { t0: 100, t1: 400 },
-      { t0: 3000, t1: 3300 },
+      { t0: 100, t1: 200 }, // "okay, so…"
+      { t0: 3000, t1: 3600 },
     ]);
     setTranscribeResult(() => ({
       result: "",
@@ -97,11 +99,15 @@ describe("transcribeVideo", () => {
 
     const { transcript } = await run();
 
+    expect(whisperCalls.transcribe.map((c) => c.options.offset)).toEqual([
+      29750, 750,
+    ]);
     expect(whisperCalls.transcribe.map((c) => c.options.language)).toEqual([
       "auto",
       "es",
     ]);
     expect(transcript.language).toBe("es");
+    expect(transcript.model).toBe("whisper-base-q5_1");
   });
 
   it("uses the language it is given, and the prompt", async () => {
@@ -112,7 +118,24 @@ describe("transcribeVideo", () => {
     expect(whisperCalls.transcribe[0].options).toMatchObject({
       language: "de",
       prompt: "Sugar Push, Whip.",
+      beamSize: 5,
     });
+  });
+
+  it("loads the accurate model once it is on the phone, and records which model heard it", async () => {
+    setVadSegments([{ t0: 100, t1: 400 }]);
+    await run();
+    models.mockReturnValue({
+      whisperUri: "file:///document/models/small.bin",
+      vadUri: "file:///document/models/v.bin",
+      whisperModelId: "whisper-small-q5_1",
+    });
+
+    const { transcript } = await run();
+
+    expect(whisperCalls.initWhisper).toBe(2);
+    expect(whisperCalls.releases).toBe(1);
+    expect(transcript.model).toBe("whisper-small-q5_1");
   });
 
   it("does not run Whisper at all when nothing is said", async () => {

@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  listFileUris,
   seedBinaryFile,
   setDownloadResponse,
 } from "@/__mocks__/expo-file-system";
@@ -41,16 +42,43 @@ jest.mock("@/src/suggest/models", () => ({
 }));
 jest.mock("@/modules/audio-extract", () => ({
   isAudioExtractAvailable: true,
-  AudioExtractModule: { sha256File: async () => "hash-llm" },
+  // Each stand-in model hashes to "hash-<its name>".
+  AudioExtractModule: {
+    sha256File: async (uri: string) =>
+      `hash-${uri.split("/").pop()!.split(".")[0]}`,
+  },
 }));
 // Android with 8 GB; the gate itself has its own suite.
 jest.mock("@/src/suggest/suggestPattern", () => ({
   ...jest.requireActual("@/src/suggest/suggestPattern"),
   canSuggest: () => true,
 }));
+// Stand-ins of a few bytes for the speech models, so Settings can find them on the "phone".
+jest.mock("@/src/transcribe/models", () => {
+  const spec = (id: string, bytes: number) => ({
+    id,
+    fileName: `${id}.bin`,
+    url: `https://models/${id}.bin`,
+    bytes,
+    sha256: `hash-${id}`,
+  });
+  const WHISPER_MODEL = spec("whisper", 6);
+  const VAD_MODEL = spec("vad", 2);
+  return {
+    ...jest.requireActual("@/src/transcribe/models"),
+    WHISPER_MODEL,
+    VAD_MODEL,
+    WHISPER_ACCURATE_MODEL: spec("small", 3),
+    TRANSCRIPTION_MODELS: [WHISPER_MODEL, VAD_MODEL],
+  };
+});
 jest.mock("@/src/transcribe/modelStore", () => ({
   ...jest.requireActual("@/src/transcribe/modelStore"),
-  installedModels: () => ({ whisperUri: "w", vadUri: "v" }),
+  installedModels: () => ({
+    whisperUri: "w",
+    vadUri: "v",
+    whisperModelId: "whisper-base-q5_1",
+  }),
   deleteModels: jest.fn(),
 }));
 // The engine has its own suite; here a transcription only needs its outcome.
@@ -365,17 +393,47 @@ describe("DeviceModelsSection", () => {
     ).toBeOnTheScreen();
   });
 
-  it("lists both models and frees each one's space", () => {
+  it("lists the models and frees each one's space", () => {
     seedBinaryFile(MODEL_URI, Buffer.alloc(4));
+    seedBinaryFile("file:///document/models/whisper.bin", Buffer.alloc(6));
+    seedBinaryFile("file:///document/models/vad.bin", Buffer.alloc(2));
+    seedBinaryFile("file:///document/models/small.bin", Buffer.alloc(3));
     renderWithProviders(<DeviceModelsSection />);
     expect(screen.getByText("Speech model")).toBeOnTheScreen();
+    expect(screen.getByText("Accurate speech model")).toBeOnTheScreen();
     expect(screen.getByText("Suggestion model")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("Delete Suggestion model"));
     fireEvent.press(screen.getByLabelText("Delete Speech model"));
+    fireEvent.press(screen.getByLabelText("Delete Accurate speech model"));
 
     expect(deleteModels).toHaveBeenCalled();
     expect(screen.queryByText(/^Delete$/)).toBeNull();
-    expect(screen.getAllByText(/^Not downloaded/)).toHaveLength(2);
+    expect(screen.getAllByText(/^Not downloaded/)).toHaveLength(3);
+    // Deleting the accurate model leaves the standard ones alone.
+    expect(listFileUris()).not.toContain("file:///document/models/small.bin");
+    expect(listFileUris()).toContain("file:///document/models/vad.bin");
+  });
+
+  it("downloads the accurate model with the voice detector it needs", async () => {
+    const fetched: string[] = [];
+    setDownloadResponse((url) => {
+      fetched.push(url);
+      return {
+        status: 200,
+        body: Buffer.alloc(url.endsWith("small.bin") ? 3 : 2),
+      };
+    });
+    renderWithProviders(<DeviceModelsSection />);
+
+    fireEvent.press(screen.getByLabelText("Download Accurate speech model"));
+
+    expect(
+      await screen.findByLabelText("Delete Accurate speech model"),
+    ).toBeOnTheScreen();
+    expect(fetched).toEqual([
+      "https://models/small.bin",
+      "https://models/vad.bin",
+    ]);
   });
 });

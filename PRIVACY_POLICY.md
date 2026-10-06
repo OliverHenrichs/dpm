@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 4, 2026**
+**Last updated: October 6, 2026**
 
 ---
 
@@ -36,6 +36,7 @@ The app connects to the internet only for the following optional features, each 
 | Pattern lists, patterns, descriptions, tags, modifiers | Core app functionality | On-device (AsyncStorage) |
 | Video files you attach to patterns, including videos you record or edit in the app | Viewing, editing and exporting patterns | On-device local filesystem |
 | Transcripts of what is said in your videos | Reading and reusing what a teacher said | On-device (AsyncStorage) |
+| Words you corrected in transcripts | Getting the same words right in the list's later transcripts | On-device (AsyncStorage) |
 | Downloaded speech and suggestion models | Running the video tools offline | On-device local filesystem |
 | Your graph layout, active list, theme, app style and language | Restoring your settings | On-device (AsyncStorage) |
 | Your app icon colour | Showing the launcher icon you chose | On-device, by the operating system |
@@ -81,7 +82,7 @@ When you play a video that you (or the publisher of a list you subscribed to) at
 
 ### 3.5 Model downloads
 
-The speech-to-text and suggestion features need models that are downloaded once, when you first use the feature and after the app has shown you the download size. The models are fetched from **Hugging Face** (huggingface.co and its content delivery network). Hugging Face receives your **IP address** and the usual request metadata (such as time and the file requested). Nothing about you, your videos or your patterns is sent. You can delete downloaded models at any time under Settings → On-device models.
+The speech-to-text and suggestion features need models that are downloaded once, when you first use the feature or download them under Settings → On-device models, and always after the app has shown you the download size. The models are fetched from **Hugging Face** (huggingface.co and its content delivery network). Hugging Face receives your **IP address** and the usual request metadata (such as time and the file requested). Nothing about you, your videos or your patterns is sent. You can delete downloaded models at any time under Settings → On-device models.
 
 ### 3.6 Device permissions
 

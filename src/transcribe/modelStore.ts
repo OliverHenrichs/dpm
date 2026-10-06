@@ -5,9 +5,9 @@ import { createDownloadResumable } from "expo-file-system/legacy";
 import { AudioExtractModule } from "@/modules/audio-extract";
 import {
   ModelSpec,
-  TRANSCRIPTION_DOWNLOAD_BYTES,
   TRANSCRIPTION_MODELS,
   VAD_MODEL,
+  WHISPER_ACCURATE_MODEL,
   WHISPER_MODEL,
 } from "@/src/transcribe/models";
 
@@ -30,18 +30,30 @@ export function deleteModel(model: ModelSpec): void {
   if (file.exists) file.delete();
 }
 
-export type InstalledModels = { whisperUri: string; vadUri: string };
+export type InstalledModels = {
+  whisperUri: string;
+  vadUri: string;
+  /** Which Whisper model, recorded on the transcript. */
+  whisperModelId: string;
+};
+
+/** The Whisper model transcription uses: the accurate one once it is on the phone, else base. */
+function whisperModel(): ModelSpec {
+  return installedModelUri(WHISPER_ACCURATE_MODEL)
+    ? WHISPER_ACCURATE_MODEL
+    : WHISPER_MODEL;
+}
 
 /**
- * The models' files, when both are on the device and complete. Size is the check here; the hash
- * was checked once, when they were downloaded.
+ * The models' files, when a Whisper model and the VAD are on the device and complete. Size is
+ * the check here; the hash was checked once, when they were downloaded.
  */
 export function installedModels(): InstalledModels | null {
-  const [whisper, vad] = [fileFor(WHISPER_MODEL), fileFor(VAD_MODEL)];
-  const complete = (file: File, model: ModelSpec) =>
-    file.exists && file.size === model.bytes;
-  return complete(whisper, WHISPER_MODEL) && complete(vad, VAD_MODEL)
-    ? { whisperUri: whisper.uri, vadUri: vad.uri }
+  const whisper = whisperModel();
+  const whisperUri = installedModelUri(whisper);
+  const vadUri = installedModelUri(VAD_MODEL);
+  return whisperUri && vadUri
+    ? { whisperUri, vadUri, whisperModelId: whisper.id }
     : null;
 }
 
@@ -57,24 +69,35 @@ export async function ensureModels(
 ): Promise<InstalledModels> {
   const ready = installedModels();
   if (ready) return ready;
+  // With the accurate model on the phone, base is not needed; only the VAD can be missing.
+  await downloadMissing(
+    installedModelUri(WHISPER_ACCURATE_MODEL)
+      ? [VAD_MODEL]
+      : TRANSCRIPTION_MODELS,
+    onProgress,
+  );
+  return installedModels()!;
+}
 
-  const dir = modelDir();
-  if (!dir.exists) dir.create({ intermediates: true });
-
+/**
+ * Downloads whichever of the models are not on the device, reporting progress over all of
+ * them as a fraction.
+ */
+export async function downloadMissing(
+  models: ModelSpec[],
+  onProgress?: (fraction: number) => void,
+): Promise<void> {
+  const total = models.reduce((sum, m) => sum + m.bytes, 0);
   let doneBytes = 0;
-  for (const model of TRANSCRIPTION_MODELS) {
-    const target = fileFor(model);
-    if (target.exists && target.size === model.bytes) {
-      doneBytes += model.bytes;
-      continue;
+  for (const model of models) {
+    if (!installedModelUri(model)) {
+      await downloadModel(model, (written) =>
+        onProgress?.((doneBytes + written) / total),
+      );
     }
-    await downloadModel(model, (written) =>
-      onProgress?.((doneBytes + written) / TRANSCRIPTION_DOWNLOAD_BYTES),
-    );
     doneBytes += model.bytes;
   }
   onProgress?.(1);
-  return installedModels()!;
 }
 
 /**
@@ -121,7 +144,10 @@ export async function downloadModel(
   written.move(target);
 }
 
-/** Frees the space (~60 MB); the next transcription downloads the models again. */
+/**
+ * Frees the standard models' space (~60 MB); the next transcription downloads them again. The
+ * accurate model has its own row in Settings and is deleted there.
+ */
 export function deleteModels(): void {
   TRANSCRIPTION_MODELS.forEach(deleteModel);
 }
