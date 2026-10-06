@@ -105,7 +105,7 @@ describe("Edit video — one job per tab", () => {
   });
 
   it("shows the speech content without the trim bar", () => {
-    renderPanel(40, { speech: <Text>speech content</Text> });
+    renderPanel(40, { speech: () => <Text>speech content</Text> });
 
     fireEvent.press(screen.getByRole("tab", { name: "Speech" }));
 

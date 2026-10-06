@@ -760,15 +760,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <AnonymizeModal
         target={anonymizeTarget}
         onClose={() => setAnonymizeTarget(null)}
-        onOpenTranscript={(target) =>
-          openTranscript(
-            activeVideoRefs.find((ref) => ref.value === target.sourceUri) ?? {
-              type: "local",
-              value: target.sourceUri,
-              transcript: target.transcript,
-            },
-          )
-        }
       />
       <TranscriptSheet
         target={transcriptTarget}

@@ -51,8 +51,9 @@ Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB).
 ## UI
 
 - `components/TranscribeSection.tsx` is Edit video's *Speech* tab: *Transcribe speech* (with a
-  `SwitchRow` to go on and suggest, where suggestions can run), then *Open transcript* /
-  *Transcribe again*.
+  `SwitchRow` to go on and suggest, where suggestions can run); once there is a transcript, its
+  lines (`TranscriptLines.tsx`) following the tab's preview, which plays with sound and native
+  controls there, and *Transcribe again*.
 - `components/TranscriptSheet.tsx`: the video over timestamped lines; tapping a line seeks, the line
   being said is highlighted and followed (`followScroll.ts`, paused by a manual scroll). Ticked
   lines go into the description as a paragraph of their own in spoken order (`excerpt.ts`). It

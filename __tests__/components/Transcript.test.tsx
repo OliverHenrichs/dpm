@@ -242,7 +242,7 @@ describe("transcribing from the pattern form", () => {
     expect(saved().videoRefs[0].transcript).toEqual(TRANSCRIPT);
   });
 
-  it("opens an existing transcript from Edit video", async () => {
+  it("shows an existing transcript in Edit video's Speech tab, playing from a tapped line", async () => {
     renderForm(
       createTestPattern(TYPE.id, {
         id: 1,
@@ -251,9 +251,15 @@ describe("transcribing from the pattern form", () => {
     );
 
     await openEditor();
-    fireEvent.press(await screen.findByText("Open transcript"));
 
     expect(await screen.findByText("Then the whip.")).toBeOnTheScreen();
+    expect(screen.queryByText("Open transcript")).toBeNull();
+    expect(screen.getByText("Transcribe again")).toBeOnTheScreen();
+
+    const player = (useVideoPlayer as jest.Mock).mock.results.at(-1)!.value;
+    fireEvent.press(screen.getByLabelText("Play from 0:12"));
+    expect(player.seekBy).toHaveBeenCalledWith(12);
+    expect(player.play).toHaveBeenCalled();
   });
 
   it("does not offer to transcribe a silhouette", async () => {

@@ -35,8 +35,6 @@ type Props = {
   /** The video to edit; null hides the modal. */
   target: AnonymizeTarget | null;
   onClose: () => void;
-  /** Opens the target's transcript; omitted where there is nowhere to show it. */
-  onOpenTranscript?: (target: AnonymizeTarget) => void;
 };
 
 /**
@@ -50,11 +48,7 @@ type Props = {
  * later, and an instructor's explanation is usually longer than the part worth keeping. The
  * jobs run in turn, so the transcript is on the original before the cut is reviewed.
  */
-const AnonymizeModal: React.FC<Props> = ({
-  target,
-  onClose,
-  onOpenTranscript,
-}) => {
+const AnonymizeModal: React.FC<Props> = ({ target, onClose }) => {
   const { t } = useTranslation();
   const { start } = useAnonymizeJobs();
   const startTranscription = useStartTranscription();
@@ -124,15 +118,15 @@ const AnonymizeModal: React.FC<Props> = ({
                     )
                   }
                   speech={
-                    isAudioExtractAvailable && (
-                      <TranscribeSection
-                        target={target}
-                        onStarted={onClose}
-                        onOpenTranscript={
-                          onOpenTranscript && (() => onOpenTranscript(target))
-                        }
-                      />
-                    )
+                    isAudioExtractAvailable
+                      ? (playback) => (
+                          <TranscribeSection
+                            target={target}
+                            onStarted={onClose}
+                            playback={playback}
+                          />
+                        )
+                      : undefined
                   }
                   onShorten={(request) => {
                     maybeTranscribeFirst();

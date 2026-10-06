@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   GestureResponderEvent,
   LayoutChangeEvent,
@@ -49,8 +49,19 @@ type Props = {
   onAnonymize: (provider: AnonymizeProvider, request: AnonymizeRequest) => void;
   /** Options that change a cut, shown above its button (`SwitchRow`s). */
   cutOptions?: (cut: VideoCut) => React.ReactNode;
-  /** The Speech tab's content; the tab is left out without it. */
-  speech?: React.ReactNode;
+  /**
+   * The Speech tab's content, given the preview's playback so a transcript can follow it and
+   * jump in it; the tab is left out without it.
+   */
+  speech?: (playback: SpeechPlayback) => React.ReactNode;
+};
+
+/** The preview's playback, as the Speech tab sees it. */
+export type SpeechPlayback = {
+  /** Where the preview is, in seconds. */
+  playhead: number;
+  /** Plays the preview from a moment, with its sound. */
+  playFrom: (seconds: number) => void;
 };
 
 /** The output palette's dancer colours, so a marker shows which colour that dancer gets. */
@@ -140,6 +151,14 @@ const VideoEditPanel: React.FC<Props> = ({
   const seekTo = (seconds: number) => {
     player.seekBy(seconds - player.currentTime);
   };
+
+  // The cuts are about the picture, so their preview is silent. Speech is about the sound.
+  // Through a ref: the React Compiler will not let a hook's return value be assigned to.
+  const playerRef = useRef(player);
+  useEffect(() => {
+    playerRef.current = player;
+    playerRef.current.muted = loopSelection;
+  }, [player, loopSelection]);
 
   const length = trim.end - trim.start;
   const seconds = Math.round(length);
@@ -297,7 +316,8 @@ const VideoEditPanel: React.FC<Props> = ({
         <VideoView
           player={player}
           style={StyleSheet.absoluteFill}
-          nativeControls={false}
+          // Pause and scrub while following a transcript; the cuts have their own bar.
+          nativeControls={!loopSelection}
           contentFit="contain"
         />
         {prompting && (
@@ -345,7 +365,14 @@ const VideoEditPanel: React.FC<Props> = ({
           )}
           {tab === "shorten" && shortenTab}
           {tab === "anonymize" && anonymizeTab}
-          {tab === "speech" && speech}
+          {tab === "speech" &&
+            speech?.({
+              playhead,
+              playFrom: (seconds) => {
+                seekTo(seconds);
+                player.play();
+              },
+            })}
         </>
       )}
 
