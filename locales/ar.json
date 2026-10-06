@@ -317,15 +317,12 @@
   "suggestionModel": "نموذج الاقتراحات",
   "suggestionModelHint": "يصوغ اسم الحركة ووصفها من النص المفرغ.",
   "deleteModel": "حذف {{name}}",
-  "videoReviewTitle": "تحقق من الفيديو الجديد — {{name}}",
   "videoReviewHint": "لا يتغير شيء في النمط حتى تختار. يبقى الفيديو الأصلي على هاتفك في كل الأحوال.",
-  "videoReviewDropsLines": "عند الاستبدال يبقى {{kept}} من {{total}} سطرًا من النص المفرغ، وهي الأسطر داخل المقطع. احتفظ بالاثنين، أو أضف النص المفرغ كاملًا إلى الوصف أولًا.",
   "videoReviewAddTranscript": "إضافة النص المفرغ كاملًا إلى الوصف",
-  "videoReviewTranscriptAdded": "أُضيف إلى الوصف",
-  "videoReviewReplace": "استبدال الأصل في هذا النمط",
+  "videoReviewReplace": "استبدال الأصل",
   "videoReviewKeepBoth": "الاحتفاظ بالاثنين",
   "videoReviewNoRoom": "يوجد هنا {{max}} مقاطع فيديو بالفعل، فلا مكان للاحتفاظ بالاثنين.",
-  "videoReviewDiscard": "تجاهل الفيديو الجديد",
+  "videoReviewDiscard": "تجاهل",
   "videoReviewLater": "القرار لاحقًا",
   "videoJobReview": "{{name}}: الفيديو الجديد جاهز للتحقق",
   "videoJobReviewButton": "تحقق",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "ينزّل {{size}} ميغابايت مرة واحدة.",
   "transcribeWhat": "يكتب ما يُقال في الفيديو كله، لتقرأه وتضيف أسطرًا إلى الوصف.",
   "transcribeHasTranscript": "لهذا الفيديو نص مُفرَّغ.",
-  "transcribeThenSuggestWhat": "مما قيل في الفيديو. تراجع الاقتراح قبل أن يتغير أي شيء."
+  "transcribeThenSuggestWhat": "مما قيل في الفيديو. تراجع الاقتراح قبل أن يتغير أي شيء.",
+  "videoReviewHeading": "تحقق من الفيديو الجديد",
+  "videoReviewShortened": "مُقصَّر",
+  "videoReviewNoSound": "بلا صوت",
+  "videoReviewSoundKept": "مع الصوت"
 }

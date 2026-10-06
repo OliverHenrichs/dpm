@@ -111,9 +111,7 @@ const editButton = () => screen.findByLabelText("Edit a video");
 /** Opens the finished video from its line in the form, and puts it in place of the original. */
 async function reviewAndReplace() {
   fireEvent.press(await screen.findByText("Review"));
-  fireEvent.press(
-    await screen.findByText("Replace the original in this pattern"),
-  );
+  fireEvent.press(await screen.findByText("Replace the original"));
   await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
 }
 
@@ -125,6 +123,28 @@ afterEach(async () => {
   await jobStore.reset();
   clearReplacements();
 });
+
+const transcribedPattern = () =>
+  createTestPattern(TYPE.id, {
+    id: 1,
+    name: "Whip",
+    description: "Lead's notes.",
+    videoRefs: [
+      {
+        type: "local",
+        value: SOURCE,
+        transcript: {
+          language: "en",
+          model: "whisper-base-q5_1",
+          createdAt: 1,
+          segments: [
+            { start: 0, end: 0.5, text: "First the lead preps." },
+            { start: 2, end: 3, text: "Anchor on five and six." },
+          ],
+        },
+      },
+    ],
+  });
 
 describe("EditPatternForm — editing a video", () => {
   it("opens the only video on the phone straight away", async () => {
@@ -313,7 +333,7 @@ describe("EditPatternForm — editing a video", () => {
     fireEvent.press(await editButton());
     fireEvent.press(await screen.findByText("mock shorten"));
     fireEvent.press(await screen.findByText("Review"));
-    fireEvent.press(await screen.findByText("Discard the new video"));
+    fireEvent.press(await screen.findByText("Discard"));
 
     await waitFor(() => expect(jobStore.getJobs()).toEqual([]));
     fireEvent.press(screen.getByText("Save"));
@@ -322,37 +342,19 @@ describe("EditPatternForm — editing a video", () => {
     );
   });
 
-  it("offers to add the whole transcript before a cut drops some of it", async () => {
-    const transcript = {
-      language: "en",
-      model: "whisper-base-q5_1",
-      createdAt: 1,
-      segments: [
-        { start: 0, end: 0.5, text: "First the lead preps." },
-        { start: 2, end: 3, text: "Anchor on five and six." },
-      ],
-    };
-    const { saved } = renderForm(
-      createTestPattern(TYPE.id, {
-        id: 1,
-        name: "Whip",
-        description: "Lead's notes.",
-        videoRefs: [{ type: "local", value: SOURCE, transcript }],
-      }),
-    );
+  it("adds the whole transcript to the description when replacing drops some of it", async () => {
+    const { saved } = renderForm(transcribedPattern());
 
     fireEvent.press(await editButton());
     fireEvent.press(await screen.findByText("mock shorten"));
     fireEvent.press(await screen.findByText("Review"));
 
     expect(
-      await screen.findByText(/Replacing keeps 1 of 2 transcript lines/),
-    ).toBeOnTheScreen();
-    fireEvent.press(
-      screen.getByText("Add the whole transcript to the description"),
-    );
-    expect(screen.getByText("Added to the description")).toBeOnTheScreen();
-    fireEvent.press(screen.getByText("Replace the original in this pattern"));
+      await screen.findByRole("switch", {
+        name: "Add the whole transcript to the description",
+      }),
+    ).toBeChecked();
+    fireEvent.press(screen.getByText("Replace the original"));
     await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
 
     fireEvent.press(screen.getByText("Save"));
@@ -361,6 +363,23 @@ describe("EditPatternForm — editing a video", () => {
         /^Lead's notes\.\n\nFirst the lead preps\. Anchor on five and six\.$/,
       ),
     );
+    expect(saved().videoRefs[0].value).toMatch(/shortened-/);
+  });
+
+  it("leaves the description alone when the switch is off", async () => {
+    const { saved } = renderForm(transcribedPattern());
+
+    fireEvent.press(await editButton());
+    fireEvent.press(await screen.findByText("mock shorten"));
+    fireEvent.press(await screen.findByText("Review"));
+    fireEvent.press(
+      await screen.findByText("Add the whole transcript to the description"),
+    );
+    fireEvent.press(screen.getByText("Replace the original"));
+    await waitFor(() => expect(jobStore.getJobs()[0]?.status).toBe("done"));
+
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() => expect(saved().description).toBe("Lead's notes."));
   });
 
   it("explains why it cannot edit when every video is online and there is no room", async () => {

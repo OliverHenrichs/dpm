@@ -317,15 +317,12 @@
   "suggestionModel": "Vorschlagsmodell",
   "suggestionModelHint": "Entwirft Name und Beschreibung einer Figur aus einem Transkript.",
   "deleteModel": "{{name}} löschen",
-  "videoReviewTitle": "Neues Video prüfen — {{name}}",
   "videoReviewHint": "An der Figur ändert sich nichts, bis du dich entscheidest. Das Originalvideo bleibt in jedem Fall auf deinem Handy.",
-  "videoReviewDropsLines": "Beim Ersetzen bleiben {{kept}} von {{total}} Transkriptzeilen, die innerhalb des Ausschnitts. Behalte beide, oder füge vorher das ganze Transkript zur Beschreibung hinzu.",
   "videoReviewAddTranscript": "Ganzes Transkript zur Beschreibung hinzufügen",
-  "videoReviewTranscriptAdded": "Zur Beschreibung hinzugefügt",
-  "videoReviewReplace": "Original in dieser Figur ersetzen",
+  "videoReviewReplace": "Original ersetzen",
   "videoReviewKeepBoth": "Beide behalten",
   "videoReviewNoRoom": "Hier sind schon {{max}} Videos, für beide ist kein Platz.",
-  "videoReviewDiscard": "Neues Video verwerfen",
+  "videoReviewDiscard": "Verwerfen",
   "videoReviewLater": "Später entscheiden",
   "videoJobReview": "{{name}}: Das neue Video ist bereit zur Prüfung",
   "videoJobReviewButton": "Prüfen",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "Lädt einmalig {{size}} MB herunter.",
   "transcribeWhat": "Schreibt auf, was im ganzen Video gesagt wird, damit du es lesen und Zeilen in die Beschreibung übernehmen kannst.",
   "transcribeHasTranscript": "Dieses Video hat ein Transkript.",
-  "transcribeThenSuggestWhat": "Aus dem Gesagten. Du prüfst den Vorschlag, bevor sich etwas ändert."
+  "transcribeThenSuggestWhat": "Aus dem Gesagten. Du prüfst den Vorschlag, bevor sich etwas ändert.",
+  "videoReviewHeading": "Neues Video prüfen",
+  "videoReviewShortened": "Gekürzt",
+  "videoReviewNoSound": "Kein Ton",
+  "videoReviewSoundKept": "Mit Ton"
 }

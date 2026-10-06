@@ -317,15 +317,12 @@
   "suggestionModel": "প্রস্তাব মডেল",
   "suggestionModelHint": "প্রতিলিপি থেকে প্যাটার্নের নাম ও বিবরণের খসড়া তৈরি করে।",
   "deleteModel": "{{name}} মুছুন",
-  "videoReviewTitle": "নতুন ভিডিও যাচাই করুন — {{name}}",
   "videoReviewHint": "আপনি বেছে না নেওয়া পর্যন্ত প্যাটার্নে কিছুই বদলাবে না। মূল ভিডিও সব ক্ষেত্রেই আপনার ফোনে থেকে যায়।",
-  "videoReviewDropsLines": "প্রতিস্থাপন করলে প্রতিলিপির {{total}}টি লাইনের মধ্যে {{kept}}টি থাকবে, যেগুলো ক্লিপের ভেতরে। দুটোই রাখুন, অথবা আগে পুরো প্রতিলিপি বিবরণে যোগ করুন।",
   "videoReviewAddTranscript": "পুরো প্রতিলিপি বিবরণে যোগ করুন",
-  "videoReviewTranscriptAdded": "বিবরণে যোগ হয়েছে",
-  "videoReviewReplace": "এই প্যাটার্নে মূল ভিডিও প্রতিস্থাপন করুন",
+  "videoReviewReplace": "মূল ভিডিও প্রতিস্থাপন করুন",
   "videoReviewKeepBoth": "দুটোই রাখুন",
   "videoReviewNoRoom": "এখানে আগে থেকেই {{max}}টি ভিডিও আছে, তাই দুটো রাখার জায়গা নেই।",
-  "videoReviewDiscard": "নতুন ভিডিও বাদ দিন",
+  "videoReviewDiscard": "বাদ দিন",
   "videoReviewLater": "পরে ঠিক করুন",
   "videoJobReview": "{{name}}: নতুন ভিডিও যাচাইয়ের জন্য প্রস্তুত",
   "videoJobReviewButton": "যাচাই করুন",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "একবার {{size}} MB ডাউনলোড হয়।",
   "transcribeWhat": "পুরো ভিডিওতে যা বলা হয়েছে তা লেখে, যাতে আপনি পড়তে এবং বিবরণে লাইন যোগ করতে পারেন।",
   "transcribeHasTranscript": "এই ভিডিওর প্রতিলিপি আছে।",
-  "transcribeThenSuggestWhat": "যা বলা হয়েছে তা থেকে। কিছু বদলানোর আগে আপনি পরামর্শটি দেখে নেন।"
+  "transcribeThenSuggestWhat": "যা বলা হয়েছে তা থেকে। কিছু বদলানোর আগে আপনি পরামর্শটি দেখে নেন।",
+  "videoReviewHeading": "নতুন ভিডিও যাচাই করুন",
+  "videoReviewShortened": "ছোট করা হয়েছে",
+  "videoReviewNoSound": "শব্দ নেই",
+  "videoReviewSoundKept": "শব্দ আছে"
 }

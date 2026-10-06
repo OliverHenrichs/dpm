@@ -317,15 +317,12 @@
   "suggestionModel": "सुझाव मॉडल",
   "suggestionModelHint": "ट्रांसक्रिप्ट से पैटर्न का नाम और विवरण तैयार करता है।",
   "deleteModel": "{{name}} हटाएँ",
-  "videoReviewTitle": "नया वीडियो जाँचें — {{name}}",
   "videoReviewHint": "जब तक आप चुनते नहीं, पैटर्न में कुछ नहीं बदलता। मूल वीडियो हर हाल में आपके फ़ोन पर रहता है।",
-  "videoReviewDropsLines": "बदलने पर ट्रांसक्रिप्ट की {{total}} में से {{kept}} पंक्तियाँ रहेंगी, जो क्लिप के अंदर हैं। दोनों रखें, या पहले पूरा ट्रांसक्रिप्ट विवरण में जोड़ें।",
   "videoReviewAddTranscript": "पूरा ट्रांसक्रिप्ट विवरण में जोड़ें",
-  "videoReviewTranscriptAdded": "विवरण में जोड़ दिया गया",
-  "videoReviewReplace": "इस पैटर्न में मूल वीडियो बदलें",
+  "videoReviewReplace": "मूल वीडियो बदलें",
   "videoReviewKeepBoth": "दोनों रखें",
   "videoReviewNoRoom": "यहाँ पहले से {{max}} वीडियो हैं, इसलिए दोनों रखने की जगह नहीं है।",
-  "videoReviewDiscard": "नया वीडियो हटाएँ",
+  "videoReviewDiscard": "हटाएँ",
   "videoReviewLater": "बाद में तय करें",
   "videoJobReview": "{{name}}: नया वीडियो जाँचने के लिए तैयार है",
   "videoJobReviewButton": "जाँचें",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "एक बार {{size}} MB डाउनलोड होता है।",
   "transcribeWhat": "पूरे वीडियो में कही गई बातें लिखता है, ताकि आप उन्हें पढ़ सकें और विवरण में पंक्तियाँ जोड़ सकें।",
   "transcribeHasTranscript": "इस वीडियो का ट्रांसक्रिप्ट मौजूद है।",
-  "transcribeThenSuggestWhat": "कही गई बातों से। कुछ भी बदलने से पहले आप सुझाव देख लेते हैं।"
+  "transcribeThenSuggestWhat": "कही गई बातों से। कुछ भी बदलने से पहले आप सुझाव देख लेते हैं।",
+  "videoReviewHeading": "नया वीडियो जाँचें",
+  "videoReviewShortened": "छोटा किया गया",
+  "videoReviewNoSound": "आवाज़ नहीं",
+  "videoReviewSoundKept": "आवाज़ बनी रही"
 }

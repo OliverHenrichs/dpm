@@ -317,15 +317,12 @@
   "suggestionModel": "Modèle de suggestion",
   "suggestionModelHint": "Rédige le nom et la description d'une figure à partir d'une transcription.",
   "deleteModel": "Supprimer {{name}}",
-  "videoReviewTitle": "Vérifier la nouvelle vidéo — {{name}}",
   "videoReviewHint": "Rien ne change dans la figure tant que tu n’as pas choisi. La vidéo originale reste sur ton téléphone dans tous les cas.",
-  "videoReviewDropsLines": "En remplaçant, tu gardes {{kept}} lignes de transcription sur {{total}}, celles comprises dans l’extrait. Garde les deux, ou ajoute d’abord toute la transcription à la description.",
   "videoReviewAddTranscript": "Ajouter toute la transcription à la description",
-  "videoReviewTranscriptAdded": "Ajoutée à la description",
-  "videoReviewReplace": "Remplacer l’original dans cette figure",
+  "videoReviewReplace": "Remplacer l’original",
   "videoReviewKeepBoth": "Garder les deux",
   "videoReviewNoRoom": "Il y a déjà {{max}} vidéos ici, il n’y a donc pas de place pour garder les deux.",
-  "videoReviewDiscard": "Supprimer la nouvelle vidéo",
+  "videoReviewDiscard": "Supprimer",
   "videoReviewLater": "Décider plus tard",
   "videoJobReview": "{{name}} : la nouvelle vidéo est prête à être vérifiée",
   "videoJobReviewButton": "Vérifier",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "Télécharge {{size}} Mo une seule fois.",
   "transcribeWhat": "Écrit ce qui est dit dans toute la vidéo, pour que tu puisses le lire et ajouter des lignes à la description.",
   "transcribeHasTranscript": "Cette vidéo a une transcription.",
-  "transcribeThenSuggestWhat": "À partir de ce qui a été dit. Tu vérifies la suggestion avant tout changement."
+  "transcribeThenSuggestWhat": "À partir de ce qui a été dit. Tu vérifies la suggestion avant tout changement.",
+  "videoReviewHeading": "Vérifier la nouvelle vidéo",
+  "videoReviewShortened": "Raccourcie",
+  "videoReviewNoSound": "Sans son",
+  "videoReviewSoundKept": "Son conservé"
 }

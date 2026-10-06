@@ -5,7 +5,8 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import { useTranslation } from "react-i18next";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { AppText, Button, IconButton } from "@/src/common/ui";
+import { AppText, Button, IconButton, SwitchRow } from "@/src/common/ui";
+import { formatSeconds } from "@/src/anonymize/model/trimWindow";
 import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import {
   AnonymizeJob,
@@ -49,8 +50,11 @@ type Props = {
  * place of the original, keep both, or throw it away. Closing leaves the decision for later;
  * the jobs banner keeps offering it.
  *
- * Replacing keeps only the transcript lines inside the cut. When that would drop some, the
- * sheet says so and offers to put the whole transcript into the description first: an
+ * One filled button for the likely answer (replace), Keep both outlined, and the quiet answers
+ * (discard, decide later) as text; tags under the video say what changed.
+ *
+ * Replacing keeps only the transcript lines inside the cut. When that would drop some, a switch
+ * (on by default) puts the whole transcript into the description when replacing: an
  * instructor often explains a figure at length and then shows it briefly, and the explanation
  * belongs in the description while only the showing is worth keeping as video.
  *
@@ -99,7 +103,7 @@ const ReviewCard: React.FC<{
   const { keep, discard } = useAnonymizeJobs();
   const fromList = useListSource(job.sourceUri);
   const { ref, groupSize, onDescriptionChange } = source ?? fromList;
-  const [added, setAdded] = useState(false);
+  const [addTranscript, setAddTranscript] = useState(true);
 
   const player = useVideoPlayer(resultUri, (p) => {
     capVideoBuffer(p);
@@ -113,7 +117,8 @@ const ReviewCard: React.FC<{
       ? trimTranscript(transcript, job.clip.start, job.clip.end).segments.length
       : 0;
   const total = transcript?.segments.length ?? 0;
-  const dropsLines = kept < total;
+  // Offered only where replacing would lose something said, and there is a description to keep it.
+  const offerTranscript = kept < total && !!onDescriptionChange;
   const roomForBoth = groupSize < MAX_VIDEOS;
 
   const addFullTranscript = () => {
@@ -123,20 +128,48 @@ const ReviewCard: React.FC<{
     onDescriptionChange((description) =>
       appendToDescription(description, text),
     );
-    setAdded(true);
   };
   const decide = (action: () => void | Promise<void>) => {
     player.pause();
     void action();
     onClose();
   };
+  // The swap first, then the description: the swap writes the list as the mounted tree last
+  // saw it, so a description written just before would be lost, while the edit after it puts
+  // the recorded replacement into the pattern it saves (applyReplacements).
+  const replace = () =>
+    decide(async () => {
+      await keep(job.id, "replace");
+      if (offerTranscript && addTranscript) addFullTranscript();
+    });
+
+  // What changed, so the user knows what they are judging.
+  const changes = [
+    job.kind === "anonymize"
+      ? t("videoBadgeSilhouette")
+      : t("videoReviewShortened"),
+    job.clip &&
+      t("trimSelectionFree", {
+        start: formatSeconds(job.clip.start),
+        end: formatSeconds(job.clip.end),
+        length: Math.round(job.clip.end - job.clip.start),
+      }),
+    job.kind === "anonymize"
+      ? t("videoReviewNoSound")
+      : t("videoReviewSoundKept"),
+  ].filter((c): c is string => !!c);
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <AppText variant="title" numberOfLines={1} style={styles.title}>
-          {t("videoReviewTitle", { name: job.patternName })}
-        </AppText>
+        <View style={styles.title}>
+          <AppText variant="title" numberOfLines={1}>
+            {t("videoReviewHeading")}
+          </AppText>
+          <AppText variant="bodySmall" color="textMuted" numberOfLines={1}>
+            {job.patternName}
+          </AppText>
+        </View>
         <IconButton
           icon="close"
           color="textMuted"
@@ -153,53 +186,53 @@ const ReviewCard: React.FC<{
             contentFit="contain"
           />
         </View>
+        <View style={styles.tags}>
+          {changes.map((change) => (
+            <View key={change} style={styles.tag}>
+              <AppText variant="micro" color="onSurfaceVariant">
+                {change}
+              </AppText>
+            </View>
+          ))}
+        </View>
         <AppText variant="bodySmall" color="textMuted">
           {t("videoReviewHint")}
         </AppText>
-        {dropsLines && (
-          <View style={styles.note}>
-            <AppText variant="bodySmall">
-              {t("videoReviewDropsLines", { kept, total })}
+        {offerTranscript && (
+          <SwitchRow
+            title={t("videoReviewAddTranscript")}
+            value={addTranscript}
+            onValueChange={setAddTranscript}
+          />
+        )}
+        <View style={styles.actions}>
+          <Button title={t("videoReviewReplace")} onPress={replace} />
+          <Button
+            title={t("videoReviewKeepBoth")}
+            variant="secondary"
+            onPress={() => decide(() => keep(job.id, "both"))}
+            disabled={!roomForBoth}
+          />
+          {!roomForBoth && (
+            <AppText variant="caption" color="textMuted" style={styles.centred}>
+              {t("videoReviewNoRoom", { max: MAX_VIDEOS })}
             </AppText>
-            {onDescriptionChange && (
-              <Button
-                title={
-                  added
-                    ? t("videoReviewTranscriptAdded")
-                    : t("videoReviewAddTranscript")
-                }
-                icon={added ? "check" : "text-box-plus-outline"}
-                variant="secondary"
-                size="sm"
-                onPress={addFullTranscript}
-                disabled={added}
-              />
-            )}
+          )}
+          <View style={styles.quiet}>
+            <Button
+              title={t("videoReviewDiscard")}
+              variant="dangerGhost"
+              size="sm"
+              onPress={() => decide(() => discard(job.id))}
+            />
+            <Button
+              title={t("videoReviewLater")}
+              variant="ghost"
+              size="sm"
+              onPress={onClose}
+            />
           </View>
-        )}
-        <Button
-          title={t("videoReviewReplace")}
-          icon="swap-horizontal"
-          onPress={() => decide(() => keep(job.id, "replace"))}
-        />
-        <Button
-          title={t("videoReviewKeepBoth")}
-          icon="plus-box-multiple-outline"
-          variant="secondary"
-          onPress={() => decide(() => keep(job.id, "both"))}
-          disabled={!roomForBoth}
-        />
-        {!roomForBoth && (
-          <AppText variant="bodySmall" color="textMuted">
-            {t("videoReviewNoRoom", { max: MAX_VIDEOS })}
-          </AppText>
-        )}
-        <Button
-          title={t("videoReviewDiscard")}
-          icon="delete-outline"
-          variant="danger"
-          onPress={() => decide(() => discard(job.id))}
-        />
+        </View>
       </ScrollView>
     </View>
   );
@@ -263,18 +296,25 @@ const SuggestionCard: React.FC<{
         <AppText variant="bodySmall" color="textMuted">
           {t("suggestReviewTranscriptKept")}
         </AppText>
-        {!empty && !job.errorKey && onApplySuggestion && (
-          <Button
-            title={t("suggestApply")}
-            icon="check"
-            onPress={() => close(true)}
-          />
-        )}
-        <Button
-          title={t("suggestDismiss")}
-          variant="secondary"
-          onPress={() => close(false)}
-        />
+        <View style={styles.actions}>
+          {!empty && !job.errorKey && onApplySuggestion && (
+            <Button title={t("suggestApply")} onPress={() => close(true)} />
+          )}
+          <View style={styles.quiet}>
+            <Button
+              title={t("suggestDismiss")}
+              variant="dangerGhost"
+              size="sm"
+              onPress={() => close(false)}
+            />
+            <Button
+              title={t("videoReviewLater")}
+              variant="ghost"
+              size="sm"
+              onPress={onClose}
+            />
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -335,6 +375,16 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.space.sm,
   },
   title: { flex: 1 },
+  tags: { flexDirection: "row", flexWrap: "wrap", gap: theme.space.xs },
+  tag: {
+    paddingHorizontal: theme.space.sm,
+    paddingVertical: theme.space.xxs,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  actions: { gap: theme.space.sm, marginTop: theme.space.sm },
+  quiet: { flexDirection: "row", justifyContent: "space-between" },
+  centred: { textAlign: "center" },
   body: { gap: theme.space.sm },
   preview: {
     width: "100%",

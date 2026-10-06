@@ -8,7 +8,7 @@ ripple on Android, a fade elsewhere), a 44dp touch target, `accessibilityRole` /
 
 | Primitive | Use |
 |---|---|
-| `Button` | `variant`: `primary` (the one main action), `secondary` (neutral outline, Cancel beside a primary), `outline`, `ghost` (quiet text action), `danger` (confirms a destructive step, with a haptic), `dangerOutline` (leads to one), `media` (over video or the camera); `size` `sm`/`md`; optional `icon`, `loading`. A footer pair is `secondary` + `primary`, each `flex: 1`, Cancel on the left. |
+| `Button` | `variant`: `primary` (the one main action), `secondary` (neutral outline, Cancel beside a primary), `outline`, `ghost` (quiet text action), `danger` (confirms a destructive step, with a haptic), `dangerOutline` (leads to one), `dangerGhost` (quiet text that throws away something the user can make again, such as a video under review), `media` (over video or the camera); `size` `sm`/`md`; optional `icon`, `loading`. A footer pair is `secondary` + `primary`, each `flex: 1`, Cancel on the left. |
 | `IconButton` | An icon with a **required** `accessibilityLabel`. The glyph keeps its size; `hitSlop` grows the target to 44dp, so dense headers keep their layout. |
 | `Chip` | A selectable pill (filters, types, levels, one-of-several). Selection shows by colour _and_ a check; pressing gives a selection haptic. `swatch` adds a colour dot, `badge` a small uppercase tag (a modifier's position), `onRemove` + `removeLabel` a remove button inside the chip. |
 | `Card` | A surface; with `onPress` the whole card is one button. |
