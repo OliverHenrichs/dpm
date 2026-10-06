@@ -317,15 +317,12 @@
   "suggestionModel": "Suggestion model",
   "suggestionModelHint": "Drafts a pattern name and description from a transcript.",
   "deleteModel": "Delete {{name}}",
-  "videoReviewTitle": "Check the new video — {{name}}",
   "videoReviewHint": "Nothing in the pattern changes until you choose. The original video stays on your phone either way.",
-  "videoReviewDropsLines": "Replacing keeps {{kept}} of {{total}} transcript lines, the ones inside the clip. Keep both, or add the whole transcript to the description first.",
   "videoReviewAddTranscript": "Add the whole transcript to the description",
-  "videoReviewTranscriptAdded": "Added to the description",
-  "videoReviewReplace": "Replace the original in this pattern",
+  "videoReviewReplace": "Replace the original",
   "videoReviewKeepBoth": "Keep both",
   "videoReviewNoRoom": "There are already {{max}} videos here, so there is no room to keep both.",
-  "videoReviewDiscard": "Discard the new video",
+  "videoReviewDiscard": "Discard",
   "videoReviewLater": "Decide later",
   "videoJobReview": "{{name}}: the new video is ready to check",
   "videoJobReviewButton": "Review",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "Downloads {{size}} MB once.",
   "transcribeWhat": "Writes down what is said in the whole video, so you can read it and add lines to the description.",
   "transcribeHasTranscript": "This video has a transcript.",
-  "transcribeThenSuggestWhat": "From what was said. You review the suggestion before anything changes."
+  "transcribeThenSuggestWhat": "From what was said. You review the suggestion before anything changes.",
+  "videoReviewHeading": "Check the new video",
+  "videoReviewShortened": "Shortened",
+  "videoReviewNoSound": "No sound",
+  "videoReviewSoundKept": "Sound kept"
 }

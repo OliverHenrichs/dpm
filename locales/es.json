@@ -317,15 +317,12 @@
   "suggestionModel": "Modelo de sugerencias",
   "suggestionModelHint": "Redacta el nombre y la descripción de una figura a partir de una transcripción.",
   "deleteModel": "Eliminar {{name}}",
-  "videoReviewTitle": "Revisa el vídeo nuevo — {{name}}",
   "videoReviewHint": "Nada cambia en la figura hasta que elijas. El vídeo original se queda en tu teléfono en cualquier caso.",
-  "videoReviewDropsLines": "Al reemplazar se conservan {{kept}} de {{total}} líneas de la transcripción, las que están dentro del fragmento. Conserva ambos o añade antes la transcripción completa a la descripción.",
   "videoReviewAddTranscript": "Añadir la transcripción completa a la descripción",
-  "videoReviewTranscriptAdded": "Añadida a la descripción",
-  "videoReviewReplace": "Reemplazar el original en esta figura",
+  "videoReviewReplace": "Reemplazar el original",
   "videoReviewKeepBoth": "Conservar ambos",
   "videoReviewNoRoom": "Ya hay {{max}} vídeos aquí, así que no hay sitio para conservar ambos.",
-  "videoReviewDiscard": "Descartar el vídeo nuevo",
+  "videoReviewDiscard": "Descartar",
   "videoReviewLater": "Decidir más tarde",
   "videoJobReview": "{{name}}: el vídeo nuevo está listo para revisar",
   "videoJobReviewButton": "Revisar",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "Descarga {{size}} MB una sola vez.",
   "transcribeWhat": "Escribe lo que se dice en todo el vídeo, para que puedas leerlo y añadir líneas a la descripción.",
   "transcribeHasTranscript": "Este vídeo tiene una transcripción.",
-  "transcribeThenSuggestWhat": "A partir de lo que se dijo. Revisas la sugerencia antes de que cambie nada."
+  "transcribeThenSuggestWhat": "A partir de lo que se dijo. Revisas la sugerencia antes de que cambie nada.",
+  "videoReviewHeading": "Revisa el vídeo nuevo",
+  "videoReviewShortened": "Acortado",
+  "videoReviewNoSound": "Sin sonido",
+  "videoReviewSoundKept": "Con sonido"
 }

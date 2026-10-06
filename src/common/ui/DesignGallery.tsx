@@ -142,6 +142,7 @@ const DesignGallery: React.FC = () => {
               "ghost",
               "danger",
               "dangerOutline",
+              "dangerGhost",
               "media",
             ] as ButtonVariant[]
           ).map((variant) => (

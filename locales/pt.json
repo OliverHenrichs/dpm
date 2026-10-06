@@ -317,15 +317,12 @@
   "suggestionModel": "Modelo de sugestões",
   "suggestionModelHint": "Redige o nome e a descrição de uma figura a partir de uma transcrição.",
   "deleteModel": "Eliminar {{name}}",
-  "videoReviewTitle": "Verifique o vídeo novo — {{name}}",
   "videoReviewHint": "Nada muda no passo até escolher. O vídeo original fica sempre no seu telefone.",
-  "videoReviewDropsLines": "Ao substituir ficam {{kept}} de {{total}} linhas da transcrição, as que estão dentro do excerto. Mantenha ambos ou adicione antes a transcrição completa à descrição.",
   "videoReviewAddTranscript": "Adicionar a transcrição completa à descrição",
-  "videoReviewTranscriptAdded": "Adicionada à descrição",
-  "videoReviewReplace": "Substituir o original neste passo",
+  "videoReviewReplace": "Substituir o original",
   "videoReviewKeepBoth": "Manter ambos",
   "videoReviewNoRoom": "Já há {{max}} vídeos aqui, por isso não há espaço para manter ambos.",
-  "videoReviewDiscard": "Descartar o vídeo novo",
+  "videoReviewDiscard": "Descartar",
   "videoReviewLater": "Decidir mais tarde",
   "videoJobReview": "{{name}}: o vídeo novo está pronto para verificar",
   "videoJobReviewButton": "Verificar",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "Baixa {{size}} MB uma única vez.",
   "transcribeWhat": "Escreve o que é dito no vídeo inteiro, para você ler e adicionar linhas à descrição.",
   "transcribeHasTranscript": "Este vídeo tem uma transcrição.",
-  "transcribeThenSuggestWhat": "A partir do que foi dito. Você revisa a sugestão antes de qualquer mudança."
+  "transcribeThenSuggestWhat": "A partir do que foi dito. Você revisa a sugestão antes de qualquer mudança.",
+  "videoReviewHeading": "Verifique o vídeo novo",
+  "videoReviewShortened": "Encurtado",
+  "videoReviewNoSound": "Sem som",
+  "videoReviewSoundKept": "Com som"
 }

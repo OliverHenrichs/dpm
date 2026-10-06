@@ -19,6 +19,7 @@ export type ButtonVariant =
   | "ghost"
   | "danger"
   | "dangerOutline"
+  | "dangerGhost"
   | "media";
 export type ButtonSize = "sm" | "md";
 
@@ -30,7 +31,9 @@ export interface ButtonProps {
    * neutral outline — Cancel beside a primary) and `outline` (primary-tinted)
    * sit beside it; `ghost` is a quiet text action (Cancel);
    * `danger` deletes or discards; `dangerOutline` leads to a destructive
-   * step (it opens the confirmation that then uses `danger`); `media` sits
+   * step (it opens the confirmation that then uses `danger`); `dangerGhost` is a quiet
+   * text action that throws away something the user can make again (a new video under
+   * review) and needs no confirmation; `media` sits
    * over video or the camera, on a scrim that does not follow the theme.
    */
   variant?: ButtonVariant;
@@ -56,6 +59,7 @@ const foreground = (theme: AppTheme, variant: ButtonVariant) =>
     ghost: theme.colors.primary,
     danger: theme.colors.onDanger,
     dangerOutline: theme.colors.danger,
+    dangerGhost: theme.colors.danger,
     media: theme.media.onScrim,
   })[variant];
 
@@ -130,6 +134,7 @@ const styles = StyleSheet.create((theme) => ({
       ghost: theme.colors.primary,
       danger: theme.colors.danger,
       dangerOutline: theme.colors.danger,
+      dangerGhost: theme.colors.danger,
       media: theme.media.scrim,
     }[variant],
     minHeight: size === "sm" ? 36 : theme.touchTarget,
@@ -141,6 +146,7 @@ const styles = StyleSheet.create((theme) => ({
       ghost: "transparent",
       danger: theme.colors.danger,
       dangerOutline: "transparent",
+      dangerGhost: "transparent",
       media: theme.media.scrim,
     }[variant],
   }),

@@ -248,10 +248,43 @@ describe("PatternListManager", () => {
     /** Opens the finished video from the banner and puts it in place of the original. */
     const reviewAndReplace = async () => {
       fireEvent.press(await screen.findByText("Review"));
-      fireEvent.press(
-        await screen.findByText("Replace the original in this pattern"),
-      );
+      fireEvent.press(await screen.findByText("Replace the original"));
     };
+
+    it("replaces the video and keeps the whole transcript in the description", async () => {
+      (shortenVideo as jest.Mock).mockResolvedValueOnce(
+        "file:///cache/shortened-out.mp4",
+      );
+      const { list } = await renderManager([
+        pattern(2, "Whip", {
+          description: "Notes.",
+          videoRefs: [
+            {
+              type: "local",
+              value: SOURCE,
+              transcript: {
+                language: "en",
+                model: "m",
+                createdAt: 1,
+                segments: [
+                  { start: 0, end: 1, text: "Prep." },
+                  { start: 5, end: 6, text: "Anchor." },
+                ],
+              },
+            },
+          ],
+        }),
+      ]);
+
+      await startShorten(list.id);
+      await reviewAndReplace();
+
+      await waitFor(async () => {
+        const [whip] = await storedPatterns(list.id);
+        expect(whip.description).toBe("Notes.\n\nPrep. Anchor.");
+        expect(whip.videoRefs[0].value).toMatch(/shortened-/);
+      });
+    });
 
     it("links a finished job to its pattern, opening it in the list", async () => {
       (shortenVideo as jest.Mock).mockResolvedValueOnce(

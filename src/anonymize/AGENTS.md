@@ -20,7 +20,11 @@ Unqualified paths are relative to `src/anonymize/`.
 - `components/AnonymizeJobsBanner.tsx` on the pattern list reports every job; a line opens its
   pattern when it is in the active list. Queued jobs and running transcriptions can be cancelled;
   a running shorten or anonymize cannot (the native pipeline has no stop).
-- `components/VideoReviewModal.tsx` shows a finished cut for review.
+- `components/VideoReviewModal.tsx` shows a finished cut for review: tags for what changed, then
+  *Replace the original* (filled), *Keep both* (outlined), and *Discard* / *Decide later* as text.
+  When replacing drops transcript lines, a switch (on by default) adds the whole transcript to
+  the description, **after** the swap: the swap writes the list as the mounted tree last saw it,
+  so a description written first would be overwritten.
 
 ## The job queue (`jobs/jobStore.ts`)
 

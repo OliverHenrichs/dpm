@@ -317,15 +317,12 @@
   "suggestionModel": "建议模型",
   "suggestionModelHint": "根据转写起草舞步的名称和描述。",
   "deleteModel": "删除{{name}}",
-  "videoReviewTitle": "检查新视频 — {{name}}",
   "videoReviewHint": "在你做出选择之前，舞步不会有任何改变。无论如何，原视频都会保留在你的手机上。",
-  "videoReviewDropsLines": "替换后只保留 {{total}} 行转写中的 {{kept}} 行，即片段内的部分。可以两个都保留，或先把完整转写添加到描述中。",
   "videoReviewAddTranscript": "把完整转写添加到描述",
-  "videoReviewTranscriptAdded": "已添加到描述",
-  "videoReviewReplace": "在此舞步中替换原视频",
+  "videoReviewReplace": "替换原视频",
   "videoReviewKeepBoth": "两个都保留",
   "videoReviewNoRoom": "这里已有 {{max}} 个视频，没有空间同时保留两个。",
-  "videoReviewDiscard": "放弃新视频",
+  "videoReviewDiscard": "放弃",
   "videoReviewLater": "稍后决定",
   "videoJobReview": "{{name}}：新视频已可检查",
   "videoJobReviewButton": "检查",
@@ -442,5 +439,9 @@
   "modelDownloadOnce": "仅需下载一次 {{size}} MB。",
   "transcribeWhat": "记录整个视频里说的话，方便你阅读并把句子加入描述。",
   "transcribeHasTranscript": "此视频已有转写文本。",
-  "transcribeThenSuggestWhat": "根据视频里说的话生成。在任何内容更改之前，你会先审阅建议。"
+  "transcribeThenSuggestWhat": "根据视频里说的话生成。在任何内容更改之前，你会先审阅建议。",
+  "videoReviewHeading": "检查新视频",
+  "videoReviewShortened": "已缩短",
+  "videoReviewNoSound": "无声音",
+  "videoReviewSoundKept": "保留声音"
 }
