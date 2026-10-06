@@ -215,7 +215,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsMultipleSelection: true,
-      selectionLimit: 3 - activeVideoRefs.length,
+      selectionLimit: MAX_VIDEOS - activeVideoRefs.length,
     });
     if (!result.canceled) {
       const uris = await persistPickedVideos(result.assets.map((a) => a.uri));

@@ -199,7 +199,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
 
 /**
  * A video's tile, in dp: wide enough for two full touch targets side by side in its action bar,
- * and still three tiles to a phone's width.
+ * and still three tiles to a phone's width; more scroll sideways.
  */
 const TILE_WIDTH = 96;
 const THUMB_HEIGHT = 64;

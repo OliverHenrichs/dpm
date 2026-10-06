@@ -1,7 +1,7 @@
 import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
 
 /** How many videos a pattern, or one modifier combination of it, can hold. */
-export const MAX_VIDEOS = 3;
+export const MAX_VIDEOS = 10;
 
 /**
  * What a finished job does to a video reference: replace it with a new one (a shortened or

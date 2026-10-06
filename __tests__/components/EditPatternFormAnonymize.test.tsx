@@ -3,7 +3,10 @@ import * as ImagePicker from "expo-image-picker";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
-import { clearReplacements } from "@/src/anonymize/jobs/replaceVideo";
+import {
+  clearReplacements,
+  MAX_VIDEOS,
+} from "@/src/anonymize/jobs/replaceVideo";
 import { AnonymizeProvider } from "@/src/anonymize/providers/AnonymizeProvider";
 import { shortenVideo } from "@/src/anonymize/shortenVideo";
 import * as modelStore from "@/src/transcribe/modelStore";
@@ -386,11 +389,10 @@ describe("EditPatternForm — editing a video", () => {
     renderForm(
       createTestPattern(TYPE.id, {
         id: 1,
-        videoRefs: [
-          { type: "url", value: "https://y.tube/a" },
-          { type: "url", value: "https://y.tube/b" },
-          { type: "url", value: "https://y.tube/c" },
-        ],
+        videoRefs: Array.from({ length: MAX_VIDEOS }, (_, i) => ({
+          type: "url" as const,
+          value: `https://y.tube/${i}`,
+        })),
       }),
     );
 
@@ -444,21 +446,23 @@ describe("EditPatternForm — editing a video", () => {
     expect(screen.queryByLabelText("Edit video 1")).toBeNull();
   });
 
-  it("says why '+' is off once there are three videos", async () => {
+  it("says why '+' is off once the pattern is full", async () => {
     renderForm(
       createTestPattern(TYPE.id, {
         id: 1,
         videoRefs: [
           { type: "local", value: SOURCE },
-          { type: "url", value: "https://y.tube/a" },
-          { type: "url", value: "https://y.tube/b" },
+          ...Array.from({ length: MAX_VIDEOS - 1 }, (_, i) => ({
+            type: "url" as const,
+            value: `https://y.tube/${i}`,
+          })),
         ],
       }),
     );
 
     expect(
       await screen.findByText(
-        "Holds up to 3 videos. Remove one to add another.",
+        "Holds up to 10 videos. Remove one to add another.",
       ),
     ).toBeOnTheScreen();
   });
