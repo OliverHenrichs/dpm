@@ -235,16 +235,18 @@ generate the app signing key; the EAS keystore is then only the upload key, and 
 can be reset through Play support rather than losing the app. The first AAB has to be uploaded by
 hand in Play Console; `eas submit` works after that.
 
-**Uploading to Play from EAS.** `eas build --platform android --profile production --auto-submit`
-builds the AAB and hands it straight to Play's closed testing track (`alpha`, set under `submit` in
-`eas.json`). `eas submit --platform android --profile production --latest` sends an existing build.
+**Uploading to Play from EAS.** `npm run release:android` (`eas build --platform android --profile
+production --auto-submit`) builds the AAB and hands it straight to Play's closed testing track
+(`alpha`, set under `submit` in `eas.json`). `npm run submit:android` sends the latest existing
+build.
 Submitting needs a Google service account key, held by EAS and never committed:
 
 1. In Google Cloud (any project), create a service account and download a JSON key for it.
 2. In Play Console → *Users and permissions*, invite the service account's email and grant it
    release permissions for DPM.
 3. Run `eas credentials -p android`, choose the production build, then *Google Service Account* →
-   upload the JSON key.
+   upload the JSON key, and assign it under *Manage your Google Service Account Key for Play Store
+   Submissions*. An uploaded key that is not assigned makes every submit ask which key to use.
 
 Build from a checkout that has the anonymize model weights (see `modules/AGENTS.md`), as for any
 production build. To publish to another track later, change `track` (`internal`, `alpha`, `beta`,

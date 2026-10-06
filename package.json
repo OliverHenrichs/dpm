@@ -20,6 +20,8 @@
     "assets:check": "node scripts/check-model-assets.js",
     "eas-build-pre-install": "node scripts/check-model-assets.js",
     "typecheck": "tsc --noEmit",
+    "release:android": "eas build --platform android --profile production --auto-submit",
+    "submit:android": "eas submit --platform android --profile production --latest",
     "format": "prettier --write .",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\" \"__tests__/**/*.{ts,tsx}\" \"__mocks__/**/*.{ts,tsx}\" \"utils/**/*.{ts,tsx}\" \"*.{ts,js}\""
   },
