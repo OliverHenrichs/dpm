@@ -57,20 +57,20 @@ jest.mock("@/src/anonymize/components/VideoEditPanel", () => ({
     providers,
     onShorten,
     onAnonymize,
-    options,
+    cutOptions,
   }: {
     sourceUri: string;
     providers: unknown[];
     onShorten: (r: object) => void;
     onAnonymize: (p: unknown, r: object) => void;
-    options?: React.ReactNode;
+    cutOptions?: (cut: "shorten" | "anonymize") => React.ReactNode;
   }) => {
     const { Text: MockText } = jest.requireActual("react-native");
     const window = { sourceUri, startSeconds: 1, endSeconds: 4 };
     return (
       <>
         <MockText>{`trim ${sourceUri}`}</MockText>
-        {options}
+        {cutOptions?.("shorten")}
         <MockText onPress={() => onShorten(window)}>mock shorten</MockText>
         {providers.length > 0 && (
           <MockText onPress={() => onAnonymize(providers[0], window)}>

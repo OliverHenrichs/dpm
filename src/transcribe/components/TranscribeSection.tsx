@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { AppText, Button, Chip } from "@/src/common/ui";
+import { AppText, Button, SwitchRow } from "@/src/common/ui";
 import { isAudioExtractAvailable } from "@/modules/audio-extract";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import {
@@ -27,14 +27,15 @@ type Props = {
 };
 
 /**
- * The speech part of Edit video (L4): transcribe what is said, or open the transcript there
- * already is. The first transcription needs the speech model; the user is told its size before
- * anything is downloaded, and the job then fetches it. A silhouette has no sound (L3 drops it),
- * so it is not offered there.
+ * The Speech tab of Edit video (L4): transcribe what is said, or open the transcript there
+ * already is. The first transcription needs the speech model; its size shows under the button
+ * until it is on the phone, and the job then fetches it. A silhouette has no sound (L3 drops
+ * it), so it is not offered there.
  *
- * Where suggestions can run, it can go on to suggest a name and description in the same job,
- * which then waits for the user to review the suggestion. On by default once the suggestion
- * model is on the phone; off before, since that is a much larger download (named on the chip).
+ * Where suggestions can run, a switch makes the same job go on to suggest a name and
+ * description, which then waits for the user to review the suggestion. On by default once the
+ * suggestion model is on the phone; off before, since that is a much larger download (named
+ * under the switch).
  */
 const TranscribeSection: React.FC<Props> = ({
   target,
@@ -43,7 +44,6 @@ const TranscribeSection: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const startTranscription = useStartTranscription();
-  const [confirmDownload, setConfirmDownload] = useState(false);
   const offerSuggest = canSuggest();
   const suggestInstalled =
     offerSuggest && installedModelUri(SUGGESTION_MODEL) !== null;
@@ -56,59 +56,29 @@ const TranscribeSection: React.FC<Props> = ({
     startTranscription(target, undefined, { suggest: offerSuggest && suggest });
     onStarted();
   };
-  const suggestChip = offerSuggest && (
-    <Chip
-      label={
-        suggestInstalled
-          ? t("transcribeThenSuggest")
-          : t("transcribeThenSuggestDownload", { size: SUGGESTION_DOWNLOAD_MB })
-      }
-      selected={suggest}
-      onPress={() => setSuggest((on) => !on)}
-    />
-  );
-  const onTranscribe = () => {
-    if (installedModels()) run();
-    else setConfirmDownload(true);
-  };
+  // Named only while there is something to download.
+  const download = installedModels()
+    ? undefined
+    : t("modelDownloadOnce", { size: TRANSCRIPTION_DOWNLOAD_MB });
 
-  return (
-    <View style={styles.section}>
-      <AppText variant="label" color="textMuted">
-        {t("transcribeSection")}
+  if (target.generated && !target.transcript) {
+    return (
+      <AppText variant="bodySmall" color="textMuted">
+        {t("transcribeNoSound")}
       </AppText>
-      {target.generated && !target.transcript ? (
-        <AppText variant="bodySmall" color="textMuted">
-          {t("transcribeNoSound")}
-        </AppText>
-      ) : confirmDownload ? (
-        <>
-          <AppText variant="bodySmall">
-            {t("transcribeDownloadHint", { size: TRANSCRIPTION_DOWNLOAD_MB })}
-          </AppText>
-          <View style={styles.row}>
-            <Button
-              title={t("cancel")}
-              variant="secondary"
-              onPress={() => setConfirmDownload(false)}
-              style={styles.button}
-            />
-            <Button
-              title={t("transcribeDownloadAndRun")}
-              icon="download"
-              onPress={run}
-              style={styles.button}
-            />
-          </View>
-        </>
-      ) : target.transcript ? (
-        <View style={styles.row}>
+    );
+  }
+
+  if (target.transcript) {
+    return (
+      <>
+        <AppText variant="bodySmall">{t("transcribeHasTranscript")}</AppText>
+        <View style={styles.actions}>
           {onOpenTranscript && (
             <Button
               title={t("transcriptOpen")}
               icon="text-box-outline"
               onPress={onOpenTranscript}
-              style={styles.button}
             />
           )}
           {!target.generated && (
@@ -116,36 +86,51 @@ const TranscribeSection: React.FC<Props> = ({
               title={t("transcribeAgain")}
               icon="refresh"
               variant="secondary"
-              onPress={onTranscribe}
-              style={styles.button}
+              onPress={run}
             />
           )}
+          {!target.generated && download ? (
+            <AppText variant="caption" color="textMuted" style={styles.centred}>
+              {download}
+            </AppText>
+          ) : null}
         </View>
-      ) : (
-        <>
-          {suggestChip}
-          <Button
-            title={t("transcribeRun")}
-            icon="account-voice"
-            variant="secondary"
-            onPress={onTranscribe}
-          />
-        </>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <AppText variant="bodySmall">{t("transcribeWhat")}</AppText>
+      {offerSuggest && (
+        <SwitchRow
+          title={t("transcribeThenSuggest")}
+          description={[
+            t("transcribeThenSuggestWhat"),
+            !suggestInstalled &&
+              t("modelDownloadOnce", { size: SUGGESTION_DOWNLOAD_MB }),
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          value={suggest}
+          onValueChange={setSuggest}
+        />
       )}
-    </View>
+      <View style={styles.actions}>
+        <Button title={t("transcribeRun")} icon="account-voice" onPress={run} />
+        {download ? (
+          <AppText variant="caption" color="textMuted" style={styles.centred}>
+            {download}
+          </AppText>
+        ) : null}
+      </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
-  section: {
-    gap: theme.space.sm,
-    marginTop: theme.space.lg,
-    paddingTop: theme.space.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: theme.space.sm },
-  button: { flexGrow: 1 },
+  actions: { gap: theme.space.sm, marginTop: theme.space.xs },
+  centred: { textAlign: "center" },
 }));
 
 export default TranscribeSection;

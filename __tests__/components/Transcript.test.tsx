@@ -51,10 +51,6 @@ jest.mock("@/src/anonymize/shortenVideo", () => ({
 jest.mock("@/src/anonymize/providers/allProviders", () => ({
   ALL_PROVIDERS: [],
 }));
-jest.mock("@/src/anonymize/components/VideoEditPanel", () => ({
-  __esModule: true,
-  default: () => null,
-}));
 
 const mockedInstalled = installedModels as jest.MockedFunction<
   typeof installedModels
@@ -203,10 +199,11 @@ function renderForm(existing: IPattern) {
 
 const openEditor = async () => {
   fireEvent.press(await screen.findByLabelText("Edit a video"));
+  fireEvent.press(await screen.findByText("Speech"));
 };
 
 describe("transcribing from the pattern form", () => {
-  it("asks before the first download, transcribes, and adds lines to the description", async () => {
+  it("names the first download, transcribes, and adds lines to the description", async () => {
     mockedInstalled.mockReturnValue(null);
     mockedTranscribe.mockReturnValue({
       promise: Promise.resolve({ transcript: TRANSCRIPT, timing: TIMING }),
@@ -222,11 +219,8 @@ describe("transcribing from the pattern form", () => {
     );
 
     await openEditor();
-    fireEvent.press(await screen.findByText("Transcribe speech"));
-    expect(
-      screen.getByText(/one-time download .* \(61 MB\)/),
-    ).toBeOnTheScreen();
-    fireEvent.press(screen.getByText("Download and transcribe"));
+    expect(screen.getByText("Downloads 61 MB once.")).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Transcribe speech"));
 
     // Primed with the list's own words.
     await waitFor(() =>

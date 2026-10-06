@@ -14,6 +14,7 @@ ripple on Android, a fade elsewhere), a 44dp touch target, `accessibilityRole` /
 | `Card` | A surface; with `onPress` the whole card is one button. |
 | `ListRow` | Every row of a list, sheet, menu or drawer: `icon` or `leading`, `title` with `meta` and `subtitle`, separately pressable `trailing` controls. `selection="single"` is a radio (a language, the active list, a sort field), `"multiple"` a checkbox (lists to export); omitted, a button whose `selected` highlights the current entry (the drawer). `expanded` shows a chevron and announces the state. `variant="card"` for rows on the page, `plain` inside sheets. |
 | `SegmentedControl` | Two to four exclusive options in one track, with optional counts. `kind="tabs"` switches the view below (Patterns / Modifiers); `kind="choice"` sets a value, announced as radios (import's Skip / Replace). |
+| `SwitchRow` | An option that changes what an action will do (title, a line on what it does or costs, a switch), set above that action's button. Never a `Chip` for this: a chip reads as a button. |
 | `AppText` | `variant` is a text style, `color` a colour role. |
 | `Tappable` | The same press behaviour around content that is not text or an icon (the header's logo, a video thumbnail). `accessibilityLabel` required. Reach for the others first. |
 | `Icon` | The one icon set; see the theme file. |

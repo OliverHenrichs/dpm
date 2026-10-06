@@ -9,9 +9,12 @@ Unqualified paths are relative to `src/anonymize/`.
 ## Where the user meets it
 
 - Edit Pattern → Videos → **Edit video** (`components/VideoEditPanel.tsx`, in `AnonymizeModal`):
-  pick the part to keep on a trim bar (`TrimWindowBar`, `model/trimWindow.ts`), then *Shorten*,
-  *Anonymize* (tap each dancer on the first frame, `model/promptPoints.ts`) or *Transcribe speech*.
-  Before a cut it offers to transcribe the whole video first, queued ahead of the cut.
+  one tab per job, *Shorten*, *Anonymize* and *Speech* (`TranscribeSection`). The cut tabs pick
+  the part to keep on a trim bar (`TrimWindowBar`, `model/trimWindow.ts`); *Anonymize* then has the
+  user tap each dancer on the first frame (`model/promptPoints.ts`). Each tab says what it does and
+  ends in one button naming the result ("Shorten to 18 s"); options that change the job are
+  `SwitchRow`s above that button, never chips. A disabled button says why under it. Before a cut
+  a switch offers to transcribe the whole video first, queued ahead of the cut.
 - The pattern list's **+** → *From a video* / *Record a video* seeds a new pattern, then offers
   Edit video after saving.
 - `components/AnonymizeJobsBanner.tsx` on the pattern list reports every job; a line opens its
