@@ -17,6 +17,7 @@ import {
 import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
+import { correctTranscriptLine } from "@/src/pattern/data/transcripts";
 import { LANGUAGES } from "@/src/settings/types/Languages";
 import SuggestionPanel from "@/src/suggest/components/SuggestionPanel";
 import { Suggestion } from "@/src/suggest/suggestPrompt";
@@ -29,6 +30,7 @@ import {
   followScrollTarget,
   MANUAL_SCROLL_PAUSE_MS,
 } from "@/src/transcribe/followScroll";
+import TranscriptLineEditor from "@/src/transcribe/components/TranscriptLineEditor";
 
 export type TranscriptTarget = {
   /** The list the video is in; needed only to suggest, so a read-only view may leave it out. */
@@ -53,6 +55,11 @@ type Props = {
   onRetranscribe?: (language: string) => void;
   /** Takes a suggested name and description (L4); omitted where there is no form to fill. */
   onApplySuggestion?: (suggestion: Suggestion) => void;
+  /**
+   * Takes the transcript with a line corrected by hand; the caller keeps it and hands it back in
+   * [target]. Omitted where the transcript cannot be changed (the read-only pattern details).
+   */
+  onTranscriptChange?: (transcript: IVideoTranscript) => void;
 };
 
 /** Whisper's name for a language the app does not ship, or "und" when nothing was said. */
@@ -69,8 +76,9 @@ const languageLabel = (code: string, unknown: string) =>
  * which it is, since both end in the description. The description is never written on its own:
  * teachers count out loud and joke, and the description is the user's.
  *
- * Without the form's callbacks (the read-only pattern details) it is only the video and its
- * lines, to follow along or jump to a moment.
+ * In a form, each line's pencil corrects what the model misheard (dance slang, mostly) before
+ * it is copied or suggested from. Without the form's callbacks (the read-only pattern details)
+ * it is only the video and its lines, to follow along or jump to a moment.
  */
 const TranscriptSheet: React.FC<Props> = ({
   target,
@@ -78,6 +86,7 @@ const TranscriptSheet: React.FC<Props> = ({
   onDescriptionChange,
   onRetranscribe,
   onApplySuggestion,
+  onTranscriptChange,
 }) => (
   <Modal
     visible={target !== null}
@@ -94,6 +103,7 @@ const TranscriptSheet: React.FC<Props> = ({
           onDescriptionChange={onDescriptionChange}
           onRetranscribe={onRetranscribe}
           onApplySuggestion={onApplySuggestion}
+          onTranscriptChange={onTranscriptChange}
         />
       )}
     </ModalOverlay>
@@ -106,6 +116,7 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
   onDescriptionChange,
   onRetranscribe,
   onApplySuggestion,
+  onTranscriptChange,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -113,6 +124,7 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
   const [ticked, setTicked] = useState<ReadonlySet<number>>(new Set());
   const [playhead, setPlayhead] = useState(0);
   const [pickLanguage, setPickLanguage] = useState(false);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const player = useVideoPlayer(target.sourceUri, (p) => {
     capVideoBuffer(p);
@@ -130,13 +142,16 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
   const viewport = useRef({ y: 0, height: 0, contentHeight: 0 });
   const manualUntil = useRef(0);
   useEffect(() => {
-    if (current < 0 || Date.now() < manualUntil.current) return;
+    // Nor while a line is being corrected: it would scroll the text field away.
+    if (current < 0 || editing !== null || Date.now() < manualUntil.current) {
+      return;
+    }
     const line = lineLayout.current.get(current);
     if (!line) return;
     const { contentHeight, ...view } = viewport.current;
     const y = followScrollTarget(line, view, contentHeight);
     if (y !== null) scrollRef.current?.scrollTo({ y, animated: true });
-  }, [current]);
+  }, [current, editing]);
   const pauseFollowing = () => {
     manualUntil.current = Date.now() + MANUAL_SCROLL_PAUSE_MS;
   };
@@ -152,6 +167,13 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
     if (next.has(i)) next.delete(i);
     else next.add(i);
     setTicked(next);
+  };
+  const correctLine = (index: number, text: string) => {
+    const corrected = correctTranscriptLine(target.transcript, index, text);
+    // A removed line shifts the ones after it; the ticks would land on their neighbours.
+    if (corrected.segments.length !== segments.length) setTicked(new Set());
+    onTranscriptChange?.(corrected);
+    setEditing(null);
   };
   const addToDescription = () => {
     const excerpt = transcriptExcerpt(segments, ticked);
@@ -255,6 +277,16 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
         )}
         {segments.map((segment, i) => {
           const isTicked = ticked.has(i);
+          if (i === editing && onTranscriptChange) {
+            return (
+              <TranscriptLineEditor
+                key={i}
+                segment={segment}
+                onSave={(text) => correctLine(i, text)}
+                onCancel={() => setEditing(null)}
+              />
+            );
+          }
           return (
             <View
               key={i}
@@ -294,6 +326,16 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
                 </View>
                 <AppText>{segment.text}</AppText>
               </Tappable>
+              {onTranscriptChange && (
+                <IconButton
+                  icon="pencil-outline"
+                  color="textMuted"
+                  onPress={() => setEditing(i)}
+                  accessibilityLabel={t("transcriptLineEdit", {
+                    time: formatTime(segment.start),
+                  })}
+                />
+              )}
             </View>
           );
         })}

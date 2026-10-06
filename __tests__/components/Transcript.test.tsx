@@ -7,7 +7,12 @@ import TranscriptSheet, {
 } from "@/src/transcribe/components/TranscriptSheet";
 import AnonymizeJobsBanner from "@/src/anonymize/components/AnonymizeJobsBanner";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
-import { clearReplacements } from "@/src/anonymize/jobs/replaceVideo";
+import {
+  applyReplacements,
+  clearReplacements,
+  recordReplacement,
+} from "@/src/anonymize/jobs/replaceVideo";
+import { withTranscript } from "@/src/pattern/data/transcripts";
 import {
   IPattern,
   IVideoTranscript,
@@ -162,6 +167,50 @@ describe("TranscriptSheet", () => {
     expect(screen.queryByText("Wrong language?")).toBeNull();
   });
 
+  it("corrects a line by hand, and unticks lines when one is removed", () => {
+    const onTranscriptChange = jest.fn();
+    renderWithProviders(
+      <TranscriptSheet
+        target={target()}
+        onClose={jest.fn()}
+        onDescriptionChange={jest.fn()}
+        onTranscriptChange={onTranscriptChange}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Correct the line at 0:12"));
+    fireEvent.changeText(
+      screen.getByLabelText("Line at 0:12"),
+      "Then the left side pass.",
+    );
+    fireEvent.press(screen.getByText("Save line"));
+
+    const [corrected] = onTranscriptChange.mock.calls[0];
+    expect(corrected.segments[2]).toEqual({
+      start: 12,
+      end: 15,
+      text: "Then the left side pass.",
+    });
+    expect(corrected.editedAt).toEqual(expect.any(Number));
+
+    fireEvent.press(screen.getByLabelText("Select the line at 0:03"));
+    fireEvent.press(screen.getByLabelText("Correct the line at 0:00"));
+    fireEvent.changeText(screen.getByLabelText("Line at 0:00"), "");
+    fireEvent.press(screen.getByText("Remove line"));
+
+    expect(onTranscriptChange.mock.calls[1][0].segments).toHaveLength(2);
+    expect(
+      screen.getByText("Copy selected lines to description (0)"),
+    ).toBeOnTheScreen();
+  });
+
+  it("offers no corrections in the read-only view", () => {
+    renderWithProviders(
+      <TranscriptSheet target={target()} onClose={jest.fn()} />,
+    );
+    expect(screen.queryByLabelText("Correct the line at 0:12")).toBeNull();
+  });
+
   it("says so when nothing was said", () => {
     renderWithProviders(
       <TranscriptSheet
@@ -262,6 +311,44 @@ describe("transcribing from the pattern form", () => {
     fireEvent.press(screen.getByLabelText("Play from 0:12"));
     expect(player.seekBy).toHaveBeenCalledWith(12);
     expect(player.play).toHaveBeenCalled();
+  });
+
+  it("saves a line corrected in the Speech tab, over the job that made the transcript", async () => {
+    // The transcription finished earlier in this session: its update is re-applied to every
+    // draft saved later, and must not put the model's words back.
+    recordReplacement(SOURCE, withTranscript(TRANSCRIPT));
+    const { saved } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        name: "Sugar Push",
+        videoRefs: [{ type: "local", value: SOURCE, transcript: TRANSCRIPT }],
+      }),
+    );
+
+    await openEditor();
+    fireEvent.press(await screen.findByLabelText("Correct the line at 0:12"));
+    fireEvent.changeText(
+      screen.getByLabelText("Line at 0:12"),
+      "Then the whip, sugar push style.",
+    );
+    fireEvent.press(screen.getByText("Save line"));
+
+    expect(
+      await screen.findByText("Then the whip, sugar push style."),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText("Transcribing again replaces your corrections."),
+    ).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText("Close"));
+    fireEvent.press(screen.getByText("Save"));
+
+    // usePatternCrud runs every save through applyReplacements.
+    await waitFor(() =>
+      expect(
+        applyReplacements(saved()).videoRefs[0].transcript!.segments[2].text,
+      ).toBe("Then the whip, sugar push style."),
+    );
   });
 
   it("does not offer to transcribe a silhouette", async () => {

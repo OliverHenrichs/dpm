@@ -4,7 +4,11 @@ import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { AppText, Button, SwitchRow } from "@/src/common/ui";
 import { isAudioExtractAvailable } from "@/modules/audio-extract";
-import { IVideoReference } from "@/src/pattern/types/IPatternList";
+import {
+  IVideoReference,
+  IVideoTranscript,
+} from "@/src/pattern/types/IPatternList";
+import { correctTranscriptLine } from "@/src/pattern/data/transcripts";
 import {
   installedModels,
   installedModelUri,
@@ -26,11 +30,14 @@ type Props = {
   onStarted: () => void;
   /** The preview above, which a transcript follows and jumps in. */
   playback: SpeechPlayback;
+  /** Takes the transcript with a line corrected by hand; omitted, the lines cannot be edited. */
+  onTranscriptChange?: (transcript: IVideoTranscript) => void;
 };
 
 /**
  * The Speech tab of Edit video (L4): transcribe what is said, or show the transcript there
- * already is, its lines following the preview above (tap one to play from there). Copying
+ * already is, its lines following the preview above (tap one to play from there, or its pencil
+ * to correct what the model misheard). Copying
  * lines and suggestions are in the transcript sheet, opened from the video's thumbnail. The first transcription needs the speech model; its size shows under the button
  * until it is on the phone, and the job then fetches it. A silhouette has no sound (L3 drops
  * it), so it is not offered there.
@@ -44,6 +51,7 @@ const TranscribeSection: React.FC<Props> = ({
   target,
   onStarted,
   playback,
+  onTranscriptChange,
 }) => {
   const { t } = useTranslation();
   const startTranscription = useStartTranscription();
@@ -73,12 +81,20 @@ const TranscribeSection: React.FC<Props> = ({
   }
 
   if (target.transcript) {
+    const transcript = target.transcript;
     return (
       <>
         <TranscriptLines
-          segments={target.transcript.segments}
+          segments={transcript.segments}
           playhead={playback.playhead}
           onPlayFrom={playback.playFrom}
+          onCorrectLine={
+            onTranscriptChange &&
+            ((index, text) =>
+              onTranscriptChange(
+                correctTranscriptLine(transcript, index, text),
+              ))
+          }
         />
         {!target.generated && (
           <View style={styles.actions}>
@@ -88,6 +104,15 @@ const TranscribeSection: React.FC<Props> = ({
               variant="secondary"
               onPress={run}
             />
+            {transcript.editedAt ? (
+              <AppText
+                variant="caption"
+                color="textMuted"
+                style={styles.centred}
+              >
+                {t("transcribeAgainReplacesCorrections")}
+              </AppText>
+            ) : null}
             {download ? (
               <AppText
                 variant="caption"

@@ -7,8 +7,10 @@ import {
   IPattern,
   IPatternModifierRef,
   IVideoReference,
+  IVideoTranscript,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
+import { setVideoTranscript } from "@/src/pattern/data/transcripts";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { useTranslation } from "react-i18next";
@@ -339,6 +341,21 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       transcript: ref.transcript,
       hasSound: !ref.generated,
     });
+  };
+
+  // A transcript line corrected by hand, in Edit video's Speech tab or the transcript sheet. It
+  // lives in the draft, like every other change to the videos, and is stored when the pattern is
+  // saved; the open sheet is handed the corrected transcript to show.
+  const canCorrectTranscripts =
+    !!activeList && !activeList.readonly && !isActiveVideoReadonly;
+  const correctTranscript = (uri: string, transcript: IVideoTranscript) => {
+    setNewPattern((prev) => setVideoTranscript(prev, uri, transcript));
+    setAnonymizeTarget((prev) =>
+      prev?.sourceUri === uri ? { ...prev, transcript } : prev,
+    );
+    setTranscriptTarget((prev) =>
+      prev?.sourceUri === uri ? { ...prev, transcript } : prev,
+    );
   };
 
   const pickForAnonymize = async () => {
@@ -766,6 +783,12 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <AnonymizeModal
         target={anonymizeTarget}
         onClose={() => setAnonymizeTarget(null)}
+        onTranscriptChange={
+          canCorrectTranscripts && anonymizeTarget
+            ? (transcript) =>
+                correctTranscript(anonymizeTarget.sourceUri, transcript)
+            : undefined
+        }
       />
       <TranscriptSheet
         target={transcriptTarget}
@@ -777,6 +800,12 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           }))
         }
         onApplySuggestion={applySuggestion}
+        onTranscriptChange={
+          canCorrectTranscripts && transcriptTarget
+            ? (transcript) =>
+                correctTranscript(transcriptTarget.sourceUri, transcript)
+            : undefined
+        }
         onRetranscribe={
           canEditVideos && transcriptTarget && activeList
             ? (language) =>

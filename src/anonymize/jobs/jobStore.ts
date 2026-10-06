@@ -5,7 +5,7 @@ import {
   savePatterns,
 } from "@/src/pattern/data/PatternListStorage";
 import { persistVideo } from "@/src/pattern/data/videoFiles";
-import { trimTranscript } from "@/src/pattern/data/transcripts";
+import { trimTranscript, withTranscript } from "@/src/pattern/data/transcripts";
 import { generateUUID } from "@/src/pattern/types/PatternType";
 import {
   IGeneratedVideo,
@@ -457,10 +457,7 @@ async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
   } finally {
     stopRunning = null;
   }
-  await attach(job.listId, job.request.sourceUri, (ref) => ({
-    ...ref,
-    transcript,
-  }));
+  await attach(job.listId, job.request.sourceUri, withTranscript(transcript));
   if (!suggest || transcript.segments.length === 0) {
     patch(id, {
       status: "done",
