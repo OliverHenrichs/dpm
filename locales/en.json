@@ -431,5 +431,7 @@
   "danceNone": "None",
   "reelsOpen": "Watch {{name}}",
   "reelsBack": "Back to all reels",
-  "rhythmAddStep": "Add {{step}}"
+  "rhythmAddStep": "Add {{step}}",
+  "rhythmUndoStep": "Undo",
+  "rhythmRemoveStep": "Remove {{step}}"
 }

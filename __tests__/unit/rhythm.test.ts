@@ -1,7 +1,9 @@
 import {
   appendRhythmStep,
   defaultRhythm,
+  lastRhythmStep,
   nextRhythmSteps,
+  removeLastRhythmStep,
   normalizeRhythm,
   rhythmCounts,
   rhythmMatchesCounts,
@@ -118,6 +120,14 @@ describe("composing a rhythm a step at a time", () => {
   it("appends with a single space", () => {
     expect(appendRhythmStep("1 2 ", "3&4")).toBe("1 2 3&4");
     expect(appendRhythmStep("", "1")).toBe("1");
+  });
+
+  it("takes the last step off again", () => {
+    expect(removeLastRhythmStep("1 2 3&4 ")).toBe("1 2");
+    expect(removeLastRhythmStep("1")).toBe("");
+    expect(removeLastRhythmStep("")).toBe("");
+    expect(lastRhythmStep(" 1 2 3a4 ")).toBe("3a4");
+    expect(lastRhythmStep("  ")).toBeUndefined();
   });
 
   it("only ever composes rhythms", () => {

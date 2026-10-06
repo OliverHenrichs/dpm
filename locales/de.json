@@ -431,5 +431,7 @@
   "danceNone": "Keiner",
   "reelsOpen": "{{name}} ansehen",
   "reelsBack": "Zurück zu allen Reels",
-  "rhythmAddStep": "{{step}} anhängen"
+  "rhythmAddStep": "{{step}} anhängen",
+  "rhythmUndoStep": "Rückgängig",
+  "rhythmRemoveStep": "{{step}} entfernen"
 }

@@ -431,5 +431,7 @@
   "danceNone": "لا شيء",
   "reelsOpen": "مشاهدة {{name}}",
   "reelsBack": "العودة إلى كل المقاطع",
-  "rhythmAddStep": "إضافة {{step}}"
+  "rhythmAddStep": "إضافة {{step}}",
+  "rhythmUndoStep": "تراجع",
+  "rhythmRemoveStep": "إزالة {{step}}"
 }

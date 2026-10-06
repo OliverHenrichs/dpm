@@ -24,10 +24,12 @@ import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/Generic
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
   appendRhythmStep,
+  lastRhythmStep,
   nextRhythmSteps,
   normalizeRhythm,
   rhythmCounts,
   rhythmMatchesCounts,
+  removeLastRhythmStep,
   rhythmSuggestions,
 } from "@/src/pattern/rhythm/rhythm";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -437,6 +439,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     ? []
     : rhythmSuggestions(activeList?.dance, newPattern.counts);
   const nextSteps = nextRhythmSteps(rhythmDraft);
+  // The last step, for the undo chip beside the next steps: a mistap is fixed without the
+  // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
+  const lastStep = lastRhythmStep(rhythmDraft);
 
   return (
     <View style={styles.addPatternContainer}>
@@ -529,7 +534,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             ))}
           </View>
         )}
-        {nextSteps.length > 0 && (
+        {(nextSteps.length > 0 || lastStep) && (
           <View style={styles.rhythmSuggestions}>
             {nextSteps.map((step) => (
               <Chip
@@ -542,6 +547,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 }
               />
             ))}
+            {lastStep && (
+              <Chip
+                label={t("rhythmUndoStep")}
+                icon="backspace-outline"
+                accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
+                onPress={() => changeRhythm(removeLastRhythmStep(rhythmDraft))}
+              />
+            )}
           </View>
         )}
       </View>

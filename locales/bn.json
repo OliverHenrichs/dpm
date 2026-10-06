@@ -431,5 +431,7 @@
   "danceNone": "কোনোটি নয়",
   "reelsOpen": "{{name}} দেখুন",
   "reelsBack": "সব রিলসে ফিরে যান",
-  "rhythmAddStep": "{{step}} যোগ করুন"
+  "rhythmAddStep": "{{step}} যোগ করুন",
+  "rhythmUndoStep": "পূর্বাবস্থায় ফেরান",
+  "rhythmRemoveStep": "{{step}} সরান"
 }
