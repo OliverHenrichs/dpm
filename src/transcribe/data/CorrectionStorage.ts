@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
 import {
   correctionsFromEdit,
+  editedLines,
   mergeCorrections,
   TranscriptCorrection,
 } from "@/src/transcribe/corrections";
@@ -37,7 +39,25 @@ export function rememberCorrections(
   before: string,
   after: string,
 ): Promise<void> {
-  const learned = correctionsFromEdit(before, after);
+  return remember(listId, correctionsFromEdit(before, after));
+}
+
+/** Learns from every line an edit of a transcript changed; see rememberCorrections. */
+export function rememberTranscriptEdit(
+  listId: string,
+  before: IVideoTranscript,
+  after: IVideoTranscript,
+): Promise<void> {
+  return remember(
+    listId,
+    editedLines(before, after).flatMap(([a, b]) => correctionsFromEdit(a, b)),
+  );
+}
+
+function remember(
+  listId: string,
+  learned: TranscriptCorrection[],
+): Promise<void> {
   if (learned.length === 0) return Promise.resolve();
   const work = async () => {
     const merged = mergeCorrections(await loadCorrections(listId), learned);

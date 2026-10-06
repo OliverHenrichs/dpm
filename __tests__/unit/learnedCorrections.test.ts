@@ -1,6 +1,7 @@
 import {
   applyCorrections,
   correctionsFromEdit,
+  editedLines,
   applyLearnedCorrections,
   MAX_CORRECTIONS,
   mergeCorrections,
@@ -129,5 +130,31 @@ describe("applyCorrections", () => {
         { from: "bush", to: "push" },
       ]).segments.map((s) => s.text),
     ).toEqual(["A sugar push.", "Another sugar push."]);
+  });
+});
+
+describe("editedLines", () => {
+  it("pairs changed lines by their times, and ignores removed ones", () => {
+    const before = {
+      language: "en",
+      model: "whisper-base-q5_1",
+      createdAt: 1,
+      segments: [
+        { start: 0, end: 2, text: "A sugar bush." },
+        { start: 2, end: 4, text: "Kept." },
+        { start: 4, end: 6, text: "Removed." },
+      ],
+    };
+    const after = {
+      ...before,
+      segments: [
+        { start: 0, end: 2, text: "A sugar push." },
+        { start: 2, end: 4, text: "Kept." },
+      ],
+    };
+
+    expect(editedLines(before, after)).toEqual([
+      ["A sugar bush.", "A sugar push."],
+    ]);
   });
 });

@@ -5,16 +5,16 @@ Unqualified paths are relative to `src/pattern/data/`.
 
 ## Persistence (AsyncStorage)
 
-| Key | Holds | Owner |
-|---|---|---|
-| `@patternLists` | `IPatternList[]`, **without** patterns | `PatternListStorage.ts` |
-| `@patterns_{listId}` | `IPattern[]` of one list | `PatternListStorage.ts` |
-| `@activeListId` | the active list's UUID | `PatternListStorage.ts` |
-| `@schemaVersion` | the migrated data's version | `migrations/index.ts` |
-| `@graphLayout_{listId}` | a user-arranged network layout | `src/pattern/graph/data/` |
-| `@transcriptCorrections_{listId}` | transcript fixes learned from the user's edits | `src/transcribe/data/` |
-| `@language`, `@theme`, `@appStyle` | settings | `src/settings/data/` |
-| `@graphDragHintDismissed` | the drag hint was dismissed | `src/pattern/graph/data/GraphHintStorage.ts` |
+| Key                                | Holds                                          | Owner                                        |
+| ---------------------------------- | ---------------------------------------------- | -------------------------------------------- |
+| `@patternLists`                    | `IPatternList[]`, **without** patterns         | `PatternListStorage.ts`                      |
+| `@patterns_{listId}`               | `IPattern[]` of one list                       | `PatternListStorage.ts`                      |
+| `@activeListId`                    | the active list's UUID                         | `PatternListStorage.ts`                      |
+| `@schemaVersion`                   | the migrated data's version                    | `migrations/index.ts`                        |
+| `@graphLayout_{listId}`            | a user-arranged network layout                 | `src/pattern/graph/data/`                    |
+| `@transcriptCorrections_{listId}`  | transcript fixes learned from the user's edits | `src/transcribe/data/`                       |
+| `@language`, `@theme`, `@appStyle` | settings                                       | `src/settings/data/`                         |
+| `@graphDragHintDismissed`          | the drag hint was dismissed                    | `src/pattern/graph/data/GraphHintStorage.ts` |
 
 Settings live under their own keys, outside any list, so they survive deleting every list.
 

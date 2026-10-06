@@ -119,6 +119,24 @@ export function applyLearnedCorrections(
   };
 }
 
+/**
+ * The lines whose text an edit changed, as [before, after], paired by their times: a correction
+ * keeps a line's times, and a removed line has no partner, which teaches nothing.
+ */
+export function editedLines(
+  before: IVideoTranscript,
+  after: IVideoTranscript,
+): [string, string][] {
+  return after.segments.flatMap((line) => {
+    const old = before.segments.find(
+      (s) => s.start === line.start && s.end === line.end,
+    );
+    return old && old.text !== line.text
+      ? [[old.text, line.text] as [string, string]]
+      : [];
+  });
+}
+
 function words(text: string): string[] {
   return text.split(/\s+/).filter((w) => bare(w) !== "");
 }

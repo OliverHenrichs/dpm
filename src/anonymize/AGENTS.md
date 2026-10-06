@@ -1,7 +1,7 @@
 # Video jobs, Shorten and Anonymize — `src/anonymize/`
 
 The on-device video tools' shared machinery: the job queue every heavy task runs through, the
-review step, and the two video edits (*Shorten*, *Anonymize* into a silhouette). Android only for
+review step, and the two video edits (_Shorten_, _Anonymize_ into a silhouette). Android only for
 now. Transcription is in `src/transcribe/`, suggestions in `src/suggest/`, the native side in
 `modules/`. Design history and device measurements: `AGENT_TASKS.md` L3 (and L4 for speech).
 Unqualified paths are relative to `src/anonymize/`.
@@ -9,19 +9,19 @@ Unqualified paths are relative to `src/anonymize/`.
 ## Where the user meets it
 
 - Edit Pattern → Videos → **Edit video** (`components/VideoEditPanel.tsx`, in `AnonymizeModal`):
-  one tab per job, *Shorten*, *Anonymize* and *Speech* (`TranscribeSection`). The cut tabs pick
-  the part to keep on a trim bar (`TrimWindowBar`, `model/trimWindow.ts`); *Anonymize* then has the
+  one tab per job, _Shorten_, _Anonymize_ and _Speech_ (`TranscribeSection`). The cut tabs pick
+  the part to keep on a trim bar (`TrimWindowBar`, `model/trimWindow.ts`); _Anonymize_ then has the
   user tap each dancer on the first frame (`model/promptPoints.ts`). Each tab says what it does and
   ends in one button naming the result ("Shorten to 18 s"); options that change the job are
   `SwitchRow`s above that button, never chips. A disabled button says why under it. Before a cut
   a switch offers to transcribe the whole video first, queued ahead of the cut.
-- The pattern list's **+** → *From a video* / *Record a video* seeds a new pattern, then offers
+- The pattern list's **+** → _From a video_ / _Record a video_ seeds a new pattern, then offers
   Edit video after saving.
 - `components/AnonymizeJobsBanner.tsx` on the pattern list reports every job; a line opens its
   pattern when it is in the active list. Queued jobs and running transcriptions can be cancelled;
   a running shorten or anonymize cannot (the native pipeline has no stop).
 - `components/VideoReviewModal.tsx` shows a finished cut for review: tags for what changed, then
-  *Replace the original* (filled), *Keep both* (outlined), and *Discard* / *Decide later* as text.
+  _Replace the original_ (filled), _Keep both_ (outlined), and _Discard_ / _Decide later_ as text.
   When replacing drops transcript lines, a switch (on by default) adds the whole transcript to
   the description, **after** the swap: the swap writes the list as the mounted tree last saw it,
   so a description written first would be overwritten.
@@ -70,7 +70,7 @@ Keeping goes through `jobs/replaceVideo.ts`:
   put the original back;
 - **the new video carries only the transcript lines inside the cut, retimed** (`trimTranscript` in
   `src/pattern/data/transcripts.ts`). A video the app made carries `generated: { method,
-  createdAt }`; a silhouette can only be shortened afterwards, and keeps its provenance.
+createdAt }`; a silhouette can only be shortened afterwards, and keeps its provenance.
 
 ## Shorten and Anonymize
 

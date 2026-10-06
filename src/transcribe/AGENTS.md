@@ -15,7 +15,7 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
   under 0.4 s are dropped, the rest padded by 0.25 s and joined across gaps up to 1.5 s.
 - The language is detected on the **longest** region, transcribed first, and fixed for the rest
   (a short opening "okay, so…" guessed it badly); lines are put back in clip order. No speech at
-  all gives an empty transcript in `"und"`. *Wrong language?* in the sheet re-runs with one of the
+  all gives an empty transcript in `"und"`. _Wrong language?_ in the sheet re-runs with one of the
   app's nine.
 - Whisper decodes with **beam search** (`BEAM_SIZE` 5), not whisper.cpp's greedy default: more
   words right and fewer repeated phrases, for some speed.
@@ -32,7 +32,8 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
   removed words) are remembered per list under `@transcriptCorrections_{listId}`, newest first,
   at most 100. Every later transcript of the list has them applied as whole words, and the five
   newest lead the prompt. An edit that undoes a remembered fix forgets it instead of learning the
-  reverse. Local only, never exported or published; the key goes with its list.
+  reverse. `EditPatternForm.correctTranscript` learns from each line correction as it is made
+  (`rememberTranscriptEdit`). Local only, never exported or published; the key goes with its list.
 - Returns `{ promise, stop }`; only transcription can be cancelled while running.
   `ModelsMissingError` and `NoAudioError` (a silhouette has no sound) are distinct, and surface as
   sentences through the job's `errorKey`.
@@ -56,7 +57,7 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
   under the button or switch that would fetch it ("Downloads 61 MB once."), so the tap itself is
   the consent and there is no second prompt. The download counts into the job's progress. The legacy `createDownloadResumable` is used because it reports progress.
 - An installed model is checked by size on each use; the hash only at download.
-- Settings → *On-device models* (`src/settings/components/DeviceModelsSection.tsx`) lists them,
+- Settings → _On-device models_ (`src/settings/components/DeviceModelsSection.tsx`) lists them,
   downloads ahead of first use, and deletes.
 
 Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB), downloaded with the first
@@ -67,21 +68,21 @@ released first. Deleting it goes back to base.
 
 ## UI
 
-- `components/TranscribeSection.tsx` is Edit video's *Speech* tab: *Transcribe speech* (with a
+- `components/TranscribeSection.tsx` is Edit video's _Speech_ tab: _Transcribe speech_ (with a
   `SwitchRow` to go on and suggest, where suggestions can run); once there is a transcript, its
   lines (`TranscriptLines.tsx`) following the tab's preview, which plays with sound and native
-  controls there, and *Transcribe again*.
+  controls there, and _Transcribe again_.
 - `components/TranscriptSheet.tsx`: the video over timestamped lines; tapping a line seeks, the line
   being said is highlighted and followed (`followScroll.ts`, paused by a manual scroll). Ticked
   lines are copied word for word into the description as a paragraph of their own in spoken order
   (`excerpt.ts`). It hosts the suggestion panel (`src/suggest/`). Without the form's callbacks it
-  is read-only: `PatternDetails` (list rows, the Map's details) opens it from *Show transcript*
+  is read-only: `PatternDetails` (list rows, the Map's details) opens it from _Show transcript_
   under the video carousel, pausing the carousel's player.
 - **Corrections.** In the form (the Speech tab and the sheet opened from it), each line has a pencil
   that turns it into a text field (`TranscriptLineEditor.tsx`); emptying a line and saving removes
   it. `correctTranscriptLine` (`src/pattern/data/transcripts.ts`) is the one place a line changes,
   old and new text in hand, and stamps `editedAt`, which makes the Speech tab warn that
-  *Transcribe again* replaces the corrections. A correction lives in the form's draft and is
+  _Transcribe again_ replaces the corrections. A correction lives in the form's draft and is
   stored with the pattern's Save. The read-only view never offers the pencil. A finished job puts
   its transcript on through `withTranscript`, which leaves a video holding that transcription (or a
   later one) alone, because `applyReplacements` re-applies the job's update to every draft saved
@@ -93,7 +94,7 @@ released first. Deleting it goes back to base.
 ## Privacy
 
 **Transcripts are private by default.** Nothing is written into a description without the user's
-tap (*Add to description*). Transcripts never go into a published list (`withoutTranscripts`,
+tap (_Add to description_). Transcripts never go into a published list (`withoutTranscripts`,
 `src/pattern/data/transcripts.ts`) and leave in an export only on the export sheet's opt-in
 (`src/pattern/data/AGENTS.md`). When a video is cut, only the lines inside the cut move to the new
 video, retimed (`trimTranscript`).

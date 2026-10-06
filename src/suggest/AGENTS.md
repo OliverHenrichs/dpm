@@ -7,7 +7,7 @@ A suggested pattern name and description, drafted on the phone by a small langua
 
 ## Rules
 
-- **The user decides.** Nothing is filled in until *Use suggestion*; even then the name is set only
+- **The user decides.** Nothing is filled in until _Use suggestion_; even then the name is set only
   when it is empty, and the description gets a paragraph of its own after what is there.
 - **Gate on `canSuggest()`** (`suggestPattern.ts`): Android, the native hash check
   (`isAudioExtractAvailable`), and at least `MIN_DEVICE_MEMORY_BYTES` (6 GB). The app peaks around
@@ -32,7 +32,7 @@ A suggested pattern name and description, drafted on the phone by a small langua
   first.
 - `suggestPrompt.ts` is pure: the system prompt, a JSON schema, and tolerant parsing. **`teaches`
   comes first**, so the model commits to whether anything is taught before naming it; `teaches:
-  false` empties the answer ("nothing to suggest"). The vocabulary is for spelling only, and the
+false` empties the answer ("nothing to suggest"). The vocabulary is for spelling only, and the
   description must be in the model's own words. An earlier prompt without `teaches` invented a
   pattern for a water break. **The prompt mattered more than the model size**; change it with the
   tests in `__tests__/unit/suggestPrompt.test.ts` and re-check on a device.

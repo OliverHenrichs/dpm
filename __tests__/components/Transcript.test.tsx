@@ -13,6 +13,7 @@ import {
   recordReplacement,
 } from "@/src/anonymize/jobs/replaceVideo";
 import { withTranscript } from "@/src/pattern/data/transcripts";
+import { loadCorrections } from "@/src/transcribe/data/CorrectionStorage";
 import {
   IPattern,
   IVideoTranscript,
@@ -319,6 +320,41 @@ describe("transcribing from the pattern form", () => {
     fireEvent.press(screen.getByLabelText("Play from 0:12"));
     expect(player.seekBy).toHaveBeenCalledWith(12);
     expect(player.play).toHaveBeenCalled();
+  });
+
+  it("remembers the misheard words a correction fixes, for the list's later transcripts", async () => {
+    const misheard: IVideoTranscript = {
+      ...TRANSCRIPT,
+      segments: [{ start: 12, end: 15, text: "Then the sugar bush." }],
+    };
+    const { list } = renderForm(
+      createTestPattern(TYPE.id, {
+        id: 1,
+        name: "Sugar Push",
+        videoRefs: [{ type: "local", value: SOURCE, transcript: misheard }],
+      }),
+    );
+    const correct = (text: string) => {
+      fireEvent.press(screen.getByLabelText("Correct the line at 0:12"));
+      fireEvent.changeText(screen.getByLabelText("Line at 0:12"), text);
+      fireEvent.press(screen.getByText("Save line"));
+    };
+
+    await openEditor();
+    await screen.findByLabelText("Correct the line at 0:12");
+    correct("Then the sugar push.");
+
+    await waitFor(async () =>
+      expect(await loadCorrections(list.id)).toEqual([
+        { from: "bush", to: "push" },
+      ]),
+    );
+
+    // Putting it back undoes the fix rather than learning the reverse.
+    correct("Then the sugar bush.");
+    await waitFor(async () =>
+      expect(await loadCorrections(list.id)).toEqual([]),
+    );
   });
 
   it("saves a line corrected in the Speech tab, over the job that made the transcript", async () => {
