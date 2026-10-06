@@ -35,22 +35,26 @@ import {
   ModelDownloadError,
 } from "@/src/transcribe/modelStore";
 import { SUGGESTION_MODEL } from "@/src/suggest/models";
-import { runSuggestion } from "@/src/suggest/runSuggestion";
+import {
+  runSuggestion,
+  SuggestInput,
+  SuggestPhase,
+} from "@/src/suggest/runSuggestion";
 import { Suggestion } from "@/src/suggest/suggestPrompt";
 
 /**
  * `review`: a shortened or anonymized video is ready, and waits for the user to look at it
  * and keep it (in place of the original, or beside it) or discard it. Nothing in the pattern
- * changes until then. A transcription that was asked to suggest a name and description waits
- * the same way, with its transcript already on the video, for the user to use the suggestion
- * or not.
+ * changes until then. A suggested name and description waits the same way for the user to
+ * use it or not: from a transcription asked to go on and suggest (its transcript already on the
+ * video), or from a suggestion asked for on its own.
  */
 export type JobStatus = "queued" | "running" | "review" | "done" | "failed";
 
 /** What to do with a reviewed result: put it in place of the original, or add it beside it. */
 export type KeepMode = "replace" | "both";
 
-export type JobKind = "anonymize" | "shorten" | "transcribe";
+export type JobKind = "anonymize" | "shorten" | "transcribe" | "suggest";
 
 export type AnonymizeJob = {
   id: string;
@@ -72,9 +76,25 @@ export type AnonymizeJob = {
   error?: string;
   /** An i18n key for a failure the user can act on, shown instead of [error]. */
   errorKey?: string;
-  /** What a transcribe-and-suggest job suggests, once it is waiting for review. */
+  /** What a transcribe-and-suggest or suggest job suggests, once it is waiting for review. */
   suggestion?: Suggestion;
+  /**
+   * What a running suggest job is doing: downloading the model ([progress] counts it), or
+   * loading it and writing, which report no progress of their own.
+   */
+  phase?: "download" | SuggestPhase;
 };
+
+/** Whether a job's review is of a suggested name and description, rather than of a video. */
+export const reviewsSuggestion = (job: AnonymizeJob): boolean =>
+  job.kind === "transcribe" || job.kind === "suggest";
+
+/**
+ * A suggest job loading its model or writing reports no progress of its own, so its line says
+ * what it does instead of a count; downloading the model does count.
+ */
+export const writesWithoutCount = (job: AnonymizeJob): boolean =>
+  job.kind === "suggest" && job.phase !== "download";
 
 type JobTarget = {
   listId: string;
@@ -99,6 +119,10 @@ export type StartJob = JobTarget &
         kind: "transcribe";
         request: TranscribeRequest;
       }
+    | {
+        kind: "suggest";
+        request: SuggestRequest;
+      }
   );
 
 /** L4: transcribe what is said in a video; the transcript lands on the same video. */
@@ -113,6 +137,18 @@ export type TranscribeRequest = {
    * first when it is missing (the user agreed to that, told its size, before starting).
    */
   suggest?: { vocabulary: string[] };
+};
+
+/**
+ * L4: suggest a name and description from a video's transcript, downloading the suggestion
+ * model first when it is missing (the user agreed to that, told its size, before starting). A
+ * job rather than a call from the transcript sheet, so the user can close the sheet and keep
+ * working: the suggestion waits for review like a cut video does.
+ */
+export type SuggestRequest = {
+  /** The transcribed video; the suggestion is for the pattern holding it. */
+  sourceUri: string;
+  input: SuggestInput;
 };
 
 /**
@@ -185,7 +221,7 @@ export const jobStore = {
         sourceUri: job.request.sourceUri,
         status: "queued",
         progress: 0,
-        ...(job.kind !== "transcribe" && {
+        ...((job.kind === "anonymize" || job.kind === "shorten") && {
           clip: {
             start: job.request.startSeconds,
             end: job.request.endSeconds,
@@ -271,8 +307,17 @@ export const jobStore = {
   /** Closes a suggestion's review, used or not; the transcript stays on its video. */
   settle(id: string) {
     const job = jobs.find((j) => j.id === id);
-    if (job?.status !== "review" || job.kind !== "transcribe") return;
+    if (job?.status !== "review") return;
+    if (job.kind !== "transcribe" && job.kind !== "suggest") return;
     patch(id, { status: "done" });
+  },
+
+  /** Takes a finished or failed job off the list, as `dismissFinished` does for all of them. */
+  forget(id: string) {
+    const job = jobs.find((j) => j.id === id);
+    if (job?.status !== "done" && job?.status !== "failed") return;
+    jobs = jobs.filter((j) => j.id !== id);
+    emit();
   },
 
   /** Throws a reviewed result away; the original stays as it was. */
@@ -446,6 +491,44 @@ async function transcribe(id: string, job: StartJob & { kind: "transcribe" }) {
   }
 }
 
+/**
+ * Suggests a name and description from a transcript and waits for the user to use it or not.
+ * Whisper is unloaded first: the suggestion model needs the memory.
+ */
+async function suggest(id: string, job: StartJob & { kind: "suggest" }) {
+  await releaseTranscriptionContexts();
+  if (!installedModelUri(SUGGESTION_MODEL)) {
+    patch(id, { phase: "download" });
+    await downloadModel(SUGGESTION_MODEL, (written) =>
+      patch(id, { progress: written / SUGGESTION_MODEL.bytes }),
+    );
+  }
+  const suggestion = await runSuggestion(job.request.input, (phase) =>
+    patch(id, { phase }),
+  );
+  patch(id, {
+    status: "review",
+    progress: 1,
+    phase: undefined,
+    resultUri: job.request.sourceUri,
+    suggestion,
+  });
+}
+
+/** The sentence for a failure the user can act on, by what failed. */
+function errorKeyFor(id: string, job: StartJob, e: unknown) {
+  if (job.kind === "suggest") {
+    // A dropped connection fails a download with a plain error, not a ModelDownloadError.
+    const downloading = jobs.find((j) => j.id === id)?.phase === "download";
+    return e instanceof ModelDownloadError || downloading
+      ? "suggestErrorDownload"
+      : "suggestErrorAnswer";
+  }
+  if (e instanceof NoAudioError) return "transcribeErrorNoSound";
+  if (e instanceof ModelDownloadError) return "transcribeErrorDownload";
+  return undefined;
+}
+
 async function run(id: string, job: StartJob) {
   if (cancelled.delete(id)) return;
   patch(id, { status: "running" });
@@ -453,6 +536,7 @@ async function run(id: string, job: StartJob) {
     const list = await getPatternListById(job.listId);
     if (list?.readonly) throw new Error("This list is read-only");
     if (job.kind === "transcribe") return await transcribe(id, job);
+    if (job.kind === "suggest") return await suggest(id, job);
     const { uri, generated } = await process(id, job);
     const stored = await persistVideo(
       uri,
@@ -464,13 +548,12 @@ async function run(id: string, job: StartJob) {
     patch(id, { status: "review", progress: 1, resultUri: stored });
   } catch (e) {
     if (cancelled.delete(id)) return; // stopped on request; the job is already gone
+    const errorKey = errorKeyFor(id, job, e);
     patch(id, {
       status: "failed",
+      phase: undefined,
       error: e instanceof Error ? e.message : String(e),
-      ...(e instanceof NoAudioError && { errorKey: "transcribeErrorNoSound" }),
-      ...(e instanceof ModelDownloadError && {
-        errorKey: "transcribeErrorDownload",
-      }),
+      ...(errorKey && { errorKey }),
     });
   }
 }

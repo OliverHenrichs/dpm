@@ -508,6 +508,45 @@ describe("PatternDetails", () => {
 
       expect(screen.getByText("1 / 2")).toBeOnTheScreen();
     });
+
+    it("opens a transcribed video's transcript to read, without the form's actions", () => {
+      renderDetails({
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [
+            {
+              type: "local",
+              value: "file:///document/video-a.mp4",
+              transcript: {
+                language: "en",
+                model: "whisper-base-q5_1",
+                createdAt: 1,
+                segments: [{ start: 0, end: 4, text: "This is the whip." }],
+              },
+            },
+          ],
+        }),
+      });
+
+      fireEvent.press(screen.getByText("Show transcript"));
+
+      expect(screen.getByText("This is the whip.")).toBeOnTheScreen();
+      expect(screen.getByLabelText("Play from 0:00")).toBeOnTheScreen();
+      expect(screen.queryByText(/^Copy selected lines/)).toBeNull();
+      expect(screen.queryByText(/^Suggest name and description/)).toBeNull();
+      expect(screen.queryByText("Wrong language?")).toBeNull();
+    });
+
+    it("offers no transcript for a video without one", () => {
+      renderDetails({
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [urlVideo("https://example.com/a.mp4")],
+        }),
+      });
+
+      expect(screen.queryByText("Show transcript")).toBeNull();
+    });
   });
 
   describe("tags", () => {

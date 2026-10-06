@@ -31,7 +31,8 @@ import {
 } from "@/src/transcribe/followScroll";
 
 export type TranscriptTarget = {
-  listId: string;
+  /** The list the video is in; needed only to suggest, so a read-only view may leave it out. */
+  listId?: string;
   patternName: string;
   sourceUri: string;
   transcript: IVideoTranscript;
@@ -62,9 +63,14 @@ const languageLabel = (code: string, unknown: string) =>
 
 /**
  * What was said in a video (L4): the video on top, the transcript below as timestamped lines.
- * Tapping a line plays the video from there; ticking lines and pressing "Add to description"
- * appends them to the open form's description. The description is never written on its own —
+ * Tapping a line plays the video from there. In a form, ticking lines and pressing "Copy … to
+ * description" appends them word for word to the open form's description, and the suggestion
+ * panel offers a name and description an on-device model writes in its own words; each says
+ * which it is, since both end in the description. The description is never written on its own:
  * teachers count out loud and joke, and the description is the user's.
+ *
+ * Without the form's callbacks (the read-only pattern details) it is only the video and its
+ * lines, to follow along or jump to a moment.
  */
 const TranscriptSheet: React.FC<Props> = ({
   target,
@@ -208,8 +214,11 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
         </View>
       )}
 
-      {onApplySuggestion && (
+      {onApplySuggestion && target.listId && (
         <SuggestionPanel
+          listId={target.listId}
+          patternName={target.patternName}
+          sourceUri={target.sourceUri}
           transcript={target.transcript}
           onApply={(suggestion) => {
             onApplySuggestion(suggestion);
@@ -218,6 +227,11 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
         />
       )}
 
+      {onDescriptionChange && segments.length > 0 && (
+        <AppText variant="caption" color="textMuted">
+          {t("transcriptCopyHint")}
+        </AppText>
+      )}
       <ScrollView
         ref={scrollRef}
         style={styles.lines}
@@ -288,7 +302,7 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
       {onDescriptionChange && segments.length > 0 && (
         <Button
           title={t("transcriptAddToDescription", { count: ticked.size })}
-          icon="text-box-plus-outline"
+          icon="content-copy"
           onPress={addToDescription}
           disabled={ticked.size === 0}
         />

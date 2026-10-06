@@ -32,7 +32,7 @@ Unqualified paths are relative to `src/anonymize/`.
 mid-run in the same process: jobs held in component state vanished with the old tree while the
 native run carried on, and would have written that tree's stale pattern back.
 
-- `JobKind = "anonymize" | "shorten" | "transcribe"`;
+- `JobKind = "anonymize" | "shorten" | "transcribe" | "suggest"`;
   `JobStatus = "queued" | "running" | "review" | "done" | "failed"`.
 - **One job at a time.** The phone cannot hold two models (Whisper, EdgeTAM, the LLM) at once.
   Anything else heavy goes through `jobStore.runExclusive`, which waits for everything queued
@@ -54,7 +54,9 @@ native run carried on, and would have written that tree's stale pattern back.
 **A shortened or anonymized video changes nothing until the user decides.** It waits in `review`;
 `jobStore.keep(id, "replace" | "both")` puts it in place of the original or beside it (only when the
 group has room under `MAX_VIDEOS`), `jobStore.discard(id)` throws it away. A transcription finishes
-straight onto its video; one that also suggested waits in `review` until `jobStore.settle(id)`.
+straight onto its video; one that also suggested, and a suggest job, wait in `review` until
+`jobStore.settle(id)` (`reviewsSuggestion` tells the two kinds of review apart). A suggest job
+reports `phase` while it runs, since only its download has a count.
 
 Keeping goes through `jobs/replaceVideo.ts`:
 

@@ -111,7 +111,7 @@ const openSuggestions = async () => {
   fireEvent.press(
     await screen.findByLabelText("Open the transcript of video 1"),
   );
-  fireEvent.press(screen.getByText("Suggest name and description"));
+  fireEvent.press(screen.getByText("Suggest name and description with AI"));
 };
 
 describe("suggesting a name and description", () => {
@@ -174,9 +174,13 @@ describe("suggesting a name and description", () => {
     renderForm();
 
     await openSuggestions();
+    // In the sheet, with another try, and on the form's line for the job.
     expect(
-      await screen.findByText(/No suggestion this time/),
-    ).toBeOnTheScreen();
+      await screen.findAllByText(
+        /^No suggestion: the AI gave no usable answer/,
+      ),
+    ).toHaveLength(2);
+    expect(screen.getByText("Try again")).toBeOnTheScreen();
 
     setLlamaAnswer(() => ANSWER);
     fireEvent.press(screen.getByText("Try again"));
@@ -190,10 +194,55 @@ describe("suggesting a name and description", () => {
     await openSuggestions();
     fireEvent.press(screen.getByText("Download and suggest"));
 
+    // In the sheet, with another try, and on the form's line for the job.
     expect(
-      await screen.findByText(/No suggestion this time/),
-    ).toBeOnTheScreen();
+      await screen.findAllByText(
+        /^No suggestion: the AI model could not be downloaded/,
+      ),
+    ).toHaveLength(2);
+    expect(screen.getByText("Try again")).toBeOnTheScreen();
     expect(llamaCalls.inits).toEqual([]);
+  });
+
+  it("keeps going when the transcript is closed, and waits below the videos", async () => {
+    seedBinaryFile(MODEL_URI, Buffer.alloc(4));
+    setLlamaAnswer(() => ANSWER);
+    let finishBefore: () => void = () => undefined;
+    // Video work queued first holds the suggestion back, so it can be seen waiting.
+    void jobStore.runExclusive(
+      () => new Promise<void>((resolve) => (finishBefore = resolve)),
+    );
+    const { saved } = renderForm();
+
+    await openSuggestions();
+    expect(
+      await screen.findByText("Waiting for the video work to finish …"),
+    ).toBeOnTheScreen();
+    expect(screen.getByText(/You can close the transcript/)).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("Close"));
+    expect(
+      screen.getByText("Waiting to suggest a name and description"),
+    ).toBeOnTheScreen();
+
+    finishBefore();
+    fireEvent.press(await screen.findByText("Review"));
+    expect(await screen.findByText("Name: Sugar Push")).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Use suggestion"));
+    await waitFor(() => expect(jobStore.getJobs()[0].status).toBe("done"));
+    fireEvent.press(screen.getByText("Save"));
+
+    await waitFor(() => expect(saved().name).toBe("Sugar Push"));
+  });
+
+  it("says that it uses AI, and that copying lines does not", async () => {
+    renderForm();
+    fireEvent.press(
+      await screen.findByLabelText("Open the transcript of video 1"),
+    );
+    expect(screen.getByText(/An AI model on this phone/)).toBeOnTheScreen();
+    expect(
+      screen.getByText(/copy them word for word into the description/),
+    ).toBeOnTheScreen();
   });
 });
 

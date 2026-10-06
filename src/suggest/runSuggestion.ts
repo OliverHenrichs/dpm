@@ -37,8 +37,8 @@ export type SuggestPhase = "waiting" | "loading" | "thinking";
  * the phone. Empty fields mean the model found nothing taught. Loads the model for this one
  * answer only: holding ~3.4 GB between rare uses is not worth the few seconds a load takes.
  *
- * Runs whatever else is running: callers outside the job queue use [suggestPattern], which
- * waits its turn; a queued job (transcribe and suggest) calls this from inside its own turn.
+ * Runs whatever else is running, so only a job calls it, from inside its own turn in the queue
+ * (`jobStore`: a suggest job, or a transcription that goes on to suggest).
  */
 export async function runSuggestion(
   input: SuggestInput,

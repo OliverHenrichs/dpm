@@ -30,6 +30,7 @@ export type {
   KeepMode,
   StartJob,
 } from "./jobStore";
+export { reviewsSuggestion, writesWithoutCount } from "./jobStore";
 
 const KEEP_AWAKE_TAG = "anonymize";
 
@@ -148,6 +149,8 @@ export type JobsApi = {
   discard: (id: string) => void;
   /** Closes a suggestion's review; see `jobStore.settle`. */
   settle: (id: string) => void;
+  /** Takes one finished or failed job off the list. */
+  forget: (id: string) => void;
 };
 
 /** The jobs, live. Works without the provider; the provider only adds attach and keep-awake. */
@@ -166,5 +169,6 @@ export const useAnonymizeJobs = (): JobsApi => {
     keep: jobStore.keep,
     discard: jobStore.discard,
     settle: jobStore.settle,
+    forget: jobStore.forget,
   };
 };

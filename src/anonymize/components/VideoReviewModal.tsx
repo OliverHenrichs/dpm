@@ -10,6 +10,7 @@ import { formatSeconds } from "@/src/anonymize/model/trimWindow";
 import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import {
   AnonymizeJob,
+  reviewsSuggestion,
   useAnonymizeJobs,
 } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
@@ -58,7 +59,7 @@ type Props = {
  * instructor often explains a figure at length and then shows it briefly, and the explanation
  * belongs in the description while only the showing is worth keeping as video.
  *
- * A transcribe-and-suggest job is reviewed here too: its suggested name and description, to use
+ * A suggestion (on its own, or after a transcription) is reviewed here too: its suggested name and description, to use
  * or not. Using it never overwrites the user's text: a name only where there is none, and the
  * description as a paragraph of its own.
  */
@@ -71,7 +72,7 @@ const VideoReviewModal: React.FC<Props> = ({ job, onClose, source }) => {
       onRequestClose={onClose}
     >
       <ModalOverlay align="bottom" padding="none">
-        {job?.kind === "transcribe" && (
+        {job && reviewsSuggestion(job) && (
           <SuggestionCard
             key={job.id}
             job={job}
@@ -79,7 +80,7 @@ const VideoReviewModal: React.FC<Props> = ({ job, onClose, source }) => {
             source={source}
           />
         )}
-        {job?.kind !== "transcribe" && job?.resultUri && (
+        {job && !reviewsSuggestion(job) && job.resultUri && (
           <ReviewCard
             key={job.id}
             job={job}
