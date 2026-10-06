@@ -1,115 +1,103 @@
-import React, { useEffect, useState } from "react";
-import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import React, { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { AppText, Button } from "@/src/common/ui";
+import {
+  AnonymizeJob,
+  useAnonymizeJobs,
+} from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
-import { downloadModel, installedModelUri } from "@/src/transcribe/modelStore";
+import { installedModelUri } from "@/src/transcribe/modelStore";
 import { SUGGESTION_DOWNLOAD_MB, SUGGESTION_MODEL } from "@/src/suggest/models";
-import {
-  canSuggest,
-  suggestPattern,
-  SuggestPhase,
-} from "@/src/suggest/suggestPattern";
+import { canSuggest } from "@/src/suggest/suggestPattern";
 import { Suggestion, vocabularyFor } from "@/src/suggest/suggestPrompt";
 
 type Props = {
+  listId: string;
+  /** For the job's progress line. */
+  patternName: string;
+  /** The transcribed video; the job finds its pattern by it. */
+  sourceUri: string;
   transcript: IVideoTranscript;
   /** Hands the suggestion to the open form, which decides what it may fill. */
   onApply: (suggestion: Suggestion) => void;
 };
 
-type State =
-  | { step: "idle" }
-  | { step: "confirm" }
-  | { step: "download"; fraction: number }
-  | { step: SuggestPhase }
-  | { step: "result"; suggestion: Suggestion }
-  | { step: "error"; message: string };
-
-const KEEP_AWAKE_TAG = "suggest";
-const BUSY_STEPS = new Set<State["step"]>([
-  "download",
-  "waiting",
-  "loading",
-  "thinking",
-]);
+/** The newest suggest job for this video that is not settled yet. */
+const jobFor = (jobs: AnonymizeJob[], sourceUri: string) =>
+  jobs.findLast(
+    (j) =>
+      j.kind === "suggest" && j.sourceUri === sourceUri && j.status !== "done",
+  );
 
 /**
  * A suggested name and description for the pattern the transcript teaches (L4), drafted on the
- * phone by a small language model. Nothing is filled in until the user taps "Use suggestion",
- * and even then only an empty name is set; the description gets a paragraph of its own. The
- * model is a second, larger download than the speech model, announced with its size first.
+ * phone by a small language model. It says so before the user starts, since the other action in
+ * the sheet (copying ticked lines) takes the transcript word for word.
+ *
+ * The suggestion runs as a job (`jobStore`, kind "suggest"), so the user can close the sheet and
+ * keep working: the form's job lines and the pattern list's banner follow it, and offer its
+ * review when it is done. While the sheet stays open it shows the same progress and the result.
+ * Nothing is filled in until the user taps "Use suggestion", and even then only an empty name
+ * is set; the description gets a paragraph of its own. The model is a second, larger download
+ * than the speech model, announced with its size first.
  */
-const SuggestionPanel: React.FC<Props> = ({ transcript, onApply }) => {
+const SuggestionPanel: React.FC<Props> = ({
+  listId,
+  patternName,
+  sourceUri,
+  transcript,
+  onApply,
+}) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   const { activeList, patterns } = useActivePatternList();
-  const [state, setState] = useState<State>({ step: "idle" });
-
-  // A 1.3 GB download outlasts most screen timeouts, and a locked phone pauses it.
-  const working = BUSY_STEPS.has(state.step);
-  useEffect(() => {
-    if (!working) return;
-    activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
-    return () => {
-      deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
-    };
-  }, [working]);
+  const { jobs, start, settle, forget } = useAnonymizeJobs();
+  const [confirm, setConfirm] = useState(false);
 
   if (!canSuggest() || transcript.segments.length === 0) return null;
+  const job = jobFor(jobs, sourceUri);
 
-  const run = async () => {
-    try {
-      if (!installedModelUri(SUGGESTION_MODEL)) {
-        setState({ step: "download", fraction: 0 });
-        await downloadModel(SUGGESTION_MODEL, (written) =>
-          setState({
-            step: "download",
-            fraction: written / SUGGESTION_MODEL.bytes,
-          }),
-        );
-      }
-      const suggestion = await suggestPattern(
-        {
+  const run = () => {
+    setConfirm(false);
+    if (job?.status === "failed") forget(job.id);
+    start({
+      kind: "suggest",
+      listId,
+      patternName,
+      request: {
+        sourceUri,
+        input: {
           transcript: transcript.segments.map((s) => s.text).join(" "),
           language: transcript.language,
           vocabulary: vocabularyFor(activeList, patterns),
         },
-        (phase) => setState({ step: phase }),
-      );
-      setState({ step: "result", suggestion });
-    } catch {
-      setState({ step: "error", message: t("suggestFailed") });
-    }
+      },
+    });
   };
-  const start = () => {
-    if (installedModelUri(SUGGESTION_MODEL)) void run();
-    else setState({ step: "confirm" });
+  const ask = () => {
+    if (installedModelUri(SUGGESTION_MODEL)) run();
+    else setConfirm(true);
   };
 
   const busy = (label: string) => (
-    <View style={styles.busy}>
-      <ActivityIndicator color={theme.colors.primary} />
-      <AppText variant="bodySmall" color="textMuted">
-        {label}
+    <View style={styles.panel} testID="suggestion-busy">
+      <View style={styles.busy}>
+        <ActivityIndicator color={theme.colors.primary} />
+        <AppText variant="bodySmall" style={styles.flex}>
+          {label}
+        </AppText>
+      </View>
+      <AppText variant="caption" color="textMuted">
+        {t("suggestLeaveHint")}
       </AppText>
     </View>
   );
 
-  switch (state.step) {
-    case "idle":
-      return (
-        <Button
-          title={t("suggestRun")}
-          icon="lightbulb-on-outline"
-          variant="secondary"
-          onPress={start}
-        />
-      );
-    case "confirm":
+  if (!job) {
+    if (confirm) {
       return (
         <View style={styles.panel}>
           <AppText variant="bodySmall">
@@ -119,7 +107,7 @@ const SuggestionPanel: React.FC<Props> = ({ transcript, onApply }) => {
             <Button
               title={t("cancel")}
               variant="secondary"
-              onPress={() => setState({ step: "idle" })}
+              onPress={() => setConfirm(false)}
               style={styles.button}
             />
             <Button
@@ -131,39 +119,65 @@ const SuggestionPanel: React.FC<Props> = ({ transcript, onApply }) => {
           </View>
         </View>
       );
-    case "download":
-      return busy(
-        t("suggestDownloading", {
-          percent: Math.round(state.fraction * 100),
-        }),
-      );
-    case "waiting":
+    }
+    return (
+      <View style={styles.panel}>
+        <AppText variant="caption" color="textMuted">
+          {t("suggestExplain")}
+        </AppText>
+        <Button
+          title={t("suggestRun")}
+          icon="creation"
+          variant="secondary"
+          onPress={ask}
+        />
+      </View>
+    );
+  }
+
+  switch (job.status) {
+    case "queued":
       return busy(t("suggestWaiting"));
-    case "loading":
-    case "thinking":
-      return busy(t("suggestThinking"));
-    case "error":
+    case "running":
+      return busy(
+        job.phase === "download"
+          ? t("suggestDownloading", {
+              percent: Math.round(job.progress * 100),
+            })
+          : t("suggestThinking"),
+      );
+    case "failed":
       return (
         <View style={styles.panel}>
           <AppText variant="bodySmall" color="danger">
-            {state.message}
+            {t("suggestJobInFormFailed", {
+              error: job.errorKey ? t(job.errorKey) : (job.error ?? ""),
+            })}
           </AppText>
           <Button
             title={t("suggestRetry")}
             icon="refresh"
             variant="secondary"
-            onPress={run}
+            onPress={ask}
           />
         </View>
       );
-    case "result": {
-      const { name, description } = state.suggestion;
+    case "review":
+    case "done": {
+      const { name = "", description = "" } = job.suggestion ?? {};
       if (!name && !description) {
         return (
           <View style={styles.panel}>
             <AppText variant="bodySmall" color="textMuted">
               {t("suggestNothing")}
             </AppText>
+            <Button
+              title={t("close")}
+              variant="secondary"
+              size="sm"
+              onPress={() => settle(job.id)}
+              style={styles.end}
+            />
           </View>
         );
       }
@@ -180,13 +194,16 @@ const SuggestionPanel: React.FC<Props> = ({ transcript, onApply }) => {
             <Button
               title={t("suggestDismiss")}
               variant="secondary"
-              onPress={() => setState({ step: "idle" })}
+              onPress={() => settle(job.id)}
               style={styles.button}
             />
             <Button
               title={t("suggestApply")}
               icon="check"
-              onPress={() => onApply(state.suggestion)}
+              onPress={() => {
+                settle(job.id);
+                onApply({ name, description });
+              }}
               style={styles.button}
             />
           </View>
@@ -205,11 +222,12 @@ const styles = StyleSheet.create((theme) => ({
   },
   row: { flexDirection: "row", flexWrap: "wrap", gap: theme.space.sm },
   button: { flexGrow: 1 },
+  end: { alignSelf: "flex-end" },
+  flex: { flex: 1 },
   busy: {
     flexDirection: "row",
     alignItems: "center",
     gap: theme.space.sm,
-    paddingVertical: theme.space.sm,
   },
 }));
 

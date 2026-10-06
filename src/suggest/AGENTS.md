@@ -12,9 +12,15 @@ A suggested pattern name and description, drafted on the phone by a small langua
 - **Gate on `canSuggest()`** (`suggestPattern.ts`): Android, the native hash check
   (`isAudioExtractAvailable`), and at least `MIN_DEVICE_MEMORY_BYTES` (6 GB). The app peaks around
   3.4 GB with the model loaded; on a 4 GB phone Android would kill it.
-- **Never beside another model.** Callers use `suggestPattern`, which waits its turn through
-  `jobStore.runExclusive` and reports `"waiting"` meanwhile. Only a transcription job asked to go on
-  and suggest calls `runSuggestion` directly, inside its own turn.
+- **Never beside another model, and never tied to a screen.** A suggestion is a `"suggest"` job
+  in `jobStore` (`src/anonymize/AGENTS.md`): it waits its turn, unloads Whisper first, and lands
+  in `review` like a cut video, so the user can close the transcript sheet and find it under the
+  form's videos or on the pattern list's banner. `runSuggestion` is only ever called from inside a
+  job's turn (a suggest job, or a transcription asked to go on and suggest).
+- **Say it is AI.** The sheet has two ways into the description: copying ticked lines word for
+  word, and the model's suggestion in its own words. Each says which it is (`suggestExplain`,
+  `transcriptCopyHint`), and the running suggestion says what it is doing, roughly how long it
+  takes and that the user may leave (`suggestLeaveHint`).
 - **Loaded per answer, released after**: holding ~3.4 GB between rare uses is not worth the few
   seconds a load takes.
 - `llama.ts` is the one importer of `llama.rn`; `llama.web.ts` stubs it for web.

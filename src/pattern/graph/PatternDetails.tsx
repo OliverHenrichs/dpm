@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
+import {
+  IModifier,
+  IPattern,
+  IVideoReference,
+} from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
 import {
@@ -15,6 +19,7 @@ import {
 } from "@/src/common/utils/CommonStyles";
 import VideoCarousel from "@/src/common/components/VideoCarousel";
 import ModifierPillStrip from "@/src/pattern/list/ModifierPillStrip";
+import TranscriptSheet from "@/src/transcribe/components/TranscriptSheet";
 
 type PatternDetailsProps = {
   selectedPattern: IPattern;
@@ -40,6 +45,11 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
 }) => {
   const { t } = useTranslation();
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
+    null,
+  );
+  // A transcribed video's transcript (L4), to follow along and jump to a moment. Read only:
+  // copying lines and suggestions belong to the edit form.
+  const [transcriptOf, setTranscriptOf] = useState<IVideoReference | null>(
     null,
   );
 
@@ -85,8 +95,24 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
         <VideoCarousel
           videoRefs={activeVideoRefs}
           generatedLabel={t("videoBadgeSilhouette")}
+          onOpenTranscript={setTranscriptOf}
+          transcriptLabel={t("transcriptShow")}
+          paused={transcriptOf !== null}
         />
       )}
+      <TranscriptSheet
+        target={
+          transcriptOf?.transcript
+            ? {
+                patternName: selectedPattern.name,
+                sourceUri: transcriptOf.value,
+                transcript: transcriptOf.transcript,
+                hasSound: !transcriptOf.generated,
+              }
+            : null
+        }
+        onClose={() => setTranscriptOf(null)}
+      />
       <View style={styles.patternDetailsRow}>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("counts")}:</Text>

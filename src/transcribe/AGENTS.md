@@ -55,8 +55,10 @@ Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB).
   *Transcribe again*.
 - `components/TranscriptSheet.tsx`: the video over timestamped lines; tapping a line seeks, the line
   being said is highlighted and followed (`followScroll.ts`, paused by a manual scroll). Ticked
-  lines go into the description as a paragraph of their own in spoken order (`excerpt.ts`). It
-  hosts the suggestion panel (`src/suggest/`).
+  lines are copied word for word into the description as a paragraph of their own in spoken order
+  (`excerpt.ts`). It hosts the suggestion panel (`src/suggest/`). Without the form's callbacks it
+  is read-only: `PatternDetails` (list rows, the Map's details) opens it from *Show transcript*
+  under the video carousel, pausing the carousel's player.
 - `hooks/useStartTranscription.ts` starts a job with the active list's vocabulary, optionally going
   on to suggest.
 - A transcribed video's thumbnail carries a badge that opens the transcript.

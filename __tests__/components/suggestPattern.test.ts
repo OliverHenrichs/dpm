@@ -5,10 +5,9 @@ import { llamaCalls, setLlamaAnswer } from "@/__mocks__/llama.rn";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
 import {
   canSuggest,
-  suggestPattern,
+  runSuggestion,
   SuggestionModelMissingError,
   SuggestionUnreadableError,
-  SuggestPhase,
 } from "@/src/suggest/suggestPattern";
 
 // A stand-in of a few bytes for the 1.3 GB model.
@@ -40,9 +39,9 @@ const installModel = () => seedBinaryFile(MODEL_URI, Buffer.alloc(4));
 
 afterEach(() => jobStore.reset());
 
-describe("suggestPattern", () => {
+describe("runSuggestion", () => {
   it("asks for the model before anything else", async () => {
-    await expect(suggestPattern(INPUT)).rejects.toBeInstanceOf(
+    await expect(runSuggestion(INPUT)).rejects.toBeInstanceOf(
       SuggestionModelMissingError,
     );
     expect(llamaCalls.inits).toEqual([]);
@@ -55,7 +54,7 @@ describe("suggestPattern", () => {
         '{"teaches":true,"name":"Sugar Push","description":"In on 1-2, out on 5-6."}',
     );
 
-    const suggestion = await suggestPattern(INPUT);
+    const suggestion = await runSuggestion(INPUT);
 
     expect(suggestion).toEqual({
       name: "Sugar Push",
@@ -78,14 +77,14 @@ describe("suggestPattern", () => {
       () => '{"teaches":false,"name":"Open whip","description":"x"}',
     );
 
-    expect(await suggestPattern(INPUT)).toEqual({ name: "", description: "" });
+    expect(await runSuggestion(INPUT)).toEqual({ name: "", description: "" });
   });
 
   it("reports an answer it cannot read, and still frees the model", async () => {
     installModel();
     setLlamaAnswer(() => "Sorry, I can't.");
 
-    await expect(suggestPattern(INPUT)).rejects.toBeInstanceOf(
+    await expect(runSuggestion(INPUT)).rejects.toBeInstanceOf(
       SuggestionUnreadableError,
     );
     expect(llamaCalls.releases).toBe(1);
@@ -95,27 +94,55 @@ describe("suggestPattern", () => {
     installModel();
     setLlamaAnswer(() => new Error("out of memory"));
 
-    await expect(suggestPattern(INPUT)).rejects.toThrow("out of memory");
+    await expect(runSuggestion(INPUT)).rejects.toThrow("out of memory");
     expect(llamaCalls.releases).toBe(1);
   });
 
-  it("waits for the video work queued before it, never running beside it", async () => {
+  it("runs as a job, after the video work queued before it, then waits for review", async () => {
     installModel();
+    setLlamaAnswer(
+      () =>
+        '{"teaches":true,"name":"Sugar Push","description":"In on 1-2, out on 5-6."}',
+    );
     let finishJob: () => void = () => undefined;
-    const job = jobStore.runExclusive(
+    const before = jobStore.runExclusive(
       () => new Promise<void>((resolve) => (finishJob = resolve)),
     );
-    const phases: SuggestPhase[] = [];
 
-    const suggestion = suggestPattern(INPUT, (p) => phases.push(p));
+    jobStore.start({
+      kind: "suggest",
+      listId: "list",
+      patternName: "Push",
+      request: { sourceUri: "file:///v.mp4", input: INPUT },
+    });
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(phases).toEqual(["waiting"]);
+    expect(jobStore.getJobs()[0].status).toBe("queued");
     expect(llamaCalls.inits).toEqual([]);
     finishJob();
-    await job;
-    await suggestion;
-    expect(phases).toEqual(["waiting", "loading", "thinking"]);
+    await before;
+    await new Promise((r) => setTimeout(r, 10));
+    const [job] = jobStore.getJobs();
+    expect(job.status).toBe("review");
+    expect(job.suggestion).toEqual({
+      name: "Sugar Push",
+      description: "In on 1-2, out on 5-6.",
+    });
+    expect(llamaCalls.inits).toHaveLength(1);
+  });
+
+  it("reports a missing model as a failed job with its reason", async () => {
+    // No model, and its download fails: the mock serves an empty file.
+    jobStore.start({
+      kind: "suggest",
+      listId: "list",
+      patternName: "Push",
+      request: { sourceUri: "file:///v.mp4", input: INPUT },
+    });
+    await new Promise((r) => setTimeout(r, 10));
+    const [job] = jobStore.getJobs();
+    expect(job.status).toBe("failed");
+    expect(job.errorKey).toBe("suggestErrorDownload");
   });
 });
 

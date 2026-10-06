@@ -39,7 +39,11 @@ import AnonymizeModal, {
 import VideoReviewModal, {
   ReviewSource,
 } from "@/src/anonymize/components/VideoReviewModal";
-import { useAnonymizeJobs } from "@/src/anonymize/jobs/AnonymizeJobsContext";
+import {
+  reviewsSuggestion,
+  useAnonymizeJobs,
+  writesWithoutCount,
+} from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import {
   applyReplacements,
   MAX_VIDEOS,
@@ -672,7 +676,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         job.status === "review" ? (
           <View key={job.id} style={styles.jobRow}>
             <Text style={[styles.jobLine, styles.jobRowText]}>
-              {job.kind === "transcribe"
+              {reviewsSuggestion(job)
                 ? t("suggestJobInFormReview")
                 : t("videoJobInFormReview")}
             </Text>
@@ -695,9 +699,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             {job.status === "queued"
               ? t(`${job.kind}JobInFormQueued`)
               : job.status === "running"
-                ? t(`${job.kind}JobInFormRunning`, {
-                    percent: Math.round(job.progress * 100),
-                  })
+                ? writesWithoutCount(job)
+                  ? t("suggestJobInFormWriting")
+                  : t(`${job.kind}JobInFormRunning`, {
+                      percent: Math.round(job.progress * 100),
+                    })
                 : t(`${job.kind}JobInFormFailed`, {
                     error: job.errorKey ? t(job.errorKey) : (job.error ?? ""),
                   })}
@@ -781,8 +787,12 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         }
         onApplySuggestion={applySuggestion}
         onRetranscribe={
-          canEditVideos && transcriptTarget
-            ? (language) => startTranscription(transcriptTarget, language)
+          canEditVideos && transcriptTarget && activeList
+            ? (language) =>
+                startTranscription(
+                  { ...transcriptTarget, listId: activeList.id },
+                  language,
+                )
             : undefined
         }
       />

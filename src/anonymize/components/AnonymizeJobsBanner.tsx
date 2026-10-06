@@ -5,7 +5,9 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import {
   AnonymizeJob,
+  reviewsSuggestion,
   useAnonymizeJobs,
+  writesWithoutCount,
 } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import VideoReviewModal from "@/src/anonymize/components/VideoReviewModal";
 
@@ -37,12 +39,14 @@ const AnonymizeJobsBanner: React.FC<Props> = ({ openAction }) => {
       case "queued":
         return t(`${prefix}JobQueued`, { name });
       case "running":
-        return t(`${prefix}JobRunning`, {
-          name,
-          percent: Math.round(job.progress * 100),
-        });
+        return writesWithoutCount(job)
+          ? t("suggestJobWriting", { name })
+          : t(`${prefix}JobRunning`, {
+              name,
+              percent: Math.round(job.progress * 100),
+            });
       case "review":
-        return job.kind === "transcribe"
+        return reviewsSuggestion(job)
           ? t("suggestJobReview", { name })
           : t("videoJobReview", { name });
       case "done":
@@ -123,6 +127,7 @@ const PREFIX: Record<AnonymizeJob["kind"], string> = {
   anonymize: "anonymize",
   shorten: "shorten",
   transcribe: "transcribe",
+  suggest: "suggest",
 };
 
 const styles = StyleSheet.create((theme) => ({

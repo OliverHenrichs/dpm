@@ -120,8 +120,8 @@ describe("TranscriptSheet", () => {
         onDescriptionChange={onDescriptionChange}
       />,
     );
-    const add = () => screen.getByText(/^Add to description/);
-    expect(add()).toHaveTextContent("Add to description (0)");
+    const add = () => screen.getByText(/^Copy selected lines to description/);
+    expect(add()).toHaveTextContent("Copy selected lines to description (0)");
 
     fireEvent.press(screen.getByLabelText("Select the line at 0:12"));
     fireEvent.press(screen.getByLabelText("Select the line at 0:00"));
@@ -176,7 +176,9 @@ describe("TranscriptSheet", () => {
       screen.getByText("No speech was found in this video."),
     ).toBeOnTheScreen();
     expect(screen.getByText("Language: not detected")).toBeOnTheScreen();
-    expect(screen.queryByText(/^Add to description/)).toBeNull();
+    expect(
+      screen.queryByText(/^Copy selected lines to description/),
+    ).toBeNull();
   });
 });
 
@@ -235,7 +237,7 @@ describe("transcribing from the pattern form", () => {
       await screen.findByLabelText("Open the transcript of video 1"),
     );
     fireEvent.press(screen.getByLabelText("Select the line at 0:03"));
-    fireEvent.press(screen.getByText("Add to description (1)"));
+    fireEvent.press(screen.getByText("Copy selected lines to description (1)"));
     fireEvent.press(screen.getByText("Save"));
 
     await waitFor(() => expect(saved().description).toBe("Keep the frame."));

@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useEffect } from "react";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import { View } from "react-native";
@@ -10,10 +10,12 @@ import { isYouTubeUrl } from "@/src/common/utils/YouTubeUtils";
 type VideoItemProps = {
   videoRef: IVideoReference;
   width: number;
+  /** Stops a playing video, while another player takes over (a transcript sheet). */
+  paused?: boolean;
 };
 
 /** Direct-URL / local video player powered by expo-video. */
-const DirectVideoItem: FC<VideoItemProps> = ({ videoRef }) => {
+const DirectVideoItem: FC<VideoItemProps> = ({ videoRef, paused }) => {
   const player = useVideoPlayer(videoRef.value, (p) => {
     capVideoBuffer(p);
     p.loop = false;
@@ -21,6 +23,9 @@ const DirectVideoItem: FC<VideoItemProps> = ({ videoRef }) => {
       p.currentTime = videoRef.startTime;
     }
   });
+  useEffect(() => {
+    if (paused) player.pause();
+  }, [paused, player]);
   return (
     <VideoView
       style={localStyles.videoPlayer}
@@ -33,12 +38,12 @@ const DirectVideoItem: FC<VideoItemProps> = ({ videoRef }) => {
   );
 };
 
-export const VideoItem: FC<VideoItemProps> = ({ videoRef, width }) => (
+export const VideoItem: FC<VideoItemProps> = ({ videoRef, width, paused }) => (
   <View style={[localStyles.videoItemContainer, { width }]}>
     {videoRef.type === "url" && isYouTubeUrl(videoRef.value) ? (
       <YouTubeVideoItem videoRef={videoRef} width={width} />
     ) : (
-      <DirectVideoItem videoRef={videoRef} width={width} />
+      <DirectVideoItem videoRef={videoRef} width={width} paused={paused} />
     )}
   </View>
 );

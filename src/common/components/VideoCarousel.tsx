@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { Button } from "@/src/common/ui";
 import { VideoItem } from "@/src/common/components/VideoItem";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 
@@ -12,11 +13,22 @@ type VideoCarouselProps = {
   videoRefs: IVideoReference[];
   /** Label of the badge on generated (anonymized) videos. */
   generatedLabel?: string;
+  /**
+   * Opens the transcript of the video on screen; with it, a video that has one gets a button
+   * under the carousel, labelled [transcriptLabel].
+   */
+  onOpenTranscript?: (videoRef: IVideoReference) => void;
+  transcriptLabel?: string;
+  /** Pauses the videos, while the transcript's own player is up. */
+  paused?: boolean;
 };
 
 const VideoCarousel: React.FC<VideoCarouselProps> = ({
   videoRefs,
   generatedLabel,
+  onOpenTranscript,
+  transcriptLabel,
+  paused,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -26,6 +38,11 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
       setCurrentIndex(viewableItems[0].index ?? 0);
     }
   }, []);
+
+  // Paging to another pattern's videos (a modifier pill) can leave the index past the end.
+  const onScreen = videoRefs[Math.min(currentIndex, videoRefs.length - 1)];
+  const transcribed =
+    onOpenTranscript && onScreen?.transcript ? onScreen : undefined;
 
   return (
     <View
@@ -40,7 +57,11 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
           data={videoRefs}
           renderItem={({ item }) => (
             <View>
-              <VideoItem videoRef={item} width={containerWidth} />
+              <VideoItem
+                videoRef={item}
+                width={containerWidth}
+                paused={paused}
+              />
               {item.generated && generatedLabel && (
                 <View style={styles.badge} pointerEvents="none">
                   <Text style={styles.badgeText}>{generatedLabel}</Text>
@@ -56,13 +77,27 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
           showsHorizontalScrollIndicator={false}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={VIEWABILITY_CONFIG}
+          extraData={paused}
         />
       )}
-      {videoRefs.length > 1 && (
-        <View style={styles.paginationContainer}>
-          <Text style={styles.paginationText}>
-            {currentIndex + 1} / {videoRefs.length}
-          </Text>
+      {(videoRefs.length > 1 || transcribed) && (
+        <View
+          style={[styles.paginationContainer, transcribed && styles.withAction]}
+        >
+          {transcribed && (
+            <Button
+              title={transcriptLabel ?? ""}
+              icon="text-box-outline"
+              variant="ghost"
+              size="sm"
+              onPress={() => onOpenTranscript?.(transcribed)}
+            />
+          )}
+          {videoRefs.length > 1 && (
+            <Text style={styles.paginationText}>
+              {currentIndex + 1} / {videoRefs.length}
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -76,6 +111,10 @@ const styles = StyleSheet.create((theme) => {
     },
     paginationContainer: {
       alignItems: "center",
+    },
+    withAction: {
+      flexDirection: "row",
+      justifyContent: "space-between",
     },
     badge: {
       position: "absolute",
