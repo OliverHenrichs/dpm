@@ -6,7 +6,13 @@ import {
   Text,
   View,
 } from "react-native";
-import { Button, Chip } from "@/src/common/ui";
+import {
+  AppText,
+  Button,
+  Chip,
+  Segment,
+  SegmentedControl,
+} from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useEventListener } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -27,6 +33,11 @@ import {
 } from "@/src/anonymize/providers/AnonymizeProvider";
 import { TrimRequest } from "@/src/anonymize/shortenVideo";
 
+/** The jobs the sheet offers, one tab each. */
+export type VideoEditTab = "shorten" | "anonymize" | "speech";
+/** The two that cut the video, on the part picked on the trim bar. */
+export type VideoCut = Exclude<VideoEditTab, "speech">;
+
 type Props = {
   sourceUri: string;
   /**
@@ -36,8 +47,10 @@ type Props = {
   providers: AnonymizeProvider[];
   onShorten: (request: TrimRequest) => void;
   onAnonymize: (provider: AnonymizeProvider, request: AnonymizeRequest) => void;
-  /** Shown above the actions while picking the part to keep (an option that goes with them). */
-  options?: React.ReactNode;
+  /** Options that change a cut, shown above its button (`SwitchRow`s). */
+  cutOptions?: (cut: VideoCut) => React.ReactNode;
+  /** The Speech tab's content; the tab is left out without it. */
+  speech?: React.ReactNode;
 };
 
 /** The output palette's dancer colours, so a marker shows which colour that dancer gets. */
@@ -51,13 +64,17 @@ const MIN_SECONDS = 1;
 const WHOLE_CLIP_SLACK = 0.1;
 
 /**
- * Edit a pattern's video: pick the part to keep on a bar over the whole clip, then either
- * shorten the video to it or anonymize it (the user-facing word for anonymizing). The preview loops the selection, so what you see
- * is what you keep. Anonymizing is offered once the selection fits the provider (30 s
- * on-device); a provider that tracks from a prompt then holds the selection's first frame for
- * one tap per dancer.
+ * Edit a pattern's video, one job per tab: *Shorten*, *Anonymize* (the user-facing word for
+ * turning the dancers into silhouettes) and *Speech* (the caller's content). Each tab says what
+ * it does, shows the options that change it, and ends in one button naming the result. Options
+ * are switches above that button, never chips or buttons of their own.
  *
- * Both actions only hand the request over; the caller runs it as a background job.
+ * The two cuts work on the part picked on a bar over the whole clip; the preview loops it, so
+ * what you see is what you keep. Anonymizing is offered once the selection fits the provider
+ * (30 s on-device); a provider that tracks from a prompt then holds the selection's first frame
+ * for one tap per dancer.
+ *
+ * Both cuts only hand the request over; the caller runs it as a background job.
  *
  * Remote providers are not offered a consent step yet — `runAnonymize` refuses them without
  * one, so adding a remote provider fails loudly until that step exists.
@@ -67,12 +84,14 @@ const VideoEditPanel: React.FC<Props> = ({
   providers,
   onShorten,
   onAnonymize,
-  options,
+  cutOptions,
+  speech,
 }) => {
   const { t } = useTranslation();
   const [provider, setProvider] = useState<AnonymizeProvider | undefined>(
     providers[0],
   );
+  const [tab, setTab] = useState<VideoEditTab>("shorten");
   const [step, setStep] = useState<"trim" | "prompt">("trim");
   const [duration, setDuration] = useState(0);
   const [videoSize, setVideoSize] = useState<Size | null>(null);
@@ -89,6 +108,8 @@ const VideoEditPanel: React.FC<Props> = ({
     max: duration,
   };
   const prompting = step === "prompt";
+  // Speech covers the whole video, so its tab plays all of it.
+  const loopSelection = tab !== "speech";
 
   const player = useVideoPlayer(sourceUri, (p) => {
     capVideoBuffer(p);
@@ -108,7 +129,7 @@ const VideoEditPanel: React.FC<Props> = ({
   // frame still instead, for the taps.
   useEventListener(player, "timeUpdate", ({ currentTime }) => {
     setPlayhead(currentTime);
-    if (prompting || trim.end <= trim.start) return;
+    if (prompting || !loopSelection || trim.end <= trim.start) return;
     if (currentTime >= trim.end || currentTime < trim.start - 0.5) {
       player.seekBy(trim.start - currentTime);
     }
@@ -121,6 +142,7 @@ const VideoEditPanel: React.FC<Props> = ({
   };
 
   const length = trim.end - trim.start;
+  const seconds = Math.round(length);
   const loaded = duration > 0;
   const isWholeClip =
     trim.start <= WHOLE_CLIP_SLACK && trim.end >= duration - WHOLE_CLIP_SLACK;
@@ -138,14 +160,23 @@ const VideoEditPanel: React.FC<Props> = ({
     ...(needsTaps && { prompts: taps }),
   });
 
+  const tabs: Segment<VideoEditTab>[] = [
+    { value: "shorten", label: t("videoShorten") },
+    ...(provider
+      ? [{ value: "anonymize" as const, label: t("anonymizeRun") }]
+      : []),
+    ...(speech
+      ? [{ value: "speech" as const, label: t("transcribeSection") }]
+      : []),
+  ];
+
   const anonymize = () => {
     if (!provider) return;
+    player.pause();
     if (!needsTaps) {
-      player.pause();
       onAnonymize(provider, request());
       return;
     }
-    player.pause();
     seekTo(trim.start);
     setTaps([]);
     setStep("prompt");
@@ -166,27 +197,93 @@ const VideoEditPanel: React.FC<Props> = ({
     );
     if (point) setTaps([...taps, point]);
   };
-  const button = (
-    label: string,
-    onPress: () => void,
-    {
-      primary = false,
-      disabled = false,
-    }: { primary?: boolean; disabled?: boolean } = {},
-  ) => (
-    <Button
-      key={label}
-      title={label}
-      variant={primary ? "primary" : "secondary"}
-      onPress={onPress}
-      disabled={disabled}
-      style={styles.button}
-    />
-  );
   const tapHint = t("anonymizeTapDancers", {
     count: taps.length,
     total: dancers,
   });
+
+  const partToKeep = (meta: string) => (
+    <>
+      <View style={styles.labelRow}>
+        <AppText variant="label">{t("videoPartToKeep")}</AppText>
+        <AppText variant="micro" color="textMuted">
+          {meta}
+        </AppText>
+      </View>
+      <TrimWindowBar
+        limits={limits}
+        window={trim}
+        onChange={setTrim}
+        onChangeEnd={(w) => seekTo(w.start)}
+        playhead={playhead}
+      />
+    </>
+  );
+  /** The one button a tab ends in, with the reason under it when it cannot be pressed. */
+  const action = (
+    title: string,
+    onPress: () => void,
+    disabled = false,
+    reason?: string,
+  ) => (
+    <View style={styles.action}>
+      <Button title={title} onPress={onPress} disabled={disabled} />
+      {reason ? (
+        <AppText variant="caption" color="textMuted" style={styles.centred}>
+          {reason}
+        </AppText>
+      ) : null}
+    </View>
+  );
+
+  const shortenTab = (
+    <>
+      <AppText variant="bodySmall">{t("videoShortenWhat")}</AppText>
+      {loaded && (
+        <>
+          {partToKeep(t("videoSeconds", { seconds }))}
+          {cutOptions?.("shorten")}
+          {action(
+            isWholeClip ? t("videoShorten") : t("videoShortenTo", { seconds }),
+            () => {
+              player.pause();
+              onShorten({
+                sourceUri,
+                startSeconds: trim.start,
+                endSeconds: trim.end,
+              });
+            },
+            isWholeClip,
+            isWholeClip ? t("videoShortenHint") : undefined,
+          )}
+        </>
+      )}
+    </>
+  );
+
+  const anonymizeTab = provider && (
+    <>
+      <AppText variant="bodySmall">{t("anonymizeWhy")}</AppText>
+      {loaded && (
+        <>
+          {partToKeep(
+            t("videoSecondsOfMax", { seconds, max: provider.maxSeconds }),
+          )}
+          {cutOptions?.("anonymize")}
+          {action(
+            needsTaps ? t("anonymizeNext") : t("anonymizeSeconds", { seconds }),
+            anonymize,
+            !fitsProvider,
+            fitsProvider
+              ? undefined
+              : length < provider.minSeconds
+                ? t("anonymizeTooShort", { min: provider.minSeconds })
+                : t("anonymizeTooLong", { max: provider.maxSeconds }),
+          )}
+        </>
+      )}
+    </>
+  );
 
   return (
     <View style={styles.panel}>
@@ -236,53 +333,41 @@ const VideoEditPanel: React.FC<Props> = ({
         )}
       </View>
 
-      {!prompting && loaded && (
+      {!prompting && (
         <>
-          <TrimWindowBar
-            limits={limits}
-            window={trim}
-            onChange={setTrim}
-            onChangeEnd={(w) => seekTo(w.start)}
-            playhead={playhead}
-          />
-          {isWholeClip && (
-            <Text style={styles.hint}>{t("videoShortenHint")}</Text>
+          {tabs.length > 1 && (
+            <SegmentedControl
+              segments={tabs}
+              value={tab}
+              onChange={setTab}
+              accessibilityLabel={t("videoEditTitle")}
+            />
           )}
-          {provider && !fitsProvider && (
-            <Text style={styles.hint}>
-              {length < provider.minSeconds
-                ? t("anonymizeTooShort", { min: provider.minSeconds })
-                : t("anonymizeTooLong", { max: provider.maxSeconds })}
-            </Text>
-          )}
-          {options}
-          <View style={styles.row}>
-            {button(
-              t("videoShorten"),
-              () => {
-                player.pause();
-                onShorten({
-                  sourceUri,
-                  startSeconds: trim.start,
-                  endSeconds: trim.end,
-                });
-              },
-              { disabled: isWholeClip },
-            )}
-            {provider &&
-              button(t("anonymizeRun"), anonymize, {
-                primary: true,
-                disabled: !fitsProvider,
-              })}
-          </View>
-          {provider && <Text style={styles.hint}>{t("anonymizeWhy")}</Text>}
+          {tab === "shorten" && shortenTab}
+          {tab === "anonymize" && anonymizeTab}
+          {tab === "speech" && speech}
         </>
       )}
 
       {prompting && provider && (
         <>
-          <Text style={styles.text}>{tapHint}</Text>
-          <Text style={styles.hint}>{t("anonymizeTapFrameHint")}</Text>
+          <View style={styles.labelRow}>
+            <Button
+              title={t("back")}
+              icon="chevron-left"
+              variant="ghost"
+              size="sm"
+              onPress={backToTrim}
+            />
+            {taps.length > 0 && (
+              <Button
+                title={t("anonymizeResetTaps")}
+                variant="ghost"
+                size="sm"
+                onPress={() => setTaps([])}
+              />
+            )}
+          </View>
           {providers.length > 1 && (
             <View style={styles.row}>
               {providers.map((p) => {
@@ -303,38 +388,38 @@ const VideoEditPanel: React.FC<Props> = ({
             </View>
           )}
           {fewestDancers < provider.promptCount && (
-            <View style={styles.row}>
+            <>
+              <AppText variant="label">{t("anonymizeWhoToHide")}</AppText>
               {/* Labels exist for one and two: the most any provider follows today. */}
-              {[1, 2]
-                .filter((n) => n >= fewestDancers && n <= provider.promptCount)
-                .map((n) => {
-                  const selected = n === dancers;
-                  return (
-                    <Chip
-                      key={n}
-                      label={
-                        n === 1 ? t("anonymizeOneDancer") : t("anonymizeCouple")
-                      }
-                      selected={selected}
-                      onPress={() => {
-                        setDancers(n);
-                        setTaps([]);
-                      }}
-                    />
-                  );
-                })}
-            </View>
+              <SegmentedControl
+                kind="choice"
+                accessibilityLabel={t("anonymizeWhoToHide")}
+                segments={[1, 2]
+                  .filter(
+                    (n) => n >= fewestDancers && n <= provider.promptCount,
+                  )
+                  .map((n) => ({
+                    value: String(n),
+                    label:
+                      n === 1 ? t("anonymizeOneDancer") : t("anonymizeCouple"),
+                  }))}
+                value={String(dancers)}
+                onChange={(n) => {
+                  setDancers(Number(n));
+                  setTaps([]);
+                }}
+              />
+            </>
           )}
-          <View style={styles.row}>
-            {button(t("back"), backToTrim)}
-            {taps.length > 0 &&
-              button(t("anonymizeResetTaps"), () => setTaps([]))}
-            {button(
-              t("anonymizeStart"),
-              () => onAnonymize(provider, request()),
-              { primary: true, disabled: !tapsDone },
-            )}
-          </View>
+          <AppText variant="bodySmall">{tapHint}</AppText>
+          <AppText variant="caption" color="textMuted">
+            {t("anonymizeTapFrameHint")}
+          </AppText>
+          {action(
+            t("anonymizeSeconds", { seconds }),
+            () => onAnonymize(provider, request()),
+            !tapsDone,
+          )}
         </>
       )}
     </View>
@@ -350,9 +435,13 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.media.black,
   },
   row: { ...getCommonRow(), gap: theme.space.sm, flexWrap: "wrap" },
-  text: { ...theme.typography.body, color: theme.colors.text },
-  hint: { ...theme.typography.bodySmall, color: theme.colors.textMuted },
-  button: { flexGrow: 1, alignItems: "center" },
+  labelRow: {
+    ...getCommonRow(),
+    justifyContent: "space-between",
+    gap: theme.space.sm,
+  },
+  action: { gap: theme.space.xs, marginTop: theme.space.xs },
+  centred: { textAlign: "center" },
   marker: {
     position: "absolute",
     width: MARKER,

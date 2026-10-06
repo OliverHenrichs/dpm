@@ -17,6 +17,7 @@ import {
   IconButton,
   ListRow,
   SegmentedControl,
+  SwitchRow,
   TextVariant,
 } from "@/src/common/ui";
 
@@ -38,6 +39,7 @@ const DesignGallery: React.FC = () => {
   const [selected, setSelected] = useState<string[]>(["Salsa"]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"patterns" | "modifiers">("patterns");
+  const [switchOn, setSwitchOn] = useState(true);
   const [language, setLanguage] = useState("en");
   const [expanded, setExpanded] = useState(false);
 
@@ -248,6 +250,21 @@ const DesignGallery: React.FC = () => {
             ]}
             value={tab}
             onChange={setTab}
+          />
+        </Section>
+
+        <Section title="Switch rows">
+          <SwitchRow
+            title="Transcribe the whole video first"
+            description="Downloads 61 MB once."
+            value={switchOn}
+            onValueChange={setSwitchOn}
+          />
+          <SwitchRow
+            title="Off and disabled"
+            value={false}
+            onValueChange={() => {}}
+            disabled
           />
         </Section>
 

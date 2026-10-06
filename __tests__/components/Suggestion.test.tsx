@@ -219,6 +219,7 @@ describe("transcribing and suggesting in one job", () => {
     });
 
     fireEvent.press(await screen.findByLabelText("Edit a video"));
+    fireEvent.press(await screen.findByRole("tab", { name: "Speech" }));
     // On by default: the suggestion model is already on the phone.
     expect(
       await screen.findByText("Then suggest a name and description"),
@@ -260,6 +261,7 @@ describe("transcribing and suggesting in one job", () => {
     });
 
     fireEvent.press(await screen.findByLabelText("Edit a video"));
+    fireEvent.press(await screen.findByRole("tab", { name: "Speech" }));
     fireEvent.press(await screen.findByText("Transcribe speech"));
     fireEvent.press(await screen.findByText("Review"));
 
@@ -280,11 +282,13 @@ describe("transcribing and suggesting in one job", () => {
     renderForm({ videoRefs: [{ type: "local", value: SOURCE }] });
 
     fireEvent.press(await screen.findByLabelText("Edit a video"));
+    fireEvent.press(await screen.findByRole("tab", { name: "Speech" }));
 
-    const chip = await screen.findByText(
-      "Then suggest a name and description (downloads 1281 MB)",
-    );
-    expect(chip).toBeOnTheScreen();
+    const option = screen.getByRole("switch", {
+      name: "Then suggest a name and description",
+    });
+    expect(option).not.toBeChecked();
+    expect(screen.getByText(/Downloads 1281 MB once\.$/)).toBeOnTheScreen();
   });
 });
 

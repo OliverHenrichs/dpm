@@ -20,5 +20,7 @@ export { default as ListRow } from "./ListRow";
 export type { ListRowProps, ListRowSelection } from "./ListRow";
 export { default as SegmentedControl } from "./SegmentedControl";
 export type { Segment, SegmentedControlProps } from "./SegmentedControl";
+export { default as SwitchRow } from "./SwitchRow";
+export type { SwitchRowProps } from "./SwitchRow";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";

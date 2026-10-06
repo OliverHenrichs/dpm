@@ -39,8 +39,9 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
 - Downloaded on first use into `<document>/models/`, through a `.part` file that is moved into
   place only when HTTP status, size and hash match. The hash comes from the native `sha256File` in
   `modules/audio-extract`, which is why model features need that module.
-- **State the size before any download** (and recommend Wi-Fi); the download counts into the job's
-  progress. The legacy `createDownloadResumable` is used because it reports progress.
+- **State the size before any download**, and only while the model is missing: Edit video names it
+  under the button or switch that would fetch it ("Downloads 61 MB once."), so the tap itself is
+  the consent and there is no second prompt. The download counts into the job's progress. The legacy `createDownloadResumable` is used because it reports progress.
 - An installed model is checked by size on each use; the hash only at download.
 - Settings → *On-device models* (`src/settings/components/DeviceModelsSection.tsx`) lists them,
   downloads ahead of first use, and deletes.
@@ -49,7 +50,8 @@ Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB).
 
 ## UI
 
-- `components/TranscribeSection.tsx` in Edit video: *Transcribe speech*, then *Open transcript* /
+- `components/TranscribeSection.tsx` is Edit video's *Speech* tab: *Transcribe speech* (with a
+  `SwitchRow` to go on and suggest, where suggestions can run), then *Open transcript* /
   *Transcribe again*.
 - `components/TranscriptSheet.tsx`: the video over timestamped lines; tapping a line seeks, the line
   being said is highlighted and followed (`followScroll.ts`, paused by a manual scroll). Ticked

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { Chip, IconButton } from "@/src/common/ui";
+import { IconButton, SwitchRow } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
@@ -41,14 +41,14 @@ type Props = {
 
 /**
  * Edit a pattern's video — shorten it, anonymize part of it, or transcribe what is said in
- * it. Each runs as a background job (anonymizing takes minutes), so this closes as soon as
- * one is started. A transcript lands on the video when done; a shortened or anonymized video
- * waits for the user to review it (`VideoReviewModal`).
+ * it, one tab each (`VideoEditPanel`). Each runs as a background job (anonymizing takes
+ * minutes), so this closes as soon as one is started. A transcript lands on the video when
+ * done; a shortened or anonymized video waits for the user to review it (`VideoReviewModal`).
  *
- * Cutting a video that has sound and no transcript offers to transcribe the whole of it first,
- * on by default: a silhouette has no sound to transcribe later, and an instructor's explanation
- * is usually longer than the part worth keeping. The jobs run in turn, so the transcript is on
- * the original before the cut is reviewed.
+ * Cutting a video that has sound and no transcript offers to transcribe the whole of it first
+ * (a switch above either cut's button), on by default: a silhouette has no sound to transcribe
+ * later, and an instructor's explanation is usually longer than the part worth keeping. The
+ * jobs run in turn, so the transcript is on the original before the cut is reviewed.
  */
 const AnonymizeModal: React.FC<Props> = ({
   target,
@@ -103,18 +103,34 @@ const AnonymizeModal: React.FC<Props> = ({
                   providers={
                     target.generated ? [] : availableProviders(ALL_PROVIDERS)
                   }
-                  options={
+                  cutOptions={(cut) =>
                     offerTranscribeFirst && (
-                      <Chip
-                        label={
-                          installedModels()
-                            ? t("videoTranscribeFirst")
-                            : t("videoTranscribeFirstDownload", {
-                                size: TRANSCRIPTION_DOWNLOAD_MB,
-                              })
+                      <SwitchRow
+                        title={t("videoTranscribeFirst")}
+                        description={[
+                          cut === "anonymize"
+                            ? t("videoTranscribeFirstAnonymize")
+                            : t("videoTranscribeFirstShorten"),
+                          !installedModels() &&
+                            t("modelDownloadOnce", {
+                              size: TRANSCRIPTION_DOWNLOAD_MB,
+                            }),
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        value={transcribeFirst}
+                        onValueChange={setTranscribeFirst}
+                      />
+                    )
+                  }
+                  speech={
+                    isAudioExtractAvailable && (
+                      <TranscribeSection
+                        target={target}
+                        onStarted={onClose}
+                        onOpenTranscript={
+                          onOpenTranscript && (() => onOpenTranscript(target))
                         }
-                        selected={transcribeFirst}
-                        onPress={() => setTranscribeFirst((on) => !on)}
                       />
                     )
                   }
@@ -140,16 +156,6 @@ const AnonymizeModal: React.FC<Props> = ({
                     });
                     onClose();
                   }}
-                />
-              )}
-              {target && (
-                <TranscribeSection
-                  key={`speech-${target.sourceUri}`}
-                  target={target}
-                  onStarted={onClose}
-                  onOpenTranscript={
-                    onOpenTranscript && (() => onOpenTranscript(target))
-                  }
                 />
               )}
             </ScrollView>

@@ -25,22 +25,22 @@ jest.mock("@/src/anonymize/providers/allProviders", () => ({
   ALL_PROVIDERS: [],
 }));
 // The real panel needs expo-video; this one offers the cut as a plain button and shows the
-// options it is given.
+// options it is given for it.
 jest.mock("@/src/anonymize/components/VideoEditPanel", () => ({
   __esModule: true,
   default: ({
     sourceUri,
     onShorten,
-    options,
+    cutOptions,
   }: {
     sourceUri: string;
     onShorten: (r: object) => void;
-    options?: React.ReactNode;
+    cutOptions?: (cut: "shorten" | "anonymize") => React.ReactNode;
   }) => {
     const { Text: MockText } = jest.requireActual("react-native");
     return (
       <>
-        {options}
+        {cutOptions?.("shorten")}
         <MockText
           onPress={() =>
             onShorten({ sourceUri, startSeconds: 1, endSeconds: 4 })
@@ -90,7 +90,7 @@ describe("Edit video — transcribing the full video first", () => {
     const { kinds } = renderModal();
 
     expect(
-      await screen.findByText("Transcribe the full video first"),
+      await screen.findByText("Transcribe the whole video first"),
     ).toBeOnTheScreen();
     fireEvent.press(screen.getByText("mock shorten"));
 
@@ -100,10 +100,19 @@ describe("Edit video — transcribing the full video first", () => {
   it("only cuts once it is switched off", async () => {
     const { kinds } = renderModal();
 
-    fireEvent.press(await screen.findByText("Transcribe the full video first"));
+    fireEvent.press(
+      await screen.findByText("Transcribe the whole video first"),
+    );
     fireEvent.press(screen.getByText("mock shorten"));
 
     expect(kinds()).toEqual(["shorten"]);
+  });
+
+  it("names no download once the speech model is on the phone", async () => {
+    renderModal();
+
+    await screen.findByText("Transcribe the whole video first");
+    expect(screen.queryByText(/Downloads/)).toBeNull();
   });
 
   it("names the download when the speech model is not on the phone yet", async () => {
@@ -111,7 +120,7 @@ describe("Edit video — transcribing the full video first", () => {
     renderModal();
 
     expect(
-      await screen.findByText(/^Transcribe the full video first \(downloads/),
+      await screen.findByText(/Downloads 61 MB once\.$/),
     ).toBeOnTheScreen();
   });
 
@@ -124,6 +133,6 @@ describe("Edit video — transcribing the full video first", () => {
     };
     renderModal({ transcript });
     await screen.findByText("mock shorten");
-    expect(screen.queryByText(/Transcribe the full video first/)).toBeNull();
+    expect(screen.queryByText(/Transcribe the whole video first/)).toBeNull();
   });
 });
