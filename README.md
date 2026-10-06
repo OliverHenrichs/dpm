@@ -235,6 +235,21 @@ generate the app signing key; the EAS keystore is then only the upload key, and 
 can be reset through Play support rather than losing the app. The first AAB has to be uploaded by
 hand in Play Console; `eas submit` works after that.
 
+**Uploading to Play from EAS.** `eas build --platform android --profile production --auto-submit`
+builds the AAB and hands it straight to Play's closed testing track (`alpha`, set under `submit` in
+`eas.json`). `eas submit --platform android --profile production --latest` sends an existing build.
+Submitting needs a Google service account key, held by EAS and never committed:
+
+1. In Google Cloud (any project), create a service account and download a JSON key for it.
+2. In Play Console → *Users and permissions*, invite the service account's email and grant it
+   release permissions for DPM.
+3. Run `eas credentials -p android`, choose the production build, then *Google Service Account* →
+   upload the JSON key.
+
+Build from a checkout that has the anonymize model weights (see `modules/AGENTS.md`), as for any
+production build. To publish to another track later, change `track` (`internal`, `alpha`, `beta`,
+`production`, or a custom closed track's name).
+
 ### Running Tests
 
 Tests are split into two Jest projects. Most logic lives in `unit`, which runs in plain Node and
