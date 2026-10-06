@@ -431,5 +431,7 @@
   "danceNone": "无",
   "reelsOpen": "观看{{name}}",
   "reelsBack": "返回全部短视频",
-  "rhythmAddStep": "添加 {{step}}"
+  "rhythmAddStep": "添加 {{step}}",
+  "rhythmUndoStep": "撤销",
+  "rhythmRemoveStep": "删除 {{step}}"
 }

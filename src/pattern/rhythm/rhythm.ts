@@ -110,3 +110,13 @@ export function appendRhythmStep(written: string, step: string): string {
   const trimmed = written.trim();
   return trimmed ? `${trimmed} ${step}` : step;
 }
+
+/** The last step of `written`, or `undefined` when there is none. */
+export function lastRhythmStep(written: string): string | undefined {
+  return written.trim().split(/\s+/).filter(Boolean).pop();
+}
+
+/** `written` without its last step: undoes `appendRhythmStep`, to fix a mistap. */
+export function removeLastRhythmStep(written: string): string {
+  return written.trim().split(/\s+/).slice(0, -1).join(" ");
+}

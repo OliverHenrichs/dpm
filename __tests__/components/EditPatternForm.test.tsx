@@ -262,4 +262,26 @@ describe("EditPatternForm composing a rhythm", () => {
       ),
     );
   });
+
+  it("takes back a mistapped step with the undo bubble", () => {
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={noop}
+        onCancel={noop}
+      />,
+    );
+    expect(screen.queryByText("Undo")).toBeNull();
+
+    for (const step of ["1", "2", "3a4"]) {
+      fireEvent.press(screen.getByLabelText(`Add ${step}`));
+    }
+    fireEvent.press(screen.getByLabelText("Remove 3a4"));
+    fireEvent.press(screen.getByLabelText("Add 3&4"));
+
+    expect(screen.getByLabelText("Rhythm").props.value).toBe("1 2 3&4");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("4");
+  });
 });

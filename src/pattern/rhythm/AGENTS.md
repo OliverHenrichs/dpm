@@ -29,7 +29,8 @@ match its counts is a bug.
 While the field is empty, `rhythmSuggestions` offers whole rhythms: the list's `dance`'s basic
 rhythms for those counts (`DANCE_RHYTHMS`; the dance is `IPatternList.dance`,
 `src/pattern/types/Dance.ts`), then a step on every beat. Below them `nextRhythmSteps` offers the next token to append (a step, a triple, a swung
-triple, a held beat). Templates give their starter patterns the dance's basic rhythm (`defaultRhythm`).
+triple, a held beat), with an *Undo* bubble (`removeLastRhythmStep`) that takes the last token
+off again, so a mistap is fixed without the keyboard. Templates give their starter patterns the dance's basic rhythm (`defaultRhythm`).
 
 **Only add a dance's rhythm when it is the standard one**, verified, not guessed. Argentine tango
 deliberately has none. A new dance goes in `DANCES`, `DANCE_NAME_KEYS` (and its locale keys), and
