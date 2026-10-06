@@ -12,6 +12,8 @@ import {
 import { canSuggest } from "@/src/suggest/suggestPattern";
 import { SUGGESTION_DOWNLOAD_MB, SUGGESTION_MODEL } from "@/src/suggest/models";
 import { TRANSCRIPTION_DOWNLOAD_MB } from "@/src/transcribe/models";
+import TranscriptLines from "@/src/transcribe/components/TranscriptLines";
+import { SpeechPlayback } from "@/src/anonymize/components/VideoEditPanel";
 import {
   TranscriptionTarget,
   useStartTranscription,
@@ -22,13 +24,14 @@ type Props = {
     Pick<IVideoReference, "generated" | "transcript">;
   /** Called once a job is queued; the sheet closes, as it does for the other actions. */
   onStarted: () => void;
-  /** Opens the video's transcript; omitted where there is nowhere to show it. */
-  onOpenTranscript?: () => void;
+  /** The preview above, which a transcript follows and jumps in. */
+  playback: SpeechPlayback;
 };
 
 /**
- * The Speech tab of Edit video (L4): transcribe what is said, or open the transcript there
- * already is. The first transcription needs the speech model; its size shows under the button
+ * The Speech tab of Edit video (L4): transcribe what is said, or show the transcript there
+ * already is, its lines following the preview above (tap one to play from there). Copying
+ * lines and suggestions are in the transcript sheet, opened from the video's thumbnail. The first transcription needs the speech model; its size shows under the button
  * until it is on the phone, and the job then fetches it. A silhouette has no sound (L3 drops
  * it), so it is not offered there.
  *
@@ -40,7 +43,7 @@ type Props = {
 const TranscribeSection: React.FC<Props> = ({
   target,
   onStarted,
-  onOpenTranscript,
+  playback,
 }) => {
   const { t } = useTranslation();
   const startTranscription = useStartTranscription();
@@ -72,29 +75,30 @@ const TranscribeSection: React.FC<Props> = ({
   if (target.transcript) {
     return (
       <>
-        <AppText variant="bodySmall">{t("transcribeHasTranscript")}</AppText>
-        <View style={styles.actions}>
-          {onOpenTranscript && (
-            <Button
-              title={t("transcriptOpen")}
-              icon="text-box-outline"
-              onPress={onOpenTranscript}
-            />
-          )}
-          {!target.generated && (
+        <TranscriptLines
+          segments={target.transcript.segments}
+          playhead={playback.playhead}
+          onPlayFrom={playback.playFrom}
+        />
+        {!target.generated && (
+          <View style={styles.actions}>
             <Button
               title={t("transcribeAgain")}
               icon="refresh"
               variant="secondary"
               onPress={run}
             />
-          )}
-          {!target.generated && download ? (
-            <AppText variant="caption" color="textMuted" style={styles.centred}>
-              {download}
-            </AppText>
-          ) : null}
-        </View>
+            {download ? (
+              <AppText
+                variant="caption"
+                color="textMuted"
+                style={styles.centred}
+              >
+                {download}
+              </AppText>
+            ) : null}
+          </View>
+        )}
       </>
     );
   }

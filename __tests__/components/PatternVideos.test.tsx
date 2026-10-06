@@ -89,6 +89,22 @@ describe("PatternVideos", () => {
     expect(onRemoveVideo).toHaveBeenCalledWith(1);
   });
 
+  it("edits the video whose button is pressed, offering it only for videos on the phone", () => {
+    const onEditVideoAt = jest.fn();
+    renderVideos({
+      videoRefs: [url("https://youtu.be/x"), local("file:///b.mp4")],
+      thumbnails: ["", ""],
+      onEditVideoAt,
+    });
+
+    expect(screen.queryByLabelText("Edit video 1")).toBeNull();
+    expect(screen.getAllByLabelText("Remove video from pattern")).toHaveLength(
+      2,
+    );
+    fireEvent.press(screen.getByLabelText("Edit video 2"));
+    expect(onEditVideoAt).toHaveBeenCalledWith(1);
+  });
+
   it("offers the video editor only when given one", () => {
     const onEditVideo = jest.fn();
     renderVideos();

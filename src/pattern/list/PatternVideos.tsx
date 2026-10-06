@@ -10,7 +10,7 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import PlusButton from "@/src/common/components/PlusButton";
-import { Button, Icon, IconButton, Tappable } from "@/src/common/ui";
+import { Button, Icon, Tappable } from "@/src/common/ui";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
@@ -95,51 +95,65 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
           </Text>
         </View>
       ) : (
-        <Text style={styles.label}>{t("noThumbnail")}</Text>
+        <View style={styles.noPreview}>
+          <Text style={styles.label}>{t("noThumbnail")}</Text>
+        </View>
       );
       return (
-        <View key={idx} style={styles.thumbnailWrapper}>
-          {/* A transcribed video (L4) opens its transcript, thumbnail or not. */}
-          {ref.transcript && onOpenTranscript ? (
+        <View key={idx} style={styles.tile}>
+          <View style={styles.thumbnailWrapper}>
+            {/* A transcribed video (L4) opens its transcript, thumbnail or not. */}
+            {ref.transcript && onOpenTranscript ? (
+              <Tappable
+                onPress={() => onOpenTranscript(idx)}
+                accessibilityLabel={t("transcriptOpenN", { n: idx + 1 })}
+              >
+                {preview}
+              </Tappable>
+            ) : (
+              preview
+            )}
+            {ref.transcript && (
+              <View style={styles.transcriptBadge} pointerEvents="none">
+                <Icon
+                  name="text-box-outline"
+                  size={theme.iconSize.sm}
+                  color={theme.media.onScrim}
+                />
+              </View>
+            )}
+          </View>
+          {/*
+            The actions sit in a bar under the picture, each a full touch target. They used to
+            be small discs inside the picture's corners, whose grown touch areas overlapped each
+            other and the picture, and were cut off by the scroller's edges.
+          */}
+          <View style={styles.actionBar}>
+            {onEditVideoAt && ref.type === "local" && (
+              <Tappable
+                onPress={() => onEditVideoAt(idx)}
+                accessibilityLabel={t("videoEditN", { n: idx + 1 })}
+                style={styles.action}
+              >
+                <Icon
+                  name="movie-edit"
+                  size={theme.iconSize.md}
+                  color={theme.colors.primary}
+                />
+              </Tappable>
+            )}
             <Tappable
-              onPress={() => onOpenTranscript(idx)}
-              accessibilityLabel={t("transcriptOpenN", { n: idx + 1 })}
+              onPress={() => onRemoveVideo(idx)}
+              accessibilityLabel={t("removeVideo")}
+              style={[styles.action, styles.removeAction]}
             >
-              {preview}
-            </Tappable>
-          ) : (
-            preview
-          )}
-          {ref.transcript && (
-            <View style={styles.transcriptBadge} pointerEvents="none">
               <Icon
-                name="text-box-outline"
-                size={theme.iconSize.sm}
-                color={theme.media.onScrim}
+                name="delete-outline"
+                size={theme.iconSize.md}
+                color={theme.colors.danger}
               />
-            </View>
-          )}
-          {onEditVideoAt && ref.type === "local" && (
-            <IconButton
-              icon="movie-edit"
-              variant="filled"
-              color="success"
-              size={theme.iconSize.sm - 2}
-              onPress={() => onEditVideoAt(idx)}
-              accessibilityLabel={t("videoEditN", { n: idx + 1 })}
-              style={styles.editButton}
-            />
-          )}
-          {/* A bare "×" told a screen reader nothing about what it removes. */}
-          <IconButton
-            icon="close"
-            variant="filled"
-            color="danger"
-            size={theme.iconSize.sm - 2}
-            onPress={() => onRemoveVideo(idx)}
-            accessibilityLabel={t("removeVideo")}
-            style={styles.removeButton}
-          />
+            </Tappable>
+          </View>
         </View>
       );
     });
@@ -183,13 +197,16 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   );
 };
 
-/** Thumbnail edge, in dp: small enough for three in a row beside the add button. */
-const THUMB = 64;
+/**
+ * A video's tile, in dp: wide enough for two full touch targets side by side in its action bar,
+ * and still three tiles to a phone's width.
+ */
+const TILE_WIDTH = 96;
+const THUMB_HEIGHT = 64;
 
 /*
- * Everything on a thumbnail sits inside its corners: transcript top left, remove top right,
- * edit bottom left, what kind of video bottom right. They used to hang over the edges, and the
- * horizontal scroller clipped them (Android clips a ScrollView's content to its bounds).
+ * On the picture: transcript top left, what kind of video bottom right, both inside its corners
+ * (Android clips a ScrollView's content to its bounds). The actions are in the bar below it.
  */
 
 const styles = StyleSheet.create((theme) => ({
@@ -201,32 +218,41 @@ const styles = StyleSheet.create((theme) => ({
   videosRow: { ...getCommonRow(), gap: theme.space.sm },
   videosInputRow: {
     ...getCommonRow(),
-    minHeight: THUMB,
     marginTop: theme.space.sm,
+  },
+  tile: {
+    width: TILE_WIDTH,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    overflow: "hidden",
   },
   thumbnailWrapper: {
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
-    width: THUMB,
-    height: THUMB,
+    width: "100%",
+    height: THUMB_HEIGHT,
   },
   thumbImage: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: theme.radius.md,
+    width: TILE_WIDTH,
+    height: THUMB_HEIGHT,
     resizeMode: "cover",
   },
   urlPlaceholder: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: theme.radius.md,
+    width: TILE_WIDTH,
+    height: THUMB_HEIGHT,
     backgroundColor: alpha(theme.colors.primary, 0.2),
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
     justifyContent: "center",
     alignItems: "center",
     padding: theme.space.xs,
+  },
+  noPreview: {
+    width: TILE_WIDTH,
+    height: THUMB_HEIGHT,
+    justifyContent: "center",
+    alignItems: "center",
   },
   urlPlaceholderText: {
     ...theme.typography.badge,
@@ -250,22 +276,23 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.xs,
     padding: theme.space.xxs,
   },
-  removeButton: {
-    position: "absolute",
-    top: theme.space.xxs,
-    right: theme.space.xxs,
-    zIndex: 2,
+  actionBar: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
+  action: {
+    flex: 1,
+    height: theme.touchTarget,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  /** Alone (an online video has no edit), remove keeps to the right as it does beside edit. */
+  removeAction: { flex: 0, width: theme.touchTarget, marginLeft: "auto" },
   fullHint: {
     ...theme.typography.caption,
     color: theme.colors.textMuted,
     marginTop: theme.space.xs,
-  },
-  editButton: {
-    position: "absolute",
-    bottom: theme.space.xxs,
-    left: theme.space.xxs,
-    zIndex: 2,
   },
   addButtonContainer: {
     ...getCommonAddButtonContainer(),
