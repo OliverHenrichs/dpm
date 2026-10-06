@@ -427,6 +427,8 @@
   "reelsOpen": "Watch {{name}}",
   "reelsBack": "Back to all reels",
   "rhythmAddStep": "Add {{step}}",
+  "rhythmUndoStep": "Undo",
+  "rhythmRemoveStep": "Remove {{step}}",
   "videoPartToKeep": "Part to keep",
   "videoSeconds": "{{seconds}} s",
   "videoSecondsOfMax": "{{seconds}} s · up to {{max}} s",

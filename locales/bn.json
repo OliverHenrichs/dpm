@@ -427,6 +427,8 @@
   "reelsOpen": "{{name}} দেখুন",
   "reelsBack": "সব রিলসে ফিরে যান",
   "rhythmAddStep": "{{step}} যোগ করুন",
+  "rhythmUndoStep": "পূর্বাবস্থায় ফেরান",
+  "rhythmRemoveStep": "{{step}} সরান",
   "videoPartToKeep": "যে অংশ রাখা হবে",
   "videoSeconds": "{{seconds}} সে.",
   "videoSecondsOfMax": "{{seconds}} সে. · সর্বোচ্চ {{max}} সে.",

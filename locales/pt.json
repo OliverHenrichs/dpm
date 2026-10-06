@@ -427,6 +427,8 @@
   "reelsOpen": "Assistir {{name}}",
   "reelsBack": "Voltar a todos os reels",
   "rhythmAddStep": "Adicionar {{step}}",
+  "rhythmUndoStep": "Desfazer",
+  "rhythmRemoveStep": "Remover {{step}}",
   "videoPartToKeep": "Parte a manter",
   "videoSeconds": "{{seconds}} s",
   "videoSecondsOfMax": "{{seconds}} s · até {{max}} s",
