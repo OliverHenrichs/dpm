@@ -1,6 +1,8 @@
 import {
+  estimateTokens,
   patternWithVideo,
   promptFromTerms,
+  usualTranscriptLanguage,
   vocabularyPrompt,
 } from "@/src/transcribe/vocabulary";
 import { generateUUID } from "@/src/pattern/types/PatternType";
@@ -20,7 +22,7 @@ function list(
 }
 
 describe("vocabularyPrompt", () => {
-  it("names the list's patterns, types, modifiers and tags, in that order", () => {
+  it("names the list's patterns, types, modifiers and tags, most important last", () => {
     const patterns = [
       createTestPattern(push.id, {
         id: 1,
@@ -40,7 +42,7 @@ describe("vocabularyPrompt", () => {
     ];
 
     expect(vocabularyPrompt(list({ modifiers }), patterns)).toBe(
-      "Sugar Push, Whip, push, with a spin, basics.",
+      "basics, with a spin, push, Whip, Sugar Push.",
     );
   });
 
@@ -53,7 +55,7 @@ describe("vocabularyPrompt", () => {
       }),
     ];
 
-    expect(vocabularyPrompt(list(), patterns)).toBe("Whip, push.");
+    expect(vocabularyPrompt(list(), patterns)).toBe("push, Whip.");
   });
 
   it("stays short enough for the decoder, dropping whole words", () => {
@@ -63,8 +65,9 @@ describe("vocabularyPrompt", () => {
 
     const prompt = vocabularyPrompt(list(), patterns);
 
-    expect(prompt.length).toBeLessThanOrEqual(225);
-    expect(prompt).toMatch(/Pattern number \d+\.$/);
+    // Within whisper.cpp's 223 prompt tokens, at about four characters a token.
+    expect(prompt.length).toBeLessThanOrEqual(600);
+    expect(prompt).toMatch(/^Pattern number \d+, .*Pattern number 0\.$/);
   });
 
   it("is empty for an empty list", () => {
@@ -73,7 +76,7 @@ describe("vocabularyPrompt", () => {
     ).toBe("");
   });
 
-  it("puts the video's pattern, its modifiers and prerequisites first", () => {
+  it("puts the video's pattern, its modifiers and prerequisites where they count most", () => {
     const duck = {
       id: generateUUID(),
       name: "with duck",
@@ -99,13 +102,13 @@ describe("vocabularyPrompt", () => {
     );
 
     expect(prompt).toMatch(
-      /^Inside Turn Whip, with duck, Basic Whip, Pattern number 0,/,
+      /, Pattern number 0, Basic Whip, with duck, Inside Turn Whip\.$/,
     );
   });
 
   it("names a new pattern by its name in the form", () => {
     expect(vocabularyPrompt(list(), [], { name: "Starter Step" })).toBe(
-      "Starter Step, push, whip.",
+      "whip, push, Starter Step.",
     );
   });
 
@@ -116,17 +119,73 @@ describe("vocabularyPrompt", () => {
 
     const prompt = vocabularyPrompt(list({ dance: "wcs" }), patterns);
 
-    expect(prompt).toMatch(/^Sugar Push, anchor step, left side pass,/);
+    expect(prompt).toMatch(/, left side pass, anchor step, Sugar Push\.$/);
     // Said once, though the glossary has it too.
     expect(prompt.match(/sugar push/gi)).toHaveLength(1);
   });
 });
 
 describe("promptFromTerms", () => {
-  it("keeps the first of each term and ends with a full stop", () => {
+  it("keeps the first of each term, writes the most important last, ends with a full stop", () => {
     expect(promptFromTerms(["sugar push", "Sugar Push", " whip "])).toBe(
-      "sugar push, whip.",
+      "whip, sugar push.",
     );
+  });
+
+  it("leaves room for terms in other scripts by their cost, not their length", () => {
+    const hindi = Array.from({ length: 60 }, (_, i) => `शब्द${i}`);
+
+    const prompt = promptFromTerms(hindi);
+
+    expect(estimateTokens(prompt)).toBeLessThanOrEqual(200);
+    expect(prompt).toMatch(/शब्द0\.$/);
+  });
+});
+
+describe("estimateTokens", () => {
+  it("counts English generously and other scripts per character", () => {
+    expect(estimateTokens("sugar push")).toBe(4);
+    expect(estimateTokens("ocho")).toBe(2);
+    expect(estimateTokens("शब्द")).toBe(8);
+  });
+});
+
+describe("glossary spellings", () => {
+  it("spells the dance's terms in the language given, where the glossary has one", () => {
+    const prompt = vocabularyPrompt(list({ dance: "wcs" }), [], {
+      language: "de",
+    });
+    expect(prompt).toMatch(/anchor step\.$/);
+  });
+});
+
+describe("usualTranscriptLanguage", () => {
+  const withTranscript = (id: number, language: string) =>
+    createTestPattern(push.id, {
+      id,
+      videoRefs: [
+        {
+          type: "local",
+          value: `file:///${id}.mp4`,
+          transcript: { language, model: "m", createdAt: 1, segments: [] },
+        },
+      ],
+    });
+
+  it("is the language most of the list's transcripts are in", () => {
+    expect(
+      usualTranscriptLanguage([
+        withTranscript(1, "de"),
+        withTranscript(2, "en"),
+        withTranscript(3, "de"),
+        withTranscript(4, "und"),
+      ]),
+    ).toBe("de");
+  });
+
+  it("is unknown without transcripts", () => {
+    expect(usualTranscriptLanguage([withTranscript(1, "und")])).toBeUndefined();
+    expect(usualTranscriptLanguage([])).toBeUndefined();
   });
 });
 

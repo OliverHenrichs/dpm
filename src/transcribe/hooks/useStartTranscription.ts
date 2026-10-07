@@ -1,6 +1,10 @@
 import { useAnonymizeJobs } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
-import { patternWithVideo, vocabularyTerms } from "@/src/transcribe/vocabulary";
+import {
+  patternWithVideo,
+  usualTranscriptLanguage,
+  vocabularyTerms,
+} from "@/src/transcribe/vocabulary";
 import { vocabularyFor } from "@/src/suggest/suggestPrompt";
 
 export type TranscriptionTarget = {
@@ -29,6 +33,7 @@ export function useStartTranscription() {
       ? vocabularyTerms(activeList, patterns, {
           name: target.patternName,
           pattern: patternWithVideo(patterns, target.sourceUri),
+          language: language ?? usualTranscriptLanguage(patterns),
         })
       : [];
     start({

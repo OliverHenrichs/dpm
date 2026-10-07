@@ -22,11 +22,19 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
 - `segments.ts` drops annotations (`[MUSIC]`, `(laughs)`, `♪`) and splits lines longer than
   `MAX_SEGMENT_CHARS` at sentence ends, then commas, sharing time out by length.
 - `vocabulary.ts` builds Whisper's prompt from the list's own words so it hears "sugar push", not
-  "sugar bush": the video's own pattern, its modifiers and prerequisites first
+  "sugar bush". By importance: the video's own pattern, its modifiers and prerequisites
   (`patternWithVideo`, or the form's name for an unsaved pattern), then the list's pattern names,
-  the dance's standard terms (`glossary.ts`, when the list has a dance), types, modifiers, tags.
-  **Capped at 224 characters**: a longer prompt slowed decoding and merged segments. The job puts
-  the list's newest learned corrections in front (below).
+  the dance's standard terms (`glossary/`, below), types, modifiers, tags; the job puts the list's
+  newest learned corrections above all of them. As many as fit in `MAX_PROMPT_TOKENS` (150,
+  estimated by `estimateTokens`) go in, **written most important last**: whisper.cpp reads at
+  most 223 prompt tokens, shares them with what it has just decoded, and drops the prompt's
+  start when they run out. (The L4 spike's slow, merged decoding with a long prompt was on music,
+  which VAD now skips.)
+- **Glossaries** (`glossary/*.json`, one per dance, see its README): data, most common term first.
+  A term is a string, or `{ term, <iso>: spelling }` for languages where teachers spell it
+  differently; the spelling follows the language the user chose, else the one most of the
+  list's transcripts are in (`usualTranscriptLanguage`), since the prompt is built before Whisper
+  hears the video. `__tests__/unit/glossary.test.ts` checks the files.
 - **Learned corrections** (`corrections.ts`, `data/CorrectionStorage.ts`): when the user fixes a
   line, the changed words (a run of at most four on each side; not case, punctuation, added or
   removed words) are remembered per list under `@transcriptCorrections_{listId}`, newest first,

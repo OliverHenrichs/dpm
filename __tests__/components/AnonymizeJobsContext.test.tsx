@@ -353,7 +353,7 @@ describe("transcription jobs (L4)", () => {
     await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
     expect(mockedTranscribe).toHaveBeenCalledWith(
       SOURCE,
-      expect.objectContaining({ prompt: "push, Sugar Push." }),
+      expect.objectContaining({ prompt: "Sugar Push, push." }),
     );
     const [saved] = await storedPatterns(list.id);
     expect(saved.videoRefs[0].transcript?.segments[0].text).toBe(
