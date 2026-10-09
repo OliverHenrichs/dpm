@@ -1,4 +1,3 @@
-import { withoutTranscripts } from "@/src/pattern/data/transcripts";
 import {
   doc,
   getDoc,
@@ -16,6 +15,10 @@ import {
 } from "@/src/firebase/firebaseConfig";
 import { ensureSignedIn } from "@/src/firebase/auth";
 import { generateShareKey } from "@/src/firebase/shareKey";
+import {
+  publishedModifiers,
+  publishedPattern,
+} from "@/src/firebase/publishedContent";
 import { getPatternListById } from "@/src/pattern/data/PatternListStorage";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
@@ -123,10 +126,15 @@ export async function publishList(
   } = list;
 
   const payload: SharedListDocument = {
-    list: { ...listBase, shareCode },
-    // Transcripts stay on the device (L4): subscribers get the patterns, not
-    // what a teacher said while demonstrating them.
-    patterns: patterns.map(withoutTranscripts),
+    list: {
+      ...listBase,
+      modifiers: publishedModifiers(listBase.modifiers ?? []),
+      shareCode,
+    },
+    // Local videos and their transcripts stay on the device (L4): subscribers
+    // get the patterns and their URL videos, not files on the publisher's phone
+    // or what a teacher said while demonstrating them.
+    patterns: patterns.map(publishedPattern),
     publisherVersion: Date.now(),
     publishedAt: new Date().toISOString(),
     appToken: APP_TOKEN,
