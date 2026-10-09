@@ -9,6 +9,7 @@ type Segment = { t0: number; t1: number; text: string };
 type TranscribeOptions = {
   language?: string;
   prompt?: string;
+  beamSize?: number;
   offset?: number;
   duration?: number;
   onProgress?: (percent: number) => void;

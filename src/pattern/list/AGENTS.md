@@ -1,6 +1,6 @@
 # Pattern list & modifiers — `src/pattern/list/`
 
-The *Lists* screen (`PatternListSelector`), the *List* tab (`PatternListManager`), and the forms for
+The _Lists_ screen (`PatternListSelector`), the _List_ tab (`PatternListManager`), and the forms for
 patterns, modifiers, tags, videos and sharing. Unqualified paths are relative to
 `src/pattern/list/`.
 
@@ -60,7 +60,7 @@ nothing selected.
 - `EditPatternForm` keeps `rhythm` and `counts` in step; the rules are in
   `src/pattern/rhythm/AGENTS.md`. Its scroll views set `keyboardShouldPersistTaps` so taps on
   suggestions keep the keyboard up.
-- The pattern list's **+** offers *New pattern*, *From a video* (gallery) and *Record a video*
+- The pattern list's **+** offers _New pattern_, _From a video_ (gallery) and _Record a video_
   (system camera). The video seeds the new pattern's form; after saving, the app offers to edit it
   (`src/anonymize/AGENTS.md`).
 - `PatternListTemplateModal` creates and sets up a list: template, name, types, dance.

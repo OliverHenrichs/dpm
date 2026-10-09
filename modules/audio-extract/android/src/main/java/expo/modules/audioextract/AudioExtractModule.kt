@@ -13,8 +13,6 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.RandomAccessFile
-import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
 
@@ -114,6 +112,7 @@ class AudioExtractModule : Module() {
             channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
             floatPcm = format.containsKey(MediaFormat.KEY_PCM_ENCODING) &&
               format.getInteger(MediaFormat.KEY_PCM_ENCODING) == AudioFormat.ENCODING_PCM_FLOAT
+            resampler?.finish(writer::write)
             resampler = null
           }
           MediaCodec.INFO_TRY_AGAIN_LATER -> Unit
@@ -122,7 +121,7 @@ class AudioExtractModule : Module() {
             buffer.position(info.offset)
             buffer.limit(info.offset + info.size)
             val r = resampler ?: MonoResampler(sourceRate, TARGET_RATE).also { resampler = it }
-            r.push(buffer.order(ByteOrder.LITTLE_ENDIAN), channels, floatPcm, writer)
+            r.push(buffer.order(ByteOrder.LITTLE_ENDIAN), channels, floatPcm, writer::write)
             codec.releaseOutputBuffer(outIndex, false)
             if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) outputDone = true
           }
@@ -133,6 +132,8 @@ class AudioExtractModule : Module() {
     } catch (e: Exception) {
       throw AudioExtractException("Decoding failed", e)
     } finally {
+      // The filter runs a little behind its input; the clip's last few milliseconds.
+      runCatching { resampler?.finish(writer::write) }
       runCatching { codec.stop() }
       codec.release()
       extractor.release()
@@ -151,73 +152,5 @@ class AudioExtractModule : Module() {
   companion object {
     const val TARGET_RATE = 16_000
     private const val TIMEOUT_US = 10_000L
-  }
-}
-
-/**
- * Mixes interleaved PCM down to mono and resamples it by linear interpolation, carrying its
- * position across buffers. Linear interpolation is crude for music and fine for speech that is
- * going to a speech model at 16 kHz.
- */
-private class MonoResampler(sourceRate: Int, targetRate: Int) {
-  private val step = sourceRate.toDouble() / targetRate
-  /** Position of the next output sample, in input samples since the start. */
-  private var nextOut = 0.0
-  /** Input samples consumed so far. */
-  private var consumed = 0L
-  private var previous = 0f
-
-  fun push(buffer: ByteBuffer, channels: Int, floatPcm: Boolean, writer: WavWriter) {
-    val frameBytes = channels * (if (floatPcm) 4 else 2)
-    while (buffer.remaining() >= frameBytes) {
-      var sum = 0f
-      repeat(channels) {
-        sum += if (floatPcm) buffer.float else buffer.short / 32768f
-      }
-      val current = sum / channels
-      // Emit every output sample that falls between the previous input sample and this one.
-      while (nextOut <= consumed) {
-        val t = (nextOut - (consumed - 1)).toFloat().coerceIn(0f, 1f)
-        writer.write(previous + (current - previous) * t)
-        nextOut += step
-      }
-      previous = current
-      consumed++
-    }
-  }
-}
-
-/** 16-bit mono WAV, header patched with the sizes on close. */
-private class WavWriter(file: File, private val rate: Int) {
-  private val raf = RandomAccessFile(file, "rw").apply { setLength(0); write(ByteArray(44)) }
-  private val chunk = ByteBuffer.allocate(8192).order(ByteOrder.LITTLE_ENDIAN)
-  var samples = 0L
-    private set
-
-  fun write(value: Float) {
-    val clamped = (value.coerceIn(-1f, 1f) * 32767f).toInt().toShort()
-    chunk.putShort(clamped)
-    samples++
-    if (!chunk.hasRemaining()) flush()
-  }
-
-  private fun flush() {
-    raf.write(chunk.array(), 0, chunk.position())
-    chunk.clear()
-  }
-
-  fun close() {
-    flush()
-    val dataBytes = samples * 2
-    val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN).apply {
-      put("RIFF".toByteArray()); putInt((36 + dataBytes).toInt())
-      put("WAVE".toByteArray()); put("fmt ".toByteArray())
-      putInt(16); putShort(1); putShort(1) // PCM, mono
-      putInt(rate); putInt(rate * 2); putShort(2); putShort(16)
-      put("data".toByteArray()); putInt(dataBytes.toInt())
-    }
-    raf.seek(0)
-    raf.write(header.array())
-    raf.close()
   }
 }

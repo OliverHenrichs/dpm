@@ -11,6 +11,7 @@ import {
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
 import { setVideoTranscript } from "@/src/pattern/data/transcripts";
+import { rememberTranscriptEdit } from "@/src/transcribe/data/CorrectionStorage";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { useTranslation } from "react-i18next";
@@ -345,10 +346,20 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 
   // A transcript line corrected by hand, in Edit video's Speech tab or the transcript sheet. It
   // lives in the draft, like every other change to the videos, and is stored when the pattern is
-  // saved; the open sheet is handed the corrected transcript to show.
+  // saved; the open sheet is handed the corrected transcript to show. The misheard words it fixes
+  // are remembered for the list at once, so its later transcripts get them right.
   const canCorrectTranscripts =
     !!activeList && !activeList.readonly && !isActiveVideoReadonly;
   const correctTranscript = (uri: string, transcript: IVideoTranscript) => {
+    const before = [
+      ...newPattern.videoRefs,
+      ...newPattern.modifierRefs.flatMap((m) => m.videoRefs),
+    ].find((ref) => ref.value === uri)?.transcript;
+    if (activeList && before) {
+      rememberTranscriptEdit(activeList.id, before, transcript).catch((e) =>
+        console.error("Error remembering transcript corrections:", e),
+      );
+    }
     setNewPattern((prev) => setVideoTranscript(prev, uri, transcript));
     setAnonymizeTarget((prev) =>
       prev?.sourceUri === uri ? { ...prev, transcript } : prev,

@@ -1,6 +1,6 @@
 # Reels — `src/reels/`
 
-The *Reels* tab: every pattern that has a video, for browsing before a social rather than looking
+The _Reels_ tab: every pattern that has a video, for browsing before a social rather than looking
 something up. Unqualified paths are relative to `src/reels/`.
 
 - **Overview** (`ReelsScreen`, `components/ReelCard.tsx`): the patterns as stills, several to a

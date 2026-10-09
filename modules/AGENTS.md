@@ -49,7 +49,10 @@ each run's per-frame stats. Measurements and the tuning history are in `AGENT_TA
 
 Decodes the video's audio track to 16 kHz mono WAV for Whisper (refusing a video without one, which
 the app reports as "no sound"), and hashes a file with SHA-256 for the model store's download
-check (`src/transcribe/AGENTS.md`).
+check (`src/transcribe/AGENTS.md`). The resampler (`Pcm.kt`) is a windowed-sinc low-pass, flat to
+~6 kHz and silent above 8 kHz: plain interpolation folded the music's highs into the speech band.
+It costs well under a second per minute of audio; keep it a table lookup and one dot product per
+output sample.
 
 ## iOS
 

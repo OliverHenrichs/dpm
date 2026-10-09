@@ -81,7 +81,11 @@ function renderModal(extra: Partial<AnonymizeTarget> = {}) {
 }
 
 beforeEach(() => {
-  mockedInstalled.mockReturnValue({ whisperUri: "w", vadUri: "v" });
+  mockedInstalled.mockReturnValue({
+    whisperUri: "w",
+    vadUri: "v",
+    whisperModelId: "whisper-base-q5_1",
+  });
 });
 afterEach(() => jest.restoreAllMocks());
 

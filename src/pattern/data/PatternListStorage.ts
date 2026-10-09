@@ -5,6 +5,10 @@ import {
   getGraphLayoutKey,
   GRAPH_LAYOUT_KEY_PREFIX,
 } from "@/src/pattern/graph/data/GraphLayoutKeys";
+import {
+  getTranscriptCorrectionsKey,
+  TRANSCRIPT_CORRECTIONS_KEY_PREFIX,
+} from "@/src/transcribe/data/CorrectionKeys";
 import { generateShareKey } from "@/src/firebase/shareKey";
 
 // ---------------------------------------------------------------------------
@@ -157,12 +161,14 @@ export async function deletePatternList(listId: string): Promise<void> {
       const filtered = lists.filter((l) => l.id !== listId);
       await AsyncStorage.setItem(PATTERN_LISTS_KEY, JSON.stringify(filtered));
 
-      // Also delete the patterns and the manual graph layout for this list.
+      // Also delete the patterns, the manual graph layout and the remembered
+      // transcript corrections for this list.
       // A layout key left behind is the same leak as an orphaned pattern key:
       // nothing would ever read or delete it again.
       await AsyncStorage.removeMany([
         getPatternsKey(listId),
         getGraphLayoutKey(listId),
+        getTranscriptCorrectionsKey(listId),
       ]);
 
       // If this was the active list, clear active list
@@ -283,7 +289,8 @@ export async function clearAllData(): Promise<void> {
     const ownedKeys = allKeys.filter(
       (key) =>
         key.startsWith(PATTERNS_KEY_PREFIX) ||
-        key.startsWith(GRAPH_LAYOUT_KEY_PREFIX),
+        key.startsWith(GRAPH_LAYOUT_KEY_PREFIX) ||
+        key.startsWith(TRANSCRIPT_CORRECTIONS_KEY_PREFIX),
     );
     await AsyncStorage.removeMany([
       PATTERN_LISTS_KEY,

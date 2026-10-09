@@ -4,7 +4,9 @@ import {
   setDownloadResponse,
 } from "@/__mocks__/expo-file-system";
 import { AudioExtractModule } from "@/modules/audio-extract";
+import { WHISPER_ACCURATE_MODEL } from "@/src/transcribe/models";
 import {
+  deleteModel,
   deleteModels,
   ensureModels,
   installedModels,
@@ -31,8 +33,16 @@ jest.mock("@/src/transcribe/models", () => {
     bytes: 2,
     sha256: "hash-vad",
   };
+  const WHISPER_ACCURATE_MODEL = {
+    id: "small",
+    fileName: "small.bin",
+    url: "https://models/small.bin",
+    bytes: 3,
+    sha256: "hash-small",
+  };
   return {
     WHISPER_MODEL,
+    WHISPER_ACCURATE_MODEL,
     VAD_MODEL,
     TRANSCRIPTION_MODELS: [WHISPER_MODEL, VAD_MODEL],
     TRANSCRIPTION_DOWNLOAD_BYTES: 8,
@@ -72,6 +82,7 @@ describe("the transcription model store", () => {
     expect(installed).toEqual({
       whisperUri: `${MODELS}whisper.bin`,
       vadUri: `${MODELS}vad.bin`,
+      whisperModelId: "whisper",
     });
     expect(installedModels()).toEqual(installed);
     expect(seen).toEqual([6 / 8, 1, 1]);
@@ -119,6 +130,36 @@ describe("the transcription model store", () => {
     seedBinaryFile(`${MODELS}vad.bin`, Buffer.alloc(2));
 
     expect(installedModels()).toBeNull();
+  });
+
+  it("prefers the accurate model once it is on the phone, and does without base", async () => {
+    seedBinaryFile(`${MODELS}small.bin`, Buffer.alloc(3));
+    const fetched: string[] = [];
+    setDownloadResponse((url) => {
+      fetched.push(url);
+      return { status: 200, body: Buffer.alloc(2) };
+    });
+    sha.mockResolvedValue("hash-vad");
+
+    const installed = await ensureModels();
+
+    expect(fetched).toEqual(["https://models/vad.bin"]);
+    expect(installed).toEqual({
+      whisperUri: `${MODELS}small.bin`,
+      vadUri: `${MODELS}vad.bin`,
+      whisperModelId: "small",
+    });
+  });
+
+  it("goes back to base when the accurate model is deleted", async () => {
+    serveModels();
+    await ensureModels();
+    seedBinaryFile(`${MODELS}small.bin`, Buffer.alloc(3));
+    expect(installedModels()?.whisperModelId).toBe("small");
+
+    deleteModel(WHISPER_ACCURATE_MODEL);
+
+    expect(installedModels()?.whisperModelId).toBe("whisper");
   });
 
   it("frees the space again", async () => {

@@ -5,15 +5,16 @@ Unqualified paths are relative to `src/pattern/data/`.
 
 ## Persistence (AsyncStorage)
 
-| Key | Holds | Owner |
-|---|---|---|
-| `@patternLists` | `IPatternList[]`, **without** patterns | `PatternListStorage.ts` |
-| `@patterns_{listId}` | `IPattern[]` of one list | `PatternListStorage.ts` |
-| `@activeListId` | the active list's UUID | `PatternListStorage.ts` |
-| `@schemaVersion` | the migrated data's version | `migrations/index.ts` |
-| `@graphLayout_{listId}` | a user-arranged network layout | `src/pattern/graph/data/` |
-| `@language`, `@theme`, `@appStyle` | settings | `src/settings/data/` |
-| `@graphDragHintDismissed` | the drag hint was dismissed | `src/pattern/graph/data/GraphHintStorage.ts` |
+| Key                                | Holds                                          | Owner                                        |
+| ---------------------------------- | ---------------------------------------------- | -------------------------------------------- |
+| `@patternLists`                    | `IPatternList[]`, **without** patterns         | `PatternListStorage.ts`                      |
+| `@patterns_{listId}`               | `IPattern[]` of one list                       | `PatternListStorage.ts`                      |
+| `@activeListId`                    | the active list's UUID                         | `PatternListStorage.ts`                      |
+| `@schemaVersion`                   | the migrated data's version                    | `migrations/index.ts`                        |
+| `@graphLayout_{listId}`            | a user-arranged network layout                 | `src/pattern/graph/data/`                    |
+| `@transcriptCorrections_{listId}`  | transcript fixes learned from the user's edits | `src/transcribe/data/`                       |
+| `@language`, `@theme`, `@appStyle` | settings                                       | `src/settings/data/`                         |
+| `@graphDragHintDismissed`          | the drag hint was dismissed                    | `src/pattern/graph/data/GraphHintStorage.ts` |
 
 Settings live under their own keys, outside any list, so they survive deleting every list.
 
@@ -33,7 +34,8 @@ Settings live under their own keys, outside any list, so they survive deleting e
   bloated. Do not "simplify" that away: it would store a second, stale copy of every pattern.
 - `savePatternList` also owns the share key (`src/firebase/AGENTS.md`): present exactly when the
   list has a `shareCode` and is not `readonly`.
-- `clearAllData` removes the two top-level keys and every `@patterns_*` and `@graphLayout_*` key.
+- `clearAllData` removes the two top-level keys and every `@patterns_*`, `@graphLayout_*` and
+  `@transcriptCorrections_*` key; `deletePatternList` removes the list's three.
   `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list is gone; it runs once,
   unawaited, after the provider's first load and must never delay or fail first paint.
 - **Read-time repair stays even with migrations**: `loadPatterns` normalises shape and scrubs

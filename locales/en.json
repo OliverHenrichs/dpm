@@ -303,6 +303,8 @@
   "speechModelInstalled": "On this phone",
   "speechModelMissing": "Not downloaded",
   "speechModelHint": "Transcribes what is said in videos. Downloaded with the first transcription.",
+  "speechModelAccurate": "Accurate speech model",
+  "speechModelAccurateHint": "Better with accents and dance terms, but slower. Once downloaded, transcription uses it instead of the speech model.",
   "includeTranscriptsInExport": "Include transcripts",
   "includeTranscriptsHint": "What teachers said in the videos goes with them. Leave off unless the recipients should read it.",
   "includeTranscriptsNeedsVideos": "Transcripts travel with their videos: include videos first.",
