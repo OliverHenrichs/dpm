@@ -38,7 +38,7 @@ Organise patterns into dance-style-specific lists, visualise their dependencies 
 ### Modifiers
 Modifiers are affixes that change how a pattern is danced ("with a spin", "slow", "hijacked"). They are defined per list, on their own tab next to the patterns:
 
-- Each modifier has a **position** — *prefix* (precedes), *postfix* (follows) or *amends* (modifies within)
+- Each modifier has a **position** — *prefix* (precedes), *postfix* (follows) or *within* (changes it from inside; stored as `amends`)
 - **Universal** modifiers apply to every pattern in the list and carry their own demo videos
 - **Non-universal** modifiers are attached to individual patterns, and each attachment can hold videos of *that* pattern danced with *that* modifier
 - A modifier's detail view lists every pattern it is attached to; deleting a modifier detaches it from all patterns

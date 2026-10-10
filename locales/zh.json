@@ -185,7 +185,7 @@
   "modifierPosition": "位置",
   "modifierPositionPrefix": "前缀",
   "modifierPositionPostfix": "后缀",
-  "modifierPositionAmends": "替换",
+  "modifierPositionAmends": "内部",
   "universalModifier": "通用（适用于所有舞步）",
   "basePattern": "基础",
   "universalVideosReadonly": "视频在“变化”标签页中管理",
