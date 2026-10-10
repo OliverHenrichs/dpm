@@ -185,7 +185,7 @@
   "modifierPosition": "Position",
   "modifierPositionPrefix": "Prefix",
   "modifierPositionPostfix": "Postfix",
-  "modifierPositionAmends": "Amends",
+  "modifierPositionAmends": "Within",
   "universalModifier": "Universal (applies to all patterns)",
   "basePattern": "Base",
   "universalVideosReadonly": "Videos managed in Modifiers tab",
