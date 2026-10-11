@@ -4,7 +4,6 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
 import { useTranslation } from "react-i18next";
 import {
-  getCommonAddButtonContainer,
   getCommonLabel,
   getCommonPrereqContainer,
   getCommonRow,
@@ -161,22 +160,9 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
 
   return (
     <View style={styles.prereqContainer}>
-      <Text style={styles.label}>{t("videos")}</Text>
-      <View style={styles.videosInputRow}>
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.videosRow}
-          showsHorizontalScrollIndicator={false}
-        >
-          {renderThumbnails()}
-        </ScrollView>
-      </View>
-      {full && (
-        <Text style={styles.fullHint}>
-          {t("videosFullHint", { max: MAX_VIDEOS })}
-        </Text>
-      )}
-      <View style={styles.addButtonContainer}>
+      {/* Label and actions on one centred line, the thumbnails below it when there are any. */}
+      <View style={styles.headerRow}>
+        <Text style={[styles.label, styles.headerLabel]}>{t("videos")}</Text>
         {onEditVideo && (
           <Button
             title={t("videoEditTitle")}
@@ -193,6 +179,22 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
           disabled={disabled}
         />
       </View>
+      {videoRefs.length > 0 && (
+        <View style={styles.videosInputRow}>
+          <ScrollView
+            horizontal
+            contentContainerStyle={styles.videosRow}
+            showsHorizontalScrollIndicator={false}
+          >
+            {renderThumbnails()}
+          </ScrollView>
+        </View>
+      )}
+      {full && (
+        <Text style={styles.fullHint}>
+          {t("videosFullHint", { max: MAX_VIDEOS })}
+        </Text>
+      )}
     </View>
   );
 };
@@ -210,10 +212,7 @@ const THUMB_HEIGHT = 64;
  */
 
 const styles = StyleSheet.create((theme) => ({
-  prereqContainer: {
-    ...getCommonPrereqContainer(theme),
-    position: "relative",
-  },
+  prereqContainer: getCommonPrereqContainer(theme),
   label: { ...getCommonLabel(theme) },
   videosRow: { ...getCommonRow(), gap: theme.space.sm },
   videosInputRow: {
@@ -294,11 +293,9 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.textMuted,
     marginTop: theme.space.xs,
   },
-  addButtonContainer: {
-    ...getCommonAddButtonContainer(),
-    ...getCommonRow(),
-    gap: theme.space.xs,
-  },
+  headerRow: { ...getCommonRow(), gap: theme.space.xs },
+  // The common label carries its own bottom margin; centred in the row, it must not.
+  headerLabel: { flex: 1, marginBottom: 0 },
 }));
 
 export default PatternVideos;
