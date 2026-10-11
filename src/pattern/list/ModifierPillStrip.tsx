@@ -14,7 +14,7 @@ export type ModifierPillStripProps = {
   /** The pattern's currently attached non-universal modifier refs */
   modifierRefs: IPatternModifierRef[];
   /** The pattern's own videos; with them, the Base pill is marked as having videos. */
-  baseVideoCount?: number;
+  baseVideoCount: number;
   /** null = "Base" selected */
   selectedModifierId: string | null;
   onSelect: (modifierId: string | null) => void;
@@ -28,7 +28,7 @@ export type ModifierPillStripProps = {
 const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   modifiers,
   modifierRefs,
-  baseVideoCount = 0,
+  baseVideoCount,
   selectedModifierId,
   onSelect,
   isEditMode = false,
@@ -52,8 +52,9 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
         }
       : {};
   const attachedVideoCount = (modifierId: string) =>
-    modifierRefs.find((ref) => ref.modifierId === modifierId)?.videoRefs
-      .length ?? 0;
+    modifierRefs
+      .filter((ref) => ref.modifierId === modifierId)
+      .reduce((count, ref) => count + ref.videoRefs.length, 0);
 
   const hasAnyAttachedModifier =
     universalModifiers.length > 0 || attachedNonUniversal.length > 0;
@@ -123,7 +124,7 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
             icon="all-inclusive"
             selected={selectedModifierId === mod.id}
             onPress={() => onSelect(mod.id)}
-            {...videoMark(mod.videoRefs?.length ?? 0)}
+            {...videoMark(mod.videoRefs.length)}
           />
         ))}
       </ScrollView>
