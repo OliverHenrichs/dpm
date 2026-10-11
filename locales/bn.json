@@ -420,6 +420,7 @@
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "ঘন ও সুসংগঠিত। কোর্স চালানোর জন্য।",
   "noLevel": "কোনো স্তর নেই",
+  "noDateSection": "তারিখ অজানা",
   "noType": "কোনো ধরন নেই",
   "countsSection": "{{n}} কাউন্ট",
   "videosCountA11y": "ভিডিও: {{n}}",

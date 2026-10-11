@@ -51,7 +51,7 @@ type PatternListProps = {
 };
 
 const PatternList: React.FC<PatternListProps> = (props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isReadonly = props.isReadonly ?? false;
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -88,11 +88,19 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         {
           level: (level) => t(level),
           counts: (n) => t("countsSection", { n }),
+          day: (timestamp) =>
+            new Date(timestamp).toLocaleDateString(i18n.language, {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            }),
           noLevel: t("noLevel"),
           noType: t("noType"),
+          noDate: t("noDateSection"),
         },
       ),
-    [sortedPatterns, sortConfig.field, props.patternTypes, t],
+    [sortedPatterns, sortConfig.field, props.patternTypes, t, i18n.language],
   );
   // Section headers stay at the top while their patterns scroll under them.
   const stickyHeaderIndices = useMemo(
@@ -176,6 +184,10 @@ const PatternList: React.FC<PatternListProps> = (props) => {
       />
 
       <FlatList
+        // Android drew blank headers when a list without sections gained them (a sort by name
+        // switched to one by type, say): their space was kept, their text never painted. A new
+        // list for that change avoids it.
+        key={stickyHeaderIndices.length > 0 ? "sections" : "rows"}
         ref={listRef}
         // A frame later: the cells' own layouts, which the offsets come from, land around the
         // same time as the content size.

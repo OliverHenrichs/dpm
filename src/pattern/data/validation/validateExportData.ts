@@ -70,6 +70,10 @@ const isNonEmptyString = (v: unknown): v is string =>
 const isInteger = (v: unknown): v is number =>
   typeof v === "number" && Number.isInteger(v);
 
+/** Epoch milliseconds; anything else is dropped quietly, since only the day headers use it. */
+const isTimestamp = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v) && v > 0;
+
 const asString = (v: unknown, fallback: string): string =>
   typeof v === "string" ? v : fallback;
 
@@ -375,6 +379,7 @@ function normalizePatterns(
       counts,
       ...(typeof entry.level === "string" && { level: entry.level }),
       ...(rhythm && { rhythm }),
+      ...(isTimestamp(entry.createdAt) && { createdAt: entry.createdAt }),
       prerequisites,
       description: asString(entry.description, ""),
       tags: asStringArray(entry.tags),

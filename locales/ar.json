@@ -420,6 +420,7 @@
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "كثيف ومنظم. مصمم لإدارة دورة.",
   "noLevel": "بلا مستوى",
+  "noDateSection": "التاريخ غير معروف",
   "noType": "بلا نوع",
   "countsSection": "{{n}} عدّات",
   "videosCountA11y": "مقاطع الفيديو: {{n}}",
