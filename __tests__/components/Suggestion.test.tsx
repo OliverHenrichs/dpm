@@ -7,6 +7,7 @@ import {
 import { llamaCalls, setLlamaAnswer } from "@/__mocks__/llama.rn";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import DeviceModelsSection from "@/src/settings/components/DeviceModelsSection";
+import { resetModelDownloads } from "@/src/settings/hooks/useModelDownload";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
 import { clearReplacements } from "@/src/anonymize/jobs/replaceVideo";
 import {
@@ -15,6 +16,7 @@ import {
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
 import { deleteModels } from "@/src/transcribe/modelStore";
+import { AudioExtractModule } from "@/modules/audio-extract";
 import { transcribeVideo } from "@/src/transcribe/transcribeVideo";
 import {
   createTestPattern,
@@ -370,11 +372,36 @@ describe("transcribing and suggesting in one job", () => {
 });
 
 describe("DeviceModelsSection", () => {
+  beforeEach(resetModelDownloads);
+
   it("downloads a model ahead of its first use", async () => {
     setDownloadResponse(() => ({ status: 200, body: Buffer.alloc(4) }));
     renderWithProviders(<DeviceModelsSection />);
 
     fireEvent.press(screen.getByLabelText("Download Suggestion model"));
+
+    expect(
+      await screen.findByLabelText("Delete Suggestion model"),
+    ).toBeOnTheScreen();
+  });
+
+  it("shows a download still running after Settings is built anew", async () => {
+    let finish: () => void = () => undefined;
+    setDownloadResponse(() => ({ status: 200, body: Buffer.alloc(4) }));
+    // Held at the hash, so the download is still running when Settings comes back.
+    jest.spyOn(AudioExtractModule!, "sha256File").mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve("hash-llm");
+        }),
+    );
+    const first = renderWithProviders(<DeviceModelsSection />);
+    fireEvent.press(screen.getByLabelText("Download Suggestion model"));
+    first.unmount();
+
+    renderWithProviders(<DeviceModelsSection />);
+    expect(await screen.findByText(/^Downloading/)).toBeOnTheScreen();
+    finish();
 
     expect(
       await screen.findByLabelText("Delete Suggestion model"),
