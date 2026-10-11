@@ -1,6 +1,6 @@
 /**
- * The dance a list is for. Optional: it only picks which rhythms are suggested for a pattern's
- * counts (`src/pattern/rhythm/`), so a list without one still works, with plain suggestions.
+ * The dance a list is for. Optional: it gives a template's patterns their basic rhythm
+ * (`src/pattern/rhythm/`) and transcription its glossary, so a list without one still works.
  * A template sets it; the list's settings change it.
  */
 export const DANCES = ["wcs", "lindy", "salsa", "bachata", "tango"] as const;
