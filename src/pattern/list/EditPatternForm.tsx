@@ -19,6 +19,7 @@ import * as ImagePicker from "expo-image-picker";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import PatternVideos from "./PatternVideos";
 import PatternTags from "./PatternTags";
+import FormSection from "./FormSection";
 import AddVideoModal from "./AddVideoModal";
 import ModifierPillStrip from "./ModifierPillStrip";
 import BottomSheet from "@/src/common/components/BottomSheet";
@@ -470,6 +471,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // The last step, for the undo chip beside the next steps: a mistap is fixed without the
   // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
   const lastStep = lastRhythmStep(rhythmDraft);
+  // The chosen prerequisites by name, for the folded section's one line.
+  const prerequisiteSummary = patterns
+    .filter((p) => newPattern.prerequisites.includes(p.id))
+    .map((p) => p.name)
+    .join(", ");
 
   return (
     <View style={styles.addPatternContainer}>
@@ -501,147 +507,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           />
         </View>
       </View>
-      <View style={styles.inputRow}>
-        <View style={styles.input}>
-          <Text style={styles.label}>{t("type")}</Text>
-          {patternTypes.map((type) => (
-            <Chip
-              key={type.id}
-              label={type.slug.toUpperCase()}
-              swatch={type.color}
-              selected={newPattern.typeId === type.id}
-              onPress={() => setNewPattern({ ...newPattern, typeId: type.id })}
-            />
-          ))}
-        </View>
-        <View style={styles.input}>
-          <Text style={styles.label}>{t("level")}</Text>
-          {levels.map((level) => (
-            <Chip
-              key={level}
-              label={t(level)}
-              selected={newPattern.level === level}
-              accessibilityHint={
-                newPattern.level === level ? t("levelClearHint") : undefined
-              }
-              onPress={() => {
-                // Tapping the chosen level clears it. The key goes, rather than holding
-                // `undefined`, which Firestore rejects when the list is published.
-                const { level: current, ...rest } = newPattern;
-                setNewPattern(current === level ? rest : { ...rest, level });
-              }}
-            />
-          ))}
-        </View>
-      </View>
-      <View style={styles.rhythmBlock}>
-        <Text style={styles.label}>{t("rhythm")}</Text>
-        <TextInput
-          placeholder={t("rhythmPlaceholder")}
-          value={rhythmDraft}
-          onChangeText={changeRhythm}
-          accessibilityLabel={t("rhythm")}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.rhythmInput}
-          placeholderTextColor={theme.colors.textMuted}
-        />
-        {rhythmInvalid && (
-          <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
-        )}
-        {(nextSteps.length > 0 || lastStep) && (
-          <View style={styles.rhythmSuggestions}>
-            {nextSteps.map((step) => (
-              <Chip
-                key={step}
-                label={step}
-                icon="plus"
-                accessibilityLabel={t("rhythmAddStep", { step })}
-                onPress={() =>
-                  changeRhythm(appendRhythmStep(rhythmDraft, step))
-                }
-              />
-            ))}
-            {lastStep && (
-              <Chip
-                label={t("rhythmUndoStep")}
-                icon="backspace-outline"
-                accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
-                onPress={() => changeRhythm(removeLastRhythmStep(rhythmDraft))}
-              />
-            )}
-          </View>
-        )}
-      </View>
-      <TextInput
-        placeholder={t("description")}
-        value={newPattern.description}
-        onChangeText={(text) =>
-          setNewPattern({ ...newPattern, description: text })
-        }
-        style={styles.textarea}
-        multiline
-        placeholderTextColor={theme.colors.textMuted}
-      />
-      <View style={styles.prereqContainer}>
-        <Text style={styles.label}>{t("prerequisites")}</Text>
-        <TextInput
-          placeholder={t("searchByName")}
-          value={prereqFilter}
-          onChangeText={setPrereqFilter}
-          style={styles.filterInput}
-          placeholderTextColor={theme.colors.textMuted}
-        />
-        <ScrollView horizontal>
-          {patterns
-            .filter((p) =>
-              prereqFilter
-                ? p.name.toLowerCase().includes(prereqFilter.toLowerCase())
-                : true,
-            )
-            .map((p) => {
-              const isSelected = newPattern.prerequisites.includes(p.id);
-              // Picking something that already depends on this pattern — or
-              // the pattern itself — would close a prerequisite cycle, and a
-              // cycle has no valid learning order.
-              const wouldCycle = ineligiblePrerequisiteIds.has(p.id);
-              return (
-                <Chip
-                  key={p.id}
-                  label={p.name}
-                  selected={isSelected}
-                  disabled={wouldCycle}
-                  accessibilityHint={
-                    wouldCycle ? t("prerequisiteWouldCycle") : undefined
-                  }
-                  onPress={() => {
-                    if (isSelected) {
-                      setNewPattern({
-                        ...newPattern,
-                        prerequisites: newPattern.prerequisites.filter(
-                          (id: number) => id !== p.id,
-                        ),
-                      });
-                    } else {
-                      setNewPattern({
-                        ...newPattern,
-                        prerequisites: [...newPattern.prerequisites, p.id],
-                      });
-                    }
-                  }}
-                />
-              );
-            })}
-        </ScrollView>
-        {ineligiblePrerequisiteIds.size > 0 && (
-          <Text style={styles.prereqHint}>{t("prerequisiteWouldCycle")}</Text>
-        )}
-      </View>
-      <PatternTags
-        tags={newPattern.tags}
-        setTags={(tags) => setNewPattern({ ...newPattern, tags })}
-        allPatterns={patterns}
-      />
 
       {/* Modifier pill strip (only shown when modifiers exist) */}
       {modifiers.length > 0 && (
@@ -724,6 +589,171 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       {draftJobs.some(
         (j) => j.status === "queued" || j.status === "running",
       ) && <Text style={styles.jobLine}>{t("videoJobsKeepOpen")}</Text>}
+      <View style={styles.inputRow}>
+        <View style={styles.input}>
+          <Text style={styles.label}>{t("type")}</Text>
+          {patternTypes.map((type) => (
+            <Chip
+              key={type.id}
+              label={type.slug.toUpperCase()}
+              swatch={type.color}
+              selected={newPattern.typeId === type.id}
+              onPress={() => setNewPattern({ ...newPattern, typeId: type.id })}
+            />
+          ))}
+        </View>
+        <View style={styles.input}>
+          <Text style={styles.label}>{t("level")}</Text>
+          {levels.map((level) => (
+            <Chip
+              key={level}
+              label={t(level)}
+              selected={newPattern.level === level}
+              accessibilityHint={
+                newPattern.level === level ? t("levelClearHint") : undefined
+              }
+              onPress={() => {
+                // Tapping the chosen level clears it. The key goes, rather than holding
+                // `undefined`, which Firestore rejects when the list is published.
+                const { level: current, ...rest } = newPattern;
+                setNewPattern(current === level ? rest : { ...rest, level });
+              }}
+            />
+          ))}
+        </View>
+      </View>
+      <FormSection
+        title={t("rhythm")}
+        summary={rhythmDraft.trim() || t("formSectionEmpty")}
+        initiallyOpen={!!existing?.rhythm}
+      >
+        <View style={styles.rhythmBlock}>
+          <TextInput
+            placeholder={t("rhythmPlaceholder")}
+            value={rhythmDraft}
+            onChangeText={changeRhythm}
+            accessibilityLabel={t("rhythm")}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.rhythmInput}
+            placeholderTextColor={theme.colors.textMuted}
+          />
+          {rhythmInvalid && (
+            <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
+          )}
+          {(nextSteps.length > 0 || lastStep) && (
+            <View style={styles.rhythmSuggestions}>
+              {nextSteps.map((step) => (
+                <Chip
+                  key={step}
+                  label={step}
+                  icon="plus"
+                  accessibilityLabel={t("rhythmAddStep", { step })}
+                  onPress={() =>
+                    changeRhythm(appendRhythmStep(rhythmDraft, step))
+                  }
+                />
+              ))}
+              {lastStep && (
+                <Chip
+                  label={t("rhythmUndoStep")}
+                  icon="backspace-outline"
+                  accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
+                  onPress={() =>
+                    changeRhythm(removeLastRhythmStep(rhythmDraft))
+                  }
+                />
+              )}
+            </View>
+          )}
+        </View>
+      </FormSection>
+      <FormSection
+        title={t("description")}
+        summary={newPattern.description.trim() || t("formSectionEmpty")}
+        initiallyOpen={!!existing?.description.trim()}
+      >
+        <TextInput
+          placeholder={t("description")}
+          value={newPattern.description}
+          onChangeText={(text) =>
+            setNewPattern({ ...newPattern, description: text })
+          }
+          style={styles.textarea}
+          multiline
+          placeholderTextColor={theme.colors.textMuted}
+        />
+      </FormSection>
+      <FormSection
+        title={t("prerequisites")}
+        summary={prerequisiteSummary || t("formSectionEmpty")}
+        initiallyOpen={!!existing?.prerequisites.length}
+      >
+        <View style={styles.prereqContainer}>
+          <TextInput
+            placeholder={t("searchByName")}
+            value={prereqFilter}
+            onChangeText={setPrereqFilter}
+            style={styles.filterInput}
+            placeholderTextColor={theme.colors.textMuted}
+          />
+          <ScrollView horizontal>
+            {patterns
+              .filter((p) =>
+                prereqFilter
+                  ? p.name.toLowerCase().includes(prereqFilter.toLowerCase())
+                  : true,
+              )
+              .map((p) => {
+                const isSelected = newPattern.prerequisites.includes(p.id);
+                // Picking something that already depends on this pattern — or
+                // the pattern itself — would close a prerequisite cycle, and a
+                // cycle has no valid learning order.
+                const wouldCycle = ineligiblePrerequisiteIds.has(p.id);
+                return (
+                  <Chip
+                    key={p.id}
+                    label={p.name}
+                    selected={isSelected}
+                    disabled={wouldCycle}
+                    accessibilityHint={
+                      wouldCycle ? t("prerequisiteWouldCycle") : undefined
+                    }
+                    onPress={() => {
+                      if (isSelected) {
+                        setNewPattern({
+                          ...newPattern,
+                          prerequisites: newPattern.prerequisites.filter(
+                            (id: number) => id !== p.id,
+                          ),
+                        });
+                      } else {
+                        setNewPattern({
+                          ...newPattern,
+                          prerequisites: [...newPattern.prerequisites, p.id],
+                        });
+                      }
+                    }}
+                  />
+                );
+              })}
+          </ScrollView>
+          {ineligiblePrerequisiteIds.size > 0 && (
+            <Text style={styles.prereqHint}>{t("prerequisiteWouldCycle")}</Text>
+          )}
+        </View>
+      </FormSection>
+      <FormSection
+        title={t("tags")}
+        summary={newPattern.tags.join(", ") || t("formSectionEmpty")}
+        initiallyOpen={!!existing?.tags.length}
+      >
+        <PatternTags
+          tags={newPattern.tags}
+          setTags={(tags) => setNewPattern({ ...newPattern, tags })}
+          allPatterns={patterns}
+        />
+      </FormSection>
       <VideoReviewModal
         job={reviewing}
         onClose={() => setReviewId(null)}

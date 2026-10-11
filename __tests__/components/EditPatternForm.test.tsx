@@ -21,8 +21,17 @@ function pattern(id: number, name: string, prerequisites: number[] = []) {
   return createTestPattern(TYPE.id, { id, name, prerequisites });
 }
 
+/** The rhythm field; its header row carries the same name. */
+const rhythmInput = () => screen.getByPlaceholderText("e.g. 1 2 3&4 5&6");
+
+/** Opens a folded part of the form, unless it is open already. */
+function openSection(title: string) {
+  const header = screen.getByRole("button", { name: title });
+  if (!header.props.accessibilityState?.expanded) fireEvent.press(header);
+}
+
 function renderForm(patterns: IPattern[], existing?: IPattern) {
-  return renderWithProviders(
+  const rendered = renderWithProviders(
     <EditPatternForm
       patterns={patterns}
       patternTypes={[TYPE]}
@@ -32,6 +41,8 @@ function renderForm(patterns: IPattern[], existing?: IPattern) {
       existing={existing}
     />,
   );
+  openSection("Prerequisites");
+  return rendered;
 }
 
 /** The prerequisite chip for a pattern. Chips expose their name as a label. */
@@ -183,6 +194,7 @@ describe("EditPatternForm rhythm", () => {
       lists,
     );
     fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    openSection("Rhythm");
     return onAccepted;
   }
 
@@ -195,7 +207,7 @@ describe("EditPatternForm rhythm", () => {
   it("sets the counts to the rhythm typed", async () => {
     const onAccepted = renderNew();
 
-    fireEvent.changeText(screen.getByLabelText("Rhythm"), "1 2 3&4 5 6 7&8");
+    fireEvent.changeText(rhythmInput(), "1 2 3&4 5 6 7&8");
 
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("8");
     expect(await save(onAccepted)).toMatchObject({
@@ -206,18 +218,18 @@ describe("EditPatternForm rhythm", () => {
 
   it("clears a rhythm the new counts no longer fit", async () => {
     const onAccepted = renderNew();
-    fireEvent.changeText(screen.getByLabelText("Rhythm"), "1 2 3&4 5&6");
+    fireEvent.changeText(rhythmInput(), "1 2 3&4 5&6");
 
     fireEvent.changeText(screen.getByPlaceholderText("Counts"), "8");
 
-    expect(screen.getByLabelText("Rhythm").props.value).toBe("");
+    expect(rhythmInput().props.value).toBe("");
     expect(await save(onAccepted)).not.toHaveProperty("rhythm");
   });
 
   it("says what is wrong with a rhythm that is not one, and saves without it", async () => {
     const onAccepted = renderNew();
 
-    fireEvent.changeText(screen.getByLabelText("Rhythm"), "1 2 4");
+    fireEvent.changeText(rhythmInput(), "1 2 4");
 
     expect(screen.getByText(/Not a rhythm yet/)).toBeOnTheScreen();
     expect(await save(onAccepted)).not.toHaveProperty("rhythm");
@@ -228,7 +240,9 @@ describe("EditPatternForm rhythm", () => {
     renderNew({ lists: [list] });
 
     // A new pattern starts at 6 counts, which West Coast Swing has a basic rhythm for.
-    expect(await screen.findByLabelText("Rhythm")).toBeOnTheScreen();
+    expect(
+      await screen.findByPlaceholderText("e.g. 1 2 3&4 5&6"),
+    ).toBeOnTheScreen();
     expect(screen.queryByText("1 2 3&4 5&6")).toBeNull();
     expect(screen.queryByText("1 2 3 4 5 6")).toBeNull();
   });
@@ -247,12 +261,13 @@ describe("EditPatternForm composing a rhythm", () => {
       />,
     );
     fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    openSection("Rhythm");
 
     for (const step of ["1", "2", "3&4", "5", "6", "7a8"]) {
       fireEvent.press(screen.getByLabelText(`Add ${step}`));
     }
 
-    expect(screen.getByLabelText("Rhythm").props.value).toBe("1 2 3&4 5 6 7a8");
+    expect(rhythmInput().props.value).toBe("1 2 3&4 5 6 7a8");
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("8");
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() =>
@@ -272,6 +287,7 @@ describe("EditPatternForm composing a rhythm", () => {
         onCancel={noop}
       />,
     );
+    openSection("Rhythm");
     expect(screen.queryByText("Undo")).toBeNull();
 
     for (const step of ["1", "2", "3a4"]) {
@@ -280,7 +296,57 @@ describe("EditPatternForm composing a rhythm", () => {
     fireEvent.press(screen.getByLabelText("Remove 3a4"));
     fireEvent.press(screen.getByLabelText("Add 3&4"));
 
-    expect(screen.getByLabelText("Rhythm").props.value).toBe("1 2 3&4");
+    expect(rhythmInput().props.value).toBe("1 2 3&4");
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("4");
+  });
+});
+
+describe("EditPatternForm layout", () => {
+  it("puts the videos before the type, and folds the rest away on a new pattern", () => {
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={noop}
+        onCancel={noop}
+      />,
+    );
+    const texts = screen.UNSAFE_root.findAll(
+      (node) => typeof node.props.children === "string",
+    ).map((node) => node.props.children as string);
+    expect(texts.indexOf("Videos")).toBeGreaterThan(-1);
+    expect(texts.indexOf("Videos")).toBeLessThan(texts.indexOf("Type"));
+
+    for (const title of ["Rhythm", "Description", "Prerequisites", "Tags"]) {
+      const header = screen.getByRole("button", { name: title });
+      expect(header.props.accessibilityState?.expanded).toBe(false);
+    }
+    expect(screen.queryByPlaceholderText("Description")).toBeNull();
+  });
+
+  it("opens the parts that hold something, and says what a folded one holds", () => {
+    const base = pattern(1, "Sugar Push");
+    const whip = createTestPattern(TYPE.id, {
+      id: 2,
+      name: "Whip",
+      prerequisites: [1],
+      description: "Turn on 3",
+      tags: [],
+    });
+    renderForm([base, whip], whip);
+
+    expect(screen.getByPlaceholderText("Description").props.value).toBe(
+      "Turn on 3",
+    );
+    expect(
+      screen.getByRole("button", { name: "Tags" }).props.accessibilityState
+        ?.expanded,
+    ).toBe(false);
+
+    fireEvent.press(screen.getByRole("button", { name: "Description" }));
+    expect(screen.queryByPlaceholderText("Description")).toBeNull();
+    expect(screen.getByText("Turn on 3")).toBeOnTheScreen();
+    expect(screen.getAllByText("None").length).toBeGreaterThan(0);
   });
 });

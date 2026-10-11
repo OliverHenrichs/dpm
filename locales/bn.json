@@ -438,6 +438,7 @@
   "reelsVideoPosition": "ভিডিও {{n}} / {{total}}",
   "importWarnRhythmMismatch": "এর ছন্দ কাউন্টের সঙ্গে মেলেনি, তাই বাদ দেওয়া হয়েছে।",
   "rhythm": "ছন্দ",
+  "formSectionEmpty": "কিছু নেই",
   "rhythmPlaceholder": "যেমন 1 2 3&4 5&6",
   "rhythmInvalid": "এটি এখনও ছন্দ নয়। 1 থেকে প্রতিটি বিট গুনুন: 3&4 একটি ট্রিপল, (4) একটি ট্যাপ বা বিরতি। ঠিক হলে এটি সংরক্ষিত হয়।",
   "dance": "নাচ",
