@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -10,9 +10,10 @@ import {
   DRAWER_ROUTES,
   HOME_ROUTE,
   LIST_TABS,
-  isListTab,
 } from "@/src/common/components/DrawerRoutes";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
+import { loadAllPatternLists } from "@/src/pattern/data/PatternListStorage";
+import { IPatternList } from "@/src/pattern/types/IPatternList";
 
 /**
  * Only the drawer-specific part of the navigation object is needed here. It has
@@ -20,22 +21,87 @@ import { useActivePatternList } from "@/src/pattern/data/components/ActivePatter
  * screens rather than inside one, so `useNavigation()` would not resolve to the
  * drawer navigator.
  */
-interface DrawerContentProps {
-  navigation: { closeDrawer: () => void };
+interface RowLayout {
+  y: number;
+  height: number;
 }
 
-export default function DrawerContent({ navigation }: DrawerContentProps) {
+/** The scroll offset that puts `row` in the middle of the visible lists. */
+function centredOffset(row: RowLayout, viewportHeight: number): number {
+  return Math.max(0, row.y + row.height / 2 - viewportHeight / 2);
+}
+
+interface DrawerContentProps {
+  navigation: { closeDrawer: () => void };
+  /**
+   * Whether the drawer is open. The lists are read again each time it moves,
+   * since they are created, renamed and deleted on the Lists screen without
+   * the drawer hearing of it.
+   */
+  isOpen: boolean;
+}
+
+export default function DrawerContent({
+  navigation,
+  isOpen,
+}: DrawerContentProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   // Re-renders on a theme switch. The drawer's scroll view did not follow
   // one natively: after switching to light it stayed dark under dark text.
   const { theme } = useUnistyles();
-  const { activeList } = useActivePatternList();
+  const { activeList, setActiveList } = useActivePatternList();
+  const [lists, setLists] = useState<IPatternList[]>([]);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  // Where each list's row sits in the scroll view, by list id.
+  const rowLayouts = useRef(new Map<string, RowLayout>());
+
+  // Also on closing, which is harmless, and on mounting, so the first
+  // opening already has them.
+  useEffect(() => {
+    let cancelled = false;
+    loadAllPatternLists().then((loaded) => {
+      if (!cancelled) setLists(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  // Bring the open list into view, centred where the lists scroll.
+  const centre = (row: RowLayout) => {
+    if (viewportHeight === 0) return;
+    scrollRef.current?.scrollTo({
+      y: centredOffset(row, viewportHeight),
+      animated: false,
+    });
+  };
+
+  // On each opening. On the first, the rows are not laid out yet, and the
+  // open list's row centres itself when it is (below).
+  const activeId = activeList?.id;
+  useEffect(() => {
+    if (!isOpen || !activeId || viewportHeight === 0) return;
+    const row = rowLayouts.current.get(activeId);
+    if (!row) return;
+    scrollRef.current?.scrollTo({
+      y: centredOffset(row, viewportHeight),
+      animated: false,
+    });
+  }, [isOpen, activeId, viewportHeight]);
 
   const go = (route: AppRoute) => {
     navigation.closeDrawer();
     router.navigate(route.href);
+  };
+
+  const openList = async (list: IPatternList) => {
+    navigation.closeDrawer();
+    if (list.id !== activeList?.id) await setActiveList(list);
+    router.navigate(LIST_TABS[0].href);
   };
 
   const renderItem = (route: AppRoute) => {
@@ -56,9 +122,8 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
   const otherRoutes = DRAWER_ROUTES.filter((r) => r !== HOME_ROUTE);
 
   return (
-    <ScrollView
-      style={{ backgroundColor: theme.colors.background }}
-      contentContainerStyle={[
+    <View
+      style={[
         styles.drawerContent,
         {
           backgroundColor: theme.colors.background,
@@ -71,27 +136,46 @@ export default function DrawerContent({ navigation }: DrawerContentProps) {
         <Text style={styles.drawerHeader}>{t("menu")}</Text>
       </View>
       {renderItem(HOME_ROUTE)}
-      {/* The way back into the list that is open; its views are the tabs at the bottom. */}
-      {activeList && (
-        <ListRow
-          title={activeList.name}
-          icon={LIST_TABS[0].icon}
-          iconColor={isListTab(pathname) ? "primary" : "textMuted"}
-          selected={isListTab(pathname)}
-          onPress={() => go(LIST_TABS[0])}
-          style={styles.listItem}
-        />
-      )}
+      {/* Every list, the open one highlighted. Only this part scrolls, so
+          Lists and Settings stay on screen however many lists there are. */}
+      <ScrollView
+        ref={scrollRef}
+        style={styles.lists}
+        onLayout={(e) => setViewportHeight(e.nativeEvent.layout.height)}
+        testID="drawer-lists"
+      >
+        {lists.map((list) => {
+          const isActive = list.id === activeList?.id;
+          return (
+            // A wrapper, because a row does not report its layout.
+            <View
+              key={list.id}
+              onLayout={(e) => {
+                const { y, height } = e.nativeEvent.layout;
+                rowLayouts.current.set(list.id, { y, height });
+                if (isActive && isOpen) centre({ y, height });
+              }}
+            >
+              <ListRow
+                title={list.name}
+                selected={isActive}
+                onPress={() => openList(list)}
+                style={styles.listItem}
+              />
+            </View>
+          );
+        })}
+      </ScrollView>
       <View style={styles.divider} />
       {otherRoutes.map(renderItem)}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => {
   return {
     drawerContent: {
-      flexGrow: 1,
+      flex: 1,
     },
     drawerHeaderContainer: {
       paddingBottom: theme.space.lg,
@@ -108,9 +192,15 @@ const styles = StyleSheet.create((theme) => {
       marginHorizontal: theme.space.sm,
       marginBottom: theme.space.xxs,
     },
-    // Under "Lists", as the list it belongs to.
+    // As tall as its rows, and no taller than the room the menu has left.
+    lists: {
+      flexGrow: 0,
+      flexShrink: 1,
+    },
+    // Under "Lists", as the lists it holds: no icon of their own, and the
+    // names start where "Lists" does (past its icon and the row's gap).
     listItem: {
-      marginLeft: theme.space.xl,
+      marginLeft: theme.space.sm + theme.iconSize.lg + theme.space.md,
       marginRight: theme.space.sm,
       marginBottom: theme.space.xxs,
     },
