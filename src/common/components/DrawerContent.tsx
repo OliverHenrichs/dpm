@@ -158,8 +158,6 @@ export default function DrawerContent({
             >
               <ListRow
                 title={list.name}
-                icon={LIST_TABS[0].icon}
-                iconColor={isActive ? "primary" : "textMuted"}
                 selected={isActive}
                 onPress={() => openList(list)}
                 style={styles.listItem}
@@ -199,9 +197,10 @@ const styles = StyleSheet.create((theme) => {
       flexGrow: 0,
       flexShrink: 1,
     },
-    // Under "Lists", as the lists it holds.
+    // Under "Lists", as the lists it holds: no icon of their own, and the
+    // names start where "Lists" does (past its icon and the row's gap).
     listItem: {
-      marginLeft: theme.space.xl,
+      marginLeft: theme.space.sm + theme.iconSize.lg + theme.space.md,
       marginRight: theme.space.sm,
       marginBottom: theme.space.xxs,
     },

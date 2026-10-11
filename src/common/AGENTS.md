@@ -22,7 +22,8 @@ check is tapping the icon on a device.
   screens, where `useNavigation()` does not resolve to the drawer. It also takes `isOpen`
   (`getDrawerStatusFromState`, in `app/_layout.tsx`) and reads every list again when that changes,
   since the Lists screen creates, renames and deletes lists without telling it.
-- The drawer lists every list under *Lists*, the active one highlighted; tapping one makes it
+- The drawer lists every list under *Lists*, by name only (no icon, aligned with *Lists*' text),
+  the active one highlighted; tapping one makes it
   active and opens its List tab. Only that block scrolls (`flexGrow: 0, flexShrink: 1`), so the
   menu never outgrows the screen and *Lists* and *Settings* stay in reach. On opening it scrolls
   the active list to the middle; on the first opening the row does that from its own `onLayout`.
