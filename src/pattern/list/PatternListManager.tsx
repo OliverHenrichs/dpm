@@ -376,7 +376,9 @@ const styles = StyleSheet.create((theme) => ({
   modalContent: {
     borderRadius: theme.radius.none,
     padding: theme.space.xl,
-    minWidth: "80%",
+    // The full width, always: sized to its content, the pattern form narrowed and widened as
+    // its sections folded and opened.
+    width: "100%",
     maxHeight: "100%",
     ...theme.elevation.md,
     backgroundColor: theme.colors.surface,
