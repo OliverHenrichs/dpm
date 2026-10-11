@@ -14,8 +14,14 @@ function onlineVideos(refs: IVideoReference[] | undefined): IVideoReference[] {
   return (refs ?? []).filter((ref) => ref.type === "url");
 }
 
-/** A pattern as it is published: no local videos, no transcripts (L4). */
-export function publishedPattern(pattern: IPattern): IPattern {
+/**
+ * A pattern as it is published: no local videos, no transcripts (L4), and not when it was added,
+ * which says when the publisher was busy with the list and nothing a subscriber needs.
+ */
+export function publishedPattern({
+  createdAt: _createdAt,
+  ...pattern
+}: IPattern): IPattern {
   return withoutTranscripts({
     ...pattern,
     videoRefs: onlineVideos(pattern.videoRefs),

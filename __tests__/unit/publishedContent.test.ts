@@ -45,6 +45,12 @@ describe("publishedPattern", () => {
 
     expect(publishedPattern(pattern).videoRefs).toEqual([online]);
   });
+
+  it("leaves out when the pattern was added", () => {
+    const pattern = createTestPattern("t", { createdAt: 1_760_000_000_000 });
+
+    expect(publishedPattern(pattern)).not.toHaveProperty("createdAt");
+  });
 });
 
 describe("publishedModifiers", () => {

@@ -80,6 +80,11 @@ export interface IPattern {
   tags: string[];
   videoRefs: IVideoReference[];
   modifierRefs: IPatternModifierRef[]; // Non-universal modifiers attached to this pattern
+  /**
+   * Epoch milliseconds when the pattern was added, for the day headers of the date sort.
+   * Patterns added before it was kept have none. Never published.
+   */
+  createdAt?: number;
 }
 
 export interface IVideoReference {

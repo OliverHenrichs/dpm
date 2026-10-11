@@ -104,6 +104,7 @@ export function usePatternCrud(): PatternCrud {
       const newPattern: IPattern = {
         ...applyReplacements(pattern),
         id: nextPatternId(activeList, patterns),
+        createdAt: Date.now(),
       };
       await commitPatterns([...patterns, newPattern]);
       return true;

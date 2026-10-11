@@ -35,10 +35,12 @@ most `MAX_VIDEOS` videos (`src/anonymize/jobs/replaceVideo.ts`).
 "counts" | "id"`, applied by `usePatternSort` over the pure `sortPatterns` in
 `hooks/patternSections.ts`. Types sort in the list's own order, levels from beginner to advanced,
 and a pattern without a value goes last either way. Sorting by type, level or counts splits the list
-into sections (`buildListEntries`) under pinned `PatternSectionHeader`s with counts; name and date
-added stay one list. `PatternList` renders the entries in one `FlatList` with
-`stickyHeaderIndices`, so a "reveal" (scroll to a pattern) must look the pattern up among the
-entries, not the patterns.
+into sections (`buildListEntries`) under pinned `PatternSectionHeader`s with counts, and so does
+date added, a header per day (`IPattern.createdAt`; undated patterns under their own, and a list
+with no dates stays one list); name stays one list. `PatternList` renders the entries in one
+`FlatList` with `stickyHeaderIndices`, so a "reveal" (scroll to a pattern) must look the pattern up
+among the entries, not the patterns. The `FlatList` is keyed on whether it has sections: Android
+painted blank headers when a flat list gained them.
 
 A row shows type, level (when set) and video count; the rest waits in the expanded details
 (`PatternDetails`, shared with the graph's modal; see `src/pattern/graph/AGENTS.md`). Level is

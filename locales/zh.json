@@ -420,6 +420,7 @@
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "紧凑有条理，适合带课。",
   "noLevel": "未设难度",
+  "noDateSection": "日期未知",
   "noType": "未设类型",
   "countsSection": "{{n}} 拍",
   "videosCountA11y": "视频：{{n}}",

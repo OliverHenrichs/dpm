@@ -26,8 +26,10 @@ const names = (patterns: IPattern[]) => patterns.map((p) => p.name);
 const labels = {
   level: (level: string) => `L:${level}`,
   counts: (n: number) => `${n} counts`,
+  day: (timestamp: number) => new Date(timestamp).toISOString().slice(0, 10),
   noLevel: "No level",
   noType: "No type",
+  noDate: "No date",
 };
 
 function headers(entries: PatternListEntry[]) {
@@ -100,12 +102,46 @@ describe("sortPatterns", () => {
 });
 
 describe("buildListEntries", () => {
-  it("adds no headers for a sort by name or date added", () => {
+  it("adds no headers for a sort by name, nor by date added when no pattern has a date", () => {
     const list = [pattern("A"), pattern("B")];
     expect(isSectionedSort("name")).toBe(false);
-    expect(isSectionedSort("id")).toBe(false);
     expect(headers(buildListEntries(list, "name", types, labels))).toEqual([]);
     expect(headers(buildListEntries(list, "id", types, labels))).toEqual([]);
+  });
+
+  // Noon UTC, so the local day is the same in any test timezone.
+  const day = (date: string) => Date.parse(`${date}T12:00:00Z`);
+
+  it("heads each day for a sort by date added, the undated ones under their own header", () => {
+    const sorted = sortPatterns(
+      [
+        pattern("Old"),
+        pattern("A", { createdAt: day("2026-10-09") }),
+        pattern("B", { createdAt: day("2026-10-09") + 60_000 }),
+        pattern("C", { createdAt: day("2026-10-11") }),
+      ],
+      { field: "id", order: "desc" },
+    );
+    expect(headers(buildListEntries(sorted, "id", types, labels))).toEqual([
+      "2026-10-11 (1)",
+      "2026-10-09 (2)",
+      "No date (1)",
+    ]);
+  });
+
+  it("keeps header keys unique when a day comes round twice", () => {
+    const sorted = sortPatterns(
+      [
+        pattern("A", { createdAt: day("2026-10-09") }),
+        pattern("B", { createdAt: day("2026-10-10") }),
+        pattern("C", { createdAt: day("2026-10-09") }),
+      ],
+      { field: "id", order: "asc" },
+    );
+    const keys = buildListEntries(sorted, "id", types, labels).map(
+      (e) => e.key,
+    );
+    expect(new Set(keys).size).toBe(keys.length);
   });
 
   it("heads each type with its name, colour and count", () => {

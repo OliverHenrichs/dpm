@@ -334,7 +334,7 @@ describe("export → import round trip", () => {
           { includeTranscripts: true },
         );
 
-        expect(exported.version).toBe("3.4.0");
+        expect(exported.version).toBe(exportDataVersion);
         expect(exported.includesTranscripts).toBe(true);
         const [restored] = importResult.patternLists![0].patterns;
         expect(restored.videoRefs[0].transcript).toEqual(transcript);
@@ -561,6 +561,21 @@ describe("export → import round trip", () => {
       expect(exported.patternLists[0]).not.toHaveProperty("shareKey");
       expect(importResult.patternLists![0]).not.toHaveProperty("shareKey");
       expect(importResult.patternLists![0].shareCode).toBe("ABCD1234");
+    });
+  });
+
+  describe("when patterns were added (3.5)", () => {
+    it("keeps each pattern's date", async () => {
+      const { importResult } = await roundTrip([
+        listWith([
+          createTestPattern(TYPE.id, { id: 1, createdAt: 1_760_000_000_000 }),
+          createTestPattern(TYPE.id, { id: 2 }),
+        ]),
+      ]);
+
+      const [dated, undated] = importResult.patternLists![0].patterns;
+      expect(dated.createdAt).toBe(1_760_000_000_000);
+      expect(undated).not.toHaveProperty("createdAt");
     });
   });
 

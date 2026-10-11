@@ -420,6 +420,7 @@
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "Denso y estructurado. Pensado para dar un curso.",
   "noLevel": "Sin nivel",
+  "noDateSection": "Fecha desconocida",
   "noType": "Sin tipo",
   "countsSection": "{{n}} tiempos",
   "videosCountA11y": "Vídeos: {{n}}",

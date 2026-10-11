@@ -6,8 +6,11 @@ import type { SortConfig, SortField } from "@/src/pattern/list/SortBottomSheet";
 /**
  * Sorting the pattern list, and splitting it into sections.
  *
- * A sort by type, level or counts groups the list under a header per value; a sort by name or
- * by date added stays one list, since a header per letter or per day says nothing. Types
+ * A sort by type, level or counts groups the list under a header per value, and a sort by date
+ * added under a header per day; a sort by name stays one list, since a header per letter says
+ * nothing. The date sort orders by id, which grows as patterns are added, so its days come in
+ * order; patterns from before dates were kept (`IPattern.createdAt`) sit under their own header,
+ * and a list with no dates at all stays one list. Types
  * follow the order the list gives them and levels run beginner to advanced, rather than by
  * internal id or by the spelling of the level. A pattern without a value (no level, a type the
  * list no longer has) always goes last, in a section of its own, whichever way the sort runs.
@@ -17,7 +20,12 @@ const LEVEL_ORDER: string[] = Object.values(PatternLevel);
 
 /** The fields whose sort splits the list into sections. */
 export function isSectionedSort(field: SortField): boolean {
-  return field === "typeId" || field === "level" || field === "counts";
+  return (
+    field === "typeId" ||
+    field === "level" ||
+    field === "counts" ||
+    field === "id"
+  );
 }
 
 /**
@@ -94,8 +102,17 @@ export type PatternListEntry =
 export interface SectionLabels {
   level: (level: string) => string;
   counts: (counts: number) => string;
+  /** The day a timestamp falls on, as a header. */
+  day: (timestamp: number) => string;
   noLevel: string;
   noType: string;
+  noDate: string;
+}
+
+/** The local calendar day of a timestamp, as a key. */
+function dayKey(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
 function sectionOf(
@@ -115,6 +132,13 @@ function sectionOf(
       return pattern.level
         ? { key: `level:${pattern.level}`, title: labels.level(pattern.level) }
         : { key: "level:none", title: labels.noLevel };
+    case "id":
+      return pattern.createdAt
+        ? {
+            key: `day:${dayKey(pattern.createdAt)}`,
+            title: labels.day(pattern.createdAt),
+          }
+        : { key: "day:none", title: labels.noDate };
     default:
       return {
         key: `counts:${pattern.counts}`,
@@ -141,14 +165,22 @@ export function buildListEntries(
       pattern,
     }));
   if (!isSectionedSort(field)) return rows(sorted);
+  if (field === "id" && !sorted.some((p) => p.createdAt)) return rows(sorted);
 
   const types = new Map(patternTypes.map((type) => [type.id, type]));
   const entries: PatternListEntry[] = [];
   let header: Extract<PatternListEntry, { kind: "section" }> | undefined;
+  let runKey: string | undefined;
+  const seen = new Set<string>();
   for (const pattern of sorted) {
     const section = sectionOf(pattern, field, types, labels);
-    if (section.key !== header?.key) {
-      header = { kind: "section", count: 0, ...section };
+    if (section.key !== runKey || !header) {
+      runKey = section.key;
+      // A day can come round twice when the phone's clock was wrong; the list needs unique keys.
+      let key = section.key;
+      for (let n = 2; seen.has(key); n++) key = `${section.key}#${n}`;
+      seen.add(key);
+      header = { kind: "section", count: 0, ...section, key };
       entries.push(header);
     }
     header.count += 1;
