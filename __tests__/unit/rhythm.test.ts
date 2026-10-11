@@ -7,7 +7,6 @@ import {
   normalizeRhythm,
   rhythmCounts,
   rhythmMatchesCounts,
-  rhythmSuggestions,
 } from "@/src/pattern/rhythm/rhythm";
 import { DANCES } from "@/src/pattern/types/Dance";
 import {
@@ -48,38 +47,23 @@ describe("rhythmCounts", () => {
   });
 });
 
-describe("rhythmSuggestions", () => {
-  it("offers a dance's own rhythm first, then a step on every beat", () => {
-    expect(rhythmSuggestions("wcs", 8)).toEqual([
-      "1 2 3&4 5 6 7&8",
-      "1 2 3a4 5 6 7a8",
-      "1 2 3 4 5 6 7 8",
-    ]);
-    expect(rhythmSuggestions("salsa", 8)[0]).toBe("1 2 3 (4) 5 6 7 (8)");
+describe("defaultRhythm", () => {
+  it("gives a dance's basic rhythm for the counts", () => {
+    expect(defaultRhythm("wcs", 8)).toBe("1 2 3&4 5 6 7&8");
+    expect(defaultRhythm("salsa", 8)).toBe("1 2 3 (4) 5 6 7 (8)");
   });
 
-  it("differs between dances for the same counts", () => {
-    expect(rhythmSuggestions("lindy", 8)[0]).not.toBe(
-      rhythmSuggestions("bachata", 8)[0],
-    );
+  it("gives none without a dance, or for counts a dance has none for", () => {
+    expect(defaultRhythm(undefined, 8)).toBeUndefined();
+    expect(defaultRhythm("tango", 8)).toBeUndefined();
+    expect(defaultRhythm("wcs", 5)).toBeUndefined();
   });
 
-  it("offers only the plain rhythm without a dance, or for counts a dance has none for", () => {
-    expect(rhythmSuggestions(undefined, 4)).toEqual(["1 2 3 4"]);
-    expect(rhythmSuggestions("tango", 8)).toEqual(["1 2 3 4 5 6 7 8"]);
-  });
-
-  it("offers nothing for counts no one counts out", () => {
-    expect(rhythmSuggestions(undefined, 0)).toEqual([]);
-    expect(rhythmSuggestions(undefined, 32)).toEqual([]);
-  });
-
-  it("only ever suggests rhythms that fit", () => {
-    for (const dance of [...DANCES, undefined]) {
+  it("only ever gives rhythms that fit", () => {
+    for (const dance of DANCES) {
       for (let counts = 1; counts <= 16; counts++) {
-        for (const rhythm of rhythmSuggestions(dance, counts)) {
-          expect(rhythmCounts(rhythm)).toBe(counts);
-        }
+        const rhythm = defaultRhythm(dance, counts);
+        if (rhythm) expect(rhythmCounts(rhythm)).toBe(counts);
       }
     }
   });

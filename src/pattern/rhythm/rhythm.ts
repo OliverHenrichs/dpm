@@ -43,14 +43,14 @@ export function normalizeRhythm(rhythm: string): string {
 }
 
 /**
- * The basic rhythms of each dance, by counts. Only what is standard for the dance; anything
- * else is a plain step on every beat.
+ * The basic rhythms of each dance, by counts, which a template's starter patterns begin with.
+ * Only what is standard for the dance.
  *
  * - West Coast Swing and Lindy Hop: six-count patterns are walk walk, triple, triple (in Lindy,
  *   rock step, triple, triple); eight-count patterns, such as the whip or the swing out, put
  *   two more steps before the last triple. Each also swung, counted "3a4".
  * - Salsa and bachata: eight counts, three steps and a pause or tap on 4 and 8.
- * - Argentine tango has no fixed count pattern, so it gets only the plain suggestion.
+ * - Argentine tango has no fixed count pattern, so it has none.
  */
 const SWING: Record<number, string[]> = {
   6: ["1 2 3&4 5&6", "1 2 3a4 5a6"],
@@ -68,22 +68,6 @@ const DANCE_RHYTHMS: Record<Dance, Record<number, string[]>> = {
   bachata: LATIN,
   tango: {},
 };
-
-/** The longest plain rhythm offered; past this, counting each beat helps no one. */
-const MAX_PLAIN_COUNTS = 16;
-
-/** Rhythms that fit `counts`: the dance's own first, then a step on every beat. */
-export function rhythmSuggestions(
-  dance: Dance | undefined,
-  counts: number,
-): string[] {
-  const own = dance ? (DANCE_RHYTHMS[dance][counts] ?? []) : [];
-  const plain =
-    Number.isInteger(counts) && counts > 0 && counts <= MAX_PLAIN_COUNTS
-      ? [Array.from({ length: counts }, (_, i) => i + 1).join(" ")]
-      : [];
-  return [...own, ...plain];
-}
 
 /** The rhythm a template pattern starts with: the dance's own, when it has one. */
 export function defaultRhythm(

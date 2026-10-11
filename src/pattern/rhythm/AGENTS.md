@@ -24,13 +24,14 @@ rhythm that no longer fits. Text that is not yet a rhythm stays in the field wit
 is not saved. Import enforces the same (`importWarnRhythmMismatch`); a stored rhythm that does not
 match its counts is a bug.
 
-## Suggestions
+## Composing a rhythm
 
-While the field is empty, `rhythmSuggestions` offers whole rhythms: the list's `dance`'s basic
-rhythms for those counts (`DANCE_RHYTHMS`; the dance is `IPatternList.dance`,
-`src/pattern/types/Dance.ts`), then a step on every beat. Below them `nextRhythmSteps` offers the next token to append (a step, a triple, a swung
-triple, a held beat), with an _Undo_ bubble (`removeLastRhythmStep`) that takes the last token
-off again, so a mistap is fixed without the keyboard. Templates give their starter patterns the dance's basic rhythm (`defaultRhythm`).
+`nextRhythmSteps` offers the next token to append (a step, a triple, a swung triple, a held
+beat), with an _Undo_ bubble (`removeLastRhythmStep`) that takes the last token off again, so a
+mistap is fixed without the keyboard. Whole rhythms are deliberately **not** offered for an empty
+field: guessed from the counts and the list's dance, they confused more than they helped.
+Templates give their starter patterns the dance's basic rhythm (`defaultRhythm`, from
+`DANCE_RHYTHMS`; the dance is `IPatternList.dance`, `src/pattern/types/Dance.ts`).
 
 **Only add a dance's rhythm when it is the standard one**, verified, not guessed. Argentine tango
 deliberately has none. A new dance goes in `DANCES`, `DANCE_NAME_KEYS` (and its locale keys), and

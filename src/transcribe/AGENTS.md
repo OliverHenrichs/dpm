@@ -65,8 +65,14 @@ default 600) → voice-activity detection (Silero) → Whisper per speech region
   under the button or switch that would fetch it ("Downloads 61 MB once."), so the tap itself is
   the consent and there is no second prompt. The download counts into the job's progress. The legacy `createDownloadResumable` is used because it reports progress.
 - An installed model is checked by size on each use; the hash only at download.
+- **A download survives leaving the app.** Android drops a backgrounded app's connections, so on
+  Android `downloadModel` waits for the app to come back and carries on from the `.part` (the
+  legacy download's resume data is the byte count: a Range request, appended). A drop while in
+  front fails, but keeps the `.part` for the next try. Two callers asking for the same model
+  share one download.
 - Settings → _On-device models_ (`src/settings/components/DeviceModelsSection.tsx`) lists them,
-  downloads ahead of first use, and deletes.
+  downloads ahead of first use, and deletes. Its downloads live in a module-level store
+  (`src/settings/hooks/useModelDownload.ts`), so the row shows them whichever tree is mounted.
 
 Today: Whisper base q5_1 (~60 MB) and Silero VAD v6.2.0 (0.9 MB), downloaded with the first
 transcription; and Whisper small q5_1 (190 MB), the optional **accurate** model, downloaded only

@@ -34,7 +34,6 @@ import {
   rhythmCounts,
   rhythmMatchesCounts,
   removeLastRhythmStep,
-  rhythmSuggestions,
 } from "@/src/pattern/rhythm/rhythm";
 import AppDialog from "@/src/common/components/AppDialog";
 import AnonymizeModal, {
@@ -440,8 +439,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       !(newPattern.modifierRefs ?? []).some((r) => r.modifierId === m.id),
   );
 
-  // Counts and rhythm stay matched both ways. New counts drop a rhythm that no longer fits
-  // (the suggestions below offer ones that do); a rhythm sets the counts it takes. The key goes
+  // Counts and rhythm stay matched both ways. New counts drop a rhythm that no longer fits; a
+  // rhythm sets the counts it takes. The key goes
   // rather than holding `undefined`, which Firestore rejects when the list is published.
   const changeCounts = (counts: number) => {
     const { rhythm, ...rest } = newPattern;
@@ -466,11 +465,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 
   const rhythmInvalid =
     rhythmDraft.trim().length > 0 && rhythmCounts(rhythmDraft) === null;
-  // Whole rhythms for the counts while the field is empty; the next steps to tap on as soon
-  // as there is something to go on from.
-  const suggestedRhythms = rhythmDraft.trim()
-    ? []
-    : rhythmSuggestions(activeList?.dance, newPattern.counts);
+  // The next steps to tap on. No whole rhythms are offered for an empty field: guessed from the
+  // counts, they confused more than they helped.
   const nextSteps = nextRhythmSteps(rhythmDraft);
   // The last step, for the undo chip beside the next steps: a mistap is fixed without the
   // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
@@ -644,19 +640,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           />
           {rhythmInvalid && (
             <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
-          )}
-          {suggestedRhythms.length > 0 && (
-            <View style={styles.rhythmSuggestions}>
-              {suggestedRhythms.map((rhythm) => (
-                <Chip
-                  key={rhythm}
-                  label={rhythm}
-                  icon="music-note-outline"
-                  accessibilityHint={t("rhythmSuggestionHint")}
-                  onPress={() => changeRhythm(rhythm)}
-                />
-              ))}
-            </View>
           )}
           {(nextSteps.length > 0 || lastStep) && (
             <View style={styles.rhythmSuggestions}>

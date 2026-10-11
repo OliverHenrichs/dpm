@@ -235,15 +235,16 @@ describe("EditPatternForm rhythm", () => {
     expect(await save(onAccepted)).not.toHaveProperty("rhythm");
   });
 
-  it("suggests the list's dance rhythms for the counts", async () => {
+  it("offers no whole rhythms while the field is empty", async () => {
     const list = createTestPatternList({ dance: "wcs" });
-    const onAccepted = renderNew({ lists: [list] });
+    renderNew({ lists: [list] });
 
-    // A new pattern starts at 6 counts.
-    fireEvent.press(await screen.findByText("1 2 3&4 5&6"));
-
-    expect(rhythmInput().props.value).toBe("1 2 3&4 5&6");
-    expect(await save(onAccepted)).toMatchObject({ rhythm: "1 2 3&4 5&6" });
+    // A new pattern starts at 6 counts, which West Coast Swing has a basic rhythm for.
+    expect(
+      await screen.findByPlaceholderText("e.g. 1 2 3&4 5&6"),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText("1 2 3&4 5&6")).toBeNull();
+    expect(screen.queryByText("1 2 3 4 5 6")).toBeNull();
   });
 });
 
