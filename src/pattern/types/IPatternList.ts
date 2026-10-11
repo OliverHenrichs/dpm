@@ -60,7 +60,7 @@ export interface IPatternList {
    * for why there is no migration.
    */
   nextPatternId?: number;
-  /** The dance the list is for: which rhythms are suggested. Absent means none in particular. */
+  /** The dance the list is for: its terms help transcription. Absent means none in particular. */
   dance?: Dance;
 }
 

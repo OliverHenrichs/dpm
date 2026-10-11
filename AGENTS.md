@@ -16,7 +16,7 @@ in, so read the one listed below before you add code there.
 | `src/common/ui/AGENTS.md` | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery |
 | `src/pattern/data/AGENTS.md` | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates |
 | `src/pattern/list/AGENTS.md` | `usePatternCrud`, modifiers, sorting, always-mounted modals |
-| `src/pattern/rhythm/AGENTS.md` | Rhythm notation, its link to counts, per-dance suggestions |
+| `src/pattern/rhythm/AGENTS.md` | Rhythm notation, its link to counts, composing one step by step |
 | `src/pattern/graph/AGENTS.md` | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity |
 | `src/reels/AGENTS.md` | The Reels tab |
 | `src/anonymize/AGENTS.md` | Video jobs (`jobStore`), review, Shorten and Anonymize, providers |
@@ -78,7 +78,7 @@ All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.
 
 | Type | Id | Key detail |
 |---|---|---|
-| `IPatternList` | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (picks rhythm suggestions), `nextPatternId` (id high-water mark) |
+| `IPatternList` | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark) |
 | `PatternType` | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId` |
 | `IPattern` | integer | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs` |
 | `IModifier` | UUID string | `position: "prefix" \| "postfix" \| "amends"`; `universal`; `videoRefs` used only when universal |
