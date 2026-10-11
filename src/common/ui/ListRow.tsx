@@ -27,6 +27,8 @@ export interface ListRowProps {
   title: string;
   /** A second, muted line — or badges, or anything else that sits under the title. */
   subtitle?: React.ReactNode;
+  /** Lines a text `subtitle` may take before it is cut short; 0 shows all of it. */
+  subtitleLines?: number;
   /** Short muted text at the end of the title line — a count, a gloss. */
   meta?: string;
   /** A MaterialCommunityIcons name before the text. */
@@ -74,6 +76,7 @@ const ROLE: Record<ListRowSelection | "none", AccessibilityRole> = {
 const ListRow: React.FC<ListRowProps> = ({
   title,
   subtitle,
+  subtitleLines = 2,
   meta,
   icon,
   iconColor = "primary",
@@ -129,7 +132,10 @@ const ListRow: React.FC<ListRowProps> = ({
           ) : null}
         </View>
         {typeof subtitle === "string" ? (
-          <Text style={styles.subtitle} numberOfLines={2}>
+          <Text
+            style={styles.subtitle}
+            numberOfLines={subtitleLines || undefined}
+          >
             {subtitle}
           </Text>
         ) : (

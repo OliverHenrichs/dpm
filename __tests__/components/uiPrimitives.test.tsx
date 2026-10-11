@@ -186,6 +186,18 @@ describe("DesignGallery", () => {
 });
 
 describe("ListRow", () => {
+  it("cuts a subtitle at two lines unless told to show all of it", () => {
+    const { rerender } = render(
+      <ListRow title="Model" subtitle="A long hint" />,
+    );
+    expect(screen.getByText("A long hint").props.numberOfLines).toBe(2);
+
+    rerender(
+      <ListRow title="Model" subtitle="A long hint" subtitleLines={0} />,
+    );
+    expect(screen.getByText("A long hint").props.numberOfLines).toBeUndefined();
+  });
+
   it("is a named button, and not interactive without a handler", () => {
     const onPress = jest.fn();
     const { rerender } = render(

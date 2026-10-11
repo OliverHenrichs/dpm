@@ -131,6 +131,8 @@ const ModelRow: React.FC<{
       title={title}
       meta={`${sizeMb} MB`}
       subtitle={`${state} · ${hint}`}
+      // The hint says what the model is for and when it is used; cut short, it says neither.
+      subtitleLines={0}
       trailing={
         downloading ? undefined : !installed ? (
           <Button
