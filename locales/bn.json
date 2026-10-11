@@ -195,6 +195,8 @@
   "modifierUniversalBadge": "সর্বজনীন",
   "saveModifier": "সংরক্ষণ",
   "variant": "রূপভেদ",
+  "variantNoVideos": "এই রূপভেদের কোনো ভিডিও নেই",
+  "variantHasVideos": "ভিডিও আছে",
   "appliedToPatterns": "যেখানে প্রয়োগ হয়েছে",
   "notAppliedToAnyPattern": "এখনো কোনো প্যাটার্নে প্রয়োগ হয়নি",
   "prerequisiteWouldCycle": "ধূসর প্যাটার্নগুলো পূর্বশর্তের চক্র তৈরি করবে।",

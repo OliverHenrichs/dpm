@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
   IPattern,
@@ -8,6 +8,8 @@ import {
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
+import { Icon } from "@/src/common/ui";
+import { VIDEO_HEIGHT } from "@/src/common/components/VideoItem";
 import {
   getCommon2ndOrderLabel,
   getCommonLabel,
@@ -44,6 +46,7 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   showTopSeparator = true,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useUnistyles();
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
     null,
   );
@@ -74,6 +77,18 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
     return ref?.videoRefs ?? [];
   })();
 
+  // When any variant has videos, the video slot keeps its height for one without: the content
+  // below no longer jumps up and back as the variant changes. A pattern with no videos at all
+  // spends no room on it.
+  const universalModifiers = modifiers.filter((m) => m.universal);
+  const attachedRefs = (selectedPattern.modifierRefs ?? []).filter((ref) =>
+    modifiers.some((m) => !m.universal && m.id === ref.modifierId),
+  );
+  const anyVariantHasVideos =
+    (selectedPattern.videoRefs?.length ?? 0) > 0 ||
+    universalModifiers.some((m) => (m.videoRefs?.length ?? 0) > 0) ||
+    attachedRefs.some((ref) => ref.videoRefs.length > 0);
+
   return (
     <View
       style={[styles.detailsContainer, !showTopSeparator && styles.unseparated]}
@@ -87,11 +102,12 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
       <ModifierPillStrip
         modifiers={modifiers}
         modifierRefs={selectedPattern.modifierRefs ?? []}
+        baseVideoCount={selectedPattern.videoRefs?.length ?? 0}
         selectedModifierId={selectedModifierId}
         onSelect={setSelectedModifierId}
         isEditMode={false}
       />
-      {activeVideoRefs.length > 0 && (
+      {activeVideoRefs.length > 0 ? (
         <VideoCarousel
           videoRefs={activeVideoRefs}
           generatedLabel={t("videoBadgeSilhouette")}
@@ -99,6 +115,17 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
           transcriptLabel={t("transcriptShow")}
           paused={transcriptOf !== null}
         />
+      ) : (
+        anyVariantHasVideos && (
+          <View style={styles.noVideos}>
+            <Icon
+              name="video-off-outline"
+              size={theme.iconSize.lg}
+              color={theme.colors.textMuted}
+            />
+            <Text style={styles.noVideosText}>{t("variantNoVideos")}</Text>
+          </View>
+        )
       )}
       <TranscriptSheet
         target={
@@ -302,6 +329,23 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.space.sm,
     },
     patternDetailsCol: { flex: 1 },
+    /** Stands in for the carousel's player, at its height and spacing. */
+    noVideos: {
+      height: VIDEO_HEIGHT,
+      marginBottom: theme.space.sm + theme.space.xs,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.space.xs,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    noVideosText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textMuted,
+    },
     patternDetailsValue: {
       ...theme.typography.button,
       fontWeight: "bold",

@@ -7,6 +7,9 @@ import { IVideoReference } from "@/src/pattern/types/IPatternList";
 import YouTubeVideoItem from "@/src/common/components/YouTubeVideoItem";
 import { isYouTubeUrl } from "@/src/common/utils/YouTubeUtils";
 
+/** A player's height in the carousel; an empty slot that stands in for one matches it. */
+export const VIDEO_HEIGHT = 200;
+
 type VideoItemProps = {
   videoRef: IVideoReference;
   width: number;
@@ -50,7 +53,7 @@ export const VideoItem: FC<VideoItemProps> = ({ videoRef, width, paused }) => (
 
 const localStyles = StyleSheet.create((theme) => ({
   videoItemContainer: {
-    height: 200,
+    height: VIDEO_HEIGHT,
     marginBottom: theme.space.sm,
   },
   videoPlayer: {

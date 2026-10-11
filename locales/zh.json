@@ -195,6 +195,8 @@
   "modifierUniversalBadge": "通用",
   "saveModifier": "保存",
   "variant": "变体",
+  "variantNoVideos": "此变体没有视频",
+  "variantHasVideos": "有视频",
   "appliedToPatterns": "已应用于",
   "notAppliedToAnyPattern": "尚未应用于任何舞步",
   "prerequisiteWouldCycle": "灰显的舞步会造成前置关系循环。",

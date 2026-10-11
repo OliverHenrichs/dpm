@@ -514,6 +514,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           <ModifierPillStrip
             modifiers={modifiers}
             modifierRefs={newPattern.modifierRefs ?? []}
+            baseVideoCount={newPattern.videoRefs.length}
             selectedModifierId={selectedModifierId}
             onSelect={setSelectedModifierId}
             isEditMode

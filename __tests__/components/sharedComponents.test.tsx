@@ -509,6 +509,63 @@ describe("PatternDetails", () => {
       expect(screen.getByText("1 / 2")).toBeOnTheScreen();
     });
 
+    it("keeps an empty frame for a variant without videos when another has them", () => {
+      const spin = modifier("with a spin");
+      renderDetails({
+        modifiers: [spin],
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [urlVideo("https://example.com/base.mp4")],
+          modifierRefs: [{ modifierId: spin.id, videoRefs: [] }],
+        }),
+      });
+      expect(screen.queryByText("No videos for this variant")).toBeNull();
+
+      fireEvent.press(screen.getByText("with a spin"));
+
+      expect(screen.getByText("No videos for this variant")).toBeOnTheScreen();
+    });
+
+    it("spends no room on videos when no variant has any", () => {
+      const spin = modifier("with a spin");
+      renderDetails({
+        modifiers: [spin],
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [],
+          modifierRefs: [{ modifierId: spin.id, videoRefs: [] }],
+        }),
+      });
+
+      fireEvent.press(screen.getByText("with a spin"));
+
+      expect(screen.queryByText("No videos for this variant")).toBeNull();
+    });
+
+    it("marks the variants that have videos", () => {
+      const spin = modifier("with a spin");
+      const slow = modifier("slow", { universal: true });
+      renderDetails({
+        modifiers: [spin, slow],
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [],
+          modifierRefs: [
+            {
+              modifierId: spin.id,
+              videoRefs: [urlVideo("https://example.com/c.mp4")],
+            },
+          ],
+        }),
+      });
+
+      const hint = (label: string) =>
+        screen.getByRole("button", { name: label }).props.accessibilityHint;
+      expect(hint("with a spin")).toBe("Has videos");
+      expect(hint("Base")).toBeUndefined();
+      expect(hint("slow")).toBeUndefined();
+    });
+
     it("opens a transcribed video's transcript to read, without the form's actions", () => {
       renderDetails({
         selectedPattern: createTestPattern(TYPE.id, {

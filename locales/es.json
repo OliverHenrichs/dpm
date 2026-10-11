@@ -195,6 +195,8 @@
   "modifierUniversalBadge": "UNIVERSAL",
   "saveModifier": "Guardar",
   "variant": "Variante",
+  "variantNoVideos": "No hay vídeos de esta variante",
+  "variantHasVideos": "Tiene vídeos",
   "appliedToPatterns": "Aplicado a",
   "notAppliedToAnyPattern": "Todavía no se aplica a ninguna figura",
   "prerequisiteWouldCycle": "Las figuras atenuadas crearían un bucle de requisitos previos.",
