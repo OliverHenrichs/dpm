@@ -48,7 +48,6 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   const { t } = useTranslation();
 
   const renderThumbnails = () => {
-    if (videoRefs.length === 0) return null;
     return videoRefs.map((ref, idx) => {
       const thumb = thumbnails[idx] ?? "";
       const isUrl = ref.type === "url";
