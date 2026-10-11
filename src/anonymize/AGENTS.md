@@ -15,6 +15,12 @@ Unqualified paths are relative to `src/anonymize/`.
   ends in one button naming the result ("Shorten to 18 s"); options that change the job are
   `SwitchRow`s above that button, never chips. A disabled button says why under it. Before a cut
   a switch offers to transcribe the whole video first, queued ahead of the cut.
+- **Anonymize is labelled experimental** (badge and note on its tab): slow on older phones, and
+  a silhouette can lose its dancer. Once the dancers are tapped, _Preview the first half second_
+  renders `PREVIEW_SECONDS` of the selection (`previewAnonymize.ts`, through
+  `jobStore.runExclusive`, not a job) and loops it slowed down over the tap frame; changing the
+  taps throws it away (`components/useAnonymizePreview.ts`). Never for a provider that sends
+  footage off the device: `runAnonymize` refuses a remote preview, which would be billed.
 - The pattern list's **+** → _From a video_ / _Record a video_ seeds a new pattern, then offers
   Edit video after saving.
 - `components/AnonymizeJobsBanner.tsx` on the pattern list reports every job; a line opens its

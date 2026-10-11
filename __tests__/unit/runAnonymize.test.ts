@@ -2,6 +2,7 @@ import { AnonymizeProvider } from "@/src/anonymize/providers/AnonymizeProvider";
 import { availableProviders } from "@/src/anonymize/providers/registry";
 import {
   ConsentRequiredError,
+  PREVIEW_SECONDS,
   PromptsRequiredError,
   runAnonymize,
   TrimOutOfLimitsError,
@@ -149,5 +150,45 @@ describe("availableProviders", () => {
     const up = remote({ id: "up" });
     const down = remote({ id: "down", isAvailable: () => false });
     expect(availableProviders([up, down]).map((p) => p.id)).toEqual(["up"]);
+  });
+
+  describe("a preview", () => {
+    const onDevice = () => remote({ sendsFootageOffDevice: false });
+
+    it("renders only the first half second of the selection", async () => {
+      const provider = onDevice();
+      await runAnonymize(provider, request, jest.fn(), undefined, {
+        preview: true,
+      });
+      expect(provider.run).toHaveBeenCalledWith(
+        { ...request, endSeconds: request.startSeconds + PREVIEW_SECONDS },
+        expect.any(Function),
+      );
+    });
+
+    it("is allowed under the provider's shortest clip", async () => {
+      await expect(
+        runAnonymize(onDevice(), request, jest.fn(), undefined, {
+          preview: true,
+        }),
+      ).resolves.toBeDefined();
+      expect(PREVIEW_SECONDS).toBeLessThan(onDevice().minSeconds);
+    });
+
+    it("never sends footage off the device, even with consent", async () => {
+      const provider = remote();
+      await expect(
+        runAnonymize(
+          provider,
+          request,
+          jest.fn(),
+          { givenAt: 1 },
+          {
+            preview: true,
+          },
+        ),
+      ).rejects.toBeInstanceOf(ConsentRequiredError);
+      expect(provider.run).not.toHaveBeenCalled();
+    });
   });
 });
