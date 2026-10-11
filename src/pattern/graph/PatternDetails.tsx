@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { StyleSheet } from "react-native-unistyles";
 import {
   IModifier,
   IPattern,
@@ -8,8 +8,6 @@ import {
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
-import { Icon } from "@/src/common/ui";
-import { VIDEO_HEIGHT } from "@/src/common/components/VideoItem";
 import {
   getCommon2ndOrderLabel,
   getCommonLabel,
@@ -46,7 +44,6 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   showTopSeparator = true,
 }) => {
   const { t } = useTranslation();
-  const { theme } = useUnistyles();
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
     null,
   );
@@ -84,10 +81,16 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   const attachedRefs = (selectedPattern.modifierRefs ?? []).filter((ref) =>
     modifiers.some((m) => !m.universal && m.id === ref.modifierId),
   );
-  const anyVariantHasVideos =
-    (selectedPattern.videoRefs?.length ?? 0) > 0 ||
-    universalModifiers.some((m) => (m.videoRefs?.length ?? 0) > 0) ||
-    attachedRefs.some((ref) => ref.videoRefs.length > 0);
+  const videoSets = [
+    selectedPattern.videoRefs ?? [],
+    ...universalModifiers.map((m) => m.videoRefs ?? []),
+    ...attachedRefs.map((ref) => ref.videoRefs),
+  ];
+  const anyVariantHasVideos = videoSets.some((set) => set.length > 0);
+  // Likewise the row under the player, when any variant fills it (a page count, a transcript).
+  const anyVariantHasFooter = videoSets.some(
+    (set) => set.length > 1 || set.some((video) => !!video.transcript),
+  );
 
   return (
     <View
@@ -107,25 +110,18 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
         onSelect={setSelectedModifierId}
         isEditMode={false}
       />
-      {activeVideoRefs.length > 0 ? (
+      {/* Mounted for every variant once any has videos: remounting it re-measured its width
+          and flickered on the way back from a variant without them. */}
+      {anyVariantHasVideos && (
         <VideoCarousel
           videoRefs={activeVideoRefs}
           generatedLabel={t("videoBadgeSilhouette")}
           onOpenTranscript={setTranscriptOf}
           transcriptLabel={t("transcriptShow")}
           paused={transcriptOf !== null}
+          emptyLabel={t("variantNoVideos")}
+          reserveFooter={anyVariantHasFooter}
         />
-      ) : (
-        anyVariantHasVideos && (
-          <View style={styles.noVideos}>
-            <Icon
-              name="video-off-outline"
-              size={theme.iconSize.lg}
-              color={theme.colors.textMuted}
-            />
-            <Text style={styles.noVideosText}>{t("variantNoVideos")}</Text>
-          </View>
-        )
       )}
       <TranscriptSheet
         target={
@@ -329,23 +325,6 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.space.sm,
     },
     patternDetailsCol: { flex: 1 },
-    /** Stands in for the carousel's player, at its height and spacing. */
-    noVideos: {
-      height: VIDEO_HEIGHT,
-      marginBottom: theme.space.sm + theme.space.xs,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: theme.space.xs,
-      borderRadius: theme.radius.md,
-      borderWidth: 1,
-      borderStyle: "dashed",
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surfaceVariant,
-    },
-    noVideosText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.textMuted,
-    },
     patternDetailsValue: {
       ...theme.typography.button,
       fontWeight: "bold",

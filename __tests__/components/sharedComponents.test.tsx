@@ -175,6 +175,15 @@ describe("BottomSheet", () => {
   });
 });
 
+/** Flatten a style prop, which may be an array, into one object. */
+const flattenStyle = (style: unknown): Record<string, unknown> =>
+  (Array.isArray(style) ? style.flat(Infinity) : [style])
+    .filter(Boolean)
+    .reduce<Record<string, unknown>>(
+      (merged, part) => ({ ...merged, ...(part as object) }),
+      {},
+    );
+
 describe("VideoCarousel", () => {
   const renderCarousel = (videoRefs: IVideoReference[]) => {
     const view = renderWithProviders(<VideoCarousel videoRefs={videoRefs} />, {
@@ -307,6 +316,37 @@ describe("VideoCarousel", () => {
     expect(screen.UNSAFE_getByType(FlatList).props.snapToInterval).toBe(500);
   });
 
+  it("holds the player's room in an empty frame, when given a label for it", () => {
+    renderWithProviders(
+      <VideoCarousel videoRefs={[]} emptyLabel="No videos for this variant" />,
+      { activeListId: null },
+    );
+
+    expect(screen.getByText("No videos for this variant")).toBeOnTheScreen();
+  });
+
+  it("keeps the row under the player when asked, though it has nothing to show", () => {
+    const render = (reserveFooter: boolean) =>
+      renderWithProviders(
+        <VideoCarousel
+          videoRefs={[urlVideo("https://example.com/a.mp4")]}
+          reserveFooter={reserveFooter}
+        />,
+        { activeListId: null },
+      );
+    const footerCount = () =>
+      screen
+        .UNSAFE_getAllByType(View)
+        .filter((node) => flattenStyle(node.props.style).minHeight === 36)
+        .length;
+
+    render(false);
+    expect(footerCount()).toBe(0);
+    screen.unmount();
+    render(true);
+    expect(footerCount()).toBe(1);
+  });
+
   it("copes with no videos at all", () => {
     renderCarousel([]);
     layout();
@@ -341,15 +381,6 @@ describe("PatternDetails", () => {
       />,
       { activeListId: null },
     );
-
-  /** Flatten a style prop, which may be an array, into one object. */
-  const flattenStyle = (style: unknown): Record<string, unknown> =>
-    (Array.isArray(style) ? style.flat(Infinity) : [style])
-      .filter(Boolean)
-      .reduce<Record<string, unknown>>(
-        (merged, part) => ({ ...merged, ...(part as object) }),
-        {},
-      );
 
   const hasTopRule = () =>
     screen
