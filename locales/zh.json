@@ -467,5 +467,14 @@
   "videoReviewHeading": "检查新视频",
   "videoReviewShortened": "已缩短",
   "videoReviewNoSound": "无声音",
-  "videoReviewSoundKept": "保留声音"
+  "videoReviewSoundKept": "保留声音",
+  "whatsNew": "新功能",
+  "whatsNewInVersion": "{{version}} 版的新功能",
+  "changelog": "更新记录",
+  "changelogVersion": "版本 {{version}}",
+  "changelogShowAll": "全部更新",
+  "whatsNewGotIt": "知道了",
+  "whatsNewTurnOffHint": "可以在设置中关闭此提示。",
+  "whatsNewHintSetting": "更新后显示新功能",
+  "whatsNewHintSettingDescription": "首次打开新版本时，简要说明有哪些变化。"
 }

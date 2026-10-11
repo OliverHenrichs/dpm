@@ -467,5 +467,14 @@
   "videoReviewHeading": "Revisa el vídeo nuevo",
   "videoReviewShortened": "Acortado",
   "videoReviewNoSound": "Sin sonido",
-  "videoReviewSoundKept": "Con sonido"
+  "videoReviewSoundKept": "Con sonido",
+  "whatsNew": "Novedades",
+  "whatsNewInVersion": "Novedades de la {{version}}",
+  "changelog": "Historial de cambios",
+  "changelogVersion": "Versión {{version}}",
+  "changelogShowAll": "Todos los cambios",
+  "whatsNewGotIt": "Entendido",
+  "whatsNewTurnOffHint": "Puedes desactivarlo en Ajustes.",
+  "whatsNewHintSetting": "Mostrar novedades tras una actualización",
+  "whatsNewHintSettingDescription": "Una nota breve sobre lo que ha cambiado la primera vez que abres una versión nueva."
 }

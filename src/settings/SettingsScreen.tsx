@@ -1,6 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
-import { Button, Chip, ListRow, type IconName } from "@/src/common/ui";
+import {
+  Button,
+  Chip,
+  ListRow,
+  SwitchRow,
+  type IconName,
+} from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
@@ -22,6 +28,11 @@ import PatternListImportModal from "@/src/pattern/data/components/PatternListImp
 import { useDataTransfer } from "@/src/settings/hooks/useDataTransfer";
 import AppDialog from "@/src/common/components/AppDialog";
 import DeviceModelsSection from "@/src/settings/components/DeviceModelsSection";
+import ChangelogSheet from "@/src/changelog/components/ChangelogSheet";
+import {
+  loadWhatsNewEnabled,
+  saveWhatsNewEnabled,
+} from "@/src/changelog/ChangelogStorage";
 import { APP_ICON_COLORS, AppStyle } from "@/src/common/theme/tokens";
 import {
   APP_ICON_COLOR_OPTIONS,
@@ -52,6 +63,24 @@ const SettingsScreen: React.FC = () => {
   // Read once: the icon only changes through this screen.
   const [showIconColors] = useState(canChangeAppIcon);
   const [iconColor, setIconColor] = useState<AppIconColor>(currentAppIconColor);
+
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [whatsNewEnabled, setWhatsNewEnabled] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadWhatsNewEnabled().then((enabled) => {
+      if (!cancelled) setWhatsNewEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleWhatsNew = (enabled: boolean) => {
+    setWhatsNewEnabled(enabled);
+    void saveWhatsNewEnabled(enabled);
+  };
 
   const chooseIconColor = async (color: AppIconColor) => {
     if (color === iconColor) return;
@@ -184,6 +213,32 @@ const SettingsScreen: React.FC = () => {
 
         <DeviceModelsSection />
 
+        {/* What's new: the changelog, and whether it pops up after an update. */}
+        <View style={commonStyles.sectionHeaderRow}>
+          <Text style={commonStyles.sectionTitle}>{t("whatsNew")}</Text>
+        </View>
+        <View style={styles.styleList}>
+          <ListRow
+            variant="card"
+            title={t("changelog")}
+            icon="history"
+            trailing={
+              <Icon
+                name="chevron-right"
+                size={theme.iconSize.lg}
+                color={theme.colors.textMuted}
+              />
+            }
+            onPress={() => setShowChangelog(true)}
+          />
+          <SwitchRow
+            title={t("whatsNewHintSetting")}
+            description={t("whatsNewHintSettingDescription")}
+            value={whatsNewEnabled}
+            onValueChange={toggleWhatsNew}
+          />
+        </View>
+
         {/* App Icon Section: last, since switching closes the app. A colour of its own,
             whichever style is chosen. */}
         {showIconColors && (
@@ -226,6 +281,11 @@ const SettingsScreen: React.FC = () => {
         onClose={() => setShowLanguagePicker(false)}
         currentLanguage={currentLang}
         onSelect={(code) => i18n.changeLanguage(code)}
+      />
+
+      <ChangelogSheet
+        visible={showChangelog}
+        onClose={() => setShowChangelog(false)}
       />
 
       <PatternListExportModal

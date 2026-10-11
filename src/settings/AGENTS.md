@@ -4,8 +4,9 @@
 `data/StyleStorage.ts`, applied by `ThemeProvider`; see `src/common/theme/AGENTS.md`), app icon
 colour (`appIcon.ts`, offered only where `supportsAlternateIcons`), import and export
 (`hooks/useDataTransfer.ts`, `src/pattern/data/AGENTS.md`), the on-device models
-(`components/DeviceModelsSection.tsx`, `src/transcribe/AGENTS.md`), and in development builds a
-link to the design gallery.
+(`components/DeviceModelsSection.tsx`, `src/transcribe/AGENTS.md`), the changelog and the switch for
+the what's-new hint (`src/changelog/AGENTS.md`), and in development builds a link to the design
+gallery.
 
 This file also governs `src/i18n.ts` and `locales/*.json`, which sit outside this directory. The root
 `AGENTS.md` carries the rule every feature needs (a new key goes in **all nine** `locales/*.json`,

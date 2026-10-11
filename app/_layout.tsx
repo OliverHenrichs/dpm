@@ -15,6 +15,7 @@ import ServerStyles from "@/src/common/theme/ServerStyles";
 import { ActivePatternListProvider } from "@/src/pattern/data/components/ActivePatternListContext";
 import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import DrawerContent from "@/src/common/components/DrawerContent";
+import WhatsNewHint from "@/src/changelog/components/WhatsNewHint";
 import {
   DRAWER_ROUTES,
   LIST_GROUP,
@@ -114,6 +115,8 @@ function AppDrawer() {
             <Drawer.Screen name={LIST_GROUP} />
           </Drawer>
         </SafeAreaView>
+        {/* After an update, what changed since the version last seen. */}
+        <WhatsNewHint />
       </AnonymizeJobsProvider>
     </ActivePatternListProvider>
   );

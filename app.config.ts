@@ -92,7 +92,7 @@ const appId = APP_ID + variant.idSuffix;
 export default (): ExpoConfig => ({
   name: "DPM" + variant.nameSuffix,
   slug: "DancePatternMapper",
-  version: "1.0.0",
+  version: "1.0.1",
   orientation: "portrait",
   icon: "./assets/images/app-icon.png",
   // Distinct per variant, so a deep link opens one app rather than an Android chooser.
