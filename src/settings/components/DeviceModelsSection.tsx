@@ -21,6 +21,11 @@ import {
 } from "@/src/transcribe/models";
 import { SUGGESTION_DOWNLOAD_MB, SUGGESTION_MODEL } from "@/src/suggest/models";
 import { canSuggest } from "@/src/suggest/suggestPattern";
+import {
+  markModelDeleted,
+  startModelDownload,
+  useModelDownload,
+} from "@/src/settings/hooks/useModelDownload";
 
 /**
  * Settings' view of the models the app downloads on first use (L4): whether each is on the
@@ -37,6 +42,7 @@ const DeviceModelsSection: React.FC = () => {
         <Text style={commonStyles.sectionTitle}>{t("deviceModels")}</Text>
       </View>
       <ModelRow
+        downloadKey="speech"
         icon="account-voice"
         title={t("speechModel")}
         hint={t("speechModelHint")}
@@ -50,6 +56,7 @@ const DeviceModelsSection: React.FC = () => {
         onDelete={deleteModels}
       />
       <ModelRow
+        downloadKey="speechAccurate"
         icon="account-voice"
         title={t("speechModelAccurate")}
         hint={t("speechModelAccurateHint")}
@@ -63,6 +70,7 @@ const DeviceModelsSection: React.FC = () => {
       />
       {canSuggest() && (
         <ModelRow
+          downloadKey="suggestion"
           icon="lightbulb-on-outline"
           title={t("suggestionModel")}
           hint={t("suggestionModelHint")}
@@ -81,6 +89,8 @@ const DeviceModelsSection: React.FC = () => {
 };
 
 const ModelRow: React.FC<{
+  /** Names the row's download in `useModelDownload`'s store. */
+  downloadKey: string;
   icon: IconName;
   title: string;
   hint: string;
@@ -89,12 +99,20 @@ const ModelRow: React.FC<{
   /** Fetches the model, reporting progress as a fraction. */
   onDownload: (onFraction: (fraction: number) => void) => Promise<void>;
   onDelete: () => void;
-}> = ({ icon, title, hint, sizeMb, isInstalled, onDownload, onDelete }) => {
+}> = ({
+  downloadKey,
+  icon,
+  title,
+  hint,
+  sizeMb,
+  isInstalled,
+  onDownload,
+  onDelete,
+}) => {
   const { t } = useTranslation();
-  const [installed, setInstalled] = useState(isInstalled);
-  // null while not downloading; the fraction done while it is.
-  const [progress, setProgress] = useState<number | null>(null);
-  const [failed, setFailed] = useState(false);
+  const { progress, failed, installed: known } = useModelDownload(downloadKey);
+  const [onDisk] = useState(isInstalled);
+  const installed = known ?? onDisk;
 
   // A large download outlasts most screen timeouts, and a locked phone pauses it.
   const downloading = progress !== null;
@@ -106,18 +124,7 @@ const ModelRow: React.FC<{
     };
   }, [downloading]);
 
-  const download = async () => {
-    setFailed(false);
-    setProgress(0);
-    try {
-      await onDownload(setProgress);
-      setInstalled(isInstalled());
-    } catch {
-      setFailed(true);
-    } finally {
-      setProgress(null);
-    }
-  };
+  const download = () => startModelDownload(downloadKey, onDownload);
 
   const state = downloading
     ? t("modelDownloading", { percent: Math.round(progress * 100) })
@@ -150,7 +157,7 @@ const ModelRow: React.FC<{
             size="sm"
             onPress={() => {
               onDelete();
-              setInstalled(false);
+              markModelDeleted(downloadKey);
             }}
             accessibilityLabel={t("deleteModel", { name: title })}
           />

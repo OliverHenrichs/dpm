@@ -3,11 +3,13 @@ import {
   seedBinaryFile,
   setDownloadResponse,
 } from "@/__mocks__/expo-file-system";
+import { AppState, Platform, type AppStateStatus } from "react-native";
 import { AudioExtractModule } from "@/modules/audio-extract";
 import { WHISPER_ACCURATE_MODEL } from "@/src/transcribe/models";
 import {
   deleteModel,
   deleteModels,
+  downloadModel,
   ensureModels,
   installedModels,
   ModelDownloadError,
@@ -170,5 +172,129 @@ describe("the transcription model store", () => {
 
     expect(installedModels()).toBeNull();
     expect(listFileUris()).toEqual([]);
+  });
+});
+
+describe("a model download cut off", () => {
+  const VAD = {
+    id: "vad",
+    fileName: "vad.bin",
+    url: "https://models/vad.bin",
+    bytes: 4,
+    sha256: "hash-vad",
+  };
+  const body = Buffer.from([1, 2, 3, 4]);
+  let appState: AppStateStatus;
+  let listeners: ((state: AppStateStatus) => void)[];
+
+  const moveApp = (state: AppStateStatus) => {
+    appState = state;
+    [...listeners].forEach((listener) => listener(state));
+  };
+
+  beforeEach(() => {
+    jest.replaceProperty(Platform, "OS", "android");
+    appState = "active";
+    listeners = [];
+    Object.defineProperty(AppState, "currentState", {
+      get: () => appState,
+      configurable: true,
+    });
+    jest.spyOn(AppState, "addEventListener").mockImplementation((_, fn) => {
+      listeners.push(fn);
+      return {
+        remove: () => {
+          listeners = listeners.filter((l) => l !== fn);
+        },
+      };
+    });
+    sha.mockImplementation(async (uri: string) => {
+      const { readFileBytes } = jest.requireActual(
+        "@/__mocks__/expo-file-system",
+      );
+      return readFileBytes(uri)?.equals(body) ? "hash-vad" : "wrong";
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    Object.defineProperty(AppState, "currentState", {
+      value: "active",
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it("carries on from where it was once the app is back in front", async () => {
+    // Android drops the connection as the app goes to the background.
+    let calls = 0;
+    setDownloadResponse(() => {
+      calls += 1;
+      if (calls === 1) {
+        moveApp("background");
+        return { status: 200, body, cutAt: 2 };
+      }
+      return { status: 200, body };
+    });
+    const seen: number[] = [];
+
+    const done = downloadModel(VAD, (written) => seen.push(written));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(listFileUris()).toContain(`${MODELS}vad.bin.part`);
+    moveApp("active");
+    await done;
+
+    expect(calls).toBe(2);
+    expect(seen).toEqual([2, 4]);
+    expect(listFileUris()).toEqual([`${MODELS}vad.bin`]);
+  });
+
+  it("starts over once when the server sends the whole file again", async () => {
+    let calls = 0;
+    setDownloadResponse(() => {
+      calls += 1;
+      if (calls === 1) {
+        moveApp("background");
+        moveApp("active");
+        return { status: 200, body, cutAt: 2 };
+      }
+      return { status: 200, body, ignoresRange: true };
+    });
+
+    await downloadModel(VAD, () => undefined);
+
+    expect(calls).toBe(3);
+    expect(listFileUris()).toEqual([`${MODELS}vad.bin`]);
+  });
+
+  it("fails on a drop while in front, keeping the bytes for the next try", async () => {
+    setDownloadResponse(() => ({ status: 200, body, cutAt: 3 }));
+    await expect(downloadModel(VAD, () => undefined)).rejects.toThrow(
+      "connection abort",
+    );
+    expect(listFileUris()).toEqual([`${MODELS}vad.bin.part`]);
+
+    const fetched: number[] = [];
+    setDownloadResponse(() => ({ status: 200, body }));
+    await downloadModel(VAD, (written) => fetched.push(written));
+
+    expect(fetched).toEqual([4]);
+    expect(listFileUris()).toEqual([`${MODELS}vad.bin`]);
+  });
+
+  it("joins a download of the same model already under way", async () => {
+    let calls = 0;
+    setDownloadResponse(() => {
+      calls += 1;
+      return { status: 200, body };
+    });
+
+    await Promise.all([
+      downloadModel(VAD, () => undefined),
+      downloadModel(VAD, () => undefined),
+    ]);
+
+    expect(calls).toBe(1);
+    expect(listFileUris()).toEqual([`${MODELS}vad.bin`]);
   });
 });

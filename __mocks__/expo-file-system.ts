@@ -148,7 +148,14 @@ export function resetFileSystemMock(): void {
 // The state lives here so that one reset clears the filesystem and the downloads together.
 // ---------------------------------------------------------------------------
 
-export type DownloadResponse = { status: number; body: Buffer };
+export type DownloadResponse = {
+  status: number;
+  body: Buffer;
+  /** Fail after writing this many bytes, as a dropped connection does. */
+  cutAt?: number;
+  /** Answer a resumed download with the whole body (200), as a server without ranges does. */
+  ignoresRange?: boolean;
+};
 const EMPTY_DOWNLOAD = (): DownloadResponse => ({
   status: 200,
   body: Buffer.alloc(0),

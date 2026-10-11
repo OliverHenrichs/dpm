@@ -1,3 +1,4 @@
+import { AppState, Platform } from "react-native";
 import { Directory, File, Paths } from "expo-file-system";
 // The legacy API is the one with a progress callback for downloads; 60 MB without a progress
 // bar is not acceptable (L4 spike).
@@ -100,48 +101,131 @@ export async function downloadMissing(
   onProgress?.(1);
 }
 
+/** Downloads under way, by model id, so a second caller joins the first instead of racing it. */
+const inFlight = new Map<
+  string,
+  { done: Promise<void>; listeners: Set<(written: number) => void> }
+>();
+
 /**
  * Downloads one model to a `.part` file and moves it into place once its size and SHA-256
  * match, so an interrupted or corrupted download is never taken for a model. Reports bytes
- * written so far.
+ * written so far. A model already downloading is not fetched twice: the caller joins it
+ * (Settings and a transcription can ask for the same model at once).
  */
-export async function downloadModel(
+export function downloadModel(
+  model: ModelSpec,
+  onBytes: (written: number) => void,
+): Promise<void> {
+  const running = inFlight.get(model.id);
+  if (running) {
+    running.listeners.add(onBytes);
+    return running.done;
+  }
+  const listeners = new Set([onBytes]);
+  const done = fetchModel(model, (written) =>
+    listeners.forEach((listener) => listener(written)),
+  ).finally(() => inFlight.delete(model.id));
+  inFlight.set(model.id, { done, listeners });
+  return done;
+}
+
+/**
+ * Android drops a backgrounded app's connections (seen on a Pixel, Android 16), so a download
+ * fails as soon as the user switches apps. It then waits for the app to come back and carries
+ * on from the bytes it has, rather than failing or starting over.
+ */
+function canResume(): boolean {
+  return Platform.OS === "android";
+}
+
+async function fetchModel(
   model: ModelSpec,
   onBytes: (written: number) => void,
 ): Promise<void> {
   const dir = modelDir();
   if (!dir.exists) dir.create({ intermediates: true });
   const partial = new File(modelDir(), `${model.fileName}.part`);
-  if (partial.exists) partial.delete();
-
-  const task = createDownloadResumable(model.url, partial.uri, {}, (p) =>
-    onBytes(p.totalBytesWritten),
-  );
-  const result = await task.downloadAsync();
-  if (!result || result.status !== 200) {
-    if (partial.exists) partial.delete();
-    throw new ModelDownloadError(
-      `Download of ${model.id} failed (HTTP ${result?.status ?? "none"})`,
-    );
+  // Only one download of a model runs at a time (`inFlight`), so a `.part` here is left over
+  // from one that was cut off; carry on from it where the platform can.
+  if (partial.exists && (!canResume() || partial.size >= model.bytes)) {
+    partial.delete();
   }
 
-  const written = new File(result.uri);
-  const size = written.size;
+  for (;;) {
+    const from = partial.exists ? partial.size : 0;
+    let leftApp = AppState.currentState !== "active";
+    const watch = AppState.addEventListener("change", (state) => {
+      if (state !== "active") leftApp = true;
+    });
+    let status: number | undefined;
+    try {
+      // Android's legacy download takes the bytes already written as its resume data: it asks
+      // for the rest with a Range header and appends.
+      const task = createDownloadResumable(
+        model.url,
+        partial.uri,
+        {},
+        (p) => onBytes(p.totalBytesWritten),
+        from > 0 ? String(from) : undefined,
+      );
+      status = (await task.downloadAsync())?.status;
+    } catch (e) {
+      if (!(canResume() && leftApp)) {
+        // Where it can, the next try carries on from the bytes so far.
+        if (!canResume() && partial.exists) partial.delete();
+        throw e;
+      }
+    } finally {
+      watch.remove();
+    }
+    if (status === 200 || (status === 206 && from > 0)) {
+      // A server that ignores the Range header sends the whole file again, appended to what
+      // was there; start over once rather than keep a file that can never match.
+      if (status === 200 && from > 0) {
+        partial.delete();
+        continue;
+      }
+      break;
+    }
+    if (status !== undefined || !leftApp) {
+      if (partial.exists) partial.delete();
+      throw new ModelDownloadError(
+        `Download of ${model.id} failed (HTTP ${status ?? "none"})`,
+      );
+    }
+    await untilActive();
+  }
+
+  const size = partial.size;
   if (size !== model.bytes) {
-    written.delete();
+    partial.delete();
     throw new ModelDownloadError(
       `Download of ${model.id} incomplete: ${size} of ${model.bytes} bytes`,
     );
   }
-  const hash = await AudioExtractModule?.sha256File(written.uri);
+  const hash = await AudioExtractModule?.sha256File(partial.uri);
   if (hash !== model.sha256) {
-    written.delete();
+    partial.delete();
     throw new ModelDownloadError(`Download of ${model.id} is corrupt`);
   }
 
   const target = fileFor(model);
   if (target.exists) target.delete();
-  written.move(target);
+  partial.move(target);
+}
+
+/** Resolves once the app is in the foreground again. */
+function untilActive(): Promise<void> {
+  if (AppState.currentState === "active") return Promise.resolve();
+  return new Promise((resolve) => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        sub.remove();
+        resolve();
+      }
+    });
+  });
 }
 
 /**
