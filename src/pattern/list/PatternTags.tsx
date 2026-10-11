@@ -44,7 +44,6 @@ const PatternTags: React.FC<PatternTagsProps> = ({
 
   return (
     <View style={styles.tagsContainer}>
-      <Text style={styles.label}>{t("tags")}</Text>
       <View style={styles.tagsRow}>
         {tags.map((tag: string, idx: number) => (
           <View key={idx} style={styles.tagItem}>
