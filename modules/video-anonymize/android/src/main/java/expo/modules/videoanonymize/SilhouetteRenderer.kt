@@ -100,8 +100,10 @@ class SilhouetteRenderer(
             // Negative: the segmenter is looking ahead; this frame's labels come out later.
             if (found >= 0) emit(labels, found)
             index++
+            // Every frame, not every batch: a batch is 5–10 s of waiting on a Pixel, longer on a
+            // slower phone, and a half-second preview is only ~15 frames.
+            onProgress(index.toDouble() / frameCount)
           }
-          onProgress(index.toDouble() / frameCount)
         }
         while (true) {
           val found = segmenter.drain(labels)

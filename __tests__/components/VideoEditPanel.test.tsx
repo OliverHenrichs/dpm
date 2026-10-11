@@ -47,7 +47,12 @@ function renderPanel(
       {...extra}
     />,
   );
-  act(() => listeners.sourceLoad({ duration, availableVideoTracks: [] }));
+  act(() =>
+    listeners.sourceLoad({
+      duration,
+      availableVideoTracks: [{ size: { width: 1920, height: 1080 } }],
+    }),
+  );
   return { onShorten };
 }
 
@@ -118,5 +123,137 @@ describe("Edit video — one job per tab", () => {
 
     expect(screen.queryByRole("tab")).toBeNull();
     expect(button("Shorten")).toBeOnTheScreen();
+  });
+});
+
+/** Goes on to the tap frame and taps both dancers. */
+function tapBothDancers() {
+  fireEvent.press(screen.getByRole("tab", { name: "Anonymize" }));
+  fireEvent.press(button("Next: tap the dancers"));
+  fireEvent(screen.getByTestId("video-preview"), "layout", {
+    nativeEvent: { layout: { width: 320, height: 180 } },
+  });
+  for (const x of [100, 200]) {
+    fireEvent.press(screen.getByTestId("prompt-overlay"), {
+      nativeEvent: { locationX: x, locationY: 90 },
+    });
+  }
+}
+
+describe("Anonymize — experimental, with a preview", () => {
+  const previewer = () => {
+    let finish: (uri: string) => void = () => {};
+    let fail: () => void = () => {};
+    const render = jest.fn(
+      (
+        _provider: AnonymizeProvider,
+        _request: unknown,
+        onProgress: (f: number) => void,
+      ) =>
+        new Promise<string>((resolve, reject) => {
+          onProgress(0.4);
+          finish = resolve;
+          fail = () => reject(new Error("out of memory"));
+        }),
+    );
+    const discard = jest.fn();
+    return {
+      previewer: { render, discard },
+      render,
+      discard,
+      finish: (uri: string) => act(async () => finish(uri)),
+      fail: () => act(async () => fail()),
+    };
+  };
+
+  it("says on its tab that it is experimental", () => {
+    renderPanel(20);
+
+    fireEvent.press(screen.getByRole("tab", { name: "Anonymize" }));
+
+    expect(screen.getByText("EXPERIMENTAL")).toBeOnTheScreen();
+    expect(
+      screen.getByText(/^Anonymizing is still experimental/),
+    ).toBeOnTheScreen();
+  });
+
+  it("offers no preview until every dancer is tapped", () => {
+    const p = previewer();
+    renderPanel(20, { previewer: p.previewer });
+
+    fireEvent.press(screen.getByRole("tab", { name: "Anonymize" }));
+    fireEvent.press(button("Next: tap the dancers"));
+
+    expect(
+      screen.queryByRole("button", { name: "Preview the first half second" }),
+    ).toBeNull();
+  });
+
+  it("renders the selection's start with the taps, then shows it over the frame", async () => {
+    const p = previewer();
+    renderPanel(20, { previewer: p.previewer });
+    tapBothDancers();
+
+    fireEvent.press(button("Preview the first half second"));
+
+    expect(p.render).toHaveBeenCalledWith(
+      provider,
+      expect.objectContaining({
+        startSeconds: 0,
+        endSeconds: 20,
+        prompts: [expect.anything(), expect.anything()],
+      }),
+      expect.any(Function),
+    );
+    expect(button("Rendering the preview … 40 %")).toBeDisabled();
+    // The full render can still start without waiting for the preview.
+    expect(button("Anonymize 20 s")).toBeEnabled();
+
+    await p.finish("file:///cache/preview.mp4");
+
+    expect(screen.getByTestId("anonymize-preview")).toBeOnTheScreen();
+    expect(
+      screen.getByText(/^The first half second, slowed down/),
+    ).toBeOnTheScreen();
+  });
+
+  it("throws the preview away when the dancers are tapped again", async () => {
+    const p = previewer();
+    renderPanel(20, { previewer: p.previewer });
+    tapBothDancers();
+    fireEvent.press(button("Preview the first half second"));
+    await p.finish("file:///cache/preview.mp4");
+
+    fireEvent.press(button("Tap again"));
+
+    expect(p.discard).toHaveBeenCalledWith("file:///cache/preview.mp4");
+    expect(screen.queryByTestId("anonymize-preview")).toBeNull();
+  });
+
+  it("throws away a preview that arrives after the taps changed", async () => {
+    const p = previewer();
+    renderPanel(20, { previewer: p.previewer });
+    tapBothDancers();
+    fireEvent.press(button("Preview the first half second"));
+
+    fireEvent.press(button("Tap again"));
+    await p.finish("file:///cache/stale.mp4");
+
+    expect(p.discard).toHaveBeenCalledWith("file:///cache/stale.mp4");
+    expect(screen.queryByTestId("anonymize-preview")).toBeNull();
+  });
+
+  it("says when the preview failed, and lets it be tried again", async () => {
+    const p = previewer();
+    renderPanel(20, { previewer: p.previewer });
+    tapBothDancers();
+    fireEvent.press(button("Preview the first half second"));
+
+    await p.fail();
+
+    expect(
+      screen.getByText(/^The preview could not be rendered/),
+    ).toBeOnTheScreen();
+    expect(button("Preview the first half second")).toBeEnabled();
   });
 });

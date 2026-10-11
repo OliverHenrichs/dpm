@@ -32,6 +32,10 @@ import {
   AnonymizeRequest,
 } from "@/src/anonymize/providers/AnonymizeProvider";
 import { TrimRequest } from "@/src/anonymize/shortenVideo";
+import {
+  AnonymizePreviewer,
+  useAnonymizePreview,
+} from "@/src/anonymize/components/useAnonymizePreview";
 
 /** The jobs the sheet offers, one tab each. */
 export type VideoEditTab = "shorten" | "anonymize" | "speech";
@@ -54,7 +58,15 @@ type Props = {
    * jump in it; the tab is left out without it.
    */
   speech?: (playback: SpeechPlayback) => React.ReactNode;
+  /**
+   * Offers to render the first half second (`PREVIEW_SECONDS`) once the dancers are tapped; left out, there
+   * is no preview. Only for a provider that keeps the footage on the device.
+   */
+  previewer?: AnonymizePreviewer;
 };
+
+/** The preview is a fraction of a second; slowed down, the eye can follow it. */
+const PREVIEW_RATE = 0.5;
 
 /** The preview's playback, as the Speech tab sees it. */
 export type SpeechPlayback = {
@@ -85,7 +97,10 @@ const WHOLE_CLIP_SLACK = 0.1;
  * (30 s on-device); a provider that tracks from a prompt then holds the selection's first frame
  * for one tap per dancer.
  *
- * Both cuts only hand the request over; the caller runs it as a background job.
+ * Both cuts only hand the request over; the caller runs it as a background job. Anonymizing is
+ * experimental — slow on older phones, and a silhouette can lose its dancer — so the tab says
+ * so, and once the dancers are tapped the first half second can be rendered and watched before
+ * the full render. Changing the taps throws that preview away.
  *
  * Remote providers are not offered a consent step yet — `runAnonymize` refuses them without
  * one, so adding a remote provider fails loudly until that step exists.
@@ -97,6 +112,7 @@ const VideoEditPanel: React.FC<Props> = ({
   onAnonymize,
   cutOptions,
   speech,
+  previewer,
 }) => {
   const { t } = useTranslation();
   const [provider, setProvider] = useState<AnonymizeProvider | undefined>(
@@ -112,6 +128,11 @@ const VideoEditPanel: React.FC<Props> = ({
   // How many dancers to tap, for a provider that can follow fewer than a couple.
   const [dancers, setDancers] = useState(providers[0]?.promptCount ?? 0);
   const [playhead, setPlayhead] = useState(0);
+  const {
+    preview,
+    render: renderPreviewOf,
+    reset: resetPreview,
+  } = useAnonymizePreview(previewer);
 
   const limits: TrimLimits = {
     duration,
@@ -179,6 +200,19 @@ const VideoEditPanel: React.FC<Props> = ({
     ...(needsTaps && { prompts: taps }),
   });
 
+  const canPreview =
+    !!previewer && !!provider && !provider.sendsFootageOffDevice;
+
+  const renderPreview = () => {
+    if (provider) renderPreviewOf(provider, request());
+  };
+
+  /** New taps, so any preview of the old ones is stale. */
+  const retap = (next: Point[]) => {
+    resetPreview();
+    setTaps(next);
+  };
+
   const tabs: Segment<VideoEditTab>[] = [
     { value: "shorten", label: t("videoShorten") },
     ...(provider
@@ -197,13 +231,13 @@ const VideoEditPanel: React.FC<Props> = ({
       return;
     }
     seekTo(trim.start);
-    setTaps([]);
+    retap([]);
     setStep("prompt");
   };
 
   const backToTrim = () => {
     setStep("trim");
-    setTaps([]);
+    retap([]);
     player.play();
   };
 
@@ -214,7 +248,7 @@ const VideoEditPanel: React.FC<Props> = ({
       viewSize,
       videoSize,
     );
-    if (point) setTaps([...taps, point]);
+    if (point) retap([...taps, point]);
   };
   const tapHint = t("anonymizeTapDancers", {
     count: taps.length,
@@ -282,6 +316,16 @@ const VideoEditPanel: React.FC<Props> = ({
 
   const anonymizeTab = provider && (
     <>
+      <View style={styles.experimental}>
+        <View style={styles.badge}>
+          <AppText variant="badge" color="onSurfaceVariant">
+            {t("anonymizeExperimental").toUpperCase()}
+          </AppText>
+        </View>
+        <AppText variant="caption" color="textMuted" style={styles.flex}>
+          {t("anonymizeExperimentalNote")}
+        </AppText>
+      </View>
       <AppText variant="bodySmall">{t("anonymizeWhy")}</AppText>
       {loaded && (
         <>
@@ -304,6 +348,41 @@ const VideoEditPanel: React.FC<Props> = ({
     </>
   );
 
+  /** Render the first half second, then watch it over the frame, or say it failed. */
+  const previewSection = () => {
+    if (preview.status === "ready") {
+      return (
+        <AppText variant="bodySmall" style={styles.centred}>
+          {t("anonymizePreviewReady")}
+        </AppText>
+      );
+    }
+    const rendering = preview.status === "rendering";
+    return (
+      <View style={styles.action}>
+        <Button
+          title={
+            rendering
+              ? t("anonymizePreviewRendering", {
+                  percent: Math.round(preview.progress * 100),
+                })
+              : t("anonymizePreview")
+          }
+          icon="eye-outline"
+          variant="secondary"
+          loading={rendering}
+          disabled={rendering}
+          onPress={renderPreview}
+        />
+        {preview.status === "failed" && (
+          <AppText variant="caption" color="danger" style={styles.centred}>
+            {t("anonymizePreviewFailed")}
+          </AppText>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.panel}>
       <View
@@ -312,6 +391,7 @@ const VideoEditPanel: React.FC<Props> = ({
           videoSize && { aspectRatio: videoSize.width / videoSize.height },
         ]}
         onLayout={(e: LayoutChangeEvent) => setViewSize(e.nativeEvent.layout)}
+        testID="video-preview"
       >
         <VideoView
           player={player}
@@ -350,6 +430,9 @@ const VideoEditPanel: React.FC<Props> = ({
                 );
               })}
           </Pressable>
+        )}
+        {prompting && preview.status === "ready" && (
+          <PreviewClip uri={preview.uri} />
         )}
       </View>
 
@@ -391,7 +474,7 @@ const VideoEditPanel: React.FC<Props> = ({
                 title={t("anonymizeResetTaps")}
                 variant="ghost"
                 size="sm"
-                onPress={() => setTaps([])}
+                onPress={() => retap([])}
               />
             )}
           </View>
@@ -407,7 +490,7 @@ const VideoEditPanel: React.FC<Props> = ({
                     onPress={() => {
                       setProvider(p);
                       setDancers(p.promptCount);
-                      setTaps([]);
+                      retap([]);
                     }}
                   />
                 );
@@ -433,7 +516,7 @@ const VideoEditPanel: React.FC<Props> = ({
                 value={String(dancers)}
                 onChange={(n) => {
                   setDancers(Number(n));
-                  setTaps([]);
+                  retap([]);
                 }}
               />
             </>
@@ -442,6 +525,7 @@ const VideoEditPanel: React.FC<Props> = ({
           <AppText variant="caption" color="textMuted">
             {t("anonymizeTapFrameHint")}
           </AppText>
+          {canPreview && tapsDone && previewSection()}
           {action(
             t("anonymizeSeconds", { seconds }),
             () => onAnonymize(provider, request()),
@@ -453,8 +537,42 @@ const VideoEditPanel: React.FC<Props> = ({
   );
 };
 
+/** A rendered preview, looped slowly over the tap frame. */
+const PreviewClip: React.FC<{ uri: string }> = ({ uri }) => {
+  const { t } = useTranslation();
+  const player = useVideoPlayer(uri, (p) => {
+    capVideoBuffer(p);
+    p.muted = true;
+    p.loop = true;
+    p.playbackRate = PREVIEW_RATE;
+    p.play();
+  });
+  return (
+    <VideoView
+      player={player}
+      style={StyleSheet.absoluteFill}
+      nativeControls={false}
+      contentFit="contain"
+      accessibilityLabel={t("anonymizePreviewReady")}
+      testID="anonymize-preview"
+    />
+  );
+};
+
 const styles = StyleSheet.create((theme) => ({
   panel: { gap: theme.space.md },
+  experimental: {
+    ...getCommonRow(),
+    alignItems: "flex-start",
+    gap: theme.space.sm,
+  },
+  badge: {
+    paddingHorizontal: theme.space.sm,
+    paddingVertical: theme.space.xxs,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  flex: { flex: 1 },
   preview: {
     width: "100%",
     aspectRatio: 16 / 9,

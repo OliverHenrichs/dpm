@@ -7,6 +7,11 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import VideoEditPanel from "@/src/anonymize/components/VideoEditPanel";
+import { AnonymizePreviewer } from "@/src/anonymize/components/useAnonymizePreview";
+import {
+  discardPreview,
+  previewAnonymize,
+} from "@/src/anonymize/previewAnonymize";
 import { useAnonymizeJobs } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import { ALL_PROVIDERS } from "@/src/anonymize/providers/allProviders";
 import { availableProviders } from "@/src/anonymize/providers/registry";
@@ -40,6 +45,11 @@ type Props = {
    * with the rest of its draft and hands it back in [target].
    */
   onTranscriptChange?: (transcript: IVideoTranscript) => void;
+};
+
+const previewer: AnonymizePreviewer = {
+  render: previewAnonymize,
+  discard: discardPreview,
 };
 
 /**
@@ -149,6 +159,7 @@ const AnonymizeModal: React.FC<Props> = ({
                     });
                     onClose();
                   }}
+                  previewer={previewer}
                   onAnonymize={(provider, request) => {
                     maybeTranscribeFirst();
                     start({
