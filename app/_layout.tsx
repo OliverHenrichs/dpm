@@ -7,7 +7,7 @@ import { Platform } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { Drawer } from "expo-router/drawer";
+import { Drawer, getDrawerStatusFromState } from "expo-router/drawer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/src/common/components/ThemeContext";
@@ -100,7 +100,10 @@ function AppDrawer() {
               },
             }}
             drawerContent={(props) => (
-              <DrawerContent navigation={props.navigation} />
+              <DrawerContent
+                navigation={props.navigation}
+                isOpen={getDrawerStatusFromState(props.state) === "open"}
+              />
             )}
           >
             {DRAWER_ROUTES.map((route) => (

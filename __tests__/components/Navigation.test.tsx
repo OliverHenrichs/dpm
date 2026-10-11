@@ -9,6 +9,7 @@ import {
   renderWithProviders,
   screen,
   waitFor,
+  within,
 } from "@/utils/renderWithProviders";
 
 // expo-router's global mock has no navigators; this stands in for Tabs, rendering each screen's
@@ -62,35 +63,68 @@ describe("drawer menu", () => {
   const closeDrawer = jest.fn();
   const menu = () => (
     <SafeAreaProvider initialMetrics={metrics}>
-      <DrawerContent navigation={{ closeDrawer }} />
+      <DrawerContent navigation={{ closeDrawer }} isOpen />
     </SafeAreaProvider>
   );
+  const salsa = createTestPatternList({ id: "salsa", name: "Salsa" });
+  const wcs = createTestPatternList({ id: "wcs", name: "West Coast Swing" });
 
-  it("holds the lists, the open list and Settings", async () => {
-    renderWithProviders(menu(), {
-      lists: [createTestPatternList({ name: "West Coast Swing" })],
-    });
+  beforeEach(() => jest.clearAllMocks());
+
+  it("holds Lists, every list and Settings", async () => {
+    renderWithProviders(menu(), { lists: [salsa, wcs], activeListId: "wcs" });
 
     expect(screen.getByText("Lists")).toBeOnTheScreen();
     expect(screen.getByText("Settings")).toBeOnTheScreen();
-    await waitFor(() =>
-      expect(screen.getByText("West Coast Swing")).toBeOnTheScreen(),
-    );
+    expect(await screen.findByText("Salsa")).toBeOnTheScreen();
+    expect(screen.getByText("West Coast Swing")).toBeOnTheScreen();
     expect(screen.queryByText("Map")).toBeNull();
   });
 
+  it("highlights the open list", async () => {
+    renderWithProviders(menu(), { lists: [salsa, wcs], activeListId: "wcs" });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "West Coast Swing" }),
+      ).toBeSelected(),
+    );
+    expect(screen.getByRole("button", { name: "Salsa" })).not.toBeSelected();
+  });
+
   it("goes back into the open list from its entry", async () => {
-    renderWithProviders(menu(), {
-      lists: [createTestPatternList({ name: "West Coast Swing" })],
-    });
+    renderWithProviders(menu(), { lists: [wcs] });
 
     fireEvent.press(await screen.findByText("West Coast Swing"));
 
     expect(closeDrawer).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith("/patterns");
+    await waitFor(() =>
+      expect(router.navigate).toHaveBeenCalledWith("/patterns"),
+    );
   });
 
-  it("leaves the open list out when there is none", () => {
+  it("switches to another list and opens it", async () => {
+    renderWithProviders(menu(), { lists: [salsa, wcs], activeListId: "wcs" });
+
+    fireEvent.press(await screen.findByText("Salsa"));
+
+    expect(closeDrawer).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(router.navigate).toHaveBeenCalledWith("/patterns"),
+    );
+    expect(screen.getByRole("button", { name: "Salsa" })).toBeSelected();
+  });
+
+  it("scrolls only the lists, so Lists and Settings stay in reach", async () => {
+    renderWithProviders(menu(), { lists: [salsa, wcs] });
+
+    const scroller = screen.getByTestId("drawer-lists");
+    expect(await within(scroller).findByText("Salsa")).toBeOnTheScreen();
+    expect(within(scroller).queryByText("Lists")).toBeNull();
+    expect(within(scroller).queryByText("Settings")).toBeNull();
+  });
+
+  it("shows no lists when there are none", () => {
     renderWithProviders(menu(), {
       activeListId: null,
     });

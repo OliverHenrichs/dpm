@@ -68,9 +68,9 @@ is a drawer entry; either way, add it there and in `app/`.
 
 **State.** Screens read `activeList`, `patterns`, `isLoading` and `hasLists` from
 `useActivePatternList()` (`src/pattern/data/components/ActivePatternListContext.tsx`) and **never
-load storage directly** (Reels' all-lists view is the one reader of other lists). The context
-mutates through `setActiveList`, `updatePatterns`, `updateActiveList(list, patternsOverride?)` and
-`refreshActiveList`; pattern and modifier edits go through `usePatternCrud`, never the context
+load storage directly** (Reels' all-lists view and the drawer's list of lists are the readers of
+other lists). The context mutates through `setActiveList`, `updatePatterns`,
+`updateActiveList(list, patternsOverride?)` and `refreshActiveList`; pattern and modifier edits go through `usePatternCrud`, never the context
 directly.
 
 ## Core data model
