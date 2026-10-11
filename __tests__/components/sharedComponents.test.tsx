@@ -175,6 +175,15 @@ describe("BottomSheet", () => {
   });
 });
 
+/** Flatten a style prop, which may be an array, into one object. */
+const flattenStyle = (style: unknown): Record<string, unknown> =>
+  (Array.isArray(style) ? style.flat(Infinity) : [style])
+    .filter(Boolean)
+    .reduce<Record<string, unknown>>(
+      (merged, part) => ({ ...merged, ...(part as object) }),
+      {},
+    );
+
 describe("VideoCarousel", () => {
   const renderCarousel = (videoRefs: IVideoReference[]) => {
     const view = renderWithProviders(<VideoCarousel videoRefs={videoRefs} />, {
@@ -307,6 +316,37 @@ describe("VideoCarousel", () => {
     expect(screen.UNSAFE_getByType(FlatList).props.snapToInterval).toBe(500);
   });
 
+  it("holds the player's room in an empty frame, when given a label for it", () => {
+    renderWithProviders(
+      <VideoCarousel videoRefs={[]} emptyLabel="No videos for this variant" />,
+      { activeListId: null },
+    );
+
+    expect(screen.getByText("No videos for this variant")).toBeOnTheScreen();
+  });
+
+  it("keeps the row under the player when asked, though it has nothing to show", () => {
+    const render = (reserveFooter: boolean) =>
+      renderWithProviders(
+        <VideoCarousel
+          videoRefs={[urlVideo("https://example.com/a.mp4")]}
+          reserveFooter={reserveFooter}
+        />,
+        { activeListId: null },
+      );
+    const footerCount = () =>
+      screen
+        .UNSAFE_getAllByType(View)
+        .filter((node) => flattenStyle(node.props.style).minHeight === 36)
+        .length;
+
+    render(false);
+    expect(footerCount()).toBe(0);
+    screen.unmount();
+    render(true);
+    expect(footerCount()).toBe(1);
+  });
+
   it("copes with no videos at all", () => {
     renderCarousel([]);
     layout();
@@ -341,15 +381,6 @@ describe("PatternDetails", () => {
       />,
       { activeListId: null },
     );
-
-  /** Flatten a style prop, which may be an array, into one object. */
-  const flattenStyle = (style: unknown): Record<string, unknown> =>
-    (Array.isArray(style) ? style.flat(Infinity) : [style])
-      .filter(Boolean)
-      .reduce<Record<string, unknown>>(
-        (merged, part) => ({ ...merged, ...(part as object) }),
-        {},
-      );
 
   const hasTopRule = () =>
     screen
@@ -507,6 +538,63 @@ describe("PatternDetails", () => {
       fireEvent.press(screen.getByText("slow"));
 
       expect(screen.getByText("1 / 2")).toBeOnTheScreen();
+    });
+
+    it("keeps an empty frame for a variant without videos when another has them", () => {
+      const spin = modifier("with a spin");
+      renderDetails({
+        modifiers: [spin],
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [urlVideo("https://example.com/base.mp4")],
+          modifierRefs: [{ modifierId: spin.id, videoRefs: [] }],
+        }),
+      });
+      expect(screen.queryByText("No videos for this variant")).toBeNull();
+
+      fireEvent.press(screen.getByText("with a spin"));
+
+      expect(screen.getByText("No videos for this variant")).toBeOnTheScreen();
+    });
+
+    it("spends no room on videos when no variant has any", () => {
+      const spin = modifier("with a spin");
+      renderDetails({
+        modifiers: [spin],
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [],
+          modifierRefs: [{ modifierId: spin.id, videoRefs: [] }],
+        }),
+      });
+
+      fireEvent.press(screen.getByText("with a spin"));
+
+      expect(screen.queryByText("No videos for this variant")).toBeNull();
+    });
+
+    it("marks the variants that have videos", () => {
+      const spin = modifier("with a spin");
+      const slow = modifier("slow", { universal: true });
+      renderDetails({
+        modifiers: [spin, slow],
+        selectedPattern: createTestPattern(TYPE.id, {
+          id: 1,
+          videoRefs: [],
+          modifierRefs: [
+            {
+              modifierId: spin.id,
+              videoRefs: [urlVideo("https://example.com/c.mp4")],
+            },
+          ],
+        }),
+      });
+
+      const hint = (label: string) =>
+        screen.getByRole("button", { name: label }).props.accessibilityHint;
+      expect(hint("with a spin")).toBe("Has videos");
+      expect(hint("Base")).toBeUndefined();
+      expect(hint("slow")).toBeUndefined();
     });
 
     it("opens a transcribed video's transcript to read, without the form's actions", () => {

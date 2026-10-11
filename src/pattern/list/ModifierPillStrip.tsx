@@ -13,6 +13,8 @@ export type ModifierPillStripProps = {
   modifiers: IModifier[];
   /** The pattern's currently attached non-universal modifier refs */
   modifierRefs: IPatternModifierRef[];
+  /** The pattern's own videos; with them, the Base pill is marked as having videos. */
+  baseVideoCount: number;
   /** null = "Base" selected */
   selectedModifierId: string | null;
   onSelect: (modifierId: string | null) => void;
@@ -26,6 +28,7 @@ export type ModifierPillStripProps = {
 const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   modifiers,
   modifierRefs,
+  baseVideoCount,
   selectedModifierId,
   onSelect,
   isEditMode = false,
@@ -38,6 +41,20 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   const attachedNonUniversal = modifiers.filter(
     (m) => !m.universal && modifierRefs.some((ref) => ref.modifierId === m.id),
   );
+
+  // A pill whose variant has videos carries a camera, so switching to one without them is no
+  // surprise: the video section shows an empty frame for it.
+  const videoMark = (count: number) =>
+    count > 0
+      ? {
+          trailingIcon: "video-outline" as const,
+          accessibilityHint: t("variantHasVideos"),
+        }
+      : {};
+  const attachedVideoCount = (modifierId: string) =>
+    modifierRefs
+      .filter((ref) => ref.modifierId === modifierId)
+      .reduce((count, ref) => count + ref.videoRefs.length, 0);
 
   const hasAnyAttachedModifier =
     universalModifiers.length > 0 || attachedNonUniversal.length > 0;
@@ -66,6 +83,7 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
           label={t("basePattern")}
           selected={selectedModifierId === null}
           onPress={() => onSelect(null)}
+          {...videoMark(baseVideoCount)}
         />
 
         {/* Non-universal attached modifiers — before the universal ones */}
@@ -76,6 +94,7 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
             badge={positionLabel(mod)}
             selected={selectedModifierId === mod.id}
             onPress={() => onSelect(mod.id)}
+            {...videoMark(attachedVideoCount(mod.id))}
             {...(isEditMode &&
               onDetachModifier && {
                 onRemove: () => onDetachModifier(mod.id),
@@ -105,6 +124,7 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
             icon="all-inclusive"
             selected={selectedModifierId === mod.id}
             onPress={() => onSelect(mod.id)}
+            {...videoMark(mod.videoRefs.length)}
           />
         ))}
       </ScrollView>

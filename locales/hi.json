@@ -195,6 +195,8 @@
   "modifierUniversalBadge": "सार्वभौमिक",
   "saveModifier": "सहेजें",
   "variant": "संस्करण",
+  "variantNoVideos": "इस संस्करण के लिए कोई वीडियो नहीं",
+  "variantHasVideos": "वीडियो हैं",
   "appliedToPatterns": "इन पर लागू",
   "notAppliedToAnyPattern": "अभी किसी पैटर्न पर लागू नहीं है",
   "prerequisiteWouldCycle": "धुँधले पैटर्न पूर्वापेक्षा का चक्र बना देंगे।",

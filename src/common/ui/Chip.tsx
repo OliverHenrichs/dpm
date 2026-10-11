@@ -25,6 +25,11 @@ export interface ChipProps {
   /** A small uppercase tag before the label — a modifier's position, say. */
   badge?: string;
   /**
+   * An icon after the label marking something about the option (a variant that has videos).
+   * Not a state: say what it means in `accessibilityHint`.
+   */
+  trailingIcon?: IconName;
+  /**
    * Adds a remove button inside the chip, after the label. `removeLabel` names
    * it for a screen reader, and should say what it removes.
    */
@@ -49,6 +54,7 @@ const Chip: React.FC<ChipProps> = ({
   icon,
   swatch,
   badge,
+  trailingIcon,
   onRemove,
   removeLabel,
   accessibilityLabel,
@@ -85,6 +91,9 @@ const Chip: React.FC<ChipProps> = ({
       {glyph ? <Icon name={glyph} size={theme.iconSize.sm} color={fg} /> : null}
       {badge ? <Text style={styles.badge(selected)}>{badge}</Text> : null}
       <Text style={styles.label(selected)}>{label}</Text>
+      {trailingIcon ? (
+        <Icon name={trailingIcon} size={theme.iconSize.sm} color={fg} />
+      ) : null}
       {onRemove ? (
         <IconButton
           icon="close"

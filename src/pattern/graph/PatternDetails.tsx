@@ -74,6 +74,24 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
     return ref?.videoRefs ?? [];
   })();
 
+  // When any variant has videos, the video slot keeps its height for one without: the content
+  // below no longer jumps up and back as the variant changes. A pattern with no videos at all
+  // spends no room on it.
+  const universalModifiers = modifiers.filter((m) => m.universal);
+  const attachedRefs = (selectedPattern.modifierRefs ?? []).filter((ref) =>
+    modifiers.some((m) => !m.universal && m.id === ref.modifierId),
+  );
+  const videoSets = [
+    selectedPattern.videoRefs ?? [],
+    ...universalModifiers.map((m) => m.videoRefs ?? []),
+    ...attachedRefs.map((ref) => ref.videoRefs),
+  ];
+  const anyVariantHasVideos = videoSets.some((set) => set.length > 0);
+  // Likewise the row under the player, when any variant fills it (a page count, a transcript).
+  const anyVariantHasFooter = videoSets.some(
+    (set) => set.length > 1 || set.some((video) => !!video.transcript),
+  );
+
   return (
     <View
       style={[styles.detailsContainer, !showTopSeparator && styles.unseparated]}
@@ -87,17 +105,22 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
       <ModifierPillStrip
         modifiers={modifiers}
         modifierRefs={selectedPattern.modifierRefs ?? []}
+        baseVideoCount={selectedPattern.videoRefs?.length ?? 0}
         selectedModifierId={selectedModifierId}
         onSelect={setSelectedModifierId}
         isEditMode={false}
       />
-      {activeVideoRefs.length > 0 && (
+      {/* Mounted for every variant once any has videos: remounting it re-measured its width
+          and flickered on the way back from a variant without them. */}
+      {anyVariantHasVideos && (
         <VideoCarousel
           videoRefs={activeVideoRefs}
           generatedLabel={t("videoBadgeSilhouette")}
           onOpenTranscript={setTranscriptOf}
           transcriptLabel={t("transcriptShow")}
           paused={transcriptOf !== null}
+          emptyLabel={t("variantNoVideos")}
+          reserveFooter={anyVariantHasFooter}
         />
       )}
       <TranscriptSheet

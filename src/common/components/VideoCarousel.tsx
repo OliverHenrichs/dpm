@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Text, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
-import { Button } from "@/src/common/ui";
-import { VideoItem } from "@/src/common/components/VideoItem";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { Button, Icon } from "@/src/common/ui";
+import { VIDEO_HEIGHT, VideoItem } from "@/src/common/components/VideoItem";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 
 // FlatList requires a referentially stable viewability config, so it lives
@@ -21,6 +21,16 @@ type VideoCarouselProps = {
   transcriptLabel?: string;
   /** Pauses the videos, while the transcript's own player is up. */
   paused?: boolean;
+  /**
+   * With no videos, an empty frame of a player's height saying this, in place of the player:
+   * switching between sets of videos (a pattern's variants) then moves nothing below it.
+   */
+  emptyLabel?: string;
+  /**
+   * Keeps the row under the player (page count, transcript button) at its height even when
+   * it has nothing to show, for the same reason.
+   */
+  reserveFooter?: boolean;
 };
 
 const VideoCarousel: React.FC<VideoCarouselProps> = ({
@@ -29,7 +39,10 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
   onOpenTranscript,
   transcriptLabel,
   paused,
+  emptyLabel,
+  reserveFooter = false,
 }) => {
+  const { theme } = useUnistyles();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -52,7 +65,16 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
         setContainerWidth(width);
       }}
     >
-      {containerWidth > 0 && (
+      {videoRefs.length === 0 && emptyLabel ? (
+        <View style={styles.empty}>
+          <Icon
+            name="video-off-outline"
+            size={theme.iconSize.lg}
+            color={theme.colors.textMuted}
+          />
+          <Text style={styles.emptyText}>{emptyLabel}</Text>
+        </View>
+      ) : containerWidth > 0 ? (
         <FlatList
           data={videoRefs}
           renderItem={({ item }) => (
@@ -79,10 +101,18 @@ const VideoCarousel: React.FC<VideoCarouselProps> = ({
           viewabilityConfig={VIEWABILITY_CONFIG}
           extraData={paused}
         />
+      ) : (
+        // Until the width is measured, the player's room is held, so the page does not jump
+        // when it appears.
+        <View style={styles.unmeasured} />
       )}
-      {(videoRefs.length > 1 || transcribed) && (
+      {(videoRefs.length > 1 || transcribed || reserveFooter) && (
         <View
-          style={[styles.paginationContainer, transcribed && styles.withAction]}
+          style={[
+            styles.paginationContainer,
+            transcribed && styles.withAction,
+            reserveFooter && styles.reservedFooter,
+          ]}
         >
           {transcribed && (
             <Button
@@ -112,6 +142,25 @@ const styles = StyleSheet.create((theme) => {
     paginationContainer: {
       alignItems: "center",
     },
+    /** The height of the transcript button, which is the row's tallest content. */
+    reservedFooter: { minHeight: 36, justifyContent: "center" },
+    empty: {
+      height: VIDEO_HEIGHT,
+      marginBottom: theme.space.sm,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.space.xs,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    emptyText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textMuted,
+    },
+    unmeasured: { height: VIDEO_HEIGHT, marginBottom: theme.space.sm },
     withAction: {
       flexDirection: "row",
       justifyContent: "space-between",
