@@ -4,12 +4,7 @@ import { IconButton } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import {
-  getCommonAddButtonContainer,
-  getCommonBorder,
-  getCommonLabel,
-  getCommonRow,
-} from "@/src/common/utils/CommonStyles";
+import { getCommonBorder, getCommonRow } from "@/src/common/utils/CommonStyles";
 import TagPickerBottomSheet from "./TagPickerBottomSheet";
 import PlusButton from "@/src/common/components/PlusButton";
 
@@ -58,12 +53,10 @@ const PatternTags: React.FC<PatternTagsProps> = ({
           </View>
         ))}
       </View>
-      <View style={styles.addButtonContainer}>
-        <PlusButton
-          onPress={() => setIsBottomSheetVisible(true)}
-          accessibilityLabel={t("addTag")}
-        />
-      </View>
+      <PlusButton
+        onPress={() => setIsBottomSheetVisible(true)}
+        accessibilityLabel={t("addTag")}
+      />
 
       <TagPickerBottomSheet
         visible={isBottomSheetVisible}
@@ -78,17 +71,20 @@ const PatternTags: React.FC<PatternTagsProps> = ({
 
 const styles = StyleSheet.create((theme) => {
   return {
+    // The tags and the add button side by side, centred, so the box fits the button when
+    // there are no tags and keeps even space above and below when there are.
     tagsContainer: {
       ...getCommonBorder(theme),
+      ...getCommonRow(),
+      gap: theme.space.sm,
       padding: theme.space.sm,
       backgroundColor: theme.colors.surfaceVariant,
-      position: "relative",
     },
     tagsRow: {
       ...getCommonRow(),
+      flex: 1,
       flexWrap: "wrap",
       gap: theme.space.xs,
-      marginTop: theme.space.sm,
     },
     tagItem: {
       ...getCommonBorder(theme),
@@ -100,8 +96,6 @@ const styles = StyleSheet.create((theme) => {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
     },
-    label: { ...getCommonLabel(theme) },
-    addButtonContainer: getCommonAddButtonContainer(),
   };
 });
 
