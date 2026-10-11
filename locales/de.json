@@ -467,5 +467,14 @@
   "videoReviewHeading": "Neues Video prüfen",
   "videoReviewShortened": "Gekürzt",
   "videoReviewNoSound": "Kein Ton",
-  "videoReviewSoundKept": "Mit Ton"
+  "videoReviewSoundKept": "Mit Ton",
+  "whatsNew": "Neuigkeiten",
+  "whatsNewInVersion": "Neu in {{version}}",
+  "changelog": "Änderungsprotokoll",
+  "changelogVersion": "Version {{version}}",
+  "changelogShowAll": "Alle Änderungen",
+  "whatsNewGotIt": "Verstanden",
+  "whatsNewTurnOffHint": "Du kannst das in den Einstellungen abschalten.",
+  "whatsNewHintSetting": "Neuigkeiten nach einem Update zeigen",
+  "whatsNewHintSettingDescription": "Ein kurzer Hinweis, was sich geändert hat, wenn du eine neue Version zum ersten Mal öffnest."
 }

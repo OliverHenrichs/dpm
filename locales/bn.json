@@ -467,5 +467,14 @@
   "videoReviewHeading": "নতুন ভিডিও যাচাই করুন",
   "videoReviewShortened": "ছোট করা হয়েছে",
   "videoReviewNoSound": "শব্দ নেই",
-  "videoReviewSoundKept": "শব্দ আছে"
+  "videoReviewSoundKept": "শব্দ আছে",
+  "whatsNew": "নতুন কী",
+  "whatsNewInVersion": "{{version}}-এ নতুন কী",
+  "changelog": "পরিবর্তনের তালিকা",
+  "changelogVersion": "সংস্করণ {{version}}",
+  "changelogShowAll": "সব পরিবর্তন",
+  "whatsNewGotIt": "বুঝেছি",
+  "whatsNewTurnOffHint": "সেটিংসে এটি বন্ধ করতে পারেন।",
+  "whatsNewHintSetting": "আপডেটের পরে নতুন কী দেখান",
+  "whatsNewHintSettingDescription": "নতুন সংস্করণ প্রথমবার খুললে কী বদলেছে তার ছোট বার্তা।"
 }

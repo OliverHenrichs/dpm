@@ -467,5 +467,14 @@
   "videoReviewHeading": "नया वीडियो जाँचें",
   "videoReviewShortened": "छोटा किया गया",
   "videoReviewNoSound": "आवाज़ नहीं",
-  "videoReviewSoundKept": "आवाज़ बनी रही"
+  "videoReviewSoundKept": "आवाज़ बनी रही",
+  "whatsNew": "नया क्या है",
+  "whatsNewInVersion": "{{version}} में नया क्या है",
+  "changelog": "बदलावों की सूची",
+  "changelogVersion": "संस्करण {{version}}",
+  "changelogShowAll": "सभी बदलाव",
+  "whatsNewGotIt": "समझ गया",
+  "whatsNewTurnOffHint": "आप इसे सेटिंग्स में बंद कर सकते हैं।",
+  "whatsNewHintSetting": "अपडेट के बाद नया क्या है दिखाएँ",
+  "whatsNewHintSettingDescription": "नया संस्करण पहली बार खोलने पर, क्या बदला इसकी छोटी सूचना।"
 }

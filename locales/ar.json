@@ -467,5 +467,14 @@
   "videoReviewHeading": "تحقق من الفيديو الجديد",
   "videoReviewShortened": "مُقصَّر",
   "videoReviewNoSound": "بلا صوت",
-  "videoReviewSoundKept": "مع الصوت"
+  "videoReviewSoundKept": "مع الصوت",
+  "whatsNew": "ما الجديد",
+  "whatsNewInVersion": "ما الجديد في {{version}}",
+  "changelog": "سجل التغييرات",
+  "changelogVersion": "الإصدار {{version}}",
+  "changelogShowAll": "كل التغييرات",
+  "whatsNewGotIt": "حسنًا",
+  "whatsNewTurnOffHint": "يمكنك إيقاف هذا من الإعدادات.",
+  "whatsNewHintSetting": "عرض ما الجديد بعد التحديث",
+  "whatsNewHintSettingDescription": "ملاحظة قصيرة عمّا تغيّر عند فتح إصدار جديد لأول مرة."
 }

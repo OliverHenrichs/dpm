@@ -15,6 +15,7 @@ Unqualified paths are relative to `src/pattern/data/`.
 | `@transcriptCorrections_{listId}`  | transcript fixes learned from the user's edits | `src/transcribe/data/`                       |
 | `@language`, `@theme`, `@appStyle` | settings                                       | `src/settings/data/`                         |
 | `@graphDragHintDismissed`          | the drag hint was dismissed                    | `src/pattern/graph/data/GraphHintStorage.ts` |
+| `@changelogSeenVersion`, `@whatsNewHintEnabled` | the newest changelog version seen, the hint's switch | `src/changelog/ChangelogStorage.ts` |
 
 Settings live under their own keys, outside any list, so they survive deleting every list.
 

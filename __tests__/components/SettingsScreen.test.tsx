@@ -13,7 +13,11 @@ import {
   screen,
   waitFor,
 } from "@/utils/renderWithProviders";
-import { peekAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
+import {
+  peekAsyncStorage,
+  seedAsyncStorage,
+} from "@/__mocks__/@react-native-async-storage/async-storage";
+import { CHANGELOG } from "@/src/changelog/changelog";
 import {
   getAppIconName,
   setAlternateAppIcon,
@@ -373,6 +377,52 @@ describe("SettingsScreen", () => {
           'Liste "WCS": Zwei Figuren haben dieselbe ID 7.',
         ),
       ).toBeOnTheScreen();
+    });
+  });
+
+  describe("what's new", () => {
+    it("opens the changelog", async () => {
+      await renderSettings();
+
+      fireEvent.press(screen.getByText("Changelog"));
+
+      expect(
+        await screen.findByText(CHANGELOG[0].notes.en[0], {
+          includeHiddenElements: true,
+        }),
+      ).toBeOnTheScreen();
+    });
+
+    it("turns the hint off and back on", async () => {
+      await renderSettings();
+      const toggle = screen.getByRole("switch", {
+        name: "Show what's new after an update",
+      });
+      expect(toggle).toBeChecked();
+
+      fireEvent.press(toggle);
+      expect(toggle).not.toBeChecked();
+      await waitFor(() =>
+        expect(peekAsyncStorage()["@whatsNewHintEnabled"]).toBe("false"),
+      );
+
+      fireEvent.press(toggle);
+      await waitFor(() =>
+        expect(peekAsyncStorage()["@whatsNewHintEnabled"]).toBe("true"),
+      );
+    });
+
+    it("shows the hint as off once turned off", async () => {
+      seedAsyncStorage({ "@whatsNewHintEnabled": "false" });
+      await renderSettings();
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole("switch", {
+            name: "Show what's new after an update",
+          }),
+        ).not.toBeChecked(),
+      );
     });
   });
 });

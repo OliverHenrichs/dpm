@@ -467,5 +467,14 @@
   "videoReviewHeading": "Check the new video",
   "videoReviewShortened": "Shortened",
   "videoReviewNoSound": "No sound",
-  "videoReviewSoundKept": "Sound kept"
+  "videoReviewSoundKept": "Sound kept",
+  "whatsNew": "What's new",
+  "whatsNewInVersion": "What's new in {{version}}",
+  "changelog": "Changelog",
+  "changelogVersion": "Version {{version}}",
+  "changelogShowAll": "All changes",
+  "whatsNewGotIt": "Got it",
+  "whatsNewTurnOffHint": "You can turn this off in Settings.",
+  "whatsNewHintSetting": "Show what's new after an update",
+  "whatsNewHintSettingDescription": "A short note on what changed, the first time you open a new version."
 }

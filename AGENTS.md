@@ -23,6 +23,7 @@ in, so read the one listed below before you add code there.
 | `src/transcribe/AGENTS.md` | Speech transcription (Whisper), the model store |
 | `src/suggest/AGENTS.md` | Name and description suggestions (on-device LLM) |
 | `modules/AGENTS.md` | The local native Expo modules and their gitignored model weights |
+| `src/changelog/AGENTS.md` | The bundled changelog, the what's-new hint after an update, releasing a version's notes |
 | `src/settings/AGENTS.md` | Settings screen, i18n machinery, device locale, language/style/icon persistence |
 | `src/firebase/AGENTS.md` | Firestore sharing, ownership, security rules, configuration |
 | `__tests__/AGENTS.md` | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite |
