@@ -26,7 +26,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Sorted by date added, patterns sit under a heading for each day.",
         "Downloading an on-device model carries on when you switch to another app.",
         "The rhythm field no longer offers whole rhythms before you start; the step-by-step suggestions stay.",
-        'A modifier in the middle of a pattern is now labelled "Within".',
         "New: a short note like this one after each update, and the full list of changes in Settings, where you can also turn the note off.",
       ],
       zh: [
@@ -34,7 +33,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "按添加日期排序时，舞步按天分组，每天有一个标题。",
         "切换到其他应用时，本机模型的下载会继续进行。",
         "开始输入之前，节奏字段不再提供完整的节奏；逐步建议仍然保留。",
-        "位于舞步中间的变化现在标记为“内部”。",
         "更新后会显示这条说明，完整的更新记录在设置中，也可以在那里关闭这条说明。",
       ],
       hi: [
@@ -42,7 +40,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "जोड़ने की तारीख़ से क्रमबद्ध करने पर पैटर्न हर दिन के शीर्षक के नीचे दिखते हैं।",
         "किसी दूसरे ऐप पर जाने पर भी डिवाइस पर मॉडल की डाउनलोडिंग जारी रहती है।",
         "लय वाला फ़ील्ड अब शुरू करने से पहले पूरी लय नहीं सुझाता; चरण-दर-चरण सुझाव बने रहते हैं।",
-        'पैटर्न के बीच में आने वाले मॉडिफ़ायर को अब "भीतर" कहा जाता है।',
         "अपडेट के बाद यह सूचना, और सेटिंग्स में बदलावों की पूरी सूची, जहाँ आप यह सूचना बंद भी कर सकते हैं।",
       ],
       es: [
@@ -50,7 +47,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Al ordenar por fecha de creación, las figuras aparecen bajo un encabezado por día.",
         "La descarga de un modelo en el dispositivo continúa cuando cambias a otra app.",
         "El campo de ritmo ya no ofrece ritmos completos antes de empezar; las sugerencias paso a paso se mantienen.",
-        'Un modificador en medio de una figura se llama ahora "Dentro".',
         "Esta nota después de una actualización y la lista completa de cambios en Ajustes, donde también puedes desactivar la nota.",
       ],
       fr: [
@@ -58,7 +54,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Triées par date d'ajout, les figures se rangent sous un titre par jour.",
         "Le téléchargement d'un modèle sur l'appareil continue quand vous passez à une autre app.",
         "Le champ rythme ne propose plus de rythmes complets avant que vous commenciez ; les suggestions pas à pas restent.",
-        "Un modificateur au milieu d'une figure s'appelle désormais « À l'intérieur ».",
         "Cette note après une mise à jour, et la liste complète des changements dans Réglages, où vous pouvez aussi désactiver la note.",
       ],
       ar: [
@@ -66,7 +61,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "عند الترتيب حسب تاريخ الإضافة، تظهر الخطوات تحت عنوان لكل يوم.",
         "يستمر تنزيل نموذج على الجهاز عند الانتقال إلى تطبيق آخر.",
         "لم يعد حقل الإيقاع يقترح إيقاعات كاملة قبل أن تبدأ؛ وتبقى الاقتراحات خطوة بخطوة.",
-        "أصبح المُعدِّل الذي يقع في منتصف الخطوة يُسمّى الآن «ضمن».",
         "هذه الملاحظة بعد كل تحديث، والقائمة الكاملة للتغييرات في الإعدادات، حيث يمكنك أيضًا إيقاف الملاحظة.",
       ],
       bn: [
@@ -74,7 +68,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "যোগ করার তারিখ অনুযায়ী সাজালে প্যাটার্নগুলো প্রতিটি দিনের শিরোনামের নিচে থাকে।",
         "অন্য অ্যাপে গেলেও ডিভাইসে থাকা মডেলের ডাউনলোড চলতে থাকে।",
         "ছন্দের ঘর এখন শুরু করার আগে পুরো ছন্দ প্রস্তাব করে না; ধাপে ধাপে প্রস্তাবগুলো থাকছে।",
-        'প্যাটার্নের মাঝখানে থাকা মডিফায়ারকে এখন "ভেতরে" বলা হয়।',
         "আপডেটের পরে এই বার্তা, আর সেটিংসে পরিবর্তনের পুরো তালিকা, যেখানে বার্তাটি বন্ধও করা যায়।",
       ],
       pt: [
@@ -82,7 +75,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Ao ordenar por data de inclusão, os passos aparecem sob um título para cada dia.",
         "O download de um modelo no dispositivo continua quando você muda para outro app.",
         "O campo de ritmo não oferece mais ritmos completos antes de você começar; as sugestões passo a passo continuam.",
-        'Um modificador no meio de um passo agora se chama "Dentro".',
         "Esta nota depois de uma atualização e a lista completa de mudanças nas Configurações, onde você também pode desativar a nota.",
       ],
       de: [
@@ -90,7 +82,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Nach Hinzufügedatum sortiert, stehen die Figuren unter einer Überschrift pro Tag.",
         "Das Herunterladen eines Modells auf das Gerät läuft weiter, wenn du zu einer anderen App wechselst.",
         "Das Rhythmusfeld bietet keine ganzen Rhythmen mehr an, bevor du anfängst; die Vorschläge Schritt für Schritt bleiben.",
-        "Ein Modifikator in der Mitte einer Figur heißt jetzt „Innerhalb“.",
         "Neu: ein kurzer Hinweis wie dieser nach jedem Update und die vollständige Liste der Änderungen in den Einstellungen, wo du den Hinweis auch abschalten kannst.",
       ],
     },
