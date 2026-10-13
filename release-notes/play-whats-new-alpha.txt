@@ -1,0 +1,20 @@
+<en-US>
+1.0.1
+• Videos sit near the top of the pattern editor; the other fields fold away.
+• Sorted by date added, patterns are grouped by day.
+• The side menu lists all your lists.
+• Switching variants keeps the video player in place.
+• Model downloads continue in the background.
+• Anonymize is marked experimental, with a slowed-down preview first.
+• A what's-new note after each update, and the full changelog in Settings.
+</en-US>
+<de-DE>
+1.0.1
+• Videos stehen weit oben im Figuren-Editor; die anderen Felder sind eingeklappt.
+• Nach Hinzufügedatum sortiert, sind die Figuren nach Tagen gruppiert.
+• Das Seitenmenü zeigt alle deine Listen.
+• Beim Wechsel der Variante bleibt der Videoplayer an seinem Platz.
+• Modell-Downloads laufen im Hintergrund weiter.
+• Anonymisieren ist experimentell, mit verlangsamter Vorschau vorab.
+• Ein Hinweis auf Neues nach jedem Update, alle Änderungen in den Einstellungen.
+</de-DE>

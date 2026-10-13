@@ -20,6 +20,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.0.1",
+    date: "2026-10-12",
     notes: {
       en: [
         "Videos now sit near the top of the pattern editor. Rhythm, description, prerequisites and tags fold away until you need them.",
