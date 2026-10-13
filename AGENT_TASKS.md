@@ -1501,6 +1501,18 @@ On clip 1 the follower's arm to the joined hands now shows over the leader. At t
 hand is on his shoulder, neither is visible in the original either, so nothing is drawn there,
 which is correct.
 
+**Steadier skeleton (2026-10-13).** The skeleton shook and blinked (Oliver's report). Causes
+read from the code, not measured on a device: the crop followed the mask's bounds every frame,
+so one mask cell of jitter moved and rescaled the crop and every joint with it, and likely upset
+MediaPipe's own VIDEO-mode tracking between frames; the drawn joints were the raw model output
+(only the ±2-frame draw average, which at 15 tracked fps is about ±1 pose); a visibility
+hovering at 0.5 switched bones on and off; and a single missed pose dropped the whole skeleton.
+Now (`PoseSkeletons.kt`, `JointSmoother.kt`): a crop is kept while the dancer fits in it with
+10% room (fresh crops get 35%, and shrink once 1.6× too large); joints go through a One Euro
+filter (min cutoff 1.5 Hz, beta 40; on synthetic joints it halved the shake of a still joint and
+kept a swinging arm within ~3 px); visibility has hysteresis (on at 0.55, off under 0.35); and a
+pose missed for up to 2 tracked frames is carried along with the mask's centre.
+
 **Speed on a Pixel 10a** (ms per frame, clip 1):
 
 | Stage | Before | Loops fixed | + worker thread | + 15 fps |
