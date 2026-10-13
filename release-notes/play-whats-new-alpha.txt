@@ -1,20 +1,20 @@
 <en-US>
-1.0.1
-• Videos sit near the top of the pattern editor; the other fields fold away.
-• Sorted by date added, patterns are grouped by day.
-• The side menu lists all your lists.
-• Switching variants keeps the video player in place.
-• Model downloads continue in the background.
-• Anonymize is marked experimental, with a slowed-down preview first.
-• A what's-new note after each update, and the full changelog in Settings.
+1.1.0
+• Anonymize can cover only the faces, as an alternative to silhouettes.
+• The dancers you tap to anonymize are outlined in their colour.
+• Brazilian Zouk, with a template of basic patterns.
+• The West Coast Swing template shows what builds on what; try the example list.
+• Tags are picked like prerequisites, with short searches like "sgpsh".
+• Text fields stay above the keyboard.
+• Save waits until the pattern has a name.
 </en-US>
 <de-DE>
-1.0.1
-• Videos stehen weit oben im Figuren-Editor; die anderen Felder sind eingeklappt.
-• Nach Hinzufügedatum sortiert, sind die Figuren nach Tagen gruppiert.
-• Das Seitenmenü zeigt alle deine Listen.
-• Beim Wechsel der Variante bleibt der Videoplayer an seinem Platz.
-• Modell-Downloads laufen im Hintergrund weiter.
-• Anonymisieren ist experimentell, mit verlangsamter Vorschau vorab.
-• Ein Hinweis auf Neues nach jedem Update, alle Änderungen in den Einstellungen.
+1.1.0
+• Anonymisieren kann statt Silhouetten nur die Gesichter verdecken.
+• Die zum Anonymisieren angetippten Tanzenden sind in ihrer Farbe umrandet.
+• Brazilian Zouk, mit einer Vorlage der Grundfiguren.
+• Die West-Coast-Swing-Vorlage zeigt, was worauf aufbaut; probier die Beispielliste.
+• Tags werden wie Voraussetzungen gewählt, mit kurzen Suchen wie „sgpsh“.
+• Textfelder bleiben über der Tastatur.
+• Speichern geht erst, wenn die Figur einen Namen hat.
 </de-DE>
