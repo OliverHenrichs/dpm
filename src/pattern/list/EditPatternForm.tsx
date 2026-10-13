@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Image, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, Text, TextInput, View } from "react-native";
 import { Button, Chip, ListRow, Tappable } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
@@ -19,6 +19,7 @@ import * as ImagePicker from "expo-image-picker";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
 import PatternVideos from "./PatternVideos";
 import PatternTags from "./PatternTags";
+import PatternPrerequisites from "./PatternPrerequisites";
 import FormSection from "./FormSection";
 import AddVideoModal from "./AddVideoModal";
 import ModifierPillStrip from "./ModifierPillStrip";
@@ -66,6 +67,7 @@ import {
   getCommonPrereqContainer,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
+import { RevealTextInput } from "@/src/common/components/reveal";
 
 type EditPatternFormProps = {
   patterns: IPattern[];
@@ -117,7 +119,6 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // then its counts follow it; until then the field says what is wrong.
   const [rhythmDraft, setRhythmDraft] = useState(existing?.rhythm ?? "");
   const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [prereqFilter, setPrereqFilter] = useState<string>("");
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
     null,
@@ -481,9 +482,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
   const lastStep = lastRhythmStep(rhythmDraft);
   // The chosen prerequisites by name, for the folded section's one line.
-  const prerequisiteSummary = patterns
-    .filter((p) => newPattern.prerequisites.includes(p.id))
-    .map((p) => p.name)
+  const prerequisiteSummary = newPattern.prerequisites
+    .map((id) => patterns.find((p) => p.id === id)?.name)
+    .filter(Boolean)
     .join(", ");
 
   return (
@@ -494,7 +495,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <View style={styles.inputRow}>
         <View style={styles.input}>
           <Text style={styles.label}>{t("patternName")}</Text>
-          <TextInput
+          <RevealTextInput
             ref={nameInputRef}
             placeholder={t("patternName")}
             value={newPattern.name}
@@ -507,7 +508,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         </View>
         <View style={styles.input}>
           <Text style={styles.label}>{t("counts")}</Text>
-          <TextInput
+          <RevealTextInput
             placeholder={t("counts")}
             value={newPattern.counts.toString()}
             onChangeText={(text) => changeCounts(parseInt(text) || 0)}
@@ -639,7 +640,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         initiallyOpen={!!existing?.rhythm}
       >
         <View style={styles.rhythmBlock}>
-          <TextInput
+          <RevealTextInput
             placeholder={t("rhythmPlaceholder")}
             value={rhythmDraft}
             onChangeText={changeRhythm}
@@ -684,7 +685,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         summary={newPattern.description.trim() || t("formSectionEmpty")}
         initiallyOpen={!!existing?.description.trim()}
       >
-        <TextInput
+        <RevealTextInput
           placeholder={t("description")}
           value={newPattern.description}
           onChangeText={(text) =>
@@ -700,59 +701,15 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         summary={prerequisiteSummary || t("formSectionEmpty")}
         initiallyOpen={!!existing?.prerequisites.length}
       >
-        <View style={styles.prereqContainer}>
-          <TextInput
-            placeholder={t("searchByName")}
-            value={prereqFilter}
-            onChangeText={setPrereqFilter}
-            style={styles.filterInput}
-            placeholderTextColor={theme.colors.textMuted}
-          />
-          <ScrollView horizontal>
-            {patterns
-              .filter((p) =>
-                prereqFilter
-                  ? p.name.toLowerCase().includes(prereqFilter.toLowerCase())
-                  : true,
-              )
-              .map((p) => {
-                const isSelected = newPattern.prerequisites.includes(p.id);
-                // Picking something that already depends on this pattern — or
-                // the pattern itself — would close a prerequisite cycle, and a
-                // cycle has no valid learning order.
-                const wouldCycle = ineligiblePrerequisiteIds.has(p.id);
-                return (
-                  <Chip
-                    key={p.id}
-                    label={p.name}
-                    selected={isSelected}
-                    disabled={wouldCycle}
-                    accessibilityHint={
-                      wouldCycle ? t("prerequisiteWouldCycle") : undefined
-                    }
-                    onPress={() => {
-                      if (isSelected) {
-                        setNewPattern({
-                          ...newPattern,
-                          prerequisites: newPattern.prerequisites.filter(
-                            (id: number) => id !== p.id,
-                          ),
-                        });
-                      } else {
-                        setNewPattern({
-                          ...newPattern,
-                          prerequisites: [...newPattern.prerequisites, p.id],
-                        });
-                      }
-                    }}
-                  />
-                );
-              })}
-          </ScrollView>
-          {ineligiblePrerequisiteIds.size > 0 && (
-            <Text style={styles.prereqHint}>{t("prerequisiteWouldCycle")}</Text>
-          )}
-        </View>
+        <PatternPrerequisites
+          patterns={patterns}
+          chosen={newPattern.prerequisites}
+          setChosen={(prerequisites) =>
+            setNewPattern({ ...newPattern, prerequisites })
+          }
+          ineligible={ineligiblePrerequisiteIds}
+          editingId={existing?.id}
+        />
       </FormSection>
       <FormSection
         title={t("tags")}
@@ -763,6 +720,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           tags={newPattern.tags}
           setTags={(tags) => setNewPattern({ ...newPattern, tags })}
           allPatterns={patterns}
+          editingId={existing?.id}
         />
       </FormSection>
       <VideoReviewModal
@@ -943,14 +901,6 @@ const styles = StyleSheet.create((theme) => {
       marginTop: theme.space.xs,
     },
     label: { ...getCommonLabel(theme) },
-    prereqContainer: getCommonPrereqContainer(theme),
-    filterInput: { ...baseInput, height: 40, marginBottom: theme.space.sm },
-    prereqHint: {
-      ...theme.typography.caption,
-      color: theme.colors.textMuted,
-      fontStyle: "italic",
-      marginTop: theme.space.sm,
-    },
     nameHint: {
       ...theme.typography.caption,
       color: theme.colors.danger,

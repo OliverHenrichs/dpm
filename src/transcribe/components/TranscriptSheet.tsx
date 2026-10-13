@@ -31,6 +31,7 @@ import {
   MANUAL_SCROLL_PAUSE_MS,
 } from "@/src/transcribe/followScroll";
 import TranscriptLineEditor from "@/src/transcribe/components/TranscriptLineEditor";
+import RevealScrollView from "@/src/common/components/RevealScrollView";
 
 export type TranscriptTarget = {
   /** The list the video is in; needed only to suggest, so a read-only view may leave it out. */
@@ -254,7 +255,7 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
           {t("transcriptCopyHint")}
         </AppText>
       )}
-      <ScrollView
+      <RevealScrollView
         ref={scrollRef}
         style={styles.lines}
         contentContainerStyle={styles.linesContent}
@@ -339,7 +340,7 @@ const TranscriptContent: React.FC<Props & { target: TranscriptTarget }> = ({
             </View>
           );
         })}
-      </ScrollView>
+      </RevealScrollView>
 
       {onDescriptionChange && segments.length > 0 && (
         <Button

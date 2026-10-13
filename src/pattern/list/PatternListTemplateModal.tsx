@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, Chip, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -35,6 +28,8 @@ import {
   PATTERN_TYPE_COLORS,
   PatternType,
 } from "@/src/pattern/types/PatternType";
+import { RevealTextInput } from "@/src/common/components/reveal";
+import RevealScrollView from "@/src/common/components/RevealScrollView";
 
 interface PatternListTemplateModalProps {
   visible: boolean;
@@ -365,7 +360,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
 
   const renderConfigureStep = () => (
     <Pressable style={styles.step} onPress={() => setColorPopoverId(null)}>
-      <ScrollView
+      <RevealScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -374,7 +369,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
 
         {/* ── Name ──────────────────────────────────────────────────────── */}
         <Text style={styles.label}>{t("listName")}</Text>
-        <TextInput
+        <RevealTextInput
           style={styles.input}
           value={draftName}
           onChangeText={setDraftName}
@@ -432,7 +427,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                 accessibilityState={{ expanded: isPickingColor }}
               />
 
-              <TextInput
+              <RevealTextInput
                 style={[
                   styles.typeSlugInput,
                   slugErrors[dt.id] ? styles.typeSlugInputError : undefined,
@@ -528,7 +523,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
             style={styles.footerButton}
           />
         </View>
-      </ScrollView>
+      </RevealScrollView>
     </Pressable>
   );
   return step === "pick" ? renderPickStep() : renderConfigureStep();

@@ -5,7 +5,6 @@ import PatternFilterBottomSheet, {
 import SortBottomSheet, {
   SortConfig,
 } from "@/src/pattern/list/SortBottomSheet";
-import TagPickerBottomSheet from "@/src/pattern/list/TagPickerBottomSheet";
 import PatternTags from "@/src/pattern/list/PatternTags";
 import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -269,140 +268,6 @@ describe("SortBottomSheet", () => {
   });
 });
 
-describe("TagPickerBottomSheet", () => {
-  function renderPicker(
-    selectedTags: string[] = [],
-    allPatterns: IPattern[] = [],
-  ) {
-    const onAddTag = jest.fn<void, [string]>();
-    const onClose = jest.fn();
-    renderWithProviders(
-      <TagPickerBottomSheet
-        visible
-        onClose={onClose}
-        onAddTag={onAddTag}
-        selectedTags={selectedTags}
-        allPatterns={allPatterns}
-      />,
-      { activeListId: null },
-    );
-    return { onAddTag, onClose };
-  }
-
-  const search = (text: string) =>
-    fireEvent.changeText(screen.getByPlaceholderText("Add tag"), text);
-
-  const tagged = (id: number, tags: string[]) =>
-    createTestPattern(PUSH.id, { id, tags });
-
-  it("lists the tags already in use", () => {
-    renderPicker([], [tagged(1, ["basic"]), tagged(2, ["advanced"])]);
-
-    expect(screen.getByText("Existing tags")).toBeOnTheScreen();
-    expect(screen.getByText("basic")).toBeOnTheScreen();
-    expect(screen.getByText("advanced")).toBeOnTheScreen();
-  });
-
-  it("leaves out tags the pattern already has", () => {
-    renderPicker(["basic"], [tagged(1, ["basic", "advanced"])]);
-
-    expect(screen.queryByText("basic")).toBeNull();
-    expect(screen.getByText("advanced")).toBeOnTheScreen();
-  });
-
-  it("adds an existing tag when it is tapped", () => {
-    const { onAddTag } = renderPicker([], [tagged(1, ["basic"])]);
-
-    fireEvent.press(screen.getByText("basic"));
-
-    expect(onAddTag).toHaveBeenCalledWith("basic");
-  });
-
-  describe("searching", () => {
-    it("narrows the list", () => {
-      renderPicker([], [tagged(1, ["basic", "advanced"])]);
-
-      search("adv");
-
-      expect(screen.getByText("Matching tags")).toBeOnTheScreen();
-      expect(screen.getByText("advanced")).toBeOnTheScreen();
-      expect(screen.queryByText("basic")).toBeNull();
-    });
-
-    it("says when nothing matches", () => {
-      renderPicker(["zzz"], [tagged(1, ["zzz"])]);
-
-      search("zzz");
-
-      expect(
-        screen.getByText("No unused matching tags found"),
-      ).toBeOnTheScreen();
-    });
-  });
-
-  describe("creating a new tag", () => {
-    it("offers to create what was typed", () => {
-      renderPicker([], [tagged(1, ["basic"])]);
-
-      search("footwork");
-
-      expect(screen.getByText('Create "footwork"')).toBeOnTheScreen();
-    });
-
-    it("creates it when tapped", () => {
-      const { onAddTag } = renderPicker([]);
-
-      search("footwork");
-      fireEvent.press(screen.getByText('Create "footwork"'));
-
-      expect(onAddTag).toHaveBeenCalledWith("footwork");
-    });
-
-    it("does not offer to create one that already exists", () => {
-      renderPicker([], [tagged(1, ["basic"])]);
-
-      search("basic");
-
-      expect(screen.queryByText('Create "basic"')).toBeNull();
-    });
-
-    it("ignores case when deciding it already exists", () => {
-      renderPicker([], [tagged(1, ["Basic"])]);
-
-      search("basic");
-
-      expect(screen.queryByText('Create "basic"')).toBeNull();
-    });
-
-    it("does not offer to create one the pattern already has", () => {
-      renderPicker(["basic"], []);
-
-      search("basic");
-
-      expect(screen.queryByText('Create "basic"')).toBeNull();
-    });
-
-    it("clears the search after adding, ready for the next", () => {
-      renderPicker([]);
-
-      search("footwork");
-      fireEvent.press(screen.getByText('Create "footwork"'));
-
-      expect(screen.getByPlaceholderText("Add tag").props.value).toBe("");
-    });
-  });
-
-  it("forgets the search when closed", () => {
-    const { onClose } = renderPicker([], [tagged(1, ["basic"])]);
-
-    search("zzz");
-    fireEvent.press(screen.getByLabelText("Close"));
-
-    expect(onClose).toHaveBeenCalled();
-    expect(screen.getByPlaceholderText("Add tag").props.value).toBe("");
-  });
-});
-
 describe("PatternTags", () => {
   function renderTags(tags: string[] = [], allPatterns: IPattern[] = []) {
     const setTags = jest.fn<void, [string[]]>();
@@ -414,72 +279,144 @@ describe("PatternTags", () => {
     return { setTags, updated };
   }
 
-  it("lists the tags the pattern has", () => {
-    renderTags(["basic", "6-count"]);
+  const search = (text: string) =>
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Search or add a tag..."),
+      text,
+    );
 
-    expect(screen.getByText("basic")).toBeOnTheScreen();
-    expect(screen.getByText("6-count")).toBeOnTheScreen();
+  const tagged = (id: number, tags: string[]) =>
+    createTestPattern(PUSH.id, { id, tags });
+
+  /** The chips' labels, front to back. */
+  const chipLabels = () =>
+    screen
+      .getAllByRole("button")
+      .map((b) => b.props.accessibilityLabel as string);
+
+  const isSelected = (label: string) =>
+    screen.getByLabelText(label).props.accessibilityState?.selected === true;
+
+  it("shows the pattern's tags chosen, ahead of the list's others", () => {
+    renderTags(["basic"], [tagged(1, ["basic", "advanced"])]);
+
+    expect(chipLabels()).toEqual(["basic", "advanced"]);
+    expect(isSelected("basic")).toBe(true);
+    expect(isSelected("advanced")).toBe(false);
   });
 
-  it("removes one", () => {
+  it("orders the others by how many patterns use them", () => {
+    renderTags(
+      [],
+      [
+        tagged(1, ["rare", "common"]),
+        tagged(2, ["common", "medium"]),
+        tagged(3, ["common", "medium"]),
+      ],
+    );
+
+    expect(chipLabels()).toEqual(["common", "medium", "rare"]);
+  });
+
+  it("removes a chosen tag when it is tapped", () => {
     const { updated } = renderTags(["basic", "6-count"]);
 
-    fireEvent.press(screen.getByLabelText("Remove tag: basic"));
+    fireEvent.press(screen.getByLabelText("basic"));
 
     expect(updated()).toEqual(["6-count"]);
   });
 
-  describe("adding", () => {
-    const openPicker = () => fireEvent.press(screen.getByLabelText("Add tag"));
+  it("puts a newly chosen tag first", () => {
+    const { updated } = renderTags(
+      ["basic"],
+      [tagged(1, ["basic", "advanced"])],
+    );
 
-    it("opens the picker", () => {
-      renderTags([]);
+    fireEvent.press(screen.getByLabelText("advanced"));
 
-      openPicker();
+    expect(updated()).toEqual(["advanced", "basic"]);
+  });
 
-      expect(screen.getByPlaceholderText("Add tag")).toBeOnTheScreen();
+  describe("searching", () => {
+    it("narrows the others fuzzily, keeping the chosen in view", () => {
+      renderTags(["basic"], [tagged(1, ["advanced", "footwork"])]);
+
+      search("advncd");
+
+      expect(screen.getByLabelText("advanced")).toBeOnTheScreen();
+      expect(screen.queryByLabelText("footwork")).toBeNull();
+      expect(screen.getByLabelText("basic")).toBeOnTheScreen();
     });
 
-    it("appends what was chosen", () => {
-      const { updated } = renderTags(
-        ["basic"],
-        [createTestPattern(PUSH.id, { id: 1, tags: ["basic", "advanced"] })],
-      );
+    it("ignores case and accents", () => {
+      renderTags([], [tagged(1, ["Écart"])]);
 
-      openPicker();
-      fireEvent.press(screen.getByText("advanced"));
+      search("ecart");
 
-      expect(updated()).toEqual(["basic", "advanced"]);
+      expect(screen.getByLabelText("Écart")).toBeOnTheScreen();
+    });
+  });
+
+  describe("creating a new tag", () => {
+    it("offers to create what was typed, and puts it first", () => {
+      const { updated } = renderTags(["basic"]);
+
+      search("  footwork  ");
+      fireEvent.press(screen.getByText('Create "footwork"'));
+
+      expect(updated()).toEqual(["footwork", "basic"]);
     });
 
-    it("trims what was typed", () => {
+    it("creates it from the keyboard too", () => {
       const { updated } = renderTags([]);
 
-      openPicker();
-      fireEvent.changeText(screen.getByPlaceholderText("Add tag"), "  spin  ");
-      fireEvent.press(screen.getByText(/Create/));
+      search("footwork");
+      fireEvent(
+        screen.getByPlaceholderText("Search or add a tag..."),
+        "submitEditing",
+      );
 
-      expect(updated()).toEqual(["spin"]);
+      expect(updated()).toEqual(["footwork"]);
     });
 
-    it("refuses a duplicate, ignoring case", () => {
+    it("clears the search after creating, ready for the next", () => {
+      renderTags([]);
+
+      search("footwork");
+      fireEvent.press(screen.getByText('Create "footwork"'));
+
+      expect(
+        screen.getByPlaceholderText("Search or add a tag...").props.value,
+      ).toBe("");
+    });
+
+    it("does not offer to create one the list has, ignoring case", () => {
+      renderTags([], [tagged(1, ["Basic"])]);
+
+      search("basic");
+
+      expect(screen.queryByText(/Create/)).toBeNull();
+    });
+
+    it("does not offer to create one the pattern has, ignoring case", () => {
       const { setTags } = renderTags(["Basic"]);
 
-      openPicker();
-      fireEvent.changeText(screen.getByPlaceholderText("Add tag"), "basic");
-      // The picker will not even offer to create it…
+      search("basic");
+      fireEvent(
+        screen.getByPlaceholderText("Search or add a tag..."),
+        "submitEditing",
+      );
+
       expect(screen.queryByText(/Create/)).toBeNull();
       expect(setTags).not.toHaveBeenCalled();
     });
 
-    it("refuses an entirely blank tag", () => {
-      const { setTags } = renderTags([]);
+    it("does not offer to create a blank tag", () => {
+      renderTags([]);
 
-      openPicker();
-      fireEvent.changeText(screen.getByPlaceholderText("Add tag"), "   ");
+      search("   ");
 
       expect(screen.queryByText(/Create/)).toBeNull();
-      expect(setTags).not.toHaveBeenCalled();
     });
   });
 });
