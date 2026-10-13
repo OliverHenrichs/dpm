@@ -60,6 +60,8 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   val accelerator get() = accelerators.entries.joinToString(" ") { "${it.key}=${it.value}" }
 
   private val dir: File
+  /** Compiled GPU programs, see [model]. */
+  private val gpuCache get() = File(dir, "gpu")
   private val encode: CompiledModel
   private val decode: CompiledModel
   // Loaded on first use: outlining the taps (DancerOutline) needs neither, and each GPU graph
@@ -124,15 +126,26 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   private fun model(name: String): CompiledModel {
     val path = File(dir, "$name.tflite").absolutePath
     val fp32 = name in FP32_GRAPHS
-    val options = CompiledModel.Options(Accelerator.GPU).apply {
-      if (fp32) {
-        gpuOptions = CompiledModel.GpuOptions(precision = CompiledModel.GpuOptions.Precision.FP32)
-      }
+    fun gpu(cached: Boolean) = CompiledModel.Options(Accelerator.GPU).apply {
+      gpuOptions = CompiledModel.GpuOptions(
+        precision = if (fp32) CompiledModel.GpuOptions.Precision.FP32 else null,
+        serializationDir = if (cached) gpuCache.apply { mkdirs() }.absolutePath else null,
+        modelCacheKey = if (cached) "$name-${if (fp32) "fp32" else "fp16"}" else null,
+        serializeProgramCache = if (cached) true else null,
+      )
     }
+    // Compiling a graph's GPU programs cold took 0.4-1.3 s per graph (Pixel 10a), on every
+    // load, so they are kept on disk and read back. The cache lives in `dir`, which a new
+    // MODEL_VERSION deletes, and is keyed by graph and precision. A cache a driver or app update
+    // no longer accepts is thrown away and the graph compiled afresh.
     return try {
-      CompiledModel.create(path, options).also {
-        accelerators[name] = if (fp32) "GPU32" else "GPU"
+      val created = try {
+        CompiledModel.create(path, gpu(cached = true))
+      } catch (e: Exception) {
+        gpuCache.deleteRecursively()
+        CompiledModel.create(path, gpu(cached = false))
       }
+      created.also { accelerators[name] = if (fp32) "GPU32" else "GPU" }
     } catch (e: Exception) {
       accelerators[name] = "CPU(gpu failed: ${e.message?.take(60)})"
       CompiledModel.create(path, CompiledModel.Options(Accelerator.CPU))
