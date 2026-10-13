@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, ScrollView, Text, View } from "react-native";
+import { Modal, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { SegmentedControl } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -12,6 +12,7 @@ import {
 } from "@/src/pattern/types/IPatternList";
 import PatternList, { VideoSource } from "@/src/pattern/list/PatternList";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
+import RevealScrollView from "@/src/common/components/RevealScrollView";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
 import AppHeader from "@/src/common/components/AppHeader";
@@ -210,7 +211,7 @@ const PatternListManager = () => {
         >
           <ModalOverlay padding="none">
             <View style={styles.modalContent}>
-              <ScrollView
+              <RevealScrollView
                 // Tapping a rhythm step keeps the keyboard up, so typing can go on.
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ flexGrow: 1 }}
@@ -225,7 +226,7 @@ const PatternListManager = () => {
                   onCancel={closeAddForm}
                   initialVideos={initialVideos}
                 />
-              </ScrollView>
+              </RevealScrollView>
             </View>
           </ModalOverlay>
         </Modal>
@@ -237,7 +238,7 @@ const PatternListManager = () => {
         >
           <ModalOverlay padding="none">
             <View style={styles.modalContent}>
-              <ScrollView
+              <RevealScrollView
                 // Tapping a rhythm step keeps the keyboard up, so typing can go on.
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ flexGrow: 1 }}
@@ -250,7 +251,7 @@ const PatternListManager = () => {
                   onCancel={() => setIsEditing(false)}
                   existing={selectedPattern}
                 />
-              </ScrollView>
+              </RevealScrollView>
             </View>
           </ModalOverlay>
         </Modal>

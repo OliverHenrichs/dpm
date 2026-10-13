@@ -68,7 +68,7 @@ nothing selected.
   that order); the rest follow by how many other patterns of the list use them, then by name,
   with loop-closing prerequisites last. The search narrows the rest with `fuzzyFilter`
   (`src/common/utils/fuzzyMatch.ts`) and never hides what is chosen. A typed tag no pattern has
-  is offered as *Create "…"*. Nothing picks tags in a separate sheet any more.
+  is offered as _Create "…"_. Nothing picks tags in a separate sheet any more.
 - The pattern list's **+** offers _New pattern_, _From a video_ (gallery) and _Record a video_
   (system camera). The video seeds the new pattern's form; after saving, the app offers to edit it
   (`src/anonymize/AGENTS.md`).

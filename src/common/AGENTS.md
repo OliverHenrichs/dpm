@@ -62,6 +62,11 @@ Gesture Handler gesture inside it never activates on Android unless the modal mo
 
 Every `Modal` handles Android's back button through `onRequestClose`.
 
+A `Modal` does not resize for the keyboard either, so a field low in a modal form opens under it.
+Wrap the form in `components/RevealScrollView.tsx` and have the field call `useReveal().reveal(ref)`
+on focus (`release` on blur): the scroller adds room below and scrolls `ref` to its top. The
+pattern editor's tag and prerequisite searches do.
+
 ## Dismissal touches
 
 **A backdrop tap dismisses through a sibling `Pressable` behind the card, never a wrapper around
