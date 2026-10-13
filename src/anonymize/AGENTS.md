@@ -27,7 +27,11 @@ Unqualified paths are relative to `src/anonymize/`.
   once, since a couple's taps decide each other's mask. The image is the source frame, so it is
   deleted as soon as it is replaced, the taps are cleared or the editor closes. Advisory only:
   the render can start while it is still being found or after it failed. On-device providers
-  only. Never for a provider that sends
+  only. **Kept warm while the user taps**: loading the graphs, grabbing the frame and encoding
+  it were most of ~15 s per tap on a Pixel 10a, so `prepareOutline` does them as the tap frame
+  opens and each tap only decodes and draws (dev builds log `[outline]` with the split). Back,
+  starting the render or closing the editor calls `releaseOutline`, and the native `anonymize`
+  frees it too, since the phone cannot hold it beside the full tracker. Never for a provider that sends
   footage off the device: `runAnonymize` refuses a remote preview, which would be billed.
 - The pattern list's **+** → _From a video_ / _Record a video_ seeds a new pattern, then offers
   Edit video after saving.

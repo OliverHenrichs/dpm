@@ -14,58 +14,112 @@ data class OutlineStats(
   val height: Int,
   /** Per tap: whether EdgeTAM found anyone there. */
   val found: List<Boolean>,
+  /** Where the time went, in ms; the first three are 0 when the frame was already prepared. */
+  val timing: Map<String, Long>,
 )
 
 /**
- * Shows the user who a tap picked, before the minutes-long render: the frame at [atSeconds] with
- * each tapped dancer's first-frame mask blended in, in the colour their silhouette will get, and
- * everything else dimmed. The masks come from [EdgeTamTracker.start] with all the taps, so they are
- * the ones tracking starts from (a couple's taps exclude each other, see `exclusiveCandidate`).
+ * Shows the user who a tap picked, before the minutes-long render: the frame at the selection's
+ * start with each tapped dancer's first-frame mask blended in, in the colour their silhouette will
+ * get, and everything else dimmed. The masks are [EdgeTamTracker.firstMasks] with all the taps, so
+ * they are the ones tracking starts from (a couple's taps exclude each other, see
+ * `exclusiveCandidate`).
+ *
+ * Kept while the user taps: loading the graphs, grabbing the frame and encoding it took most of
+ * ~15 s on a Pixel 10a, and all three are the same for every tap on that frame. [prepare] does
+ * them once (the editor calls it as the tap frame opens), and each [render] then only decodes the
+ * taps and draws. Holds two GPU graphs and a frame, so the owner closes it as soon as the taps are
+ * done, and always before a render loads the full tracker.
  *
  * Unlike the silhouette render, the output is the source frame itself, a temporary file for the
  * editor only; the caller deletes it as soon as it is no longer shown.
  */
-class DancerOutline(private val context: Context) {
-  fun render(src: Uri, atSeconds: Double, points: List<PointF>, out: File): OutlineStats {
-    val frame = frameAt(src, atSeconds)
-    try {
-      val masks = EdgeTamTracker(context).use { it.start(frame, points) }
-      val w = frame.width
-      val h = frame.height
-      // Same scale-up as the drawer's plain path: logits at frame size, > 0 = dancer.
-      val up = Bilinear(256, 256, w, h)
-      val scores = masks.map { m -> FloatArray(w * h).also { up.resample(m, it) } }
-      val labels = IntArray(w * h) { -1 }
-      parallelFor(h) { y ->
-        for (x in 0 until w) {
-          val p = y * w + x
-          var best = 0f
-          for (i in scores.indices) if (scores[i][p] > best) { best = scores[i][p]; labels[p] = i }
-        }
+class DancerOutline(private val context: Context) : AutoCloseable {
+  private var tracker: EdgeTamTracker? = null
+  private var key: Pair<String, Double>? = null
+  private var frame: Bitmap? = null
+  private var encoded: EdgeTamTracker.Encoded? = null
+  private var prepareTiming: Map<String, Long> = emptyMap()
+
+  /** Loads the graphs, grabs and encodes the frame at [atSeconds] of [src], unless already done. */
+  fun prepare(src: String, atSeconds: Double) {
+    if (key == src to atSeconds && encoded != null) return
+    val t0 = System.nanoTime()
+    val tracker = tracker ?: EdgeTamTracker(context).also { this.tracker = it }
+    val t1 = System.nanoTime()
+    val grabbed = frameAt(Uri.parse(src), atSeconds)
+    val t2 = System.nanoTime()
+    frame?.recycle()
+    frame = grabbed
+    encoded = null
+    key = null
+    encoded = tracker.encodeImage(grabbed)
+    key = src to atSeconds
+    prepareTiming = mapOf(
+      "loadMs" to (t1 - t0) / 1_000_000,
+      "frameMs" to (t2 - t1) / 1_000_000,
+      "encodeMs" to (System.nanoTime() - t2) / 1_000_000,
+    )
+  }
+
+  fun render(src: String, atSeconds: Double, points: List<PointF>, out: File): OutlineStats {
+    val reused = key == src to atSeconds && encoded != null
+    prepare(src, atSeconds)
+    val timing = if (reused) mapOf("loadMs" to 0L, "frameMs" to 0L, "encodeMs" to 0L) else prepareTiming
+    val frame = frame!!
+    val t0 = System.nanoTime()
+    val masks = tracker!!.firstMasks(encoded!!, points)
+    val t1 = System.nanoTime()
+    val w = frame.width
+    val h = frame.height
+    // Same scale-up as the drawer's plain path: logits at frame size, > 0 = dancer.
+    val up = Bilinear(256, 256, w, h)
+    val scores = masks.map { m -> FloatArray(w * h).also { up.resample(m, it) } }
+    val labels = IntArray(w * h) { -1 }
+    parallelFor(h) { y ->
+      for (x in 0 until w) {
+        val p = y * w + x
+        var best = 0f
+        for (i in scores.indices) if (scores[i][p] > best) { best = scores[i][p]; labels[p] = i }
       }
-      val pixels = IntArray(w * h)
-      frame.getPixels(pixels, 0, w, 0, 0, w, h)
-      parallelFor(h) { y ->
-        for (x in 0 until w) {
-          val p = y * w + x
-          val d = labels[p]
-          pixels[p] = when {
-            d < 0 -> scale(pixels[p], DIM)
-            isEdge(labels, w, h, x, y, d) -> OUTLINE[d % OUTLINE.size]
-            else -> blend(pixels[p], FILL[d % FILL.size], TINT)
-          }
-        }
-      }
-      val drawn = Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888)
-      try {
-        out.outputStream().use { drawn.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
-      } finally {
-        drawn.recycle()
-      }
-      return OutlineStats(w, h, masks.map { m -> m.any { it > 0f } })
-    } finally {
-      frame.recycle()
     }
+    val pixels = IntArray(w * h)
+    frame.getPixels(pixels, 0, w, 0, 0, w, h)
+    parallelFor(h) { y ->
+      for (x in 0 until w) {
+        val p = y * w + x
+        val d = labels[p]
+        pixels[p] = when {
+          d < 0 -> scale(pixels[p], DIM)
+          isEdge(labels, w, h, x, y, d) -> OUTLINE[d % OUTLINE.size]
+          else -> blend(pixels[p], FILL[d % FILL.size], TINT)
+        }
+      }
+    }
+    val drawn = Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888)
+    try {
+      out.outputStream().use { drawn.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
+    } finally {
+      drawn.recycle()
+    }
+    return OutlineStats(
+      w,
+      h,
+      masks.map { m -> m.any { it > 0f } },
+      timing + mapOf(
+        "decodeMs" to (t1 - t0) / 1_000_000,
+        "drawMs" to (System.nanoTime() - t1) / 1_000_000,
+      ),
+    )
+  }
+
+  override fun close() {
+    tracker?.close()
+    tracker = null
+    frame?.recycle()
+    frame = null
+    encoded = null
+    key = null
   }
 
   /**

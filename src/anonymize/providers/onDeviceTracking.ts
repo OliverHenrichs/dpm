@@ -73,13 +73,25 @@ export const onDeviceTracking: AnonymizeProvider = {
     if (!VideoAnonymizeModule) {
       throw new Error("On-device anonymization is unavailable");
     }
-    const { uri, found } = await VideoAnonymizeModule.outline(
+    const { uri, found, ...stats } = await VideoAnonymizeModule.outline(
       request.sourceUri,
       {
         atSeconds: request.atSeconds,
         prompts: request.prompts.map((p) => [p.x, p.y]),
       },
     );
+    if (__DEV__) console.log(`[outline] ${JSON.stringify(stats)}`);
     return { uri, found };
+  },
+
+  async prepareOutline(request) {
+    if (!VideoAnonymizeModule) return;
+    await VideoAnonymizeModule.prepareOutline(request.sourceUri, {
+      atSeconds: request.atSeconds,
+    });
+  },
+
+  async releaseOutline() {
+    await VideoAnonymizeModule?.releaseOutline();
   },
 };

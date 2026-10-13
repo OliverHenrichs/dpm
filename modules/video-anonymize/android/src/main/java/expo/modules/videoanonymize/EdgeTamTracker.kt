@@ -59,10 +59,15 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   val accelerators = linkedMapOf<String, String>()
   val accelerator get() = accelerators.entries.joinToString(" ") { "${it.key}=${it.value}" }
 
+  private val dir: File
   private val encode: CompiledModel
-  private val memcond: CompiledModel
   private val decode: CompiledModel
-  private val memorize: CompiledModel
+  // Loaded on first use: outlining the taps (DancerOutline) needs neither, and each GPU graph
+  // takes seconds to compile.
+  private val memcondGraph = lazy { model("memcond") }
+  private val memorizeGraph = lazy { model("memorize") }
+  private val memcond by memcondGraph
+  private val memorize by memorizeGraph
 
   private val noMemory: FloatArray
   private val mtpe: FloatArray
@@ -95,28 +100,11 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     File(context.filesDir, "edgetam").deleteRecursively() // pre-versioning copies
     context.filesDir.listFiles { f -> f.name.startsWith("edgetam-v") && f.name != "edgetam-v$MODEL_VERSION" }
       ?.forEach { it.deleteRecursively() }
-    val dir = File(context.filesDir, "edgetam-v$MODEL_VERSION").apply { mkdirs() }
-    fun model(name: String): CompiledModel {
-      val file = copyAsset(context, "edgetam/$name.tflite", File(dir, "$name.tflite"))
-      val fp32 = name in FP32_GRAPHS
-      val options = CompiledModel.Options(Accelerator.GPU).apply {
-        if (fp32) {
-          gpuOptions = CompiledModel.GpuOptions(precision = CompiledModel.GpuOptions.Precision.FP32)
-        }
-      }
-      return try {
-        CompiledModel.create(file.absolutePath, options).also {
-          accelerators[name] = if (fp32) "GPU32" else "GPU"
-        }
-      } catch (e: Exception) {
-        accelerators[name] = "CPU(gpu failed: ${e.message?.take(60)})"
-        CompiledModel.create(file.absolutePath, CompiledModel.Options(Accelerator.CPU))
-      }
-    }
+    dir = File(context.filesDir, "edgetam-v$MODEL_VERSION").apply { mkdirs() }
+    // Copied up front, so a lazily loaded graph never waits on the APK.
+    for (name in GRAPHS) copyAsset(context, "edgetam/$name.tflite", File(dir, "$name.tflite"))
     encode = model("encode")
-    memcond = model("memcond")
     decode = model("decode")
-    memorize = model("memorize")
 
     fun bin(name: String, n: Int): FloatArray {
       val bytes = context.assets.open("edgetam/$name.bin").use { it.readBytes() }
@@ -133,13 +121,46 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     notAPoint = prompt.copyOfRange(512, 768)
   }
 
-  /**
-   * First frame: one positive point per object, in the frame's normalised coordinates (0..1).
-   * Returns one 256x256 logit mask per object (> 0 = object).
-   */
-  fun start(frame: Bitmap, points: List<PointF>): List<FloatArray> {
-    objects.clear()
+  private fun model(name: String): CompiledModel {
+    val path = File(dir, "$name.tflite").absolutePath
+    val fp32 = name in FP32_GRAPHS
+    val options = CompiledModel.Options(Accelerator.GPU).apply {
+      if (fp32) {
+        gpuOptions = CompiledModel.GpuOptions(precision = CompiledModel.GpuOptions.Precision.FP32)
+      }
+    }
+    return try {
+      CompiledModel.create(path, options).also {
+        accelerators[name] = if (fp32) "GPU32" else "GPU"
+      }
+    } catch (e: Exception) {
+      accelerators[name] = "CPU(gpu failed: ${e.message?.take(60)})"
+      CompiledModel.create(path, CompiledModel.Options(Accelerator.CPU))
+    }
+  }
+
+  /** A frame's image features: the costly part of a prompt, reusable for any taps on it. */
+  class Encoded internal constructor(
+    internal val pixFeat: FloatArray,
+    internal val pixRaw: FloatArray,
+    internal val hi0: FloatArray,
+    internal val hi1: FloatArray,
+  )
+
+  /** Encodes a frame for [firstMasks]. */
+  fun encodeImage(frame: Bitmap): Encoded {
     val (pixRaw, hi0, hi1) = encodeFrame(frame)
+    return Encoded(withoutMemory(pixRaw), pixRaw, hi0, hi1)
+  }
+
+  /**
+   * The masks [start] would begin tracking from, for these points on an encoded frame, without
+   * starting to track: nothing is memorised, so it can be asked again with other points.
+   */
+  fun firstMasks(encoded: Encoded, points: List<PointF>): List<FloatArray> =
+    decodePrompts(ObjectState(), encoded, points).map { it.mask }
+
+  private fun withoutMemory(pixRaw: FloatArray): FloatArray {
     val t0 = System.nanoTime()
     val pixFeat = FloatArray(IE)
     for (c in 0 until 256) {
@@ -148,14 +169,31 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
       for (s in 0 until 4096) pixFeat[b + s] = pixRaw[b + s] + nm
     }
     timing.kotlinNs += System.nanoTime() - t0
-    val decoded = points.mapIndexed { i, p ->
-      val state = ObjectState().also { objects += it }
-      val others = points.filterIndexed { j, _ -> j != i }
-      decodeOne(state, pixFeat, hi0, hi1, pointSparse(p.x * SIZE, p.y * SIZE)) { out ->
-        exclusiveCandidate(out, p, others)
-      }
+    return pixFeat
+  }
+
+  /** One decode per point, each choosing the candidate that holds its point and no other. */
+  private fun decodePrompts(
+    stateFor: ObjectState?,
+    encoded: Encoded,
+    points: List<PointF>,
+  ): List<Decoded> = points.mapIndexed { i, p ->
+    val state = stateFor ?: ObjectState().also { objects += it }
+    val others = points.filterIndexed { j, _ -> j != i }
+    decodeOne(state, encoded.pixFeat, encoded.hi0, encoded.hi1, pointSparse(p.x * SIZE, p.y * SIZE)) { out ->
+      exclusiveCandidate(out, p, others)
     }
-    memorizeAll(0, pixRaw, decoded)
+  }
+
+  /**
+   * First frame: one positive point per object, in the frame's normalised coordinates (0..1).
+   * Returns one 256x256 logit mask per object (> 0 = object).
+   */
+  fun start(frame: Bitmap, points: List<PointF>): List<FloatArray> {
+    objects.clear()
+    val encoded = encodeImage(frame)
+    val decoded = decodePrompts(null, encoded, points)
+    memorizeAll(0, encoded.pixRaw, decoded)
     timing.frames++
     return decoded.map { it.mask }
   }
@@ -346,12 +384,7 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
       val d = (p % 256 - cx) * (p % 256 - cx) + (p / 256 - cy) * (p / 256 - cy)
       if (d < bestD) { bestD = d; inside = p }
     }
-    val pixFeat = FloatArray(IE)
-    for (c in 0 until 256) {
-      val nm = noMemory[c]
-      val b = c * 4096
-      for (s in 0 until 4096) pixFeat[b + s] = pixRaw[b + s] + nm
-    }
+    val pixFeat = withoutMemory(pixRaw)
     val px = (inside % 256 + 0.5f) / 256f * SIZE
     val py = (inside / 256 + 0.5f) / 256f * SIZE
     val probe = decodeOne(state, pixFeat, hi0, hi1, pointSparse(px, py)) { out ->
@@ -488,9 +521,9 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
 
   override fun close() {
     encode.close()
-    memcond.close()
     decode.close()
-    memorize.close()
+    if (memcondGraph.isInitialized()) memcond.close()
+    if (memorizeGraph.isInitialized()) memorize.close()
     canvasBmp.recycle()
   }
 
@@ -501,6 +534,7 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
      * the tracking graphs changed nothing and cost +0.7 s/frame.
      */
     private val FP32_GRAPHS = setOf("encode")
+    private val GRAPHS = listOf("encode", "memcond", "decode", "memorize")
     /** Conditioning memories kept from corrections, besides the first frame, and for how long. */
     private const val MAX_CORRECTIONS = 2
     private const val CORRECTION_TTL = 15

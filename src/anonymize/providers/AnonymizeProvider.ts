@@ -75,4 +75,10 @@ export interface AnonymizeProvider {
    * taps alone.
    */
   outline?(request: OutlineRequest): Promise<DancerOutline>;
+  /**
+   * Gets [outline] ready for taps on this frame (the model loaded, the frame encoded), so each
+   * tap answers quickly; what it holds stays until [releaseOutline].
+   */
+  prepareOutline?(request: Omit<OutlineRequest, "prompts">): Promise<void>;
+  releaseOutline?(): Promise<void>;
 }

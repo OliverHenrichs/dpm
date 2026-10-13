@@ -275,10 +275,14 @@ describe("Anonymize — highlights who each tap picked", () => {
         }),
     );
     const discard = jest.fn();
+    const prepare = jest.fn(async () => {});
+    const release = jest.fn(async () => {});
     return {
-      outliner: { find, discard },
+      outliner: { find, discard, prepare, release },
       find,
       discard,
+      prepare,
+      release,
       answer: (i: number, uri: string, found: boolean[]) =>
         act(async () => pending[i].resolve({ uri, found })),
       fail: (i: number) => act(async () => pending[i].reject()),
@@ -337,6 +341,42 @@ describe("Anonymize — highlights who each tap picked", () => {
     expect(screen.getByTestId("dancer-outline").props.source).toEqual({
       uri: "file:///cache/two.jpg",
     });
+  });
+
+  it("readies the model as the tap frame opens, and frees it on the way back", () => {
+    const o = outliner();
+    renderPanel(20, {
+      providers: [outlinedProvider],
+      outliner: o.outliner,
+    });
+
+    tapFrame();
+    expect(o.prepare).toHaveBeenCalledWith(outlinedProvider, {
+      sourceUri: "file:///document/a.mp4",
+      atSeconds: 0,
+    });
+    expect(o.release).not.toHaveBeenCalled();
+
+    fireEvent.press(button("Back"));
+    expect(o.release).toHaveBeenCalledWith(outlinedProvider);
+  });
+
+  it("frees the model when the render starts", () => {
+    const o = outliner();
+    const onAnonymize = jest.fn();
+    renderPanel(20, {
+      providers: [outlinedProvider],
+      outliner: o.outliner,
+      onAnonymize,
+    });
+    tapFrame();
+    tapAt(100);
+    tapAt(200);
+
+    fireEvent.press(button("Anonymize 20 s"));
+
+    expect(o.release).toHaveBeenCalledWith(outlinedProvider);
+    expect(onAnonymize).toHaveBeenCalled();
   });
 
   it("says which tap found nobody", async () => {
@@ -414,6 +454,7 @@ describe("Anonymize — highlights who each tap picked", () => {
     tapAt(100);
 
     expect(o.find).not.toHaveBeenCalled();
+    expect(o.prepare).not.toHaveBeenCalled();
     expect(screen.queryByTestId("outline-note")).toBeNull();
   });
 });

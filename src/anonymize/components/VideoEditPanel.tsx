@@ -151,6 +151,8 @@ const VideoEditPanel: React.FC<Props> = ({
     outline,
     find: findOutline,
     reset: resetOutline,
+    prepare: prepareOutline,
+    release: releaseOutline,
   } = useDancerOutline(outliner);
 
   const limits: TrimLimits = {
@@ -274,11 +276,16 @@ const VideoEditPanel: React.FC<Props> = ({
     seekTo(trim.start);
     retap([]);
     setStep("prompt");
+    // Ready before the first tap: loading the model and encoding the frame are most of the wait.
+    if (canOutline) {
+      prepareOutline(provider, { sourceUri, atSeconds: trim.start });
+    }
   };
 
   const backToTrim = () => {
     setStep("trim");
     retap([]);
+    releaseOutline();
     player.play();
   };
 
@@ -604,7 +611,10 @@ const VideoEditPanel: React.FC<Props> = ({
           {canPreview && tapsDone && previewSection()}
           {action(
             t("anonymizeSeconds", { seconds }),
-            () => onAnonymize(provider, request()),
+            () => {
+              releaseOutline();
+              onAnonymize(provider, request());
+            },
             !tapsDone,
           )}
         </>

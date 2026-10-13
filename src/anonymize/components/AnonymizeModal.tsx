@@ -9,7 +9,12 @@ import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import VideoEditPanel from "@/src/anonymize/components/VideoEditPanel";
 import { AnonymizePreviewer } from "@/src/anonymize/components/useAnonymizePreview";
 import { DancerOutliner } from "@/src/anonymize/components/useDancerOutline";
-import { discardOutline, outlineDancers } from "@/src/anonymize/outlineDancers";
+import {
+  discardOutline,
+  outlineDancers,
+  prepareOutline,
+  releaseOutline,
+} from "@/src/anonymize/outlineDancers";
 import {
   discardPreview,
   previewAnonymize,
@@ -57,6 +62,8 @@ const previewer: AnonymizePreviewer = {
 const outliner: DancerOutliner = {
   find: outlineDancers,
   discard: discardOutline,
+  prepare: prepareOutline,
+  release: releaseOutline,
 };
 
 /**
