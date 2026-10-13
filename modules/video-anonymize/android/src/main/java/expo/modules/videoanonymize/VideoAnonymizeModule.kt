@@ -28,6 +28,14 @@ class AnonymizeOptions : Record {
   @Field val prompts: List<List<Double>> = emptyList()
 }
 
+class OutlineOptions : Record {
+  /** Where in the source the tap frame is, in seconds. */
+  @Field val atSeconds: Double = 0.0
+
+  /** One normalised [x, y] point per dancer, as for silhouettes. */
+  @Field val prompts: List<List<Double>> = emptyList()
+}
+
 class AnonymizeException(message: String, cause: Throwable? = null) :
   CodedException("ERR_ANONYMIZE", message, cause)
 
@@ -42,6 +50,32 @@ class VideoAnonymizeModule : Module() {
     Name("VideoAnonymize")
 
     Events("onProgress")
+
+    // The tapped dancers' first-frame masks over the tap frame (DancerOutline), so the user can
+    // check who each tap picked before the render.
+    AsyncFunction("outline") Coroutine { srcUri: String, options: OutlineOptions ->
+      val context = appContext.reactContext ?: throw AnonymizeException("React context lost")
+      if (options.prompts.isEmpty()) throw AnonymizeException("An outline needs a tapped point")
+      val outDir = File(context.cacheDir, "anonymize").apply { mkdirs() }
+      val out = File(outDir, "${System.currentTimeMillis()}-outline.jpg")
+      val started = System.nanoTime()
+      val stats = try {
+        withContext(Dispatchers.Default) {
+          val points = options.prompts.map { android.graphics.PointF(it[0].toFloat(), it[1].toFloat()) }
+          DancerOutline(context).render(Uri.parse(srcUri), options.atSeconds, points, out)
+        }
+      } catch (e: Exception) {
+        out.delete()
+        throw AnonymizeException("Outline failed: ${e.message}", e)
+      }
+      mapOf(
+        "uri" to Uri.fromFile(out).toString(),
+        "width" to stats.width,
+        "height" to stats.height,
+        "found" to stats.found,
+        "ms" to (System.nanoTime() - started) / 1_000_000,
+      )
+    }
 
     AsyncFunction("anonymize") Coroutine { srcUri: String, options: AnonymizeOptions ->
       val context = appContext.reactContext ?: throw AnonymizeException("React context lost")

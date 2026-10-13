@@ -5,6 +5,7 @@ import {
 import {
   AnonymizeOutcome,
   AnonymizeProvider,
+  DancerOutline,
 } from "@/src/anonymize/providers/AnonymizeProvider";
 
 /**
@@ -66,5 +67,19 @@ export const onDeviceTracking: AnonymizeProvider = {
     } finally {
       subscription.remove();
     }
+  },
+
+  async outline(request): Promise<DancerOutline> {
+    if (!VideoAnonymizeModule) {
+      throw new Error("On-device anonymization is unavailable");
+    }
+    const { uri, found } = await VideoAnonymizeModule.outline(
+      request.sourceUri,
+      {
+        atSeconds: request.atSeconds,
+        prompts: request.prompts.map((p) => [p.x, p.y]),
+      },
+    );
+    return { uri, found };
   },
 };

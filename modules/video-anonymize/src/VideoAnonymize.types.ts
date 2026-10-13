@@ -33,6 +33,23 @@ export type AnonymizeResult = {
   framesByPeopleFound?: Record<string, number>;
 };
 
+export type OutlineOptions = {
+  /** Where the tap frame is in the source, in seconds. */
+  atSeconds: number;
+  /** One normalised [x, y] point per dancer, as for silhouettes. */
+  prompts: number[][];
+};
+
+export type OutlineResult = {
+  /** A JPEG of the frame with each tapped dancer's outline blended in; the caller deletes it. */
+  uri: string;
+  width: number;
+  height: number;
+  /** Per prompt: whether anyone was found at that point. */
+  found: boolean[];
+  ms: number;
+};
+
 export type ProgressEventPayload = {
   stage: "transcode" | "silhouette";
   progress: number;
