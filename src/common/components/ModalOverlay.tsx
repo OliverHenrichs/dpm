@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { StyleProp, View, ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import type { AppTheme } from "@/src/common/theme/tokens";
+import { RevealContext, useKeyboardRoom } from "./reveal";
 
 interface ModalOverlayProps {
   children: React.ReactNode;
@@ -26,13 +27,37 @@ const ModalOverlay: React.FC<ModalOverlayProps> = ({
   align = "center",
   padding = "xl",
   style,
-}) => <View style={[styles.overlay(align, padding), style]}>{children}</View>;
+}) => {
+  // A centred dialog moves to the top while one of its fields has focus, clear of the keyboard
+  // (see `reveal.tsx`). It makes no room below: a scroller inside adds its own.
+  const { active, open, close } = useKeyboardRoom();
+  const reveal = useCallback(() => {
+    open();
+    return false;
+  }, [open]);
+  const lifted = active && align === "center";
+  return (
+    <RevealContext.Provider value={{ reveal, release: close }}>
+      <View style={[styles.overlay(align, padding, lifted), style]}>
+        {children}
+      </View>
+    </RevealContext.Provider>
+  );
+};
 
 const styles = StyleSheet.create((theme, rt) => ({
-  overlay: (align: "center" | "bottom", padding: keyof AppTheme["space"]) => ({
+  overlay: (
+    align: "center" | "bottom",
+    padding: keyof AppTheme["space"],
+    lifted: boolean,
+  ) => ({
     flex: 1,
     backgroundColor: theme.colors.overlay,
-    justifyContent: align === "center" ? "center" : "flex-end",
+    justifyContent: lifted
+      ? "flex-start"
+      : align === "center"
+        ? "center"
+        : "flex-end",
     alignItems: align === "center" ? "center" : "stretch",
     paddingTop: rt.insets.top + theme.space[padding],
     // A bottom panel runs to the screen's edge; its own content keeps clear

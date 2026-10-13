@@ -1,68 +1,48 @@
 import React, {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
+  useImperativeHandle,
   useRef,
-  useState,
 } from "react";
-import {
-  Keyboard,
-  ScrollView,
-  ScrollViewProps,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Keyboard, ScrollView, ScrollViewProps, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import {
+  RevealContext,
+  RevealTarget,
+  useKeyboardRoom,
+  useReveal,
+} from "./reveal";
 
-/**
- * Scrolls a part of the form to the top of the scroller, above the keyboard, and keeps the room
- * it needs below until `release` is called (or the keyboard closes).
- */
-type Reveal = {
-  reveal: (target: React.RefObject<View | null>) => void;
-  release: () => void;
-};
-
-const RevealContext = createContext<Reveal | null>(null);
-
-/**
- * The nearest `RevealScrollView`'s reveal, or no-ops outside one. A field low in a form calls
- * `reveal` on focus with a ref to what should stay in view with it (a search and its results).
- */
-export function useReveal(): Reveal {
-  return useContext(RevealContext) ?? NO_REVEAL;
-}
-
-const NO_REVEAL: Reveal = { reveal: () => {}, release: () => {} };
-
-/** How long to wait for the keyboard before scrolling anyway. */
+/** How long to wait for the keyboard before scrolling anyway (in a modal, no event says). */
 const KEYBOARD_WAIT_MS = 350;
 
+type RevealScrollViewProps = ScrollViewProps & {
+  ref?: React.Ref<ScrollView | null>;
+};
+
 /**
- * A `ScrollView` whose children can ask to be scrolled into view above the keyboard.
- *
- * A `Modal` on Android draws edge to edge in its own window and does not resize for the
- * keyboard, so a field near the bottom of a form opened under it: the pattern editor's tag
- * search did. On a reveal this scroller adds room below its content (the keyboard's height, or
- * half the window until the keyboard reports one) and scrolls the target to its top.
+ * A `ScrollView` that scrolls a focused field (see `reveal.tsx`) to its top, so it sits above
+ * the keyboard. It passes the reveal on to its own container (a dialog moves up, a sheet rises),
+ * and adds room below its content unless that container already made some.
  */
-const RevealScrollView: React.FC<ScrollViewProps> = ({
+const RevealScrollView: React.FC<RevealScrollViewProps> = ({
+  ref,
   children,
+  contentContainerStyle,
   ...props
 }) => {
   const { theme } = useUnistyles();
-  const { height: windowHeight } = useWindowDimensions();
+  const parent = useReveal();
+  const { room, open, close } = useKeyboardRoom();
   const scrollRef = useRef<ScrollView>(null);
+  useImperativeHandle(ref, () => scrollRef.current as ScrollView);
   // Measured against, so a target's offset is in content coordinates.
   const contentRef = useRef<View>(null);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [revealing, setRevealing] = useState(false);
-  const pending = useRef<React.RefObject<View | null> | null>(null);
+  const pending = useRef<RevealTarget | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollTo = useCallback(
-    (target: React.RefObject<View | null>) => {
+    (target: RevealTarget) => {
       const content = contentRef.current;
       if (!target.current || !content) return;
       target.current.measureLayout(content, (_x, y) => {
@@ -80,29 +60,21 @@ const RevealScrollView: React.FC<ScrollViewProps> = ({
     timer.current = null;
     const target = pending.current;
     pending.current = null;
-    // After the room below has been laid out, so the scroll is not clamped short of it.
+    // After the room has been laid out, so the scroll is not clamped short of it.
     if (target) requestAnimationFrame(() => scrollTo(target));
   }, [scrollTo]);
 
   useEffect(() => {
-    const shown = Keyboard.addListener("keyboardDidShow", (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
-      flush();
-    });
-    const hidden = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardHeight(0);
-      setRevealing(false);
-    });
+    const shown = Keyboard.addListener("keyboardDidShow", flush);
     return () => {
       shown.remove();
-      hidden.remove();
       if (timer.current) clearTimeout(timer.current);
     };
   }, [flush]);
 
   const reveal = useCallback(
-    (target: React.RefObject<View | null>) => {
-      setRevealing(true);
+    (target: RevealTarget) => {
+      if (!parent.reveal(target)) open();
       pending.current = target;
       if (Keyboard.isVisible()) {
         flush();
@@ -110,18 +82,25 @@ const RevealScrollView: React.FC<ScrollViewProps> = ({
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(flush, KEYBOARD_WAIT_MS);
       }
+      return true;
     },
-    [flush],
+    [parent, open, flush],
   );
 
-  const release = useCallback(() => setRevealing(false), []);
-
-  const room = revealing ? keyboardHeight || windowHeight / 2 : 0;
+  const release = useCallback(() => {
+    parent.release();
+    close();
+  }, [parent, close]);
 
   return (
     <RevealContext.Provider value={{ reveal, release }}>
-      <ScrollView ref={scrollRef} {...props}>
-        <View ref={contentRef} style={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.container}
+        {...props}
+      >
+        {/* The caller's content style goes here, so its padding and gaps lay out the children. */}
+        <View ref={contentRef} style={[styles.content, contentContainerStyle]}>
           {children}
         </View>
         {room > 0 ? <View style={styles.room(room)} /> : null}
@@ -130,8 +109,9 @@ const RevealScrollView: React.FC<ScrollViewProps> = ({
   );
 };
 
-// The content grows with the scroller, as a `contentContainerStyle` of `flexGrow: 1` asks.
+// The content fills the scroller and grows with it, as a `flexGrow: 1` content style asks.
 const styles = StyleSheet.create({
+  container: { flexGrow: 1 },
   content: { flexGrow: 1 },
   room: (height: number) => ({ height }),
 });

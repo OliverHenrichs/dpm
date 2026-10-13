@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Modal, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -12,6 +12,7 @@ import { fetchSharedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
+import { RevealTextInput } from "@/src/common/components/reveal";
 
 interface SubscribeListModalProps {
   visible: boolean;
@@ -160,7 +161,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
               <>
                 <Text style={styles.label}>{t("enterShareCode")}</Text>
                 <View style={styles.inputRow}>
-                  <TextInput
+                  <RevealTextInput
                     style={styles.input}
                     value={code}
                     onChangeText={(v) => {

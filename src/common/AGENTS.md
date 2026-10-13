@@ -22,10 +22,10 @@ check is tapping the icon on a device.
   screens, where `useNavigation()` does not resolve to the drawer. It also takes `isOpen`
   (`getDrawerStatusFromState`, in `app/_layout.tsx`) and reads every list again when that changes,
   since the Lists screen creates, renames and deletes lists without telling it.
-- The drawer lists every list under *Lists*, by name only (no icon, aligned with *Lists*' text),
+- The drawer lists every list under _Lists_, by name only (no icon, aligned with _Lists_' text),
   the active one highlighted; tapping one makes it
   active and opens its List tab. Only that block scrolls (`flexGrow: 0, flexShrink: 1`), so the
-  menu never outgrows the screen and *Lists* and *Settings* stay in reach. On opening it scrolls
+  menu never outgrows the screen and _Lists_ and _Settings_ stay in reach. On opening it scrolls
   the active list to the middle; on the first opening the row does that from its own `onLayout`.
 - The tab bar (`ListTabsLayout`) passes `safeAreaInsets={{ bottom: 0 }}`: the root layout's
   `SafeAreaView` already keeps the app above the system bar, and adding the inset again floats the
@@ -62,10 +62,13 @@ Gesture Handler gesture inside it never activates on Android unless the modal mo
 
 Every `Modal` handles Android's back button through `onRequestClose`.
 
-A `Modal` does not resize for the keyboard either, so a field low in a modal form opens under it.
-Wrap the form in `components/RevealScrollView.tsx` and have the field call `useReveal().reveal(ref)`
-on focus (`release` on blur): the scroller adds room below and scrolls `ref` to its top. The
-pattern editor's tag and prerequisite searches do.
+A `Modal` does not resize for the keyboard either, and React Native's keyboard events come only
+from the main window, so inside a modal nothing reports the keyboard. **Every text field is a
+`RevealTextInput`** (`components/reveal.tsx`): on focus it asks the nearest container to keep it
+(or its `revealRef`) above the keyboard. `RevealScrollView` scrolls it to its top, `ModalOverlay`
+moves a centred dialog to the top, `BottomSheet` grows by the keyboard's room; a scroller passes
+the reveal on to its container. The room is the keyboard's height when an event reports one, half
+the window otherwise. A scrolling form in a modal or sheet is a `RevealScrollView`.
 
 ## Dismissal touches
 

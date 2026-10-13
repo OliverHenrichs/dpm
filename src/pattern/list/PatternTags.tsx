@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Chip } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { useReveal } from "@/src/common/components/RevealScrollView";
+import { RevealTextInput } from "@/src/common/components/reveal";
 import { useTranslation } from "react-i18next";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import {
@@ -35,9 +35,8 @@ const PatternTags: React.FC<PatternTagsProps> = ({
   const { theme } = useUnistyles();
   const [query, setQuery] = useState("");
   const scrollRef = useRef<ScrollView>(null);
-  // The picker sits low in the form; keep it above the keyboard while searching.
+  // The picker sits low in the form; keep it all above the keyboard while searching.
   const containerRef = useRef<View>(null);
-  const { reveal, release } = useReveal();
 
   const { options, creatable } = tagOptions(
     allPatterns,
@@ -60,12 +59,11 @@ const PatternTags: React.FC<PatternTagsProps> = ({
 
   return (
     <View ref={containerRef} style={styles.container}>
-      <TextInput
+      <RevealTextInput
         placeholder={t("searchOrAddTag")}
         value={query}
         onChangeText={setQuery}
-        onFocus={() => reveal(containerRef)}
-        onBlur={release}
+        revealRef={containerRef}
         onSubmitEditing={create}
         submitBehavior="submit"
         returnKeyType="done"

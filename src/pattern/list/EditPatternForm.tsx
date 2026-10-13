@@ -67,6 +67,7 @@ import {
   getCommonPrereqContainer,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
+import { RevealTextInput } from "@/src/common/components/reveal";
 
 type EditPatternFormProps = {
   patterns: IPattern[];
@@ -494,7 +495,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <View style={styles.inputRow}>
         <View style={styles.input}>
           <Text style={styles.label}>{t("patternName")}</Text>
-          <TextInput
+          <RevealTextInput
             ref={nameInputRef}
             placeholder={t("patternName")}
             value={newPattern.name}
@@ -507,7 +508,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         </View>
         <View style={styles.input}>
           <Text style={styles.label}>{t("counts")}</Text>
-          <TextInput
+          <RevealTextInput
             placeholder={t("counts")}
             value={newPattern.counts.toString()}
             onChangeText={(text) => changeCounts(parseInt(text) || 0)}
@@ -639,7 +640,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         initiallyOpen={!!existing?.rhythm}
       >
         <View style={styles.rhythmBlock}>
-          <TextInput
+          <RevealTextInput
             placeholder={t("rhythmPlaceholder")}
             value={rhythmDraft}
             onChangeText={changeRhythm}
@@ -684,7 +685,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         summary={newPattern.description.trim() || t("formSectionEmpty")}
         initiallyOpen={!!existing?.description.trim()}
       >
-        <TextInput
+        <RevealTextInput
           placeholder={t("description")}
           value={newPattern.description}
           onChangeText={(text) =>
