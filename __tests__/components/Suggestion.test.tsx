@@ -350,11 +350,13 @@ describe("transcribing and suggesting in one job", () => {
     expect(screen.queryByText("Use suggestion")).toBeNull();
     fireEvent.press(screen.getByText("Discard"));
     await waitFor(() => expect(jobStore.getJobs()[0].status).toBe("done"));
+    // Nothing was written into the name; Save waits for one.
+    expect(screen.getByPlaceholderText("Pattern Name").props.value).toBe("");
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() =>
       expect(saved().videoRefs[0].transcript).toEqual(TRANSCRIPT),
     );
-    expect(saved().name).toBe("");
   });
 
   it("is off until the suggestion model is on the phone, and names its size", async () => {

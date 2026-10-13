@@ -24,6 +24,7 @@
   "existingTags": "Existing tags",
   "noMatchingTags": "No unused matching tags found",
   "savePattern": "Save",
+  "patternNameRequired": "Give the pattern a name to save it.",
   "cancel": "Cancel",
   "noDependentPatterns": "No dependent patterns yet",
   "buildsInto": "Builds Into",

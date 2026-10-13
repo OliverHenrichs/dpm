@@ -24,6 +24,7 @@
   "existingTags": "已有标签",
   "noMatchingTags": "没有找到未使用的匹配标签",
   "savePattern": "保存",
+  "patternNameRequired": "请先为舞步命名，然后再保存。",
   "cancel": "取消",
   "noDependentPatterns": "暂无衍生舞步",
   "buildsInto": "可进阶为",

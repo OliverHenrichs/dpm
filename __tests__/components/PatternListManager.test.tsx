@@ -8,6 +8,7 @@ import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext
 import { shortenVideo } from "@/src/anonymize/shortenVideo";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
 import PatternListManager from "@/src/pattern/list/PatternListManager";
+import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import {
   IModifier,
   IPattern,
@@ -226,7 +227,16 @@ describe("PatternListManager", () => {
       const { list } = await renderManager([]);
 
       openAddForm();
+      // Save is greyed out without a name; a tap only explains why.
       fireEvent.press(screen.getByText("Save"));
+      expect(
+        screen.getByText("Give the pattern a name to save it."),
+      ).toBeOnTheScreen();
+      // Should a blank name reach the screen anyway, it refuses it.
+      const form = screen.UNSAFE_getByType(EditPatternForm);
+      await act(async () => {
+        expect(await form.props.onAccepted(pattern(0, " "))).toBe(false);
+      });
 
       expect(await storedPatterns(list.id)).toEqual([]);
       // Still showing the form rather than silently discarding the attempt.
@@ -528,6 +538,13 @@ describe("PatternListManager", () => {
       fireEvent.press(screen.getByLabelText("Edit Pattern"));
       fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "");
       fireEvent.press(screen.getByText("Save"));
+      // Should a blank name reach the screen anyway, it refuses it.
+      const form = screen.UNSAFE_getByType(EditPatternForm);
+      await act(async () => {
+        expect(await form.props.onAccepted(pattern(1, "", { counts: 6 }))).toBe(
+          false,
+        );
+      });
 
       // AGENT_TASKS.md B12: this used to wipe the form and strand the user.
       await waitFor(() =>
