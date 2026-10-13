@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Image, ScrollView, Text, TextInput, View } from "react-native";
 import { Button, Chip, ListRow, Tappable } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -192,6 +192,15 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeVideoKey]);
+
+  // Save waits for a name; a tap on the greyed-out button says so and puts the cursor there.
+  const canSave = !!newPattern.name.trim();
+  const [showNameHint, setShowNameHint] = useState(false);
+  const nameInputRef = useRef<TextInput>(null);
+  const explainMissingName = () => {
+    setShowNameHint(true);
+    nameInputRef.current?.focus();
+  };
 
   const handleFinish = async () => {
     // Only clear the form once the caller has taken the pattern. It used to
@@ -486,6 +495,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         <View style={styles.input}>
           <Text style={styles.label}>{t("patternName")}</Text>
           <TextInput
+            ref={nameInputRef}
             placeholder={t("patternName")}
             value={newPattern.name}
             onChangeText={(text) =>
@@ -873,6 +883,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         ))}
       </BottomSheet>
 
+      {showNameHint && !canSave && (
+        <Text style={styles.nameHint} accessibilityLiveRegion="polite">
+          {t("patternNameRequired")}
+        </Text>
+      )}
       <View style={styles.buttonRow}>
         <Button
           title={t("cancel")}
@@ -883,6 +898,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         <Button
           title={t("savePattern")}
           onPress={handleFinish}
+          disabled={!canSave}
+          onDisabledPress={explainMissingName}
           style={styles.footerButton}
         />
       </View>
@@ -933,6 +950,12 @@ const styles = StyleSheet.create((theme) => {
       color: theme.colors.textMuted,
       fontStyle: "italic",
       marginTop: theme.space.sm,
+    },
+    nameHint: {
+      ...theme.typography.caption,
+      color: theme.colors.danger,
+      textAlign: "center",
+      marginBottom: theme.space.sm,
     },
     buttonRow: { ...getCommonRow(), gap: theme.space.sm },
     footerButton: { flex: 1 },

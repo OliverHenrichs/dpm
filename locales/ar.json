@@ -24,6 +24,7 @@
   "existingTags": "الوسوم الموجودة",
   "noMatchingTags": "لم يُعثر على وسوم مطابقة غير مستخدمة",
   "savePattern": "حفظ",
+  "patternNameRequired": "أدخل اسمًا للخطوة لحفظها.",
   "cancel": "إلغاء",
   "noDependentPatterns": "لا توجد خطوات متفرّعة بعد",
   "buildsInto": "يُبنى عليها",

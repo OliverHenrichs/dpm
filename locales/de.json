@@ -24,6 +24,7 @@
   "existingTags": "Vorhandene Tags",
   "noMatchingTags": "Keine unbenutzten passenden Tags gefunden",
   "savePattern": "Speichern",
+  "patternNameRequired": "Gib der Figur einen Namen, um sie zu speichern.",
   "cancel": "Abbrechen",
   "noDependentPatterns": "Noch keine abhängigen Figuren",
   "buildsInto": "Ist Grundlage für",
