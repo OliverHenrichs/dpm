@@ -61,7 +61,15 @@ describe("PatternList", () => {
   it("shows the empty state when the list has no patterns", () => {
     renderList([]);
 
-    expect(screen.getByText("No patterns available.")).toBeOnTheScreen();
+    expect(screen.getByText("No patterns yet.")).toBeOnTheScreen();
+    expect(screen.getByText(/Tap \+ to add one/)).toBeOnTheScreen();
+  });
+
+  it("leaves out the add hint on a read-only list", () => {
+    renderList([], { isReadonly: true });
+
+    expect(screen.getByText("No patterns yet.")).toBeOnTheScreen();
+    expect(screen.queryByText(/Tap \+ to add one/)).toBeNull();
   });
 
   it("shows the filtered empty state when a filter excludes everything", () => {
