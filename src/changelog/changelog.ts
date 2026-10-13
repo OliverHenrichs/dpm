@@ -24,38 +24,47 @@ export const CHANGELOG: ChangelogEntry[] = [
       en: [
         "In the pattern editor, Save stays greyed out until the pattern has a name. Tapping it says so and takes you to the name field.",
         "A new West Coast Swing list from the template now shows what builds on what (Sugar Tuck on Sugar Push, Tuck Turn on Left Side Pass) and brings turns, hesitation and hand change as modifiers. With no lists yet, you can open an example list to see it all on the Map.",
+        "When you tap the dancers to anonymize a video, each one you picked is outlined on the frame in their silhouette's colour, so you can check it is the right person before the render starts.",
       ],
       zh: [
         "在舞步编辑器中，舞步命名之前“保存”按钮会保持灰色。点按它会显示提示，并跳到名称字段。",
         "用模板新建的 West Coast Swing 列表现在会显示舞步之间的依赖关系（Sugar Tuck 基于 Sugar Push，Tuck Turn 基于 Left Side Pass），并自带转圈、hesitation 和换手等修饰。还没有列表时，你可以打开一个示例列表，在地图上看到这一切。",
+        "点选舞者以匿名化视频时，你选中的每位舞者都会在画面上以其剪影的颜色勾出轮廓，这样你可以在开始处理之前确认选对了人。",
       ],
       hi: [
         "पैटर्न संपादक में, जब तक पैटर्न का नाम न हो, सहेजें बटन धूसर रहता है। उस पर टैप करने से यही बताया जाता है और आप नाम वाले फ़ील्ड पर पहुँच जाते हैं।",
         "टेम्पलेट से बनी नई West Coast Swing सूची अब दिखाती है कि कौन-सा पैटर्न किस पर आधारित है (Sugar Tuck, Sugar Push पर; Tuck Turn, Left Side Pass पर), और टर्न, hesitation और हाथ बदलना मॉडिफ़ायर के रूप में साथ लाती है। जब तक कोई सूची न हो, आप एक उदाहरण सूची खोलकर यह सब मानचित्र पर देख सकते हैं।",
+        "वीडियो गुमनाम करने के लिए डांसरों पर टैप करने पर, आपके चुने हर व्यक्ति की रूपरेखा फ़्रेम पर उसकी सिल्हूट के रंग में दिखती है, ताकि रेंडर शुरू होने से पहले आप जाँच सकें कि सही व्यक्ति चुना गया है।",
       ],
       es: [
         "En el editor de figuras, Guardar sigue en gris hasta que la figura tenga nombre. Al tocarlo, te lo indica y te lleva al campo del nombre.",
         "Una nueva lista de West Coast Swing creada desde la plantilla ahora muestra qué se basa en qué (Sugar Tuck en Sugar Push, Tuck Turn en Left Side Pass) e incluye giros, hesitation y cambio de mano como modificadores. Si aún no tienes listas, puedes abrir una lista de ejemplo y verlo todo en el Mapa.",
+        "Al tocar a los bailarines para anonimizar un vídeo, cada persona elegida aparece contorneada en el fotograma con el color de su silueta, para que compruebes que es la correcta antes de que empiece el proceso.",
       ],
       fr: [
         "Dans l'éditeur de figures, Enregistrer reste grisé tant que la figure n'a pas de nom. Un appui l'indique et vous amène au champ du nom.",
         "Une nouvelle liste West Coast Swing créée depuis le modèle montre désormais ce qui repose sur quoi (Sugar Tuck sur Sugar Push, Tuck Turn sur Left Side Pass) et apporte les tours, l'hésitation et le changement de main comme modificateurs. Sans liste encore, vous pouvez ouvrir une liste d'exemple pour voir tout cela sur la Carte.",
+        "Quand vous touchez les danseurs pour anonymiser une vidéo, chaque personne choisie est détourée sur l'image dans la couleur de sa silhouette, pour vérifier que c'est la bonne avant le rendu.",
       ],
       ar: [
         "في محرر الخطوات، يبقى زر الحفظ رماديًا حتى يكون للخطوة اسم. يوضّح النقر عليه ذلك وينقلك إلى حقل الاسم.",
         "قائمة West Coast Swing الجديدة من القالب تُظهر الآن ما يُبنى على ماذا (Sugar Tuck على Sugar Push، وTuck Turn على Left Side Pass)، وتأتي بالدورانات والـ hesitation وتبديل اليد كمعدِّلات. إن لم تكن لديك قوائم بعد، يمكنك فتح قائمة مثال لترى كل ذلك على الخريطة.",
+        "عند النقر على الراقصين لإخفاء هوية فيديو، يظهر كل شخص اخترته محاطًا بمخطط بلون صورته الظلية على الإطار، لتتأكد من أنه الشخص الصحيح قبل بدء المعالجة.",
       ],
       bn: [
         "প্যাটার্ন সম্পাদকে, প্যাটার্নের নাম না দেওয়া পর্যন্ত সংরক্ষণ বোতামটি ধূসর থাকে। এতে ট্যাপ করলে সেটাই জানানো হয় এবং আপনাকে নামের ঘরে নিয়ে যাওয়া হয়।",
         "টেমপ্লেট থেকে তৈরি নতুন West Coast Swing তালিকা এখন দেখায় কোনটি কিসের উপর ভিত্তি করে (Sugar Tuck, Sugar Push-এর উপর; Tuck Turn, Left Side Pass-এর উপর), আর টার্ন, hesitation ও হাত বদল মডিফায়ার হিসেবে নিয়ে আসে। এখনও কোনো তালিকা না থাকলে, একটি উদাহরণ তালিকা খুলে মানচিত্রে সব দেখতে পারেন।",
+        "ভিডিওর পরিচয় গোপন করতে নৃত্যশিল্পীদের ট্যাপ করলে, আপনার বেছে নেওয়া প্রত্যেকের রূপরেখা ফ্রেমে তাঁর সিলুয়েটের রঙে দেখানো হয়, যাতে রেন্ডার শুরুর আগে আপনি দেখে নিতে পারেন সঠিক মানুষটি বাছা হয়েছে কি না।",
       ],
       pt: [
         "No editor de passos, Salvar fica cinza até o passo ter um nome. Tocar nele avisa isso e leva você ao campo do nome.",
         "Uma nova lista de West Coast Swing criada pelo modelo agora mostra o que se baseia em quê (Sugar Tuck em Sugar Push, Tuck Turn em Left Side Pass) e traz giros, hesitation e troca de mão como modificadores. Sem listas ainda, você pode abrir uma lista de exemplo e ver tudo no Mapa.",
+        "Ao tocar nos dançarinos para anonimizar um vídeo, cada pessoa escolhida aparece contornada no quadro com a cor da sua silhueta, para você conferir se é a pessoa certa antes de começar o processamento.",
       ],
       de: [
         "Im Figuren-Editor bleibt Speichern ausgegraut, bis die Figur einen Namen hat. Ein Tippen darauf sagt das und springt zum Namensfeld.",
         "Eine neue West-Coast-Swing-Liste aus der Vorlage zeigt jetzt, was worauf aufbaut (Sugar Tuck auf Sugar Push, Tuck Turn auf Left Side Pass), und bringt Drehungen, Hesitation und Handwechsel als Modifikatoren mit. Solange du noch keine Liste hast, kannst du eine Beispielliste öffnen und alles auf der Karte sehen.",
+        "Wenn du zum Anonymisieren die Tanzenden antippst, wird jede gewählte Person im Bild in der Farbe ihrer Silhouette umrandet, damit du vor dem Rendern prüfen kannst, ob es die richtige ist.",
       ],
     },
   },

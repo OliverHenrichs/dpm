@@ -8,6 +8,13 @@ import { useTranslation } from "react-i18next";
 import { SCREEN_EDGE_INSET } from "@/src/common/utils/EdgeInsets";
 import VideoEditPanel from "@/src/anonymize/components/VideoEditPanel";
 import { AnonymizePreviewer } from "@/src/anonymize/components/useAnonymizePreview";
+import { DancerOutliner } from "@/src/anonymize/components/useDancerOutline";
+import {
+  discardOutline,
+  outlineDancers,
+  prepareOutline,
+  releaseOutline,
+} from "@/src/anonymize/outlineDancers";
 import {
   discardPreview,
   previewAnonymize,
@@ -50,6 +57,13 @@ type Props = {
 const previewer: AnonymizePreviewer = {
   render: previewAnonymize,
   discard: discardPreview,
+};
+
+const outliner: DancerOutliner = {
+  find: outlineDancers,
+  discard: discardOutline,
+  prepare: prepareOutline,
+  release: releaseOutline,
 };
 
 /**
@@ -160,6 +174,7 @@ const AnonymizeModal: React.FC<Props> = ({
                     onClose();
                   }}
                   previewer={previewer}
+                  outliner={outliner}
                   onAnonymize={(provider, request) => {
                     maybeTranscribeFirst();
                     start({

@@ -12,6 +12,21 @@ export type AnonymizeRequest = {
   prompts?: { x: number; y: number }[];
 };
 
+/** Who the taps picked on the tap frame, for a provider that tracks from a prompt. */
+export type OutlineRequest = {
+  sourceUri: string;
+  /** The tap frame, in seconds into the source: the selection's start. */
+  atSeconds: number;
+  prompts: { x: number; y: number }[];
+};
+
+export type DancerOutline = {
+  /** Local file URI of the tap frame with each tapped dancer highlighted; the caller deletes it. */
+  uri: string;
+  /** Per prompt: whether anyone was found at that point. */
+  found: boolean[];
+};
+
 export type AnonymizeProgress = { stage: string; fraction: number };
 
 export type AnonymizeOutcome = {
@@ -53,4 +68,17 @@ export interface AnonymizeProvider {
     request: AnonymizeRequest,
     onProgress: (progress: AnonymizeProgress) => void,
   ): Promise<AnonymizeOutcome>;
+
+  /**
+   * Highlights who each tap picked on the tap frame, so the user can check before the render.
+   * Only for a provider that keeps the footage on the device; left out, the editor shows the
+   * taps alone.
+   */
+  outline?(request: OutlineRequest): Promise<DancerOutline>;
+  /**
+   * Gets [outline] ready for taps on this frame (the model loaded, the frame encoded), so each
+   * tap answers quickly; what it holds stays until [releaseOutline].
+   */
+  prepareOutline?(request: Omit<OutlineRequest, "prompts">): Promise<void>;
+  releaseOutline?(): Promise<void>;
 }

@@ -19,7 +19,19 @@ Unqualified paths are relative to `src/anonymize/`.
   a silhouette can lose its dancer. Once the dancers are tapped, _Preview the first half second_
   renders `PREVIEW_SECONDS` of the selection (`previewAnonymize.ts`, through
   `jobStore.runExclusive`, not a job) and loops it slowed down over the tap frame; changing the
-  taps throws it away (`components/useAnonymizePreview.ts`). Never for a provider that sends
+  taps throws it away (`components/useAnonymizePreview.ts`).
+- **Each tap highlights who it picked** on the tap frame (`outlineDancers.ts`, through
+  `jobStore.runExclusive`; `components/useDancerOutline.ts`): the provider's optional
+  `outline` returns the frame with each tapped dancer's first-frame mask blended in, in their
+  silhouette's colour, everything else dimmed, and which taps found nobody. All taps go in at
+  once, since a couple's taps decide each other's mask. The image is the source frame, so it is
+  deleted as soon as it is replaced, the taps are cleared or the editor closes. Advisory only:
+  the render can start while it is still being found or after it failed. On-device providers
+  only. **Kept warm while the user taps**: loading the graphs, grabbing the frame and encoding
+  it were most of ~15 s per tap on a Pixel 10a, so `prepareOutline` does them as the tap frame
+  opens and each tap only decodes and draws (dev builds log `[outline]` with the split). Back,
+  starting the render or closing the editor calls `releaseOutline`, and the native `anonymize`
+  frees it too, since the phone cannot hold it beside the full tracker. Never for a provider that sends
   footage off the device: `runAnonymize` refuses a remote preview, which would be billed.
 - The pattern list's **+** → _From a video_ / _Record a video_ seeds a new pattern, then offers
   Edit video after saving.

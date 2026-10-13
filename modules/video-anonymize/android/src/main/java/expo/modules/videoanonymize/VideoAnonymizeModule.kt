@@ -8,6 +8,8 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -28,6 +30,14 @@ class AnonymizeOptions : Record {
   @Field val prompts: List<List<Double>> = emptyList()
 }
 
+class OutlineOptions : Record {
+  /** Where in the source the tap frame is, in seconds. */
+  @Field val atSeconds: Double = 0.0
+
+  /** One normalised [x, y] point per dancer, as for silhouettes. */
+  @Field val prompts: List<List<Double>> = emptyList()
+}
+
 class AnonymizeException(message: String, cause: Throwable? = null) :
   CodedException("ERR_ANONYMIZE", message, cause)
 
@@ -38,14 +48,79 @@ class AnonymizeException(message: String, cause: Throwable? = null) :
  * pipeline, not exposed here.
  */
 class VideoAnonymizeModule : Module() {
+  /** The warm tap-frame outline, if the editor is on its tap step (see DancerOutline). */
+  private var outline: DancerOutline? = null
+  private val outlineLock = Mutex()
+
+  private fun closeOutline() {
+    outline?.close()
+    outline = null
+  }
+
   override fun definition() = ModuleDefinition {
     Name("VideoAnonymize")
 
+    OnDestroy { closeOutline() }
+
     Events("onProgress")
+
+    // The tapped dancers' first-frame masks over the tap frame (DancerOutline), so the user can
+    // check who each tap picked before the render. The session stays warm between taps:
+    // prepareOutline as the tap frame opens, outline per tap, releaseOutline when done.
+    AsyncFunction("prepareOutline") Coroutine { srcUri: String, options: OutlineOptions ->
+      val context = appContext.reactContext ?: throw AnonymizeException("React context lost")
+      val started = System.nanoTime()
+      outlineLock.withLock {
+        try {
+          withContext(Dispatchers.Default) {
+            val session = outline ?: DancerOutline(context).also { outline = it }
+            session.prepare(srcUri, options.atSeconds)
+          }
+        } catch (e: Exception) {
+          closeOutline()
+          throw AnonymizeException("Outline failed: ${e.message}", e)
+        }
+      }
+      mapOf("ms" to (System.nanoTime() - started) / 1_000_000)
+    }
+
+    AsyncFunction("outline") Coroutine { srcUri: String, options: OutlineOptions ->
+      val context = appContext.reactContext ?: throw AnonymizeException("React context lost")
+      if (options.prompts.isEmpty()) throw AnonymizeException("An outline needs a tapped point")
+      val outDir = File(context.cacheDir, "anonymize").apply { mkdirs() }
+      val out = File(outDir, "${System.currentTimeMillis()}-outline.jpg")
+      val started = System.nanoTime()
+      val stats = outlineLock.withLock {
+        try {
+          withContext(Dispatchers.Default) {
+            val points = options.prompts.map { android.graphics.PointF(it[0].toFloat(), it[1].toFloat()) }
+            val session = outline ?: DancerOutline(context).also { outline = it }
+            session.render(srcUri, options.atSeconds, points, out)
+          }
+        } catch (e: Exception) {
+          out.delete()
+          closeOutline()
+          throw AnonymizeException("Outline failed: ${e.message}", e)
+        }
+      }
+      mapOf(
+        "uri" to Uri.fromFile(out).toString(),
+        "width" to stats.width,
+        "height" to stats.height,
+        "found" to stats.found,
+        "ms" to (System.nanoTime() - started) / 1_000_000,
+      ) + stats.timing
+    }
+
+    AsyncFunction("releaseOutline") Coroutine { ->
+      outlineLock.withLock { closeOutline() }
+    }
 
     AsyncFunction("anonymize") Coroutine { srcUri: String, options: AnonymizeOptions ->
       val context = appContext.reactContext ?: throw AnonymizeException("React context lost")
       val outDir = File(context.cacheDir, "anonymize").apply { mkdirs() }
+      // The phone cannot hold the outline's graphs and the full tracker at once.
+      outlineLock.withLock { closeOutline() }
       val stamp = System.currentTimeMillis()
       val transcoded = File(outDir, "$stamp-transcoded.mp4")
 
