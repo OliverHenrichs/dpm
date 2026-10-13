@@ -1516,10 +1516,15 @@ pose missed for up to 2 tracked frames is carried along with the mask's centre.
 On the phone (Basic Whip video 2) the shake was gone, but where one dancer hid behind the other
 the hidden one's skeleton was drawn on the front one's body (~4.7 s, ~10.3 s), and when his hand
 reached for her face her skeleton collapsed into a column (~14.4 s). Now a pose whose torso lies
-mostly (3 of 4 joints) on cells the partner's mask claims more strongly counts as missed; the
-band greyed around the partner's arm is halved near the dancer's own head and torso; and an arm
-whose elbow or wrist jumps more than a shoulder width relative to its shoulder in one tracked
-frame is held back that frame unless the next frame confirms it.
+mostly (3 of 4 joints) on cells the partner's mask claims more strongly counts as missed, and an
+arm whose elbow or wrist jumps more than a shoulder width relative to its shoulder in one tracked
+frame is held back that frame unless the next frame confirms it. Those two fixed ~10.3 s and the
+face cover at ~4.5 s. Halving the greyed band near the dancer's own torso fixed ~14.4 s but let
+his forearm beside her shoulder through, and her arm followed his for two seconds (~13 s); now
+nothing only her own mask claims is greyed instead. With only his head showing (~4.7 s), the
+model fitted a whole body around his head into the background, so a pose whose torso lies off
+the dancer's own mask also counts as missed, and no pose is looked for while a dancer shows less
+than 30% of her usual area.
 
 **Speed on a Pixel 10a** (ms per frame, clip 1):
 
