@@ -21,12 +21,15 @@ class AnonymizeOptions : Record {
   @Field val maxSeconds: Double = 30.0
   /** Target short side in pixels; 0 keeps the source's size. */
   @Field val height: Int = 720
-  /** "passthrough" (trim + downscale only) or "silhouette". */
+  /**
+   * "passthrough" (trim + downscale only), "silhouette" (the dancers as silhouettes) or "faces"
+   * (the dancers as filmed, their heads covered, the room blurred).
+   */
   @Field val mode: String = "passthrough"
   /** "edgetam" (EdgeTAM tracking from [prompts]) — the only one left; see Segmenters.kt. */
   @Field val segmenter: String = "edgetam"
 
-  /** Silhouette mode: one normalised [x, y] point per dancer on the first frame. */
+  /** Silhouette and faces: one normalised [x, y] point per dancer on the first frame. */
   @Field val prompts: List<List<Double>> = emptyList()
 }
 
@@ -42,8 +45,9 @@ class AnonymizeException(message: String, cause: Throwable? = null) :
   CodedException("ERR_ANONYMIZE", message, cause)
 
 /**
- * L3 (AGENT_TASKS.md): trim — and for silhouettes, downscale — a clip with Media3 Transformer,
- * then optionally re-render it as silhouettes built only from tracked masks (fail-closed). The
+ * L3 (AGENT_TASKS.md): trim — and to anonymize, downscale — a clip with Media3 Transformer,
+ * then optionally re-render it from tracked masks: as silhouettes (fail-closed), or as filmed
+ * with the dancers' heads covered and the room blurred (FaceDrawer). The
  * tuning found on the Pixel (fp32 encoder, guided edges, 15 fps tracking) is fixed in the
  * pipeline, not exposed here.
  */
@@ -123,6 +127,11 @@ class VideoAnonymizeModule : Module() {
       outlineLock.withLock { closeOutline() }
       val stamp = System.currentTimeMillis()
       val transcoded = File(outDir, "$stamp-transcoded.mp4")
+      val style = when (options.mode) {
+        "silhouette" -> RenderStyle.SILHOUETTE
+        "faces" -> RenderStyle.FACES
+        else -> null
+      }
 
       val progress = { stage: String, fraction: Double ->
         sendEvent("onProgress", mapOf("stage" to stage, "progress" to fraction))
@@ -137,14 +146,15 @@ class VideoAnonymizeModule : Module() {
           endSeconds = options.endSeconds,
           maxSeconds = options.maxSeconds,
           shortSide = options.height,
-          removeAudio = options.mode == "silhouette",
+          // Voices identify people too.
+          removeAudio = style != null,
         ) { progress("transcode", it) }
       } catch (e: Exception) {
         throw AnonymizeException("Transcode failed: ${e.message}", e)
       }
       val transcodeMs = (System.nanoTime() - started) / 1_000_000
 
-      if (options.mode != "silhouette") {
+      if (style == null) {
         return@Coroutine mapOf(
           "uri" to Uri.fromFile(transcoded).toString(),
           "ms" to transcodeMs,
@@ -153,21 +163,24 @@ class VideoAnonymizeModule : Module() {
         )
       }
 
-      val silhouetteFile = File(outDir, "$stamp-silhouette.mp4")
+      val silhouetteFile = File(outDir, "$stamp-${options.mode}.mp4")
       if (options.prompts.isEmpty()) {
         transcoded.delete()
-        throw AnonymizeException("Silhouettes need one tapped point per dancer")
+        throw AnonymizeException("Anonymizing needs one tapped point per dancer")
       }
       val stats = try {
         withContext(Dispatchers.Default) {
           val points = options.prompts.map { android.graphics.PointF(it[0].toFloat(), it[1].toFloat()) }
-          SilhouetteRenderer(context, options.segmenter, points)
+          // One progress stage for both styles: the JS side weighs stages, not styles.
+          SilhouetteRenderer(context, options.segmenter, points, style)
             .render(transcoded, silhouetteFile) {
             progress("silhouette", it)
           }
         }
       } catch (e: Exception) {
-        throw AnonymizeException("Silhouette render failed: ${e.message}", e)
+        silhouetteFile.delete()
+        val what = if (style == RenderStyle.FACES) "Face cover" else "Silhouette"
+        throw AnonymizeException("$what render failed: ${e.message}", e)
       } finally {
         transcoded.delete() // source footage: never left in the cache
       }

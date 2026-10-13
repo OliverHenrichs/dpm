@@ -8,11 +8,11 @@ import java.util.concurrent.Future
 
 /**
  * [EdgeTamTracker] behind the [Segmenter] seam: the first frame starts tracking from [prompts]
- * (normalised points, one per dancer), every later frame is tracked from memory. Labels are the
- * dancer's slot (1-based), so the renderer's two-colour palette applies.
+ * (normalised points, one per dancer), every later frame is tracked from memory. Each dancer
+ * keeps their slot (1-based), so their colour, in either [RenderStyle].
  *
- * This is the tracking side (GPU models, re-anchoring, pose). Drawing happens in
- * [SilhouetteDrawer] on a worker thread, [SMOOTH_RADIUS] frames behind, so the GPU tracks the
+ * This is the tracking side (GPU models, re-anchoring, pose). Drawing happens in a [FrameDrawer]
+ * ([SilhouetteDrawer] or [FaceDrawer]) on a worker thread, [SMOOTH_RADIUS] frames behind, so the GPU tracks the
  * next frame while the CPU draws the last — drawing then costs no wall time as long as it is
  * faster than tracking. Each drawing job gets a snapshot of its window and its own buffers.
  *
@@ -23,9 +23,13 @@ import java.util.concurrent.Future
 class EdgeTamSegmenter(
   context: Context,
   private val prompts: List<PointF>,
+  private val style: RenderStyle = RenderStyle.SILHOUETTE,
   /** Re-anchor a dancer lost at a crossing with a person detector (see [reanchor]). */
   private val reanchorEnabled: Boolean = true,
-  /** Draw a pose skeleton per dancer over the silhouettes (see [PoseSkeletons]). */
+  /**
+   * Find each dancer's pose (see [PoseSkeletons]): the skeleton over a silhouette, the head
+   * a face cover goes on.
+   */
   private val skeletonEnabled: Boolean = true,
 ) : Segmenter {
   override val name = "edgetam"
@@ -71,11 +75,14 @@ class EdgeTamSegmenter(
 
   /**
    * A frame waiting to be drawn. [masks] and [joints] stay null until an untracked frame is
-   * interpolated.
+   * interpolated. [source] is a copy of the frame for a style that shows it (native memory, not
+   * the Java heap the tracker already fills), left to the garbage collector since a drawing job
+   * may still read it after the frame leaves [pending].
    */
   private class Pending(
     var masks: List<FloatArray>?,
     val guide: FloatArray,
+    val source: Bitmap?,
     /** Per dancer: 33 joints as [x, y, visibility] normalised to the frame, or null. */
     var joints: List<FloatArray?>?,
   )
@@ -86,14 +93,12 @@ class EdgeTamSegmenter(
   private var lastTracked: List<FloatArray>? = null
   private var lastJoints: List<FloatArray?>? = null
 
-  private class Drawn(val labels: ByteArray, val found: Int)
-
   // Drawing: one worker thread (drawer buffers are its alone), results in submission order.
   private val worker = Executors.newSingleThreadExecutor()
-  private var drawer: SilhouetteDrawer? = null
-  private val results = ArrayDeque<Future<Drawn>>()
+  private var drawer: FrameDrawer? = null
+  private val results = ArrayDeque<Future<DrawnFrame>>()
 
-  override fun segment(frame: Bitmap, timestampMs: Long, labels: ByteArray): Int {
+  override fun segment(frame: Bitmap, timestampMs: Long, out: IntArray): Int {
     val track = frameIndex % TRACK_EVERY == 0
     val tracked = if (track) {
       val masks = if (trackedCount == 0) {
@@ -115,6 +120,7 @@ class EdgeTamSegmenter(
       h = frame.height
     }
     val guide = FloatArray(w * h).also { luminance(frame, it) }
+    val source = if (style == RenderStyle.FACES) frame.copy(Bitmap.Config.ARGB_8888, false) else null
     // Pose runs on the tracked frames only (it was ~135 ms of ~700 per frame); the frames
     // between get their joints interpolated along with their masks.
     if (tracked != null) {
@@ -122,13 +128,13 @@ class EdgeTamSegmenter(
       interpolateGap(tracked, joints)
       lastTracked = tracked
       lastJoints = joints
-      pending.addLast(Pending(tracked.map { it.copyOf() }, guide, joints))
+      pending.addLast(Pending(tracked.map { it.copyOf() }, guide, source, joints))
     } else {
-      pending.addLast(Pending(null, guide, null))
+      pending.addLast(Pending(null, guide, source, null))
     }
     received++
     submitReady(atEnd = false)
-    return take(labels, block = results.size > MAX_IN_FLIGHT)
+    return take(out, block = results.size > MAX_IN_FLIGHT)
   }
 
   /**
@@ -167,21 +173,23 @@ class EdgeTamSegmenter(
       if ((from..to).any { pending[it - first].masks == null }) break
       val window = (from..to).map { j ->
         val p = pending[j - first]
-        SilhouetteDrawer.Entry((SMOOTH_RADIUS + 1 - kotlin.math.abs(j - k)).toFloat(), p.masks!!, p.joints!!)
+        WindowEntry((SMOOTH_RADIUS + 1 - kotlin.math.abs(j - k)).toFloat(), p.masks!!, p.joints!!)
       }
       val guide = pending[k - first].guide
+      val source = pending[k - first].source
       val current = k - from
-      if (drawer == null) drawer = SilhouetteDrawer(w, h, prompts.size)
-      val d = drawer!!
-      results.addLast(worker.submit<Drawn> {
+      val d = drawer ?: when (style) {
+        RenderStyle.SILHOUETTE -> SilhouetteDrawer(w, h, prompts.size)
+        RenderStyle.FACES -> FaceDrawer(w, h, prompts.size)
+      }.also { drawer = it }
+      results.addLast(worker.submit<DrawnFrame> {
         val t0 = System.nanoTime()
-        val out = ByteArray(w * h)
         val px = IntArray(prompts.size)
-        val found = d.draw(window, current, guide, out, px)
+        val drawn = d.draw(window, current, guide, source, px)
         synchronized(drawnArea) { px.forEachIndexed { i, n -> drawnArea[i].add(n) } }
         drawNs += System.nanoTime() - t0
         drawnFrames++
-        Drawn(out, found)
+        drawn
       })
       submitted++
     }
@@ -190,18 +198,18 @@ class EdgeTamSegmenter(
   }
 
   /** Hands over the oldest finished drawing, waiting for it if [block]; -1 if none is ready. */
-  private fun take(labels: ByteArray, block: Boolean): Int {
+  private fun take(out: IntArray, block: Boolean): Int {
     val f = results.firstOrNull() ?: return -1
     if (!block && !f.isDone) return -1
     val t0 = System.nanoTime()
     val d = f.get()
     waitNs += System.nanoTime() - t0
     results.removeFirst()
-    System.arraycopy(d.labels, 0, labels, 0, labels.size)
+    d.writeTo(out)
     return d.found
   }
 
-  override fun drain(labels: ByteArray): Int {
+  override fun drain(out: IntArray): Int {
     // Trailing untracked frames have no later tracked frame: they hold the last masks.
     lastTracked?.let { last ->
       pending.filter { it.masks == null }.forEach {
@@ -210,7 +218,7 @@ class EdgeTamSegmenter(
       }
     }
     submitReady(atEnd = true)
-    return take(labels, block = true)
+    return take(out, block = true)
   }
 
   /**
@@ -312,7 +320,6 @@ class EdgeTamSegmenter(
      */
     private const val TRACK_EVERY = 2
     private const val MASK = 256
-    const val OUTLINE_BASE = SilhouetteDrawer.OUTLINE_BASE
     /** Frames either side averaged into each drawn frame. */
     private const val SMOOTH_RADIUS = 2
     /** Drawings allowed to queue up before tracking waits for the drawer. */
