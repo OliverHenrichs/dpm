@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { TextInput, View } from "react-native";
+import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { AppText, Button } from "@/src/common/ui";
 import { getCommonInput } from "@/src/common/utils/CommonStyles";
 import { formatTime } from "@/src/common/utils/TImeUtils";
 import { ITranscriptSegment } from "@/src/pattern/types/IPatternList";
+import { RevealTextInput } from "@/src/common/components/reveal";
 
 type Props = {
   segment: ITranscriptSegment;
@@ -34,7 +35,7 @@ const TranscriptLineEditor: React.FC<Props> = ({
       <AppText variant="caption" color="textMuted">
         {time}
       </AppText>
-      <TextInput
+      <RevealTextInput
         style={styles.input}
         value={text}
         onChangeText={setText}

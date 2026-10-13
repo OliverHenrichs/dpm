@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   DimensionValue,
   LayoutChangeEvent,
@@ -23,6 +23,7 @@ import {
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { AppText, IconButton } from "@/src/common/ui";
+import { RevealContext, useKeyboardRoom } from "./reveal";
 
 interface BottomSheetProps {
   visible: boolean;
@@ -70,6 +71,13 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   /** How far the sheet is dragged down, in px. */
   const drag = useSharedValue(0);
   const sheetHeight = useSharedValue(screenHeight);
+  // While a field in the sheet has focus, the sheet grows by the keyboard's room and may reach
+  // the top of the screen, so the field rises above the keyboard (see `reveal.tsx`).
+  const { room, open, close } = useKeyboardRoom();
+  const reveal = useCallback(() => {
+    open();
+    return true;
+  }, [open]);
 
   // Shared values go through get()/set(), the form the React Compiler can
   // tell apart from mutating props or state.
@@ -143,7 +151,10 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           />
         </Animated.View>
         <Animated.View
-          style={[styles.sheet(maxHeight, minHeight), sheetMotion]}
+          style={[
+            styles.sheet(room > 0 ? "100%" : maxHeight, minHeight),
+            sheetMotion,
+          ]}
           onLayout={(e: LayoutChangeEvent) => {
             sheetHeight.set(e.nativeEvent.layout.height);
           }}
@@ -165,7 +176,10 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
               </View>
             </View>
           </GestureDetector>
-          {children}
+          <RevealContext.Provider value={{ reveal, release: close }}>
+            {children}
+          </RevealContext.Provider>
+          {room > 0 ? <View style={styles.room(room)} /> : null}
         </Animated.View>
       </GestureHandlerRootView>
     </Modal>
@@ -186,6 +200,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   fill: {
     flex: 1,
   },
+  room: (height: number) => ({ height, flexShrink: 0 }),
   sheet: (maxHeight: DimensionValue, minHeight: DimensionValue) => ({
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: theme.radius.xxl,

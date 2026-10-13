@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Text, View } from "react-native";
 import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ import {
   getCommonLabel,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
+import { RevealTextInput } from "@/src/common/components/reveal";
 
 export type AddVideoModalProps = {
   visible: boolean;
@@ -97,7 +98,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
 
       <View style={styles.section}>
         <Text style={styles.label}>{t("addFromUrl")}</Text>
-        <TextInput
+        <RevealTextInput
           style={[styles.input, urlError ? styles.inputError : null]}
           placeholder={t("videoUrl")}
           placeholderTextColor={theme.colors.textMuted}
@@ -110,7 +111,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
           keyboardType="url"
         />
         {!!urlError && <Text style={styles.errorText}>{urlError}</Text>}
-        <TextInput
+        <RevealTextInput
           style={styles.input}
           placeholder={t("startTimePlaceholder")}
           placeholderTextColor={theme.colors.textMuted}

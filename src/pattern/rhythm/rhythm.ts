@@ -50,6 +50,9 @@ export function normalizeRhythm(rhythm: string): string {
  *   rock step, triple, triple); eight-count patterns, such as the whip or the swing out, put
  *   two more steps before the last triple. Each also swung, counted "3a4".
  * - Salsa and bachata: eight counts, three steps and a pause or tap on 4 and 8.
+ * - Brazilian Zouk: slow, quick, quick ("boom, chick, chick"). Counted in half beats, the slow
+ *   step falls on 1 and holds through 2, the quicks on 3 and 4; a basic, forward then back, takes
+ *   two of those (Bath Zouk's move library, "Music & Rhythm").
  * - Argentine tango has no fixed count pattern, so it has none.
  */
 const SWING: Record<number, string[]> = {
@@ -61,12 +64,17 @@ const LATIN: Record<number, string[]> = {
   8: ["1 2 3 (4) 5 6 7 (8)"],
   16: ["1 2 3 (4) 5 6 7 (8) 9 10 11 (12) 13 14 15 (16)"],
 };
+const ZOUK: Record<number, string[]> = {
+  4: ["1 (2) 3 4"],
+  8: ["1 (2) 3 4 5 (6) 7 8"],
+};
 const DANCE_RHYTHMS: Record<Dance, Record<number, string[]>> = {
   wcs: SWING,
   lindy: SWING,
   salsa: LATIN,
   bachata: LATIN,
   tango: {},
+  zouk: ZOUK,
 };
 
 /** The rhythm a template pattern starts with: the dance's own, when it has one. */

@@ -51,6 +51,7 @@ describe("defaultRhythm", () => {
   it("gives a dance's basic rhythm for the counts", () => {
     expect(defaultRhythm("wcs", 8)).toBe("1 2 3&4 5 6 7&8");
     expect(defaultRhythm("salsa", 8)).toBe("1 2 3 (4) 5 6 7 (8)");
+    expect(defaultRhythm("zouk", 8)).toBe("1 (2) 3 4 5 (6) 7 8");
   });
 
   it("gives none without a dance, or for counts a dance has none for", () => {

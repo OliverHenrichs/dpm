@@ -1,8 +1,9 @@
 import React from "react";
-import { Text, TextInput, View } from "react-native";
+import { Text, View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { filterStyles as styles } from "../FilterCommonStyles";
+import { RevealTextInput } from "@/src/common/components/reveal";
 
 interface NameFilterProps {
   value: string;
@@ -16,7 +17,7 @@ const NameFilter: React.FC<NameFilterProps> = ({ value, onChange }) => {
   return (
     <View style={styles.filterSection}>
       <Text style={styles.label}>{t("name")}</Text>
-      <TextInput
+      <RevealTextInput
         placeholder={t("searchByName")}
         value={value}
         onChangeText={onChange}

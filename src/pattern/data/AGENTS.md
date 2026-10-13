@@ -147,7 +147,8 @@ step, or it pushes the pre-change snapshot.
 ## Default list templates
 
 `DefaultPatternLists.ts`: `createWestCoastSwingList`, `createSalsaList`, `createBachataList`,
-`createTangoList`, `createLindyHopList`, `createBlankList`, each a fresh `IPatternList` with UUID
+`createTangoList`, `createZoukList`,
+`createLindyHopList`, `createBlankList`, each a fresh `IPatternList` with UUID
 types and no modifiers; every template but blank sets `dance`. `TEMPLATE_FOUNDATIONAL_PATTERNS`
 maps a template id to starter patterns, and `resolveTemplatePatterns` resolves their `typeSlug` to
 `typeId` (stable across renames) and gives each the dance's basic rhythm for its counts. A template

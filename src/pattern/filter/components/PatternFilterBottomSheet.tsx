@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,7 @@ import TypeFilter from "./TypeFilter";
 import LevelFilter from "./LevelFilter";
 import CountsFilter from "./CountsFilter";
 import TagFilter from "./TagFilter";
+import RevealScrollView from "@/src/common/components/RevealScrollView";
 
 export interface PatternFilter {
   name: string;
@@ -116,7 +117,7 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
       maxHeight="95%"
       minHeight="85%"
     >
-      <ScrollView
+      <RevealScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
@@ -145,7 +146,7 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
           selectedTags={filter.tags}
           onToggle={toggleTag}
         />
-      </ScrollView>
+      </RevealScrollView>
 
       {/* Action Buttons */}
       <View style={styles.buttonRow}>

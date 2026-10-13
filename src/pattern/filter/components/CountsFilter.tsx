@@ -1,8 +1,9 @@
 import React from "react";
-import { Text, TextInput, View } from "react-native";
+import { Text, View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { filterStyles as styles } from "../FilterCommonStyles";
+import { RevealTextInput } from "@/src/common/components/reveal";
 
 interface CountsFilterProps {
   counts?: number;
@@ -16,7 +17,7 @@ const CountsFilter: React.FC<CountsFilterProps> = ({ counts, onChange }) => {
   return (
     <View style={styles.filterSection}>
       <Text style={styles.label}>{t("counts")}</Text>
-      <TextInput
+      <RevealTextInput
         placeholder={t("exactCounts")}
         value={counts?.toString() || ""}
         onChangeText={(text) =>

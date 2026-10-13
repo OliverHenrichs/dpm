@@ -62,6 +62,14 @@ Gesture Handler gesture inside it never activates on Android unless the modal mo
 
 Every `Modal` handles Android's back button through `onRequestClose`.
 
+A `Modal` does not resize for the keyboard either, and React Native's keyboard events come only
+from the main window, so inside a modal nothing reports the keyboard. **Every text field is a
+`RevealTextInput`** (`components/reveal.tsx`): on focus it asks the nearest container to keep it
+(or its `revealRef`) above the keyboard. `RevealScrollView` scrolls it to its top, `ModalOverlay`
+moves a centred dialog to the top, `BottomSheet` grows by the keyboard's room; a scroller passes
+the reveal on to its container. The room is the keyboard's height when an event reports one, half
+the window otherwise. A scrolling form in a modal or sheet is a `RevealScrollView`.
+
 ## Dismissal touches
 
 **A backdrop tap dismisses through a sibling `Pressable` behind the card, never a wrapper around

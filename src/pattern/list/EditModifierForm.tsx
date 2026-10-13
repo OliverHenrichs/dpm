@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { Switch, Text, View } from "react-native";
 import { Button, Chip } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import * as ImagePicker from "expo-image-picker";
@@ -22,6 +22,8 @@ import {
   getCommonPrereqContainer,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
+import { RevealTextInput } from "@/src/common/components/reveal";
+import RevealScrollView from "@/src/common/components/RevealScrollView";
 
 type EditModifierFormProps = {
   onAccepted: (modifier: NewModifier | IModifier) => void;
@@ -101,7 +103,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
   };
 
   return (
-    <ScrollView>
+    <RevealScrollView>
       <View style={styles.container}>
         <Text style={styles.sectionTitle}>
           {existing ? t("editModifier") : t("addModifier")}
@@ -109,7 +111,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
 
         {/* Name */}
         <Text style={styles.label}>{t("modifierName")}</Text>
-        <TextInput
+        <RevealTextInput
           placeholder={t("modifierName")}
           value={modifier.name}
           onChangeText={(text) => setModifier({ ...modifier, name: text })}
@@ -185,7 +187,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
           />
         </View>
       </View>
-    </ScrollView>
+    </RevealScrollView>
   );
 };
 
