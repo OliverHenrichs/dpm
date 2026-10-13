@@ -4,6 +4,7 @@ import lindy from "@/src/transcribe/glossary/lindy.json";
 import salsa from "@/src/transcribe/glossary/salsa.json";
 import tango from "@/src/transcribe/glossary/tango.json";
 import wcs from "@/src/transcribe/glossary/wcs.json";
+import zouk from "@/src/transcribe/glossary/zouk.json";
 
 /**
  * One term of a dance: a spelling said in every language, or an object with the spelling to
@@ -25,6 +26,7 @@ export const DANCE_GLOSSARIES: Record<Dance, Glossary> = {
   salsa,
   bachata,
   tango,
+  zouk,
 };
 
 /** A dance's terms, spelt for [language] where the glossary knows a spelling for it. */

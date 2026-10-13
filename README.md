@@ -19,10 +19,10 @@ Organise patterns into dance-style-specific lists, visualise their dependencies 
 - Inside the open list, **bottom tabs** switch between its views: **List** · **Map** · **Reels**
 
 ### Pattern Lists
-- Create pattern lists for any dance style — choose from **five built-in templates** (West Coast Swing, Salsa, Bachata, Argentine Tango, Lindy Hop) or start from a **blank list**
+- Create pattern lists for any dance style — choose from **six built-in templates** (West Coast Swing, Salsa, Bachata, Brazilian Zouk, Argentine Tango, Lindy Hop) or start from a **blank list**
 - Templates come with preset pattern types *and* a handful of foundational starter patterns
 - Each list owns its own set of **custom pattern types** with individually assigned colours
-- A list can name its **dance** (West Coast Swing, Lindy Hop, Salsa, Bachata, Argentine Tango), which picks the rhythms suggested for its patterns; templates set it
+- A list can name its **dance** (West Coast Swing, Lindy Hop, Salsa, Bachata, Brazilian Zouk, Argentine Tango), which picks the rhythms suggested for its patterns; templates set it
 - Edit list name, dance and pattern types at any time (types with patterns cannot be removed)
 - Delete lists individually; the active list persists across sessions
 

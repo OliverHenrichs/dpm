@@ -120,6 +120,8 @@
   "templateBachataDescription": "4 types de figures : Basique, Tour, Dip, Vague",
   "templateTangoName": "Tango argentin",
   "templateTangoDescription": "5 types de figures : Marche, Ochos, Giros, Sacadas, Boleos",
+  "templateZoukName": "Zouk brésilien",
+  "templateZoukDescription": "3 types de figures : Basique, Tour, Elástico",
   "templateLindyName": "Lindy Hop",
   "templateLindyDescription": "4 types de figures : Swing-Out, Cercle, Tuck-Turn, Aérienne",
   "addPatternType": "Ajouter un type",

@@ -3,7 +3,14 @@
  * (`src/pattern/rhythm/`) and transcription its glossary, so a list without one still works.
  * A template sets it; the list's settings change it.
  */
-export const DANCES = ["wcs", "lindy", "salsa", "bachata", "tango"] as const;
+export const DANCES = [
+  "wcs",
+  "lindy",
+  "salsa",
+  "bachata",
+  "tango",
+  "zouk",
+] as const;
 
 export type Dance = (typeof DANCES)[number];
 
@@ -18,4 +25,5 @@ export const DANCE_NAME_KEYS: Record<Dance, string> = {
   salsa: "templateSalsaName",
   bachata: "templateBachataName",
   tango: "templateTangoName",
+  zouk: "templateZoukName",
 };
