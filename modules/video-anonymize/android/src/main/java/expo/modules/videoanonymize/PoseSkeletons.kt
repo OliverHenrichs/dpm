@@ -106,9 +106,12 @@ class PoseSkeletons(context: Context, private val dancers: Int) : AutoCloseable 
       // arms overlap: once the leader's mask held the follower's arm (clip 1, joined hands at
       // ~6 s), her crop greyed her own arm out and his pose model took it as his second arm. So
       // the previous frame's arms arbitrate: near her own arms nothing is greyed, near the
-      // partner's arms everything is, whatever the masks say.
+      // partner's arms everything is, whatever the masks say. Near her own head and torso the
+      // band around his arm is halved: his hand reaching for her face greyed her shoulder and
+      // head, and her skeleton collapsed into a column (Basic Whip video 2, ~14.4 s).
       val reach = ARM_REACH * w
       val own = armSegments(last[i], w, h)
+      val core = coreSegments(last[i], w, h)
       val theirs = masks.indices.filter { it != i }.flatMap { armSegments(last[it], w, h) }
       parallelFor(ch) { y ->
         val my256 = (y0 + y) * MASK / h
@@ -118,13 +121,14 @@ class PoseSkeletons(context: Context, private val dancers: Int) : AutoCloseable 
           val fy = (y0 + y).toFloat()
           if (near(own, fx, fy, reach)) continue
           val partnerOnly = masks[i][cell] <= 0f && masks.indices.any { it != i && masks[it][cell] > 0f }
-          if (partnerOnly || near(theirs, fx, fy, reach)) px[y * cw + x] = GREY
+          val theirReach = if (near(core, fx, fy, reach)) reach / 2 else reach
+          if (partnerOnly || near(theirs, fx, fy, theirReach)) px[y * cw + x] = GREY
         }
       }
       val image = Bitmap.createBitmap(px, cw, ch, Bitmap.Config.ARGB_8888)
       val res = landmarkers[i].detectForVideo(BitmapImageBuilder(image).build(), timestampMs)
       image.recycle()
-      val lm = res.landmarks().firstOrNull()
+      val lm = res.landmarks().firstOrNull()?.takeUnless { onPartner(it, x0, y0, cw, ch, w, h, masks, i) }
       if (lm == null) {
         // A missed frame or two: carry the last pose along with her mask instead of blinking.
         if (++misses[i] > HOLD || !smoothers[i].primed || previousCentre == null) return@map lost(i)
@@ -138,11 +142,50 @@ class PoseSkeletons(context: Context, private val dancers: Int) : AutoCloseable 
           out[j * 3 + 2] = p.visibility().orElse(0f)
         }
       }
-      smoothers[i].filter(raw, seconds)
+      smoothers[i].filter(raw, seconds, h.toFloat() / w)
     }
     result.forEachIndexed { i, joints -> last[i] = joints }
     ms += (System.nanoTime() - t0) / 1_000_000
     return result
+  }
+
+  /**
+   * Whether a pose found in dancer [i]'s crop sits on her partner: most of its torso (shoulders,
+   * hips) on cells the partner's mask claims more strongly than hers. When one dancer is hidden
+   * behind the other, the model finds the one in front through the greying and her skeleton is
+   * drawn on his body (Basic Whip video 2, ~4.7 s and ~10.3 s). Such a pose counts as missed.
+   */
+  private fun onPartner(
+    lm: List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>,
+    x0: Int, y0: Int, cw: Int, ch: Int, w: Int, h: Int, masks: List<FloatArray>, i: Int,
+  ): Boolean {
+    if (masks.size < 2) return false
+    var theirs = 0
+    for (n in TORSO) {
+      val fx = (x0 + lm[n].x() * cw) / w
+      val fy = (y0 + lm[n].y() * ch) / h
+      val cell = (fy * MASK).toInt().coerceIn(0, MASK - 1) * MASK + (fx * MASK).toInt().coerceIn(0, MASK - 1)
+      val mine = masks[i][cell]
+      if (masks.indices.any { it != i && masks[it][cell] > 0f && masks[it][cell] > mine }) theirs++
+    }
+    return theirs >= TORSO_ON_PARTNER
+  }
+
+  /** Shoulders, torso sides, hips and neck (pixels) of a skeleton, where clearly visible. */
+  private fun coreSegments(joints: FloatArray?, w: Int, h: Int): List<FloatArray> {
+    if (joints == null) return emptyList()
+    val segments = CORE.mapNotNull { (a, b) ->
+      if (minOf(joints[a * 3 + 2], joints[b * 3 + 2]) < VISIBLE) null
+      else floatArrayOf(joints[a * 3] * w, joints[a * 3 + 1] * h, joints[b * 3] * w, joints[b * 3 + 1] * h)
+    }.toMutableList()
+    if (joints[2] >= VISIBLE && minOf(joints[11 * 3 + 2], joints[12 * 3 + 2]) >= VISIBLE) {
+      // Neck: nose to the shoulders' midpoint, so the head is covered too.
+      segments += floatArrayOf(
+        joints[0] * w, joints[1] * h,
+        (joints[11 * 3] + joints[12 * 3]) / 2 * w, (joints[11 * 3 + 1] + joints[12 * 3 + 1]) / 2 * h,
+      )
+    }
+    return segments
   }
 
   /** No pose for dancer [i]: the next one she gets starts afresh. */
@@ -223,6 +266,11 @@ class PoseSkeletons(context: Context, private val dancers: Int) : AutoCloseable 
     )
     /** Arm segments used to arbitrate crops: upper arms and forearms. */
     private val ARMS = arrayOf(11 to 13, 13 to 15, 12 to 14, 14 to 16)
+    /** Torso joints for [onPartner], and how many of them on the partner disown a pose. */
+    private val TORSO = intArrayOf(11, 12, 23, 24)
+    private const val TORSO_ON_PARTNER = 3
+    /** Shoulders, torso sides and hips, for [coreSegments]. */
+    private val CORE = arrayOf(11 to 12, 11 to 23, 12 to 24, 23 to 24)
     /** How close to an arm (share of frame width) counts as "that arm", ~32 px at 720p. */
     private const val ARM_REACH = 0.025f
     /** Joints drawn as dots: wrists and ankles. */
