@@ -458,3 +458,49 @@ describe("Anonymize — highlights who each tap picked", () => {
     expect(screen.queryByTestId("outline-note")).toBeNull();
   });
 });
+
+describe("Edit video — how to hide the dancers", () => {
+  const faces: AnonymizeProvider = {
+    ...provider,
+    id: "faces",
+    labelKey: "anonymizeProviderFaces",
+    descriptionKey: "anonymizeProviderFacesNote",
+  };
+  const silhouettes: AnonymizeProvider = {
+    ...provider,
+    descriptionKey: "anonymizeProviderTrackingNote",
+  };
+
+  it("offers silhouettes first, and keeps the taps when faces only is picked", () => {
+    const onAnonymize = jest.fn();
+    renderPanel(20, { providers: [silhouettes, faces], onAnonymize });
+    fireEvent.press(screen.getByRole("tab", { name: "Anonymize" }));
+    fireEvent.press(button("Next: tap the dancers"));
+    fireEvent(screen.getByTestId("video-preview"), "layout", {
+      nativeEvent: { layout: { width: 320, height: 180 } },
+    });
+
+    expect(screen.getByText("How to hide them")).toBeOnTheScreen();
+    expect(
+      screen.getByText(/^Each dancer becomes a coloured silhouette/),
+    ).toBeOnTheScreen();
+
+    for (const x of [100, 200]) {
+      fireEvent.press(screen.getByTestId("prompt-overlay"), {
+        nativeEvent: { locationX: x, locationY: 90 },
+      });
+    }
+    fireEvent.press(screen.getByText("Faces only"));
+
+    expect(
+      screen.getByText(/^The dancers stay as filmed with their faces covered/),
+    ).toBeOnTheScreen();
+    fireEvent.press(button("Anonymize 20 s"));
+    expect(onAnonymize).toHaveBeenCalledWith(
+      faces,
+      expect.objectContaining({
+        prompts: [expect.anything(), expect.anything()],
+      }),
+    );
+  });
+});

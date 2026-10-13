@@ -1,4 +1,5 @@
 import {
+  AnonymizeMode,
   isAnonymizeAvailable,
   VideoAnonymizeModule,
 } from "@/modules/video-anonymize";
@@ -10,8 +11,8 @@ import {
 
 /**
  * EdgeTAM tracking on the device: the user taps each dancer on the first frame — a couple, or
- * one person dancing alone — and each is followed from memory through the clip, drawn as a
- * silhouette in its own colour. The native side sizes everything by the number of taps.
+ * one person dancing alone — and each is followed from memory through the clip, drawn in its
+ * own colour. The native side sizes everything by the number of taps.
  * Nothing leaves the phone. ~0.5–0.75 s per frame on a Pixel 10a — see L3 in AGENT_TASKS.md.
  */
 /**
@@ -24,16 +25,29 @@ const STAGE_SHARE: Record<string, [start: number, share: number]> = {
   silhouette: [0.03, 0.97],
 };
 
+const MAX_SECONDS = 30;
+
 export function overallFraction(stage: string, fraction: number): number {
   const [start, share] = STAGE_SHARE[stage] ?? [0, 1];
   return start + share * Math.min(Math.max(fraction, 0), 1);
 }
 
-export const onDeviceTracking: AnonymizeProvider = {
-  id: "on-device-tracking",
-  labelKey: "anonymizeProviderTracking",
+/**
+ * The on-device providers differ only in what they draw from the tracked dancers: silhouettes,
+ * or the dancers as filmed with their heads covered and the room blurred. Taps, limits, preview
+ * and outline are the same.
+ */
+const onDevice = (
+  id: string,
+  labelKey: string,
+  descriptionKey: string,
+  mode: AnonymizeMode,
+): AnonymizeProvider => ({
+  id,
+  labelKey,
+  descriptionKey,
   minSeconds: 1,
-  maxSeconds: 30,
+  maxSeconds: MAX_SECONDS,
   sendsFootageOffDevice: false,
   promptCount: 2,
   minPromptCount: 1,
@@ -56,9 +70,9 @@ export const onDeviceTracking: AnonymizeProvider = {
         {
           startSeconds: request.startSeconds,
           endSeconds: request.endSeconds,
-          maxSeconds: onDeviceTracking.maxSeconds,
+          maxSeconds: MAX_SECONDS,
           height: 720,
-          mode: "silhouette",
+          mode,
           segmenter: "edgetam",
           prompts: (request.prompts ?? []).map((p) => [p.x, p.y]),
         },
@@ -94,4 +108,20 @@ export const onDeviceTracking: AnonymizeProvider = {
   async releaseOutline() {
     await VideoAnonymizeModule?.releaseOutline();
   },
-};
+});
+
+/** Each dancer becomes a flat silhouette; nothing of the footage is kept (fail-closed). */
+export const onDeviceTracking = onDevice(
+  "on-device-tracking",
+  "anonymizeProviderTracking",
+  "anonymizeProviderTrackingNote",
+  "silhouette",
+);
+
+/** The dancers stay as filmed; their heads are covered and the room is blurred. */
+export const onDeviceFaces = onDevice(
+  "on-device-faces",
+  "anonymizeProviderFaces",
+  "anonymizeProviderFacesNote",
+  "faces",
+);
