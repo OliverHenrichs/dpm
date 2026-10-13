@@ -150,6 +150,14 @@ step, or it pushes the pre-change snapshot.
 `createTangoList`, `createLindyHopList`, `createBlankList`, each a fresh `IPatternList` with UUID
 types and no modifiers; every template but blank sets `dance`. `TEMPLATE_FOUNDATIONAL_PATTERNS`
 maps a template id to starter patterns, and `resolveTemplatePatterns` resolves their `typeSlug` to
-`typeId` (stable across renames) and gives each the dance's basic rhythm for its counts. Templates
-are picked in `PatternListTemplateModal`. Dance content must be accurate: real pattern names,
+`typeId` (stable across renames) and gives each the dance's basic rhythm for its counts. A template
+pattern names its prerequisites and modifiers by name; `resolveTemplatePatterns` gives the patterns
+ids 1…n and maps those names to ids, dropping any left out. `TEMPLATE_MODIFIERS` (WCS only,
+`WCS_MODIFIERS`) become the list's modifiers through `createTemplateModifiers`. Templates are
+picked in `PatternListTemplateModal`.
+
+`ExampleList.ts` builds the example list the empty Lists screen offers ("Explore an example"):
+eight WCS figures from two beginner courses and a festival, with prerequisites, modifiers and
+tags, opened on the Map. Figure and modifier names stay in English; its name, tags and
+descriptions are `t()` keys (`exampleListName`, `exampleTag*`, `exampleDesc*`). It has no videos. Dance content must be accurate: real pattern names,
 verified terms, variations as modifiers rather than patterns.

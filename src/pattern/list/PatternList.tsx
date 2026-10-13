@@ -208,6 +208,9 @@ const PatternList: React.FC<PatternListProps> = (props) => {
             <Text style={styles.emptyStateText}>
               {hasActiveFilter ? t("noMatchingPatterns") : t("noPatterns")}
             </Text>
+            {!hasActiveFilter && !isReadonly && (
+              <Text style={styles.emptyStateHint}>{t("noPatternsHint")}</Text>
+            )}
           </View>
         }
       />
@@ -294,6 +297,13 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.bodySmall,
     color: theme.colors.textMuted,
     fontStyle: "italic",
+  },
+  emptyStateHint: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textMuted,
+    textAlign: "center",
+    marginTop: theme.space.sm,
+    paddingHorizontal: theme.space.xl,
   },
 }));
 

@@ -154,7 +154,7 @@ describe("filtering the graph", () => {
 
       expect(
         screen.getByText(
-          "No patterns to visualize. Add patterns in the Patterns tab.",
+          "The map shows which patterns build on which. Add patterns in the List tab and pick their prerequisites.",
         ),
       ).toBeOnTheScreen();
     });

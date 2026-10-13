@@ -54,8 +54,33 @@ describe("PatternListSelector", () => {
 
       expect(screen.getByText("No pattern lists yet")).toBeOnTheScreen();
       expect(
-        screen.getByText("Tap + to create your first pattern list"),
+        screen.getByText(/what each one builds on, its variations/),
       ).toBeOnTheScreen();
+    });
+
+    it("opens the example list on the map", async () => {
+      await renderSelector([]);
+
+      fireEvent.press(screen.getByText("Explore an example"));
+
+      await waitFor(() =>
+        expect(router.navigate).toHaveBeenCalledWith("/graph"),
+      );
+      const [example] = await storedLists();
+      expect(example.name).toBe("Example: West Coast Swing");
+      expect(await AsyncStorage.getItem("@activeListId")).toBe(example.id);
+      const patterns = JSON.parse(
+        (await AsyncStorage.getItem(`@patterns_${example.id}`)) ?? "[]",
+      );
+      expect(patterns.length).toBeGreaterThan(0);
+    });
+
+    it("offers to start a list of one's own", async () => {
+      await renderSelector([]);
+
+      fireEvent.press(screen.getByText("Start my own list"));
+
+      expect(await screen.findByText("West Coast Swing")).toBeOnTheScreen();
     });
 
     it("still offers the create button", async () => {

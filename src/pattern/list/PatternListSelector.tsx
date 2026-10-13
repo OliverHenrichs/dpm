@@ -1,10 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Text, View } from "react-native";
-import { IconButton, ListRow } from "@/src/common/ui";
+import { Button, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Icon } from "@/src/common/ui/Icon";
 import { router, useFocusEffect } from "expo-router";
-import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
+import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import {
   deletePatternList,
   loadAllPatternLists,
@@ -27,6 +27,7 @@ import AppDialog from "@/src/common/components/AppDialog";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
+import { createExampleList } from "@/src/pattern/data/ExampleList";
 
 const PatternListSelector: React.FC = () => {
   const { t } = useTranslation();
@@ -185,21 +186,33 @@ const PatternListSelector: React.FC = () => {
 
   const handleCreateList = async (
     newList: IPatternList,
-    initialPatterns: NewPattern[],
+    initialPatterns: IPattern[],
   ) => {
     try {
       await savePatternList(newList);
       if (initialPatterns.length > 0) {
-        await savePatterns(
-          newList.id,
-          initialPatterns.map((p, i) => ({ ...p, id: i + 1 })),
-        );
+        await savePatterns(newList.id, initialPatterns);
       }
       await loadLists();
       await setActiveList(newList);
       router.navigate("/patterns");
     } catch (error) {
       console.error("Error creating list:", error);
+      showError(t("errorCreatingList"));
+    }
+  };
+
+  /** Saves the example list and opens it on the Map, where the idea shows best. */
+  const handleOpenExample = async () => {
+    const { patterns, ...example } = createExampleList(t);
+    try {
+      await savePatternList(example);
+      await savePatterns(example.id, patterns);
+      await loadLists();
+      await setActiveList(example);
+      router.navigate("/graph");
+    } catch (error) {
+      console.error("Error creating the example list:", error);
       showError(t("errorCreatingList"));
     }
   };
@@ -251,6 +264,19 @@ const PatternListSelector: React.FC = () => {
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>{t("noPatternLists")}</Text>
       <Text style={styles.emptySubtext}>{t("noPatternListsHint")}</Text>
+      <View style={styles.emptyActions}>
+        <Button
+          title={t("exploreExampleList")}
+          icon="map-outline"
+          onPress={handleOpenExample}
+        />
+        <Button
+          title={t("startOwnList")}
+          variant="secondary"
+          icon="plus"
+          onPress={() => setShowTemplateModal(true)}
+        />
+      </View>
     </View>
   );
 
@@ -443,6 +469,13 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.bodySmall,
     color: theme.colors.textMuted,
     textAlign: "center",
+    paddingHorizontal: theme.space.lg,
+  },
+  emptyActions: {
+    marginTop: theme.space.xl,
+    gap: theme.space.md,
+    alignSelf: "stretch",
+    paddingHorizontal: theme.space.xl,
   },
   actionSheetOptions: {
     gap: theme.space.xs,
