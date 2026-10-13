@@ -120,6 +120,8 @@
   "templateBachataDescription": "4 tipos de passo: Básico, Giro, Dip, Onda",
   "templateTangoName": "Tango argentino",
   "templateTangoDescription": "5 tipos de passo: Caminhada, Ochos, Giros, Sacadas, Boleos",
+  "templateZoukName": "Zouk brasileiro",
+  "templateZoukDescription": "3 tipos de passo: Básico, Giro, Elástico",
   "templateLindyName": "Lindy Hop",
   "templateLindyDescription": "4 tipos de passo: Swing-Out, Círculo, Tuck-Turn, Aéreo",
   "addPatternType": "Adicionar tipo",

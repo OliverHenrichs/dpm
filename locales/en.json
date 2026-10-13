@@ -120,6 +120,8 @@
   "templateBachataDescription": "4 pattern types: Basic, Turn, Dip, Wave",
   "templateTangoName": "Argentine Tango",
   "templateTangoDescription": "5 pattern types: Walk, Ochos, Giros, Sacadas, Boleos",
+  "templateZoukName": "Brazilian Zouk",
+  "templateZoukDescription": "3 pattern types: Basic, Turn, Elástico",
   "templateLindyName": "Lindy Hop",
   "templateLindyDescription": "4 pattern types: Swing-Out, Circle, Tuck-Turn, Aerial",
   "addPatternType": "Add type",
