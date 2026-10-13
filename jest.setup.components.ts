@@ -121,7 +121,13 @@ jest.mock("react-native-qrcode-svg", () => "QRCode");
 // app actually uses (verified by grep over src/). Tests that care about
 // navigation assert on `router.navigate`.
 jest.mock("expo-router", () => ({
-  router: { navigate: jest.fn(), push: jest.fn(), back: jest.fn() },
+  router: {
+    navigate: jest.fn(),
+    push: jest.fn(),
+    back: jest.fn(),
+    setParams: jest.fn(),
+  },
+  useLocalSearchParams: jest.fn(() => ({})),
   useNavigation: () => ({ openDrawer: jest.fn(), closeDrawer: jest.fn() }),
   usePathname: () => "/patterns",
   useFocusEffect: (callback: () => void | (() => void)) => {

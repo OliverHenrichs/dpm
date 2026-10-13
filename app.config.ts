@@ -181,6 +181,16 @@ export default (): ExpoConfig => ({
       },
     ],
     "expo-localization",
+    // DPM in other apps' share menus, for a link or a video (src/videoLinks/). Android only for
+    // now: the iOS side is a share extension, a second target with its own app group and
+    // signing, left until iOS ships.
+    [
+      "expo-share-intent",
+      {
+        androidIntentFilters: ["text/*", "video/*"],
+        disableIOS: true,
+      },
+    ],
     // The launcher icon in the other colours Settings offers (src/settings/appIcon.ts); the
     // default indigo icon is the one above. iOS reuses the tinted icon, which has no colour.
     [

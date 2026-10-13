@@ -26,6 +26,8 @@ export type PatternVideosProps = {
   onEditVideo?: () => void;
   /** Edits one video, from a button on its thumbnail; only videos saved on the phone get one. */
   onEditVideoAt?: (index: number) => void;
+  /** Puts one video online (upload, then its link), from a button on its thumbnail; local only. */
+  onPutOnlineAt?: (index: number) => void;
   /** Opens a video's transcript (L4); its thumbnail is pressable once it has one. */
   onOpenTranscript?: (index: number) => void;
   disabled?: boolean;
@@ -40,6 +42,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   onRemoveVideo,
   onEditVideo,
   onEditVideoAt,
+  onPutOnlineAt,
   onOpenTranscript,
   disabled = false,
   full = false,
@@ -51,6 +54,9 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
     return videoRefs.map((ref, idx) => {
       const thumb = thumbnails[idx] ?? "";
       const isUrl = ref.type === "url";
+      const canEdit = !!onEditVideoAt && ref.type === "local";
+      const canPutOnline = !!onPutOnlineAt && ref.type === "local";
+      const actions = 1 + Number(canEdit) + Number(canPutOnline);
       const preview = thumb ? (
         <View>
           <Image source={{ uri: thumb }} style={styles.thumbImage} />
@@ -98,7 +104,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
         </View>
       );
       return (
-        <View key={idx} style={styles.tile}>
+        <View key={idx} style={styles.tile(actions)}>
           <View style={styles.thumbnailWrapper}>
             {/* A transcribed video (L4) opens its transcript, thumbnail or not. */}
             {ref.transcript && onOpenTranscript ? (
@@ -127,14 +133,27 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
             other and the picture, and were cut off by the scroller's edges.
           */}
           <View style={styles.actionBar}>
-            {onEditVideoAt && ref.type === "local" && (
+            {canEdit && (
               <Tappable
-                onPress={() => onEditVideoAt(idx)}
+                onPress={() => onEditVideoAt?.(idx)}
                 accessibilityLabel={t("videoEditN", { n: idx + 1 })}
                 style={styles.action}
               >
                 <Icon
                   name="movie-edit"
+                  size={theme.iconSize.md}
+                  color={theme.colors.primary}
+                />
+              </Tappable>
+            )}
+            {canPutOnline && (
+              <Tappable
+                onPress={() => onPutOnlineAt?.(idx)}
+                accessibilityLabel={t("videoOnlineN", { n: idx + 1 })}
+                style={styles.action}
+              >
+                <Icon
+                  name="cloud-upload-outline"
                   size={theme.iconSize.md}
                   color={theme.colors.primary}
                 />
@@ -200,7 +219,8 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
 
 /**
  * A video's tile, in dp: wide enough for two full touch targets side by side in its action bar,
- * and still three tiles to a phone's width; more scroll sideways.
+ * and still three tiles to a phone's width; more scroll sideways. A tile with a third action
+ * (a local video: edit, put online, remove) grows to keep each a full touch target.
  */
 const TILE_WIDTH = 96;
 const THUMB_HEIGHT = 64;
@@ -218,14 +238,14 @@ const styles = StyleSheet.create((theme) => ({
     ...getCommonRow(),
     marginTop: theme.space.sm,
   },
-  tile: {
-    width: TILE_WIDTH,
+  tile: (actions: number) => ({
+    width: Math.max(TILE_WIDTH, actions * theme.touchTarget),
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
-    overflow: "hidden",
-  },
+    overflow: "hidden" as const,
+  }),
   thumbnailWrapper: {
     position: "relative",
     justifyContent: "center",
@@ -234,12 +254,12 @@ const styles = StyleSheet.create((theme) => ({
     height: THUMB_HEIGHT,
   },
   thumbImage: {
-    width: TILE_WIDTH,
+    width: "100%",
     height: THUMB_HEIGHT,
     resizeMode: "cover",
   },
   urlPlaceholder: {
-    width: TILE_WIDTH,
+    width: "100%",
     height: THUMB_HEIGHT,
     backgroundColor: alpha(theme.colors.primary, 0.2),
     justifyContent: "center",
@@ -247,7 +267,7 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.space.xs,
   },
   noPreview: {
-    width: TILE_WIDTH,
+    width: "100%",
     height: THUMB_HEIGHT,
     justifyContent: "center",
     alignItems: "center",

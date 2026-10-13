@@ -2,6 +2,7 @@ import React from "react";
 import { Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
+import { router, useLocalSearchParams } from "expo-router";
 import { seedBinaryFile } from "@/__mocks__/expo-file-system";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
 import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext";
@@ -498,6 +499,45 @@ describe("PatternListManager", () => {
 
       await waitFor(() => expect(mockedPicker).toHaveBeenCalled());
       expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+    });
+  });
+
+  describe("a video shared to DPM as a new pattern", () => {
+    const LINK = "https://youtu.be/abc123";
+    const mockedParams = useLocalSearchParams as jest.MockedFunction<
+      typeof useLocalSearchParams
+    >;
+    beforeEach(() =>
+      mockedParams.mockReturnValue({ newVideo: LINK, newVideoType: "url" }),
+    );
+    afterEach(() => mockedParams.mockReturnValue({}));
+
+    it("opens the add form with it, and clears the request", async () => {
+      const { list } = await renderManager([]);
+
+      fireEvent.changeText(
+        await screen.findByPlaceholderText("Pattern Name"),
+        "Whip",
+      );
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () => {
+        const [saved] = await storedPatterns(list.id);
+        expect(saved.videoRefs).toEqual([{ type: "url", value: LINK }]);
+      });
+      expect(router.setParams).toHaveBeenCalledWith({
+        newVideo: undefined,
+        newVideoType: undefined,
+      });
+      // A link cannot be shortened or anonymized: no offer to edit it.
+      expect(screen.queryByText("Edit the video?")).toBeNull();
+    });
+
+    it("opens nothing in a read-only list", async () => {
+      await renderManager([], { readonly: true });
+
+      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+      expect(router.setParams).toHaveBeenCalled();
     });
   });
 

@@ -28,6 +28,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Brazilian Zouk is a new dance for lists. Its template starts with Basic, Viradinha, Lateral, Elástico and Bonus, on the slow-quick-quick rhythm.",
         "In the pattern editor, tags are picked like prerequisites, right in their section: the pattern's own come first and highlighted, then the list's others, most used first. A newly chosen one moves to the front. Both searches need only a few letters in order, like \"sgpsh\" for Sugar Push.",
         "Text fields in forms, dialogs and sheets now stay above the keyboard while you type.",
+        "To put a video from your phone online, tap the cloud button under it, share it to YouTube or another video app, then share the link back to DPM. The link takes the video's place and keeps its transcript, so the video can now go into a list you publish. DPM also shows up when you share a link or a video from other apps, to add it to a pattern.",
       ],
       zh: [
         "在舞步编辑器中，舞步命名之前“保存”按钮会保持灰色。点按它会显示提示，并跳到名称字段。",
@@ -36,6 +37,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "列表新增舞种 Brazilian Zouk（巴西祖克）。它的模板自带 Basic、Viradinha、Lateral、Elástico 和 Bonus，节奏为慢-快-快。",
         "在舞步编辑器中，标签现在像前置舞步一样直接在其栏目中选择：舞步已有的标签排在前面并高亮显示，其后是列表中的其他标签，最常用的在前。新选的会移到最前面。两处搜索只需按顺序输入几个字母即可，例如用“sgpsh”找到 Sugar Push。",
         "表单、对话框和底部面板中的文本框在输入时会保持在键盘上方。",
+        "要把手机里的视频放到网上，点按视频下方的云朵按钮，把它分享到 YouTube 或其他视频应用，然后把链接分享回 DPM。链接会取代该视频并保留它的转写，这样视频就能放进你发布的列表。从其他应用分享链接或视频时，也可以选择 DPM，把它添加到舞步中。",
       ],
       hi: [
         "पैटर्न संपादक में, जब तक पैटर्न का नाम न हो, सहेजें बटन धूसर रहता है। उस पर टैप करने से यही बताया जाता है और आप नाम वाले फ़ील्ड पर पहुँच जाते हैं।",
@@ -44,6 +46,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "सूचियों के लिए नया नृत्य: Brazilian Zouk। इसका टेम्पलेट Basic, Viradinha, Lateral, Elástico और Bonus से शुरू होता है, धीमी-तेज़-तेज़ लय पर।",
         'पैटर्न संपादक में, टैग अब पूर्वापेक्षाओं की तरह सीधे अपने भाग में चुने जाते हैं: पैटर्न के अपने टैग पहले और हाइलाइट होकर दिखते हैं, फिर सूची के बाकी टैग, सबसे ज़्यादा इस्तेमाल वाले पहले। नया चुना गया टैग सबसे आगे आ जाता है। दोनों खोजों में बस कुछ अक्षर क्रम से लिखने होते हैं, जैसे Sugar Push के लिए "sgpsh"।',
         "फ़ॉर्म, संवाद और शीट के टेक्स्ट फ़ील्ड अब टाइप करते समय कीबोर्ड के ऊपर दिखते रहते हैं।",
+        "फ़ोन के किसी वीडियो को ऑनलाइन डालने के लिए उसके नीचे क्लाउड बटन पर टैप करें, उसे YouTube या किसी दूसरे वीडियो ऐप पर शेयर करें, फिर लिंक को DPM पर वापस शेयर करें। लिंक वीडियो की जगह ले लेता है और उसका ट्रांसक्रिप्ट रखता है, इसलिए अब वीडियो आपकी प्रकाशित सूची में जा सकता है। दूसरे ऐप से लिंक या वीडियो शेयर करते समय भी DPM दिखता है, ताकि आप उसे किसी पैटर्न में जोड़ सकें।",
       ],
       es: [
         "En el editor de figuras, Guardar sigue en gris hasta que la figura tenga nombre. Al tocarlo, te lo indica y te lleva al campo del nombre.",
@@ -52,6 +55,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Zouk brasileño es un nuevo baile para las listas. Su plantilla empieza con Basic, Viradinha, Lateral, Elástico y Bonus, con el ritmo lento-rápido-rápido.",
         "En el editor de figuras, las etiquetas se eligen como los requisitos previos, en su propia sección: primero las de la figura, resaltadas, y después las demás de la lista, las más usadas primero. La que eliges pasa al principio. Para buscar en ambas bastan unas letras en orden, como «sgpsh» para Sugar Push.",
         "Los campos de texto de formularios, diálogos y paneles ahora quedan por encima del teclado mientras escribes.",
+        "Para subir a internet un vídeo de tu teléfono, toca el botón de la nube debajo de él, compártelo en YouTube u otra app de vídeos y luego comparte el enlace de vuelta a DPM. El enlace ocupa el lugar del vídeo y conserva su transcripción, así que el vídeo ya puede ir en una lista que publiques. DPM también aparece al compartir un enlace o un vídeo desde otras apps, para añadirlo a una figura.",
       ],
       fr: [
         "Dans l'éditeur de figures, Enregistrer reste grisé tant que la figure n'a pas de nom. Un appui l'indique et vous amène au champ du nom.",
@@ -60,6 +64,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Le zouk brésilien est une nouvelle danse pour les listes. Son modèle commence par Basic, Viradinha, Lateral, Elástico et Bonus, sur le rythme lent-rapide-rapide.",
         "Dans l'éditeur de figures, les étiquettes se choisissent comme les prérequis, dans leur section : celles de la figure d'abord, en surbrillance, puis les autres de la liste, les plus utilisées en premier. Une étiquette choisie passe en tête. Les deux recherches n'ont besoin que de quelques lettres dans l'ordre, comme « sgpsh » pour Sugar Push.",
         "Les champs de texte des formulaires, boîtes de dialogue et panneaux restent désormais au-dessus du clavier pendant la saisie.",
+        "Pour mettre en ligne une vidéo de votre téléphone, touchez le bouton nuage sous la vidéo, partagez-la vers YouTube ou une autre app de vidéos, puis partagez le lien vers DPM. Le lien prend la place de la vidéo et garde sa transcription : la vidéo peut désormais figurer dans une liste que vous publiez. DPM apparaît aussi quand vous partagez un lien ou une vidéo depuis d'autres apps, pour l'ajouter à une figure.",
       ],
       ar: [
         "في محرر الخطوات، يبقى زر الحفظ رماديًا حتى يكون للخطوة اسم. يوضّح النقر عليه ذلك وينقلك إلى حقل الاسم.",
@@ -68,6 +73,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "الزوك البرازيلي رقصة جديدة للقوائم. يبدأ قالبه بـ Basic وViradinha وLateral وElástico وBonus، على إيقاع بطيء-سريع-سريع.",
         'في محرر الخطوات، تُختار الوسوم الآن مثل المتطلبات السابقة في قسمها مباشرة: وسوم الخطوة أولًا ومميزة، ثم بقية وسوم القائمة، الأكثر استخدامًا أولًا. ينتقل الوسم المختار حديثًا إلى البداية. ويكفي في البحثين كتابة بضعة أحرف بالترتيب، مثل "sgpsh" للعثور على Sugar Push.',
         "تبقى حقول النص في النماذج ومربعات الحوار واللوحات الآن فوق لوحة المفاتيح أثناء الكتابة.",
+        "لنشر فيديو من هاتفك على الإنترنت، اضغط زر السحابة أسفله، وشاركه إلى YouTube أو تطبيق فيديو آخر، ثم شارك الرابط عائدًا إلى DPM. يحل الرابط محل الفيديو ويحتفظ بنصه المفرغ، فيمكن للفيديو الآن أن يدخل في قائمة تنشرها. يظهر DPM أيضًا عند مشاركة رابط أو فيديو من تطبيقات أخرى، لإضافته إلى خطوة.",
       ],
       bn: [
         "প্যাটার্ন সম্পাদকে, প্যাটার্নের নাম না দেওয়া পর্যন্ত সংরক্ষণ বোতামটি ধূসর থাকে। এতে ট্যাপ করলে সেটাই জানানো হয় এবং আপনাকে নামের ঘরে নিয়ে যাওয়া হয়।",
@@ -76,6 +82,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "তালিকার জন্য নতুন নাচ: ব্রাজিলিয়ান জুক। এর টেমপ্লেট Basic, Viradinha, Lateral, Elástico ও Bonus দিয়ে শুরু হয়, ধীর-দ্রুত-দ্রুত ছন্দে।",
         'প্যাটার্ন সম্পাদকে, ট্যাগ এখন পূর্বশর্তের মতো তার নিজের অংশেই বাছাই করা যায়: প্যাটার্নের নিজের ট্যাগ আগে, হাইলাইট করা, তারপর তালিকার বাকি ট্যাগ, সবচেয়ে বেশি ব্যবহৃতগুলো আগে। নতুন বাছাই করা ট্যাগ সামনে চলে আসে। দুটো খোঁজেই ক্রমানুসারে কয়েকটি অক্ষর লিখলেই হয়, যেমন Sugar Push-এর জন্য "sgpsh"।',
         "ফর্ম, ডায়ালগ ও শিটের লেখার ঘরগুলো এখন টাইপ করার সময় কিবোর্ডের ওপরে থাকে।",
+        "ফোনের কোনো ভিডিও অনলাইনে দিতে তার নিচের ক্লাউড বোতামে ট্যাপ করুন, সেটি YouTube বা অন্য কোনো ভিডিও অ্যাপে শেয়ার করুন, তারপর লিংকটি DPM-এ ফিরিয়ে শেয়ার করুন। লিংকটি ভিডিওর জায়গা নেয় এবং এর প্রতিলিপি রাখে, তাই ভিডিওটি এখন আপনার প্রকাশিত তালিকায় যেতে পারে। অন্য অ্যাপ থেকে লিংক বা ভিডিও শেয়ার করার সময়ও DPM দেখা যায়, যাতে সেটি কোনো প্যাটার্নে যোগ করা যায়।",
       ],
       pt: [
         "No editor de passos, Salvar fica cinza até o passo ter um nome. Tocar nele avisa isso e leva você ao campo do nome.",
@@ -84,6 +91,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Zouk brasileiro é uma nova dança para as listas. O modelo começa com Basic, Viradinha, Lateral, Elástico e Bonus, no ritmo lento-rápido-rápido.",
         'No editor de passos, as etiquetas são escolhidas como os pré-requisitos, na própria seção: primeiro as do passo, destacadas, depois as outras da lista, as mais usadas primeiro. A recém-escolhida vai para o início. Nas duas buscas bastam algumas letras em ordem, como "sgpsh" para Sugar Push.',
         "Os campos de texto de formulários, diálogos e painéis agora ficam acima do teclado enquanto você digita.",
+        "Para colocar online um vídeo do seu celular, toque no botão de nuvem abaixo dele, compartilhe-o com o YouTube ou outro app de vídeos e depois compartilhe o link de volta com o DPM. O link toma o lugar do vídeo e mantém a transcrição, então o vídeo já pode entrar numa lista que você publica. O DPM também aparece quando você compartilha um link ou um vídeo de outros apps, para adicioná-lo a um passo.",
       ],
       de: [
         "Im Figuren-Editor bleibt Speichern ausgegraut, bis die Figur einen Namen hat. Ein Tippen darauf sagt das und springt zum Namensfeld.",
@@ -92,6 +100,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Brazilian Zouk ist als neuer Tanz für Listen dabei. Die Vorlage bringt Basic, Viradinha, Lateral, Elástico und Bonus mit, im Rhythmus langsam-schnell-schnell.",
         "Im Figuren-Editor werden Tags jetzt wie Voraussetzungen direkt in ihrem Abschnitt gewählt: die der Figur zuerst und hervorgehoben, dann die übrigen der Liste, die meistgenutzten vorn. Ein neu gewählter Tag rückt nach vorn. Beide Suchen brauchen nur ein paar Buchstaben in der richtigen Reihenfolge, etwa „sgpsh“ für Sugar Push.",
         "Textfelder in Formularen, Dialogen und Blättern bleiben beim Tippen jetzt über der Tastatur.",
+        "Um ein Video von deinem Handy online zu stellen, tippe auf den Wolken-Knopf darunter, teile es mit YouTube oder einer anderen Video-App und teile den Link dann zurück an DPM. Der Link nimmt den Platz des Videos ein und behält sein Transkript, sodass das Video jetzt in eine Liste kann, die du veröffentlichst. DPM erscheint auch, wenn du einen Link oder ein Video aus anderen Apps teilst, um es einer Figur hinzuzufügen.",
       ],
     },
   },

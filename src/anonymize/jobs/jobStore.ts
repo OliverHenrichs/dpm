@@ -307,6 +307,16 @@ export const jobStore = {
     }
   },
 
+  /**
+   * Changes a video outside any job, through the same path a kept result takes: the mounted
+   * tree when [listId] is the active list, storage otherwise, and every open form's draft. A
+   * local video swapped for its link goes this way (`src/videoLinks/`).
+   */
+  async updateVideo(listId: string, oldUri: string, update: VideoUpdate) {
+    await attach(listId, oldUri, update);
+    emit();
+  },
+
   /** Closes a suggestion's review, used or not; the transcript stays on its video. */
   settle(id: string) {
     const job = jobs.find((j) => j.id === id);
