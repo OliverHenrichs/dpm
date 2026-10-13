@@ -2,6 +2,7 @@ import { createExampleList } from "@/src/pattern/data/ExampleList";
 import {
   createPatternType,
   createTemplateModifiers,
+  createZoukList,
   resolveTemplatePatterns,
   TEMPLATE_FOUNDATIONAL_PATTERNS,
   TEMPLATE_MODIFIERS,
@@ -81,6 +82,20 @@ describe("resolving template patterns", () => {
     const pass = patterns.find((p) => p.name === "Left Side Pass")!;
     expect(tuckTurn.prerequisites).toEqual([pass.id]);
     expect(pass.modifierRefs).toHaveLength(3);
+  });
+
+  it("leads the Zouk template from the basic through the viradinha into lateral", () => {
+    const list = createZoukList();
+    const patterns = resolveTemplatePatterns(
+      TEMPLATE_FOUNDATIONAL_PATTERNS.zouk,
+      list.patternTypes,
+      "zouk",
+    );
+    const byName = (name: string) => patterns.find((p) => p.name === name)!;
+    expect(patterns).toHaveLength(5);
+    expect(byName("Viradinha").prerequisites).toEqual([byName("Basic").id]);
+    expect(byName("Lateral").prerequisites).toEqual([byName("Viradinha").id]);
+    expect(byName("Basic").rhythm).toBe("1 (2) 3 4 5 (6) 7 8");
   });
 
   it("drops a prerequisite that was left out", () => {

@@ -109,6 +109,7 @@ describe("PatternListTemplateModal", () => {
         "Salsa",
         "Bachata",
         "Argentine Tango",
+        "Brazilian Zouk",
         "Lindy Hop",
       ]) {
         expect(screen.getByText(name)).toBeOnTheScreen();

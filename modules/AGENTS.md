@@ -7,7 +7,7 @@ Two local Expo modules, autolinked, **Android only** (Kotlin). Each exports its 
 
 | Module | JS surface | Used by |
 |---|---|---|
-| `video-anonymize` | `VideoAnonymizeModule.anonymize(uri, options)` with an `onProgress` event (`stage`, `progress`); `isAnonymizeAvailable` | `src/anonymize/` (*Shorten* and *Anonymize*) |
+| `video-anonymize` | `VideoAnonymizeModule.anonymize(uri, options)` with an `onProgress` event (`stage`, `progress`); `prepareOutline` / `outline(uri, { atSeconds, prompts })` / `releaseOutline` (the tap frame with the tapped dancers highlighted, kept warm between taps, `DancerOutline.kt`); `isAnonymizeAvailable` | `src/anonymize/` (*Shorten* and *Anonymize*) |
 | `audio-extract` | `AudioExtractModule.extractSpeechWav(uri, maxSeconds)` (16 kHz mono PCM for Whisper), `sha256File(uri)`; `isAudioExtractAvailable` | `src/transcribe/` (audio, model hashes), `src/suggest/` (model hash) |
 
 ## video-anonymize

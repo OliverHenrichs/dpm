@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   GestureResponderEvent,
+  Image,
   LayoutChangeEvent,
   Pressable,
   Text,
@@ -36,6 +37,10 @@ import {
   AnonymizePreviewer,
   useAnonymizePreview,
 } from "@/src/anonymize/components/useAnonymizePreview";
+import {
+  DancerOutliner,
+  useDancerOutline,
+} from "@/src/anonymize/components/useDancerOutline";
 
 /** The jobs the sheet offers, one tab each. */
 export type VideoEditTab = "shorten" | "anonymize" | "speech";
@@ -63,6 +68,12 @@ type Props = {
    * is no preview. Only for a provider that keeps the footage on the device.
    */
   previewer?: AnonymizePreviewer;
+  /**
+   * After each tap, highlights who the taps picked on the frame, so a wrong pick is caught
+   * before the render; left out, the frame shows the taps alone. Only for a provider that
+   * outlines on the device.
+   */
+  outliner?: DancerOutliner;
 };
 
 /** The preview is a fraction of a second; slowed down, the eye can follow it. */
@@ -100,7 +111,9 @@ const WHOLE_CLIP_SLACK = 0.1;
  * Both cuts only hand the request over; the caller runs it as a background job. Anonymizing is
  * experimental — slow on older phones, and a silhouette can lose its dancer — so the tab says
  * so, and once the dancers are tapped the first half second can be rendered and watched before
- * the full render. Changing the taps throws that preview away.
+ * the full render. Changing the taps throws that preview away. Each tap also highlights, on the
+ * frame, who the taps picked (the masks tracking starts from), so a tap on the wrong person or on
+ * nobody is caught before the render; *Tap again* starts over.
  *
  * Remote providers are not offered a consent step yet — `runAnonymize` refuses them without
  * one, so adding a remote provider fails loudly until that step exists.
@@ -113,6 +126,7 @@ const VideoEditPanel: React.FC<Props> = ({
   cutOptions,
   speech,
   previewer,
+  outliner,
 }) => {
   const { t } = useTranslation();
   const [provider, setProvider] = useState<AnonymizeProvider | undefined>(
@@ -133,6 +147,13 @@ const VideoEditPanel: React.FC<Props> = ({
     render: renderPreviewOf,
     reset: resetPreview,
   } = useAnonymizePreview(previewer);
+  const {
+    outline,
+    find: findOutline,
+    reset: resetOutline,
+    prepare: prepareOutline,
+    release: releaseOutline,
+  } = useDancerOutline(outliner);
 
   const limits: TrimLimits = {
     duration,
@@ -207,11 +228,33 @@ const VideoEditPanel: React.FC<Props> = ({
     if (provider) renderPreviewOf(provider, request());
   };
 
-  /** New taps, so any preview of the old ones is stale. */
+  const canOutline =
+    !!outliner && !!provider?.outline && !provider.sendsFootageOffDevice;
+
+  /**
+   * New taps, so any preview of the old ones is stale. With taps left, the frame highlights who
+   * they picked: all of them, since a couple's taps decide each other's outline.
+   */
   const retap = (next: Point[]) => {
     resetPreview();
     setTaps(next);
+    if (provider && canOutline && next.length > 0) {
+      findOutline(provider, {
+        sourceUri,
+        atSeconds: trim.start,
+        prompts: next,
+      });
+    } else {
+      resetOutline();
+    }
   };
+  const shownOutline =
+    outline.status === "ready"
+      ? outline.outline
+      : outline.status === "finding"
+        ? outline.shown
+        : undefined;
+  const missed = shownOutline?.found.findIndex((found) => !found) ?? -1;
 
   const tabs: Segment<VideoEditTab>[] = [
     { value: "shorten", label: t("videoShorten") },
@@ -233,11 +276,16 @@ const VideoEditPanel: React.FC<Props> = ({
     seekTo(trim.start);
     retap([]);
     setStep("prompt");
+    // Ready before the first tap: loading the model and encoding the frame are most of the wait.
+    if (canOutline) {
+      prepareOutline(provider, { sourceUri, atSeconds: trim.start });
+    }
   };
 
   const backToTrim = () => {
     setStep("trim");
     retap([]);
+    releaseOutline();
     player.play();
   };
 
@@ -348,6 +396,31 @@ const VideoEditPanel: React.FC<Props> = ({
     </>
   );
 
+  /** What the highlight on the frame says: still looking, check it, or a tap that missed. */
+  const outlineNote = () => {
+    if (outline.status === "idle") return null;
+    const note =
+      outline.status === "finding"
+        ? t("anonymizeOutlineFinding")
+        : outline.status === "failed"
+          ? t("anonymizeOutlineFailed")
+          : missed >= 0
+            ? t("anonymizeOutlineMissed", { number: missed + 1 })
+            : t("anonymizeOutlineCheck");
+    const warn =
+      outline.status === "failed" ||
+      (outline.status === "ready" && missed >= 0);
+    return (
+      <AppText
+        variant="caption"
+        color={warn ? "danger" : "textMuted"}
+        testID="outline-note"
+      >
+        {note}
+      </AppText>
+    );
+  };
+
   /** Render the first half second, then watch it over the frame, or say it failed. */
   const previewSection = () => {
     if (preview.status === "ready") {
@@ -400,6 +473,15 @@ const VideoEditPanel: React.FC<Props> = ({
           nativeControls={!loopSelection}
           contentFit="contain"
         />
+        {prompting && shownOutline && (
+          <Image
+            source={{ uri: shownOutline.uri }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="contain"
+            accessibilityLabel={t("anonymizeOutlineCheck")}
+            testID="dancer-outline"
+          />
+        )}
         {prompting && (
           <Pressable
             style={StyleSheet.absoluteFill}
@@ -522,13 +604,17 @@ const VideoEditPanel: React.FC<Props> = ({
             </>
           )}
           <AppText variant="bodySmall">{tapHint}</AppText>
+          {outlineNote()}
           <AppText variant="caption" color="textMuted">
             {t("anonymizeTapFrameHint")}
           </AppText>
           {canPreview && tapsDone && previewSection()}
           {action(
             t("anonymizeSeconds", { seconds }),
-            () => onAnonymize(provider, request()),
+            () => {
+              releaseOutline();
+              onAnonymize(provider, request());
+            },
             !tapsDone,
           )}
         </>

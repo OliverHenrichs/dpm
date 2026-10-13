@@ -12,6 +12,7 @@ import {
   createPatternType,
   createSalsaList,
   createTangoList,
+  createZoukList,
   createTemplateModifiers,
   createWestCoastSwingList,
   resolveTemplatePatterns,
@@ -113,6 +114,13 @@ const TEMPLATES: Template[] = [
     nameKey: "templateTangoName",
     descriptionKey: "templateTangoDescription",
     create: createTangoList,
+  },
+  {
+    id: "zouk",
+    dance: "zouk",
+    nameKey: "templateZoukName",
+    descriptionKey: "templateZoukDescription",
+    create: createZoukList,
   },
   {
     id: "lindy",

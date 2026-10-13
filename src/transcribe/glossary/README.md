@@ -1,6 +1,6 @@
 # Dance glossaries
 
-Standard terms of each dance, one file per dance (`wcs`, `lindy`, `salsa`, `bachata`, `tango`).
+Standard terms of each dance, one file per dance (`wcs`, `lindy`, `salsa`, `bachata`, `tango`, `zouk`).
 Transcription puts them into Whisper's prompt so it spells "anchor step" and "dile que no"
 correctly, after the video's own pattern and the list's names. Only as many as fit go in
 (`MAX_PROMPT_CHARS` in `../vocabulary.ts`), so **order matters: most commonly said first**.

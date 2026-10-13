@@ -92,6 +92,17 @@ export function createTangoList(): IPatternList {
 }
 
 /**
+ * Brazilian Zouk default pattern list
+ */
+export function createZoukList(): IPatternList {
+  return createPatternList("Brazilian Zouk", [
+    createPatternType("basic", PATTERN_TYPE_COLORS.emerald),
+    createPatternType("turn", PATTERN_TYPE_COLORS.violet),
+    createPatternType("elastico", PATTERN_TYPE_COLORS.amber),
+  ]);
+}
+
+/**
  * Lindy Hop default pattern list
  */
 export function createLindyHopList(): IPatternList {
@@ -400,6 +411,51 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
         counts: 8,
         level: "intermediate",
         description: "Swing out initiated from open position.",
+      },
+    ],
+    // The named basic patterns of traditional (Rio) Zouk, after Wikipedia ("Brazilian Zouk") and
+    // Bath Zouk's move library, which also gives the viradinha as the way into lateral.
+    zouk: [
+      {
+        name: "Basic",
+        typeSlug: "basic",
+        counts: 8,
+        level: "beginner",
+        description:
+          "Passo básico: the foundational slow-quick-quick basic, danced forward and back.",
+      },
+      {
+        name: "Viradinha",
+        typeSlug: "turn",
+        counts: 8,
+        level: "beginner",
+        description:
+          'The "little turn": the follower turns half a turn into a side-by-side step.',
+        prerequisites: ["Basic"],
+      },
+      {
+        name: "Lateral",
+        typeSlug: "basic",
+        counts: 8,
+        level: "beginner",
+        description: "Side-stepping basic that travels across the floor.",
+        prerequisites: ["Viradinha"],
+      },
+      {
+        name: "Elástico",
+        typeSlug: "elastico",
+        counts: 8,
+        level: "beginner",
+        description:
+          "Leader draws the follower forward by the hand, as if stretching an elastic band. Also called Raul.",
+      },
+      {
+        name: "Bonus",
+        typeSlug: "turn",
+        counts: 8,
+        level: "beginner",
+        description:
+          "Travelling follower turn of about one and a half rotations. Also called boomerang (bumerangue).",
       },
     ],
   };
