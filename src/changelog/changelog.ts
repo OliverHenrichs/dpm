@@ -19,7 +19,8 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "1.0.2",
+    version: "1.1.0",
+    date: "2026-10-13",
     notes: {
       en: [
         "In the pattern editor, Save stays greyed out until the pattern has a name. Tapping it says so and takes you to the name field.",
