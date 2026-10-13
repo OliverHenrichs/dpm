@@ -318,12 +318,6 @@ module.exports = {
       functions: 94,
       lines: 94,
     },
-    "src/pattern/list/TagPickerBottomSheet.tsx": {
-      statements: 92,
-      branches: 82,
-      functions: 94,
-      lines: 94,
-    },
     "src/pattern/list/PatternTags.tsx": {
       statements: 90,
       branches: 68,

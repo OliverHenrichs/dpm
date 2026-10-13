@@ -194,6 +194,15 @@ describe("EditPatternForm prerequisite picker", () => {
     expect(onAccepted.mock.calls[0][0].prerequisites).toEqual([2, 1]);
   });
 
+  it("removes a chosen prerequisite when it is tapped", () => {
+    const patterns = [pattern(1, "Sugar Push"), pattern(2, "Whip", [1])];
+    renderForm(patterns, patterns[1]);
+
+    fireEvent.press(chipFor("Sugar Push"));
+
+    expect(isSelected("Sugar Push")).toBe(false);
+  });
+
   it("narrows the choice fuzzily by name", () => {
     renderForm([pattern(1, "Sugar Push"), pattern(2, "Whip")]);
 
