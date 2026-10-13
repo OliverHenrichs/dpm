@@ -1,95 +1,53 @@
 package expo.modules.videoanonymize
 
+import android.graphics.Bitmap
+
 /**
- * Draws one frame's two-colour silhouette from tracked masks, on the drawing worker thread (see
- * [EdgeTamSegmenter]): nothing here is touched by the tracking thread, so the GPU can track the
- * next frame while this draws the last. Everything is drawn from masks and joint positions only
- * — the frame's pixels steer the edge filter but are never copied (fail-closed).
- *
- * EdgeTAM's masks are 256x256 over the whole frame — a dancer is ~40 mask pixels wide — so how
- * they are brought up to the frame decides how the silhouette looks. The logits are interpolated
- * bilinearly at the frame's resolution, as SAM 2 itself does (nearest-neighbour sampling gave
- * 2–3 px staircases), and a guided filter (He et al.) with the frame's luminance as guide pulls
- * the edges onto the real contours — fingers, hems, gaps between legs. It can only add to the
- * plain mask, never remove from it, so thin limbs survive.
+ * Draws one frame's two-colour silhouette from tracked masks ([MaskScores]). Everything is drawn
+ * from masks and joint positions only — the frame's pixels steer the edge filter but are never
+ * copied (fail-closed).
  */
 class SilhouetteDrawer(
   private val w: Int,
   private val h: Int,
   private val objects: Int,
-) {
-  /** One frame of the smoothing window: its weight, masks (256x256 logits) and joints. */
-  class Entry(val weight: Float, val masks: List<FloatArray>, val joints: List<FloatArray?>)
-
-  private val score = Array(objects) { FloatArray(w * h) }
-  private val filter = GuidedFilter(w, h, RADIUS, EPS)
-  private val upsampler = Bilinear(MASK, MASK, w, h)
-  private val plain = FloatArray(w * h)
+) : FrameDrawer {
+  private val scores = MaskScores(w, h, objects)
+  private val score = scores.score
   private val body = BooleanArray(w * h)
   private val eroded = BooleanArray(w * h)
   private val rowRun = IntArray(w * h)
   private val bands = List(objects) { BooleanArray(w * h) }
 
-  /**
-   * Draws the frame whose [guide] (luminance) and window are given;
-   * [current] is its index in [window]. Writes [labels] and [drawnPx] (pixels per dancer) and
-   * returns how many dancers are visible.
-   *
-   * Masks and joints are averaged over the window (the caller weights 1-2-3-2-1 over ±2 frames):
-   * masks near the threshold flickered frame to frame, and the clip is processed offline.
-   */
-  fun draw(window: List<Entry>, current: Int, guide: FloatArray, labels: ByteArray, drawnPx: IntArray): Int {
-    val smoothed = List(objects) { FloatArray(MASK * MASK) }
-    var weightSum = 0f
-    for (e in window) {
-      weightSum += e.weight
-      e.masks.forEachIndexed { i, m ->
-        val out = smoothed[i]
-        for (p in out.indices) out[p] += e.weight * m[p]
-      }
+  /** A frame as labels (0 = background, 1..n = dancer, then outlines), coloured on the way out. */
+  private class Labelled(val labels: ByteArray, found: Int) : DrawnFrame(found) {
+    override fun writeTo(out: IntArray) {
+      for (p in labels.indices) out[p] = SLOT_PALETTE[labels[p].toInt().coerceIn(0, SLOT_PALETTE.lastIndex)]
     }
-    for (out in smoothed) for (p in out.indices) out[p] /= weightSum
+  }
 
-    filter.setGuide(guide)
-    smoothed.forEachIndexed { i, mask ->
-      val s = score[i]
-      // The filter may only add, never remove: it averaged thin limbs (a raised forearm, a few
-      // px wide) with the background below the threshold and erased them. So a pixel is body if
-      // the guided result or the plain mask says so — the filter still adds detail.
-      upsampler.resample(mask, s, Bilinear.Out.SIGMOID)
-      System.arraycopy(s, 0, plain, 0, s.size)
-      filter.apply(s)
-      val pl = plain
-      parallelFor(h) { y -> for (x in 0 until w) { val q = y * w + x; s[q] = maxOf(s[q], pl[q]) - 0.5f } }
-    }
+  override fun draw(
+    window: List<WindowEntry>,
+    current: Int,
+    guide: FloatArray,
+    source: Bitmap?,
+    drawnPx: IntArray,
+  ): DrawnFrame {
+    val labels = ByteArray(w * h)
+    return Labelled(labels, drawLabels(window, current, guide, labels, drawnPx))
+  }
+
+  /** Writes [labels] and [drawnPx] (pixels per dancer); returns how many dancers are visible. */
+  private fun drawLabels(window: List<WindowEntry>, current: Int, guide: FloatArray, labels: ByteArray, drawnPx: IntArray): Int {
+    scores.compute(window, guide)
 
     // Fill: where two dancers overlap, the stronger mask wins. The masks cannot say who is in
     // front — EdgeTAM "completes" a body behind an occluding arm, so both claim the arm, and a
     // "whoever moves onto the other's area is in front" rule failed when a dancer passed behind.
     // So the fill picks one; arm bands and outlines (below) keep the shapes readable.
-    val sc = score
-    parallelFor(h) { y ->
-      for (x in 0 until w) {
-        val p = y * w + x
-        var best = 0f
-        var label = 0
-        for (i in 0 until objects) {
-          val v = sc[i][p]
-          if (v > best) {
-            best = v
-            label = i + 1
-          }
-        }
-        labels[p] = label.toByte()
-      }
-    }
-    java.util.Arrays.fill(drawnPx, 0)
-    for (p in 0 until w * h) {
-      val l = labels[p].toInt()
-      if (l > 0) drawnPx[l - 1]++
-    }
+    fillLabels(score, w, h, labels, drawnPx)
 
-    val joints = List(objects) { averagedJoints(window, current, it) }
+    val joints = List(objects) { scores.joints(window, current, it, requireCurrent = true) }
     val armBands = armBands(labels, joints)
     drawOutlines(labels)
     armBands.forEachIndexed { i, band -> outlineBand(labels, band, (OUTLINE_BASE + i).toByte()) }
@@ -146,30 +104,6 @@ class SilhouetteDrawer(
         if (drop in 0 until h) count -= run[drop * w + x]
         if (y in 0 until h) dst[y * w + x] = count == full
       }
-    }
-  }
-
-  /**
-   * A dancer's joints averaged over the window, in output pixels as [x, y, visibility] x 33 —
-   * or null when the drawn frame itself has no pose (neighbours only steady, never invent).
-   */
-  private fun averagedJoints(window: List<Entry>, current: Int, i: Int): FloatArray? {
-    if (window[current].joints[i] == null) return null
-    val sum = FloatArray(33 * 3)
-    val weights = FloatArray(33)
-    for (e in window) {
-      val joints = e.joints[i] ?: continue
-      for (n in 0 until 33) {
-        sum[n * 3] += e.weight * joints[n * 3]
-        sum[n * 3 + 1] += e.weight * joints[n * 3 + 1]
-        sum[n * 3 + 2] += e.weight * joints[n * 3 + 2]
-        weights[n] += e.weight
-      }
-    }
-    return FloatArray(33 * 3) { idx ->
-      val n = idx / 3
-      val v = sum[idx] / weights[n]
-      when (idx % 3) { 0 -> v * w; 1 -> v * h; else -> v }
     }
   }
 
@@ -290,7 +224,6 @@ class SilhouetteDrawer(
   }
 
   companion object {
-    private const val MASK = 256
     /** Outline width in output pixels, and the label of dancer 0's outline (dancer i: +i). */
     private const val OUTLINE_WIDTH = 3
     const val OUTLINE_BASE = 3
@@ -303,8 +236,47 @@ class SilhouetteDrawer(
     private const val ARM_RADIUS_MAX = 22f
     /** Upper arms and forearms (BlazePose indices). */
     private val ARMS = arrayOf(11 to 13, 13 to 15, 12 to 14, 14 to 16)
-    /** Guided-filter window radius and regularisation, at 720p. */
-    private const val RADIUS = 8
-    private const val EPS = 1e-3f
+
+    private const val BACKGROUND = 0xFF1E1E24.toInt()
+
+    /**
+     * Index = label: background, dancer 1, dancer 2, then their outlines ([OUTLINE_BASE] +
+     * dancer) in light shades — dark shades were barely visible on the phone, against both the
+     * dark background and the partner's fill. Opaque ARGB.
+     */
+    val SLOT_PALETTE = intArrayOf(
+      BACKGROUND,
+      0xFFF59E0B.toInt(), // dancer 1, amber
+      0xFF14B8A6.toInt(), // dancer 2, teal
+      0xFFFDE68A.toInt(), // dancer 1 outline, pale amber
+      0xFF99F6E4.toInt(), // dancer 2 outline, pale teal
+    )
+  }
+}
+
+/**
+ * Labels each pixel with the dancer whose score is strongest there (0 where none claims it), and
+ * counts each dancer's pixels into [drawnPx].
+ */
+fun fillLabels(score: Array<FloatArray>, w: Int, h: Int, labels: ByteArray, drawnPx: IntArray) {
+  parallelFor(h) { y ->
+    for (x in 0 until w) {
+      val p = y * w + x
+      var best = 0f
+      var label = 0
+      for (i in score.indices) {
+        val v = score[i][p]
+        if (v > best) {
+          best = v
+          label = i + 1
+        }
+      }
+      labels[p] = label.toByte()
+    }
+  }
+  java.util.Arrays.fill(drawnPx, 0)
+  for (p in 0 until w * h) {
+    val l = labels[p].toInt()
+    if (l > 0) drawnPx[l - 1]++
   }
 }

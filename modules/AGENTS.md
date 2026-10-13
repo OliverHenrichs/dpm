@@ -14,12 +14,20 @@ Two local Expo modules, autolinked, **Android only** (Kotlin). Each exports its 
 
 One native call does both edits. It always transcodes the selection with Media3 (`Transcoder.kt`):
 `mode: "passthrough"` with `height: 0` is *Shorten* (source size, audio kept); `mode: "silhouette"`
-drops the audio, scales down, then tracks the dancers and renders silhouettes: EdgeTAM tracks each
+and `mode: "faces"` drop the audio, scale down, then track the dancers and render them: EdgeTAM tracks each
 dancer from the user's tap on the GPU (`EdgeTamTracker.kt`, `EdgeTamSegmenter.kt`), RF-DETR person
 detection re-anchors a dancer lost behind their partner, occasionally and on the CPU
 (`PersonDetector.kt`), MediaPipe pose adds the skeleton lines (`PoseSkeletons.kt`; on the tracked
 frames only, joints interpolated between, like the masks), and
-`SilhouetteDrawer` / `SilhouetteRenderer` / `SurfaceEncoder` draw and encode.
+`SilhouetteRenderer` / `SurfaceEncoder` decode and encode. What is drawn is a `FrameDrawer`
+(`RenderStyle`), both on the same smoothed, edge-sharpened masks (`MaskScores`):
+`SilhouetteDrawer` draws silhouettes from masks and joints only, never a source pixel
+(fail-closed); `FaceDrawer` copies the pixels inside the dancers' masks over a blurred, dimmed
+room and covers each head with an opaque oval placed from the pose's face joints (the top of the
+mask without a pose). Faces mode is not fail-closed: a confidently wrong pose shows a face, which
+is why the result is reviewed and the UI says to check it. It keeps a copy of each frame as a
+`Bitmap` (native memory) until drawn, so the Java heap, already near its cap on 30 s clips, does
+not grow.
 
 **The model weights are not in git** (`modules/video-anonymize/.gitignore`): `android/src/main/assets/`
 must hold `edgetam/` (the four LiteRT graphs and their `.bin` constants), `rfdetr/rfdetr-seg-small.tflite`

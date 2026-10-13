@@ -1,4 +1,5 @@
-export type AnonymizeMode = "passthrough" | "silhouette";
+/** Trim only, the dancers as silhouettes, or as filmed with their heads covered. */
+export type AnonymizeMode = "passthrough" | "silhouette" | "faces";
 export type AnonymizeSegmenter = "edgetam";
 
 export type AnonymizeOptions = {
@@ -11,7 +12,7 @@ export type AnonymizeOptions = {
   height?: number;
   mode?: AnonymizeMode;
   segmenter?: AnonymizeSegmenter;
-  /** Silhouette mode: one normalised [x, y] point per dancer on the first frame. */
+  /** Silhouette and faces: one normalised [x, y] point per dancer on the first frame. */
   prompts?: number[][];
 };
 
@@ -57,6 +58,7 @@ export type OutlineResult = {
 };
 
 export type ProgressEventPayload = {
+  /** "silhouette" is the render stage in either anonymizing mode. */
   stage: "transcode" | "silhouette";
   progress: number;
 };

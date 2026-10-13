@@ -28,6 +28,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Brazilian Zouk is a new dance for lists. Its template starts with Basic, Viradinha, Lateral, Elástico and Bonus, on the slow-quick-quick rhythm.",
         "In the pattern editor, tags are picked like prerequisites, right in their section: the pattern's own come first and highlighted, then the list's others, most used first. A newly chosen one moves to the front. Both searches need only a few letters in order, like \"sgpsh\" for Sugar Push.",
         "Text fields in forms, dialogs and sheets now stay above the keyboard while you type.",
+        "Anonymize can now keep the dancers as filmed and cover only their faces, with the room blurred, as an alternative to silhouettes. Pick it under “How to hide them” when you tap the dancers.",
       ],
       zh: [
         "在舞步编辑器中，舞步命名之前“保存”按钮会保持灰色。点按它会显示提示，并跳到名称字段。",
@@ -36,6 +37,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "列表新增舞种 Brazilian Zouk（巴西祖克）。它的模板自带 Basic、Viradinha、Lateral、Elástico 和 Bonus，节奏为慢-快-快。",
         "在舞步编辑器中，标签现在像前置舞步一样直接在其栏目中选择：舞步已有的标签排在前面并高亮显示，其后是列表中的其他标签，最常用的在前。新选的会移到最前面。两处搜索只需按顺序输入几个字母即可，例如用“sgpsh”找到 Sugar Push。",
         "表单、对话框和底部面板中的文本框在输入时会保持在键盘上方。",
+        "匿名化现在除了剪影之外，还可以保留舞者原本的样子，只遮住他们的脸，并模糊背景。点选舞者时，在“隐藏方式”中选择即可。",
       ],
       hi: [
         "पैटर्न संपादक में, जब तक पैटर्न का नाम न हो, सहेजें बटन धूसर रहता है। उस पर टैप करने से यही बताया जाता है और आप नाम वाले फ़ील्ड पर पहुँच जाते हैं।",
@@ -44,6 +46,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "सूचियों के लिए नया नृत्य: Brazilian Zouk। इसका टेम्पलेट Basic, Viradinha, Lateral, Elástico और Bonus से शुरू होता है, धीमी-तेज़-तेज़ लय पर।",
         'पैटर्न संपादक में, टैग अब पूर्वापेक्षाओं की तरह सीधे अपने भाग में चुने जाते हैं: पैटर्न के अपने टैग पहले और हाइलाइट होकर दिखते हैं, फिर सूची के बाकी टैग, सबसे ज़्यादा इस्तेमाल वाले पहले। नया चुना गया टैग सबसे आगे आ जाता है। दोनों खोजों में बस कुछ अक्षर क्रम से लिखने होते हैं, जैसे Sugar Push के लिए "sgpsh"।',
         "फ़ॉर्म, संवाद और शीट के टेक्स्ट फ़ील्ड अब टाइप करते समय कीबोर्ड के ऊपर दिखते रहते हैं।",
+        "गुमनाम करने में अब सिल्हूट के अलावा एक और विकल्प है: डांसर वैसे ही दिखते हैं जैसे फ़िल्माए गए थे, सिर्फ़ उनके चेहरे ढके जाते हैं और कमरा धुंधला होता है। डांसरों पर टैप करते समय इसे “कैसे छिपाएँ” में चुनें।",
       ],
       es: [
         "En el editor de figuras, Guardar sigue en gris hasta que la figura tenga nombre. Al tocarlo, te lo indica y te lleva al campo del nombre.",
@@ -52,6 +55,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Zouk brasileño es un nuevo baile para las listas. Su plantilla empieza con Basic, Viradinha, Lateral, Elástico y Bonus, con el ritmo lento-rápido-rápido.",
         "En el editor de figuras, las etiquetas se eligen como los requisitos previos, en su propia sección: primero las de la figura, resaltadas, y después las demás de la lista, las más usadas primero. La que eliges pasa al principio. Para buscar en ambas bastan unas letras en orden, como «sgpsh» para Sugar Push.",
         "Los campos de texto de formularios, diálogos y paneles ahora quedan por encima del teclado mientras escribes.",
+        "Anonimizar ahora puede dejar a los bailarines tal como se grabaron y tapar solo sus caras, con la sala desenfocada, como alternativa a las siluetas. Elígelo en «Cómo ocultarlos» al tocar a los bailarines.",
       ],
       fr: [
         "Dans l'éditeur de figures, Enregistrer reste grisé tant que la figure n'a pas de nom. Un appui l'indique et vous amène au champ du nom.",
@@ -60,6 +64,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Le zouk brésilien est une nouvelle danse pour les listes. Son modèle commence par Basic, Viradinha, Lateral, Elástico et Bonus, sur le rythme lent-rapide-rapide.",
         "Dans l'éditeur de figures, les étiquettes se choisissent comme les prérequis, dans leur section : celles de la figure d'abord, en surbrillance, puis les autres de la liste, les plus utilisées en premier. Une étiquette choisie passe en tête. Les deux recherches n'ont besoin que de quelques lettres dans l'ordre, comme « sgpsh » pour Sugar Push.",
         "Les champs de texte des formulaires, boîtes de dialogue et panneaux restent désormais au-dessus du clavier pendant la saisie.",
+        "L’anonymisation peut désormais garder les danseurs tels que filmés et couvrir seulement leurs visages, la salle floutée, au lieu des silhouettes. Choisissez-la sous « Comment les masquer » en touchant les danseurs.",
       ],
       ar: [
         "في محرر الخطوات، يبقى زر الحفظ رماديًا حتى يكون للخطوة اسم. يوضّح النقر عليه ذلك وينقلك إلى حقل الاسم.",
@@ -68,6 +73,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "الزوك البرازيلي رقصة جديدة للقوائم. يبدأ قالبه بـ Basic وViradinha وLateral وElástico وBonus، على إيقاع بطيء-سريع-سريع.",
         'في محرر الخطوات، تُختار الوسوم الآن مثل المتطلبات السابقة في قسمها مباشرة: وسوم الخطوة أولًا ومميزة، ثم بقية وسوم القائمة، الأكثر استخدامًا أولًا. ينتقل الوسم المختار حديثًا إلى البداية. ويكفي في البحثين كتابة بضعة أحرف بالترتيب، مثل "sgpsh" للعثور على Sugar Push.',
         "تبقى حقول النص في النماذج ومربعات الحوار واللوحات الآن فوق لوحة المفاتيح أثناء الكتابة.",
+        "يمكن لإخفاء الهوية الآن أن يُبقي الراقصين كما صُوِّروا ويغطي وجوههم فقط مع تمويه الغرفة، بديلًا عن الصور الظلية. اختره من «طريقة الإخفاء» عند النقر على الراقصين.",
       ],
       bn: [
         "প্যাটার্ন সম্পাদকে, প্যাটার্নের নাম না দেওয়া পর্যন্ত সংরক্ষণ বোতামটি ধূসর থাকে। এতে ট্যাপ করলে সেটাই জানানো হয় এবং আপনাকে নামের ঘরে নিয়ে যাওয়া হয়।",
@@ -76,6 +82,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "তালিকার জন্য নতুন নাচ: ব্রাজিলিয়ান জুক। এর টেমপ্লেট Basic, Viradinha, Lateral, Elástico ও Bonus দিয়ে শুরু হয়, ধীর-দ্রুত-দ্রুত ছন্দে।",
         'প্যাটার্ন সম্পাদকে, ট্যাগ এখন পূর্বশর্তের মতো তার নিজের অংশেই বাছাই করা যায়: প্যাটার্নের নিজের ট্যাগ আগে, হাইলাইট করা, তারপর তালিকার বাকি ট্যাগ, সবচেয়ে বেশি ব্যবহৃতগুলো আগে। নতুন বাছাই করা ট্যাগ সামনে চলে আসে। দুটো খোঁজেই ক্রমানুসারে কয়েকটি অক্ষর লিখলেই হয়, যেমন Sugar Push-এর জন্য "sgpsh"।',
         "ফর্ম, ডায়ালগ ও শিটের লেখার ঘরগুলো এখন টাইপ করার সময় কিবোর্ডের ওপরে থাকে।",
+        "পরিচয় গোপন করায় এখন সিলুয়েটের বদলে নৃত্যশিল্পীদের যেমন ধারণ করা হয়েছিল তেমন রেখে শুধু মুখ ঢাকা যায়, ঘরটি ঝাপসা করে। নৃত্যশিল্পীদের ট্যাপ করার সময় “কীভাবে লুকাবেন”-এ এটি বেছে নিন।",
       ],
       pt: [
         "No editor de passos, Salvar fica cinza até o passo ter um nome. Tocar nele avisa isso e leva você ao campo do nome.",
@@ -84,6 +91,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Zouk brasileiro é uma nova dança para as listas. O modelo começa com Basic, Viradinha, Lateral, Elástico e Bonus, no ritmo lento-rápido-rápido.",
         'No editor de passos, as etiquetas são escolhidas como os pré-requisitos, na própria seção: primeiro as do passo, destacadas, depois as outras da lista, as mais usadas primeiro. A recém-escolhida vai para o início. Nas duas buscas bastam algumas letras em ordem, como "sgpsh" para Sugar Push.',
         "Os campos de texto de formulários, diálogos e painéis agora ficam acima do teclado enquanto você digita.",
+        "Anonimizar agora pode manter os dançarinos como foram filmados e cobrir só o rosto, com o ambiente desfocado, como alternativa às silhuetas. Escolha em “Como escondê-los” ao tocar nos dançarinos.",
       ],
       de: [
         "Im Figuren-Editor bleibt Speichern ausgegraut, bis die Figur einen Namen hat. Ein Tippen darauf sagt das und springt zum Namensfeld.",
@@ -92,6 +100,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         "Brazilian Zouk ist als neuer Tanz für Listen dabei. Die Vorlage bringt Basic, Viradinha, Lateral, Elástico und Bonus mit, im Rhythmus langsam-schnell-schnell.",
         "Im Figuren-Editor werden Tags jetzt wie Voraussetzungen direkt in ihrem Abschnitt gewählt: die der Figur zuerst und hervorgehoben, dann die übrigen der Liste, die meistgenutzten vorn. Ein neu gewählter Tag rückt nach vorn. Beide Suchen brauchen nur ein paar Buchstaben in der richtigen Reihenfolge, etwa „sgpsh“ für Sugar Push.",
         "Textfelder in Formularen, Dialogen und Blättern bleiben beim Tippen jetzt über der Tastatur.",
+        "Beim Anonymisieren können die Tanzenden jetzt auch wie gefilmt bleiben, nur mit verdeckten Gesichtern und unscharfem Raum, statt als Silhouetten. Wähle das unter „Wie verbergen“, wenn du die Tanzenden antippst.",
       ],
     },
   },

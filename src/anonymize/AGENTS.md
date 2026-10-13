@@ -1,8 +1,8 @@
 # Video jobs, Shorten and Anonymize — `src/anonymize/`
 
 The on-device video tools' shared machinery: the job queue every heavy task runs through, the
-review step, and the two video edits (_Shorten_, _Anonymize_ into a silhouette). Android only for
-now. Transcription is in `src/transcribe/`, suggestions in `src/suggest/`, the native side in
+review step, and the two video edits (_Shorten_, and _Anonymize_ into silhouettes or with only
+the faces covered). Android only for now. Transcription is in `src/transcribe/`, suggestions in `src/suggest/`, the native side in
 `modules/`. Design history and device measurements: `AGENT_TASKS.md` L3 (and L4 for speech).
 Unqualified paths are relative to `src/anonymize/`.
 
@@ -15,8 +15,13 @@ Unqualified paths are relative to `src/anonymize/`.
   ends in one button naming the result ("Shorten to 18 s"); options that change the job are
   `SwitchRow`s above that button, never chips. A disabled button says why under it. Before a cut
   a switch offers to transcribe the whole video first, queued ahead of the cut.
+- **Two ways to anonymize**, picked on the tap step under _How to hide them_ (a
+  `SegmentedControl`, each provider's `descriptionKey` under it): _Silhouettes_ (the default,
+  first in `ALL_PROVIDERS`) and _Faces only_ (the dancers as filmed, heads covered by an opaque
+  oval, the room blurred and dimmed). Both are the same EdgeTAM tracking from the same taps, so
+  switching keeps the taps and their outline and only drops a preview.
 - **Anonymize is labelled experimental** (badge and note on its tab): slow on older phones, and
-  a silhouette can lose its dancer. Once the dancers are tapped, _Preview the first half second_
+  tracking can lose a dancer. Once the dancers are tapped, _Preview the first half second_
   renders `PREVIEW_SECONDS` of the selection (`previewAnonymize.ts`, through
   `jobStore.runExclusive`, not a job) and loops it slowed down over the tap frame; changing the
   taps throws it away (`components/useAnonymizePreview.ts`).
@@ -88,7 +93,8 @@ Keeping goes through `jobs/replaceVideo.ts`:
   put the original back;
 - **the new video carries only the transcript lines inside the cut, retimed** (`trimTranscript` in
   `src/pattern/data/transcripts.ts`). A video the app made carries `generated: { method,
-createdAt }`; a silhouette can only be shortened afterwards, and keeps its provenance.
+createdAt }`; an anonymized video (either way) can only be shortened afterwards, and keeps its
+  provenance.
 
 ## Shorten and Anonymize
 
@@ -101,9 +107,11 @@ createdAt }`; a silhouette can only be shortened afterwards, and keeps its prove
   `Consent` (`ConsentRequiredError`). Never call a provider directly.
 - **Providers are pluggable** (`providers/`): `AnonymizeProvider` declares limits, prompt counts,
   `sendsFootageOffDevice` and `isAvailable()`; `allProviders.ts` lists them, `registry.ts` filters
-  to what runs here. The one shipped provider is `onDeviceTracking.ts` (EdgeTAM tracking from taps,
-  1 to 30 s, one dancer or a couple). With one provider the editor shows no method picker. A
-  remote provider would need the consent step, which does not exist yet.
+  to what runs here. Both shipped providers are in `onDeviceTracking.ts` (EdgeTAM tracking from
+  taps, 1 to 30 s, one dancer or a couple) and differ only in the native `mode`:
+  `onDeviceTracking` (`"silhouette"`) and `onDeviceFaces` (`"faces"`). Their ids are what a kept
+  video's `generated.method` records, so never rename one. With one provider the editor shows no
+  method picker. A remote provider would need the consent step, which does not exist yet.
 - The dancer colours in the editor's markers must match what the pipeline paints; they are data,
   hence the lint disable comment.
 

@@ -40,6 +40,8 @@ export interface AnonymizeProvider {
   readonly id: string;
   /** i18n key of the name shown in the provider picker. */
   readonly labelKey: string;
+  /** i18n key of a line saying what the result looks like, shown under the picker. */
+  readonly descriptionKey?: string;
   /** Shortest and longest clip the provider accepts, in seconds; the trim bar enforces both. */
   readonly minSeconds: number;
   readonly maxSeconds: number;
