@@ -185,7 +185,7 @@ class DancerOutline(private val context: Context) : AutoCloseable {
     private const val DIM = 0.4f
     private const val TINT = 0.35f
     private const val OUTLINE_WIDTH = 3
-    /** The silhouette's colours (SilhouetteRenderer's palette): fill, then outline, per dancer. */
+    /** The silhouette's colours (SilhouetteDrawer.SLOT_PALETTE): fill, then outline, per dancer. */
     private val FILL = intArrayOf(0xFFF59E0B.toInt(), 0xFF14B8A6.toInt())
     private val OUTLINE = intArrayOf(0xFFFDE68A.toInt(), 0xFF99F6E4.toInt())
   }

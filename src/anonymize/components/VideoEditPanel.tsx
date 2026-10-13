@@ -7,13 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
-import {
-  AppText,
-  Button,
-  Chip,
-  Segment,
-  SegmentedControl,
-} from "@/src/common/ui";
+import { AppText, Button, Segment, SegmentedControl } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useEventListener } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -289,6 +283,22 @@ const VideoEditPanel: React.FC<Props> = ({
     player.play();
   };
 
+  /**
+   * Another way to hide the dancers. The taps (and their outline) still hold when it follows as
+   * many dancers, since who is followed does not depend on how they are drawn; a preview does
+   * not.
+   */
+  const chooseProvider = (next: AnonymizeProvider) => {
+    setProvider(next);
+    const fewest = next.minPromptCount ?? next.promptCount;
+    if (dancers < fewest || dancers > next.promptCount) {
+      setDancers(next.promptCount);
+      retap([]);
+    } else {
+      resetPreview();
+    }
+  };
+
   const onTap = (e: GestureResponderEvent) => {
     if (!provider || !videoSize || taps.length >= dancers) return;
     const point = tapToVideoPoint(
@@ -561,23 +571,27 @@ const VideoEditPanel: React.FC<Props> = ({
             )}
           </View>
           {providers.length > 1 && (
-            <View style={styles.row}>
-              {providers.map((p) => {
-                const selected = p.id === provider.id;
-                return (
-                  <Chip
-                    key={p.id}
-                    label={t(p.labelKey)}
-                    selected={selected}
-                    onPress={() => {
-                      setProvider(p);
-                      setDancers(p.promptCount);
-                      retap([]);
-                    }}
-                  />
-                );
-              })}
-            </View>
+            <>
+              <AppText variant="label">{t("anonymizeHow")}</AppText>
+              <SegmentedControl
+                kind="choice"
+                accessibilityLabel={t("anonymizeHow")}
+                segments={providers.map((p) => ({
+                  value: p.id,
+                  label: t(p.labelKey),
+                }))}
+                value={provider.id}
+                onChange={(id) => {
+                  const next = providers.find((p) => p.id === id);
+                  if (next) chooseProvider(next);
+                }}
+              />
+              {provider.descriptionKey && (
+                <AppText variant="caption" color="textMuted">
+                  {t(provider.descriptionKey)}
+                </AppText>
+              )}
+            </>
           )}
           {fewestDancers < provider.promptCount && (
             <>
@@ -665,7 +679,6 @@ const styles = StyleSheet.create((theme) => ({
     maxHeight: 420,
     backgroundColor: theme.media.black,
   },
-  row: { ...getCommonRow(), gap: theme.space.sm, flexWrap: "wrap" },
   labelRow: {
     ...getCommonRow(),
     justifyContent: "space-between",
