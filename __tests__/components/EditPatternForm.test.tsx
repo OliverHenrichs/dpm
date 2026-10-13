@@ -141,6 +141,71 @@ describe("EditPatternForm prerequisite picker", () => {
     ).toBeOnTheScreen();
   });
 
+  /** The prerequisite chips' labels, front to back, read off the picker's scroller. */
+  const prerequisiteChips = (names: string[]) =>
+    screen
+      .getAllByRole("button")
+      .map((b) => b.props.accessibilityLabel as string)
+      .filter((label) => names.includes(label));
+
+  it("puts the chosen first, then the most used, then the rest by name", () => {
+    const patterns = [
+      pattern(1, "Sugar Push"),
+      pattern(2, "Whip", [1, 3]),
+      pattern(3, "Underarm Turn"),
+      pattern(4, "Tuck Turn", [3]),
+      pattern(5, "Basket Whip", [1, 3]),
+      pattern(6, "New", [2]),
+    ];
+    renderForm(patterns, patterns[5]);
+
+    expect(prerequisiteChips(patterns.map((p) => p.name))).toEqual([
+      "Whip",
+      "Underarm Turn",
+      "Sugar Push",
+      "Basket Whip",
+      "Tuck Turn",
+      "New",
+    ]);
+  });
+
+  it("puts a newly chosen prerequisite first", () => {
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    const patterns = [
+      pattern(1, "Sugar Push"),
+      pattern(2, "Whip"),
+      pattern(3, "Tuck Turn", [1]),
+    ];
+    renderWithProviders(
+      <EditPatternForm
+        patterns={patterns}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+        existing={patterns[2]}
+      />,
+    );
+    openSection("Prerequisites");
+
+    fireEvent.press(chipFor("Whip"));
+    fireEvent.press(screen.getByText("Save"));
+
+    expect(onAccepted.mock.calls[0][0].prerequisites).toEqual([2, 1]);
+  });
+
+  it("narrows the choice fuzzily by name", () => {
+    renderForm([pattern(1, "Sugar Push"), pattern(2, "Whip")]);
+
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Search by name..."),
+      "sgpsh",
+    );
+
+    expect(screen.getByLabelText("Sugar Push")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Whip")).toBeNull();
+  });
+
   it("stays quiet when nothing is disabled", () => {
     renderForm([pattern(1, "Sugar Push"), pattern(2, "Whip")]);
 

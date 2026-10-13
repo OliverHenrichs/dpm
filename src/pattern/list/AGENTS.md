@@ -62,6 +62,13 @@ nothing selected.
 - `EditPatternForm` keeps `rhythm` and `counts` in step; the rules are in
   `src/pattern/rhythm/AGENTS.md`. Its scroll views set `keyboardShouldPersistTaps` so taps on
   suggestions keep the keyboard up.
+- Tags and prerequisites are picked the same way, inside their folded sections
+  (`PatternTags`, `PatternPrerequisites`; order in `pickerOptions.ts`): what the pattern has comes
+  first, selected, most recently chosen first (choosing **prepends**, so the stored arrays are in
+  that order); the rest follow by how many other patterns of the list use them, then by name,
+  with loop-closing prerequisites last. The search narrows the rest with `fuzzyFilter`
+  (`src/common/utils/fuzzyMatch.ts`) and never hides what is chosen. A typed tag no pattern has
+  is offered as *Create "…"*. Nothing picks tags in a separate sheet any more.
 - The pattern list's **+** offers _New pattern_, _From a video_ (gallery) and _Record a video_
   (system camera). The video seeds the new pattern's form; after saving, the app offers to edit it
   (`src/anonymize/AGENTS.md`).

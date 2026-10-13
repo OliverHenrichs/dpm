@@ -8,10 +8,10 @@ outside this directory and will not pull this file in on their own.
 All tests live here (not co-located), named `*.test.ts(x)`. Jest runs **two projects**
 (`jest.config.js`); a test in the wrong directory is **silently never run**.
 
-| Project | Directory | Environment | Use it for |
-|---|---|---|---|
-| `unit` | `__tests__/unit/` | `node` + `ts-jest` | Pure logic: storage, graph maths, parsers, helpers. Fast; most tests belong here. |
-| `components` | `__tests__/components/` | `jest-expo` preset | Anything that renders, and hooks that need the providers. |
+| Project      | Directory               | Environment        | Use it for                                                                        |
+| ------------ | ----------------------- | ------------------ | --------------------------------------------------------------------------------- |
+| `unit`       | `__tests__/unit/`       | `node` + `ts-jest` | Pure logic: storage, graph maths, parsers, helpers. Fast; most tests belong here. |
+| `components` | `__tests__/components/` | `jest-expo` preset | Anything that renders, and hooks that need the providers.                         |
 
 `npm test` runs both, `npm run test:unit` / `test:components` one. `__tests__/rules/` holds the
 Firestore security-rules tests, outside `jest.config.js` on purpose: they need the emulator (Java
@@ -40,17 +40,17 @@ Firestore security-rules tests, outside `jest.config.js` on purpose: they need t
 Every file in `__mocks__/` beside `node_modules` applies automatically, with no `jest.mock()` call.
 Both setup files reset the stateful ones before each test.
 
-| Mock | What it gives a test |
-|---|---|
-| `@react-native-async-storage/async-storage` | A real in-memory store (v3 surface). `seedAsyncStorage` / `peekAsyncStorage`. |
-| `expo-file-system` (+ `/legacy`) | In-memory `File` / `Paths` with real bytes and base64, so no test touches disk and a round trip must preserve bytes. `seedFile` / `seedBinaryFile`, `readFileBytes` / `readFileText` / `listFileUris`. Throws on any surface the app does not use, so a new call site shows up here. jest-expo mocks `/legacy` itself, so `jest.setup.components.ts` re-registers ours (the legacy API has the download progress callback). |
-| `expo-crypto` | `getRandomValues` from Node's CSPRNG (storage mints share keys). |
-| `expo-localization` | A US-English device by default; `setDeviceLocales` picks another. |
-| `expo-alternate-app-icons` | A device that supports alternate icons; `setAlternateIconsSupported(false)` one that does not. |
-| `whisper.rn` | Contexts with `transcribe` / `detectSpeech`; a test sets what speech is found and what each call returns, and sees every call. |
-| `llama.rn` | `initLlama` with `completion` / `release`; `setLlamaAnswer` sets the model's answer (an `Error` rejects), `llamaCalls` records calls. |
-| `react-native-reanimated`, `react-native-worklets` | Hand-written; see below. |
-| `react-native-gesture-handler` | Hand-written; records every gesture a component registers. |
+| Mock                                               | What it gives a test                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@react-native-async-storage/async-storage`        | A real in-memory store (v3 surface). `seedAsyncStorage` / `peekAsyncStorage`.                                                                                                                                                                                                                                                                                                                                               |
+| `expo-file-system` (+ `/legacy`)                   | In-memory `File` / `Paths` with real bytes and base64, so no test touches disk and a round trip must preserve bytes. `seedFile` / `seedBinaryFile`, `readFileBytes` / `readFileText` / `listFileUris`. Throws on any surface the app does not use, so a new call site shows up here. jest-expo mocks `/legacy` itself, so `jest.setup.components.ts` re-registers ours (the legacy API has the download progress callback). |
+| `expo-crypto`                                      | `getRandomValues` from Node's CSPRNG (storage mints share keys).                                                                                                                                                                                                                                                                                                                                                            |
+| `expo-localization`                                | A US-English device by default; `setDeviceLocales` picks another.                                                                                                                                                                                                                                                                                                                                                           |
+| `expo-alternate-app-icons`                         | A device that supports alternate icons; `setAlternateIconsSupported(false)` one that does not.                                                                                                                                                                                                                                                                                                                              |
+| `whisper.rn`                                       | Contexts with `transcribe` / `detectSpeech`; a test sets what speech is found and what each call returns, and sees every call.                                                                                                                                                                                                                                                                                              |
+| `llama.rn`                                         | `initLlama` with `completion` / `release`; `setLlamaAnswer` sets the model's answer (an `Error` rejects), `llamaCalls` records calls.                                                                                                                                                                                                                                                                                       |
+| `react-native-reanimated`, `react-native-worklets` | Hand-written; see below.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `react-native-gesture-handler`                     | Hand-written; records every gesture a component registers.                                                                                                                                                                                                                                                                                                                                                                  |
 
 Mocked in `jest.setup.components.ts` instead: expo-video, expo-camera, the pickers, haptics,
 sharing, the YouTube player, QR codes, and the firebase SDK (`firebase/app`, `/firestore`, `/auth`
@@ -108,7 +108,7 @@ with a `shareCode` activates the provider's live subscription.
   `npx jest --clearCache && rm -rf node_modules/.cache`.
 - **`tsconfig.jest.json` must not override `jsx`.** Components rely on the automatic runtime
   (importing only `FC`/`ReactNode`); the classic transform fails them with `TS2686: 'React' refers
-  to a UMD global`, which shows only as `Failed to collect coverage from …`, does not fail the run,
+to a UMD global`, which shows only as `Failed to collect coverage from …`, does not fail the run,
   and silently drops those files from coverage.
 
 ## Coverage thresholds
