@@ -24,6 +24,7 @@
   "existingTags": "मौजूदा टैग",
   "noMatchingTags": "कोई अप्रयुक्त मिलता-जुलता टैग नहीं मिला",
   "savePattern": "सहेजें",
+  "patternNameRequired": "सहेजने के लिए पैटर्न को एक नाम दें।",
   "cancel": "रद्द करें",
   "noDependentPatterns": "अभी कोई आश्रित पैटर्न नहीं है",
   "buildsInto": "आगे बनता है",

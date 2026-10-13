@@ -152,6 +152,40 @@ describe("EditPatternForm prerequisite picker", () => {
   });
 });
 
+describe("EditPatternForm save", () => {
+  it("greys out Save until the pattern has a name, and says why when tapped", async () => {
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+      />,
+    );
+    const save = () => screen.getByRole("button", { name: "Save" });
+    const hint = "Give the pattern a name to save it.";
+
+    expect(save().props.accessibilityState?.disabled).toBe(true);
+    expect(screen.queryByText(hint)).toBeNull();
+
+    fireEvent.press(save());
+    expect(screen.getByText(hint)).toBeTruthy();
+    expect(onAccepted).not.toHaveBeenCalled();
+
+    // Blank space is not a name.
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "  ");
+    expect(save().props.accessibilityState?.disabled).toBe(true);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    expect(save().props.accessibilityState?.disabled).toBe(false);
+    expect(screen.queryByText(hint)).toBeNull();
+    fireEvent.press(save());
+    await waitFor(() => expect(onAccepted).toHaveBeenCalled());
+  });
+});
+
 describe("EditPatternForm level", () => {
   it("starts without a level, and clears one when tapped again", async () => {
     const onAccepted = jest.fn().mockResolvedValue(true);

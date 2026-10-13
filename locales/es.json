@@ -24,6 +24,7 @@
   "existingTags": "Etiquetas existentes",
   "noMatchingTags": "No se encontraron etiquetas libres que coincidan",
   "savePattern": "Guardar",
+  "patternNameRequired": "Ponle un nombre a la figura para guardarla.",
   "cancel": "Cancelar",
   "noDependentPatterns": "Aún no hay figuras dependientes",
   "buildsInto": "Da lugar a",

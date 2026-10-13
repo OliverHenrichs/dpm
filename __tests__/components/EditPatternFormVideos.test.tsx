@@ -276,8 +276,8 @@ describe("EditPatternForm — videos", () => {
 
 describe("EditPatternForm — a refused save", () => {
   /**
-   * `usePatternCrud` refuses a blank name and `PatternListManager` then leaves
-   * the modal open, so the form stays mounted. It used to reset itself
+   * `usePatternCrud` can refuse a save (a read-only list, a missing id) and
+   * `PatternListManager` then leaves the modal open, so the form stays mounted. It used to reset itself
    * regardless, destroying the edit — including the pattern's id, after which
    * saving again failed with "Cannot edit pattern without id" and the form
    * could only be escaped by cancelling.
@@ -313,7 +313,6 @@ describe("EditPatternForm — a refused save", () => {
   it("keeps the other fields the user had entered", async () => {
     renderRefusing(editable());
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "");
     save();
 
     await waitFor(() =>
@@ -327,7 +326,6 @@ describe("EditPatternForm — a refused save", () => {
   it("keeps the attached videos", async () => {
     renderRefusing(editable());
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "");
     save();
 
     await waitFor(() => expect(removeButtons()).toHaveLength(1));
@@ -336,11 +334,9 @@ describe("EditPatternForm — a refused save", () => {
   it("keeps the pattern's id, so a second attempt can still succeed", async () => {
     const { onAccepted } = renderRefusing(editable());
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "");
     save();
     await waitFor(() => expect(onAccepted).toHaveBeenCalledTimes(1));
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
     save();
 
     await waitFor(() => expect(onAccepted).toHaveBeenCalledTimes(2));

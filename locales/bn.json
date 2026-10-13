@@ -24,6 +24,7 @@
   "existingTags": "বিদ্যমান ট্যাগ",
   "noMatchingTags": "অব্যবহৃত কোনো মিল পাওয়া যায়নি",
   "savePattern": "সংরক্ষণ",
+  "patternNameRequired": "সংরক্ষণ করতে প্যাটার্নটির একটি নাম দিন।",
   "cancel": "বাতিল",
   "noDependentPatterns": "এখনো কোনো নির্ভরশীল প্যাটার্ন নেই",
   "buildsInto": "এর দিকে এগোয়",

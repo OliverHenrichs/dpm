@@ -41,6 +41,11 @@ export interface ButtonProps {
   /** A MaterialCommunityIcons name, shown before the title. */
   icon?: IconName;
   disabled?: boolean;
+  /**
+   * Called on a press while `disabled`, so the button can say why it is greyed out (a hint
+   * beside it). The button still looks and announces itself disabled.
+   */
+  onDisabledPress?: () => void;
   /** Shows a spinner in place of the icon and blocks presses. */
   loading?: boolean;
   accessibilityLabel?: string;
@@ -70,6 +75,7 @@ const Button: React.FC<ButtonProps> = ({
   size = "md",
   icon,
   disabled = false,
+  onDisabledPress,
   loading = false,
   accessibilityLabel,
   accessibilityHint,
@@ -79,14 +85,22 @@ const Button: React.FC<ButtonProps> = ({
   const { theme } = useUnistyles();
   const fg = foreground(theme, variant);
   const inactive = disabled || loading;
+  // A disabled button with an `onDisabledPress` still takes the press, only to explain itself.
+  const explainsItself = disabled && !loading && !!onDisabledPress;
 
   return (
     <Pressable
       onPress={() => {
+        if (disabled) {
+          onDisabledPress?.();
+          return;
+        }
         if (variant === "danger") haptics.heavy();
         onPress();
       }}
-      disabled={inactive}
+      // Pressable writes its `disabled` into accessibilityState, so leave it unset here and
+      // let the state below announce the button as disabled.
+      disabled={explainsItself ? undefined : inactive}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}

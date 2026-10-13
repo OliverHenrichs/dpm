@@ -24,6 +24,7 @@
   "existingTags": "Etiquetas existentes",
   "noMatchingTags": "Nenhuma etiqueta livre corresponde",
   "savePattern": "Salvar",
+  "patternNameRequired": "Dê um nome ao passo para salvá-lo.",
   "cancel": "Cancelar",
   "noDependentPatterns": "Ainda não há passos dependentes",
   "buildsInto": "Leva a",
