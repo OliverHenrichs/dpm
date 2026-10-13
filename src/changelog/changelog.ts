@@ -23,38 +23,47 @@ export const CHANGELOG: ChangelogEntry[] = [
     notes: {
       en: [
         "In the pattern editor, Save stays greyed out until the pattern has a name. Tapping it says so and takes you to the name field.",
+        "A new West Coast Swing list from the template now shows what builds on what (Sugar Tuck on Sugar Push, Tuck Turn on Left Side Pass) and brings turns, hesitation and hand change as modifiers. With no lists yet, you can open an example list to see it all on the Map.",
         "In the pattern editor, tags are picked like prerequisites, right in their section: the pattern's own come first and highlighted, then the list's others, most used first. A newly chosen one moves to the front. Both searches need only a few letters in order, like \"sgpsh\" for Sugar Push.",
       ],
       zh: [
         "在舞步编辑器中，舞步命名之前“保存”按钮会保持灰色。点按它会显示提示，并跳到名称字段。",
+        "用模板新建的 West Coast Swing 列表现在会显示舞步之间的依赖关系（Sugar Tuck 基于 Sugar Push，Tuck Turn 基于 Left Side Pass），并自带转圈、hesitation 和换手等修饰。还没有列表时，你可以打开一个示例列表，在地图上看到这一切。",
         "在舞步编辑器中，标签现在像前置舞步一样直接在其栏目中选择：舞步已有的标签排在前面并高亮显示，其后是列表中的其他标签，最常用的在前。新选的会移到最前面。两处搜索只需按顺序输入几个字母即可，例如用“sgpsh”找到 Sugar Push。",
       ],
       hi: [
         "पैटर्न संपादक में, जब तक पैटर्न का नाम न हो, सहेजें बटन धूसर रहता है। उस पर टैप करने से यही बताया जाता है और आप नाम वाले फ़ील्ड पर पहुँच जाते हैं।",
+        "टेम्पलेट से बनी नई West Coast Swing सूची अब दिखाती है कि कौन-सा पैटर्न किस पर आधारित है (Sugar Tuck, Sugar Push पर; Tuck Turn, Left Side Pass पर), और टर्न, hesitation और हाथ बदलना मॉडिफ़ायर के रूप में साथ लाती है। जब तक कोई सूची न हो, आप एक उदाहरण सूची खोलकर यह सब मानचित्र पर देख सकते हैं।",
         'पैटर्न संपादक में, टैग अब पूर्वापेक्षाओं की तरह सीधे अपने भाग में चुने जाते हैं: पैटर्न के अपने टैग पहले और हाइलाइट होकर दिखते हैं, फिर सूची के बाकी टैग, सबसे ज़्यादा इस्तेमाल वाले पहले। नया चुना गया टैग सबसे आगे आ जाता है। दोनों खोजों में बस कुछ अक्षर क्रम से लिखने होते हैं, जैसे Sugar Push के लिए "sgpsh"।',
       ],
       es: [
         "En el editor de figuras, Guardar sigue en gris hasta que la figura tenga nombre. Al tocarlo, te lo indica y te lleva al campo del nombre.",
+        "Una nueva lista de West Coast Swing creada desde la plantilla ahora muestra qué se basa en qué (Sugar Tuck en Sugar Push, Tuck Turn en Left Side Pass) e incluye giros, hesitation y cambio de mano como modificadores. Si aún no tienes listas, puedes abrir una lista de ejemplo y verlo todo en el Mapa.",
         "En el editor de figuras, las etiquetas se eligen como los requisitos previos, en su propia sección: primero las de la figura, resaltadas, y después las demás de la lista, las más usadas primero. La que eliges pasa al principio. Para buscar en ambas bastan unas letras en orden, como «sgpsh» para Sugar Push.",
       ],
       fr: [
         "Dans l'éditeur de figures, Enregistrer reste grisé tant que la figure n'a pas de nom. Un appui l'indique et vous amène au champ du nom.",
+        "Une nouvelle liste West Coast Swing créée depuis le modèle montre désormais ce qui repose sur quoi (Sugar Tuck sur Sugar Push, Tuck Turn sur Left Side Pass) et apporte les tours, l'hésitation et le changement de main comme modificateurs. Sans liste encore, vous pouvez ouvrir une liste d'exemple pour voir tout cela sur la Carte.",
         "Dans l'éditeur de figures, les étiquettes se choisissent comme les prérequis, dans leur section : celles de la figure d'abord, en surbrillance, puis les autres de la liste, les plus utilisées en premier. Une étiquette choisie passe en tête. Les deux recherches n'ont besoin que de quelques lettres dans l'ordre, comme « sgpsh » pour Sugar Push.",
       ],
       ar: [
         "في محرر الخطوات، يبقى زر الحفظ رماديًا حتى يكون للخطوة اسم. يوضّح النقر عليه ذلك وينقلك إلى حقل الاسم.",
+        "قائمة West Coast Swing الجديدة من القالب تُظهر الآن ما يُبنى على ماذا (Sugar Tuck على Sugar Push، وTuck Turn على Left Side Pass)، وتأتي بالدورانات والـ hesitation وتبديل اليد كمعدِّلات. إن لم تكن لديك قوائم بعد، يمكنك فتح قائمة مثال لترى كل ذلك على الخريطة.",
         'في محرر الخطوات، تُختار الوسوم الآن مثل المتطلبات السابقة في قسمها مباشرة: وسوم الخطوة أولًا ومميزة، ثم بقية وسوم القائمة، الأكثر استخدامًا أولًا. ينتقل الوسم المختار حديثًا إلى البداية. ويكفي في البحثين كتابة بضعة أحرف بالترتيب، مثل "sgpsh" للعثور على Sugar Push.',
       ],
       bn: [
         "প্যাটার্ন সম্পাদকে, প্যাটার্নের নাম না দেওয়া পর্যন্ত সংরক্ষণ বোতামটি ধূসর থাকে। এতে ট্যাপ করলে সেটাই জানানো হয় এবং আপনাকে নামের ঘরে নিয়ে যাওয়া হয়।",
+        "টেমপ্লেট থেকে তৈরি নতুন West Coast Swing তালিকা এখন দেখায় কোনটি কিসের উপর ভিত্তি করে (Sugar Tuck, Sugar Push-এর উপর; Tuck Turn, Left Side Pass-এর উপর), আর টার্ন, hesitation ও হাত বদল মডিফায়ার হিসেবে নিয়ে আসে। এখনও কোনো তালিকা না থাকলে, একটি উদাহরণ তালিকা খুলে মানচিত্রে সব দেখতে পারেন।",
         'প্যাটার্ন সম্পাদকে, ট্যাগ এখন পূর্বশর্তের মতো তার নিজের অংশেই বাছাই করা যায়: প্যাটার্নের নিজের ট্যাগ আগে, হাইলাইট করা, তারপর তালিকার বাকি ট্যাগ, সবচেয়ে বেশি ব্যবহৃতগুলো আগে। নতুন বাছাই করা ট্যাগ সামনে চলে আসে। দুটো খোঁজেই ক্রমানুসারে কয়েকটি অক্ষর লিখলেই হয়, যেমন Sugar Push-এর জন্য "sgpsh"।',
       ],
       pt: [
         "No editor de passos, Salvar fica cinza até o passo ter um nome. Tocar nele avisa isso e leva você ao campo do nome.",
+        "Uma nova lista de West Coast Swing criada pelo modelo agora mostra o que se baseia em quê (Sugar Tuck em Sugar Push, Tuck Turn em Left Side Pass) e traz giros, hesitation e troca de mão como modificadores. Sem listas ainda, você pode abrir uma lista de exemplo e ver tudo no Mapa.",
         'No editor de passos, as etiquetas são escolhidas como os pré-requisitos, na própria seção: primeiro as do passo, destacadas, depois as outras da lista, as mais usadas primeiro. A recém-escolhida vai para o início. Nas duas buscas bastam algumas letras em ordem, como "sgpsh" para Sugar Push.',
       ],
       de: [
         "Im Figuren-Editor bleibt Speichern ausgegraut, bis die Figur einen Namen hat. Ein Tippen darauf sagt das und springt zum Namensfeld.",
+        "Eine neue West-Coast-Swing-Liste aus der Vorlage zeigt jetzt, was worauf aufbaut (Sugar Tuck auf Sugar Push, Tuck Turn auf Left Side Pass), und bringt Drehungen, Hesitation und Handwechsel als Modifikatoren mit. Solange du noch keine Liste hast, kannst du eine Beispielliste öffnen und alles auf der Karte sehen.",
         "Im Figuren-Editor werden Tags jetzt wie Voraussetzungen direkt in ihrem Abschnitt gewählt: die der Figur zuerst und hervorgehoben, dann die übrigen der Liste, die meistgenutzten vorn. Ein neu gewählter Tag rückt nach vorn. Beide Suchen brauchen nur ein paar Buchstaben in der richtigen Reihenfolge, etwa „sgpsh“ für Sugar Push.",
       ],
     },

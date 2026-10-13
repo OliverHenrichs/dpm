@@ -19,12 +19,14 @@ import {
   createPatternType,
   createSalsaList,
   createTangoList,
+  createTemplateModifiers,
   createWestCoastSwingList,
   resolveTemplatePatterns,
   TEMPLATE_FOUNDATIONAL_PATTERNS,
+  TEMPLATE_MODIFIERS,
   TemplatePattern,
 } from "@/src/pattern/data/DefaultPatternLists";
-import { IPatternList, NewPattern } from "@/src/pattern/types/IPatternList";
+import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import { Dance, DANCE_NAME_KEYS, DANCES } from "@/src/pattern/types/Dance";
 import {
   isSlugUnique,
@@ -36,7 +38,7 @@ import {
 interface PatternListTemplateModalProps {
   visible: boolean;
   onClose: () => void;
-  onCreateList: (list: IPatternList, initialPatterns: NewPattern[]) => void;
+  onCreateList: (list: IPatternList, initialPatterns: IPattern[]) => void;
   /** When set the modal opens straight into the configure step in edit mode */
   editList?: IPatternList;
   /** Type IDs that have at least one pattern — their ✕ button is disabled */
@@ -226,7 +228,13 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       );
     } else {
       // ── Create path ───────────────────────────────────────────────────
-      const created = createPatternList(draftName.trim(), finalTypes);
+      const modifiers = createTemplateModifiers(
+        TEMPLATE_MODIFIERS[selectedTemplate?.id ?? ""] ?? [],
+      );
+      const created = {
+        ...createPatternList(draftName.trim(), finalTypes),
+        modifiers,
+      };
       const newList = draftDance ? { ...created, dance: draftDance } : created;
       const includedPatterns = draftPatterns
         .filter((e) => e.included)
@@ -235,6 +243,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         includedPatterns,
         finalTypes,
         draftDance,
+        modifiers,
       );
       onCreateList(newList, initialPatterns);
     }

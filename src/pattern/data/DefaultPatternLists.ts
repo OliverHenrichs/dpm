@@ -1,4 +1,9 @@
-import { IPatternList, NewPattern } from "../types/IPatternList";
+import {
+  IModifier,
+  IPattern,
+  IPatternList,
+  ModifierPosition,
+} from "../types/IPatternList";
 import type { Dance } from "../types/Dance";
 import { defaultRhythm } from "@/src/pattern/rhythm/rhythm";
 import {
@@ -17,6 +22,18 @@ export interface TemplatePattern {
   counts: number;
   level?: string;
   description: string;
+  /** Names of the template patterns this one builds on. */
+  prerequisites?: string[];
+  /** Names of the template's non-universal modifiers attached to this pattern. */
+  modifiers?: string[];
+  tags?: string[];
+}
+
+/** A modifier a template brings along, matched to its patterns by name. */
+export interface TemplateModifier {
+  name: string;
+  position: ModifierPosition;
+  universal: boolean;
 }
 
 /**
@@ -116,38 +133,82 @@ export function createPatternType(slug: string, color: string): PatternType {
   };
 }
 
+/** Turn a template's modifiers into the list's own, each with a fresh id. */
+export function createTemplateModifiers(
+  templateModifiers: TemplateModifier[],
+): IModifier[] {
+  return templateModifiers.map((tm) => ({
+    id: generateUUID(),
+    name: tm.name,
+    position: tm.position,
+    universal: tm.universal,
+    videoRefs: [],
+  }));
+}
+
 /**
- * Resolve TemplatePatterns to NewPatterns by mapping typeSlug → typeId.
- * Types not found in the provided list are skipped.
+ * Resolve TemplatePatterns to the patterns of a new list: ids 1…n, `typeSlug`
+ * mapped to `typeId`, and prerequisites and modifiers named in the template
+ * mapped to ids. Types not found in the provided list are skipped, and so is a
+ * prerequisite or modifier that did not make it into the list.
  */
 export function resolveTemplatePatterns(
   templatePatterns: TemplatePattern[],
   types: PatternType[],
   /** Gives each pattern its dance's basic rhythm for its counts, when there is one. */
   dance?: Dance,
-): NewPattern[] {
-  const result: NewPattern[] = [];
-  for (const tp of templatePatterns) {
+  modifiers: IModifier[] = [],
+): IPattern[] {
+  const typed = templatePatterns.flatMap((tp) => {
     const type = types.find(
       (t) => t.slug.toLowerCase() === tp.typeSlug.toLowerCase(),
     );
-    if (!type) continue;
+    return type ? [{ tp, typeId: type.id }] : [];
+  });
+  const idByName = new Map(typed.map(({ tp }, i) => [tp.name, i + 1]));
+  return typed.map(({ tp, typeId }, i) => {
     const rhythm = defaultRhythm(dance, tp.counts);
-    result.push({
+    return {
+      id: i + 1,
       name: tp.name,
-      typeId: type.id,
+      typeId,
       counts: tp.counts,
       level: tp.level,
       ...(rhythm && { rhythm }),
-      prerequisites: [],
+      prerequisites: (tp.prerequisites ?? []).flatMap((name) => {
+        const id = idByName.get(name);
+        return id === undefined ? [] : [id];
+      }),
       description: tp.description,
-      tags: [],
+      tags: tp.tags ?? [],
       videoRefs: [],
-      modifierRefs: [],
-    });
-  }
-  return result;
+      modifierRefs: (tp.modifiers ?? []).flatMap((name) => {
+        const modifier = modifiers.find((m) => m.name === name && !m.universal);
+        return modifier ? [{ modifierId: modifier.id, videoRefs: [] }] : [];
+      }),
+    };
+  });
 }
+
+/**
+ * West Coast Swing modifiers, shared by the template and the example list.
+ * Turns are modifiers on a base figure, not figures of their own; hesitation
+ * and hand change fit any figure, so they are universal. "with Duck" follows
+ * an inside turn, so it goes only on figures that take one.
+ */
+export const WCS_MODIFIERS: TemplateModifier[] = [
+  { name: "with Inside Turn", position: "amends", universal: false },
+  { name: "with Outside Turn", position: "amends", universal: false },
+  { name: "with Free Spin", position: "amends", universal: false },
+  { name: "with Duck", position: "postfix", universal: false },
+  { name: "Hesitation", position: "amends", universal: true },
+  { name: "with Hand Change", position: "amends", universal: true },
+];
+
+/** Modifiers per template id; a template not listed brings none. */
+export const TEMPLATE_MODIFIERS: Record<string, TemplateModifier[]> = {
+  wcs: WCS_MODIFIERS,
+};
 
 /**
  * Foundational patterns per template id
@@ -156,18 +217,19 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
   {
     wcs: [
       {
-        name: "Left Side Pass",
-        typeSlug: "pass",
-        counts: 6,
-        level: "beginner",
-        description: "Foundational 6-count pass on the left side of the slot.",
-      },
-      {
         name: "Sugar Push",
         typeSlug: "push",
         counts: 6,
         level: "beginner",
         description: "Foundational 6-count push pattern staying in the slot.",
+      },
+      {
+        name: "Left Side Pass",
+        typeSlug: "pass",
+        counts: 6,
+        level: "beginner",
+        description: "Foundational 6-count pass on the left side of the slot.",
+        modifiers: ["with Inside Turn", "with Outside Turn", "with Duck"],
       },
       {
         name: "Underarm Turn",
@@ -178,18 +240,31 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
           "6-count pass with follower turning under the leader's arm.",
       },
       {
+        name: "Sugar Tuck",
+        typeSlug: "tuck",
+        counts: 6,
+        level: "beginner",
+        description: "A sugar push whose tuck sends the follower into a turn.",
+        prerequisites: ["Sugar Push"],
+        modifiers: ["with Free Spin"],
+      },
+      {
         name: "Basic Whip",
         typeSlug: "whip",
         counts: 8,
         level: "beginner",
         description: "8-count whip — the signature WCS pattern.",
+        modifiers: ["with Inside Turn", "with Outside Turn", "with Duck"],
       },
       {
         name: "Tuck Turn",
         typeSlug: "tuck",
         counts: 6,
-        level: "intermediate",
-        description: "6-count tuck and redirected turn.",
+        level: "beginner",
+        description:
+          "Passing tuck: a left side pass with a tuck into the follower's turn.",
+        prerequisites: ["Left Side Pass"],
+        modifiers: ["with Free Spin"],
       },
     ],
     salsa: [
