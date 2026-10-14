@@ -20,7 +20,9 @@ ourselves means paying for and moderating footage of identifiable dancers.
 2. _Share video_ records the video as **awaiting its link** (`awaitingLink.ts`) and opens the
    system share sheet on the file (`shareVideo.ts`, `expo-sharing`). The user uploads it there.
 3. The link comes back either shared from that app to DPM (`components/ShareInHandler.tsx` offers
-   it for the awaiting video) or pasted into the sheet.
+   it for the awaiting video) or pasted into the sheet. The share menu reports nothing about the
+   other app, so once it returns the sheet marks step 1 done and turns to the link; it carries
+   per-app steps (YouTube, Drive) and a _Paste copied link_ button (`clipboard.ts`).
 4. `applyVideoLink` (`linkVideo.ts`) swaps the local reference for a URL one that keeps its
    `transcript` and `generated` provenance (`linkedVideo` in `videoLinks.ts`). It goes through
    `jobStore.updateVideo`, the path a kept job result takes, so the stored list, the mounted tree
@@ -30,6 +32,12 @@ ourselves means paying for and moderating footage of identifiable dancers.
 
 Rules:
 
+- **A link DPM cannot play needs a second tap** (`playsInApp`: YouTube, or a direct link to a
+  video file). A Drive or Dropbox page would reach subscribers as a video that does not play; the
+  sheet and the share-in dialog both say so. YouTube is the one host recommended.
+- **The clipboard is read only on a tap.** `clipboard.ts` requires `expo-clipboard` lazily, behind
+  `requireOptionalNativeModule`, because the package reads its native module at import; without
+  it (web, Jest, an older dev client) the paste button is hidden.
 - **Never swap a video a job still works on** (`videoIsBusy`): jobs find their video by URI.
 - Only the latest share waits for a link. It lives in memory, like the job queue: it survives
   Android recreating the activity while the user is in the other app, not the process. A link

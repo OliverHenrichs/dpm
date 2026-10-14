@@ -4,6 +4,7 @@ import {
   findWebUrl,
   isWebUrl,
   linkedVideo,
+  playsInApp,
   videoMimeType,
 } from "@/src/videoLinks/videoLinks";
 import { IVideoTranscript } from "@/src/pattern/types/IPatternList";
@@ -115,6 +116,22 @@ describe("videoMimeType", () => {
     expect(videoMimeType("file:///document/video-1.mp4")).toBe("video/mp4");
     expect(videoMimeType("file:///document/clip.MOV")).toBe("video/quicktime");
     expect(videoMimeType("content://media/external/video/42")).toBe("video/*");
+  });
+});
+
+describe("playsInApp", () => {
+  it("plays YouTube videos and direct links to a video file", () => {
+    expect(playsInApp("https://youtu.be/abc123")).toBe(true);
+    expect(playsInApp("https://www.youtube.com/watch?v=abc123")).toBe(true);
+    expect(playsInApp("https://example.com/clips/whip.MP4?dl=1")).toBe(true);
+  });
+
+  it("does not play a page that shows a video", () => {
+    expect(
+      playsInApp("https://drive.google.com/file/d/abc/view?usp=sharing"),
+    ).toBe(false);
+    expect(playsInApp("https://www.dropbox.com/s/abc/whip")).toBe(false);
+    expect(playsInApp("not a link")).toBe(false);
   });
 });
 

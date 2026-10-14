@@ -115,4 +115,22 @@ describe("ShareInHandler", () => {
 
     expect(await screen.findByText("Nothing to add")).toBeOnTheScreen();
   });
+
+  it("warns when the link coming back won't play in DPM", async () => {
+    const drive = "https://drive.google.com/file/d/abc/view";
+    mockShare = { text: drive, webUrl: drive };
+    const list = createTestPatternList({ patternTypes: [TYPE] });
+    awaitingLink.set({
+      listId: list.id,
+      sourceUri: SOURCE,
+      patternName: "Whip",
+    });
+    renderWithProviders(<ShareInHandler />, {
+      lists: [list],
+      patterns: { [list.id]: [] },
+    });
+
+    expect(await screen.findByText("Use this link?")).toBeOnTheScreen();
+    expect(screen.getByText(/This link won't play in DPM/)).toBeOnTheScreen();
+  });
 });

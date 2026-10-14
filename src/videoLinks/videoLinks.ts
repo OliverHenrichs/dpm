@@ -1,4 +1,5 @@
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
+import { isYouTubeUrl } from "@/src/common/utils/YouTubeUtils";
 
 /** Whether [text] is one http(s) address, as a video link must be. */
 export function isWebUrl(text: string): boolean {
@@ -55,4 +56,18 @@ const MIME_TYPES: Record<string, string> = {
 export function videoMimeType(uri: string): string {
   const ext = /\.([a-z0-9]{2,4})$/i.exec(uri)?.[1]?.toLowerCase();
   return (ext && MIME_TYPES[ext]) || "video/*";
+}
+
+/**
+ * Whether DPM can play [url] itself: a YouTube video, or a direct link to a video file. A page
+ * that shows a video (Google Drive, Dropbox, Vimeo) is not a video file and does not play.
+ */
+export function playsInApp(url: string): boolean {
+  if (isYouTubeUrl(url)) return true;
+  try {
+    const ext = /\.([a-z0-9]{2,4})$/i.exec(new URL(url).pathname)?.[1];
+    return !!ext && ext.toLowerCase() in MIME_TYPES;
+  } catch {
+    return false;
+  }
 }

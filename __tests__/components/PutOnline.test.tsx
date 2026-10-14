@@ -25,6 +25,13 @@ import {
 } from "@/utils/renderWithProviders";
 import { router } from "expo-router";
 
+// A build with the clipboard's native module.
+const mockReadCopiedText = jest.fn<Promise<string | null>, []>();
+jest.mock("@/src/videoLinks/clipboard", () => ({
+  canReadClipboard: true,
+  readCopiedText: () => mockReadCopiedText(),
+}));
+
 const TYPE = createTestPatternType({ slug: "push" });
 const SOURCE = "file:///document/video-a.mp4";
 const LINK = "https://youtu.be/abc123";
@@ -126,6 +133,58 @@ describe("Put online", () => {
 
     fireEvent.press(screen.getByText("Save"));
     expect(saved().videoRefs).toEqual([linked]);
+  });
+
+  it("turns to the link once the share menu returns", async () => {
+    renderForm(whip());
+    fireEvent.press(await putOnlineButton());
+    fireEvent.press(await screen.findByText("Share video"));
+
+    expect(await screen.findByText("1. Shared")).toBeOnTheScreen();
+    expect(screen.getByText("Share again")).toBeOnTheScreen();
+  });
+
+  it("pastes the link copied in the other app", async () => {
+    mockReadCopiedText.mockResolvedValueOnce(`Watch this: ${LINK}.`);
+    renderForm(whip());
+    fireEvent.press(await putOnlineButton());
+    fireEvent.press(await screen.findByText("Paste copied link"));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("https://...").props.value).toBe(LINK),
+    );
+  });
+
+  it("says when what was copied holds no link", async () => {
+    mockReadCopiedText.mockResolvedValueOnce("hello");
+    renderForm(whip());
+    fireEvent.press(await putOnlineButton());
+    fireEvent.press(await screen.findByText("Paste copied link"));
+
+    expect(
+      await screen.findByText("What you copied holds no link."),
+    ).toBeOnTheScreen();
+  });
+
+  it("asks before using a link DPM cannot play", async () => {
+    const drive = "https://drive.google.com/file/d/abc/view";
+    const { list } = renderForm(whip());
+    fireEvent.press(await putOnlineButton());
+    fireEvent.changeText(await screen.findByLabelText("https://..."), drive);
+    fireEvent.press(screen.getByText("Use this link"));
+
+    expect(
+      await screen.findByText(/This link won't play in DPM/),
+    ).toBeOnTheScreen();
+    expect((await loadPatterns(list.id))[0].videoRefs[0].type).toBe("local");
+
+    fireEvent.press(screen.getByText("Use it anyway"));
+    await waitFor(async () =>
+      expect((await loadPatterns(list.id))[0].videoRefs[0]).toMatchObject({
+        type: "url",
+        value: drive,
+      }),
+    );
   });
 
   it("refuses something that is not a link", async () => {

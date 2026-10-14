@@ -6,6 +6,7 @@ import { useActivePatternList } from "@/src/pattern/data/components/ActivePatter
 import { canReceiveShares } from "@/src/videoLinks/canReceiveShares";
 import { AwaitingLink, awaitingLink } from "@/src/videoLinks/awaitingLink";
 import { applyVideoLink, videoIsBusy } from "@/src/videoLinks/linkVideo";
+import { playsInApp } from "@/src/videoLinks/videoLinks";
 import {
   readSharedContent,
   SharedContent,
@@ -73,7 +74,13 @@ function ShareInReceiver() {
         title={t("shareInLinkTitle")}
         message={
           incoming?.step === "offerLink"
-            ? t("shareInLinkMessage", { name: incoming.awaiting.patternName })
+            ? t(
+                // A page (Drive) reaches subscribers as a video that does not play.
+                playsInApp(incoming.url)
+                  ? "shareInLinkMessage"
+                  : "shareInLinkMessageWontPlay",
+                { name: incoming.awaiting.patternName },
+              )
             : ""
         }
         closeLabel={t("shareInLinkElsewhere")}
