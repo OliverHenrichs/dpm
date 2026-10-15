@@ -193,11 +193,11 @@ const PutOnlineBody: React.FC<{
       )}
       {warning && (
         <AppText variant="caption" color="danger" style={styles.paragraph}>
-          {t("videoOnlineWontPlay")}
+          {t("videoLinkWontPlay")}
         </AppText>
       )}
       <Button
-        title={warning ? t("videoOnlineUseAnyway") : t("videoOnlineUseLink")}
+        title={warning ? t("videoLinkUseAnyway") : t("videoOnlineUseLink")}
         icon="link-variant"
         onPress={submitLink}
         disabled={busy || saving}

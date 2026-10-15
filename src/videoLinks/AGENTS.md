@@ -34,7 +34,8 @@ Rules:
 
 - **A link DPM cannot play needs a second tap** (`playsInApp`: YouTube, or a direct link to a
   video file). A Drive or Dropbox page would reach subscribers as a video that does not play; the
-  sheet and the share-in dialog both say so. YouTube is the one host recommended.
+  sheet, the share-in dialog and the plain _Add video_ → link form (`src/pattern/list/AddVideoModal.tsx`)
+  all say so. YouTube is the one host recommended.
 - **The clipboard is read only on a tap.** `clipboard.ts` requires `expo-clipboard` lazily, behind
   `requireOptionalNativeModule`, because the package reads its native module at import; without
   it (web, Jest, an older dev client) the paste button is hidden.
