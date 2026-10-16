@@ -12,7 +12,7 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 
 | File | What it is |
 |---|---|
-| `index.html` | The landing page. The list, map, filter, modifier, Reels and video-tool examples are real app screenshots (`img/shots/`); the sharing illustration is inline SVG drawn with the site's colour variables. The screenshots and the SVG follow the style and light or dark |
+| `index.html` | The landing page. The list, map, filter, modifier, sharing, suggestion, Reels and video-tool examples are real app screenshots (`img/shots/`), and follow the style and light or dark |
 | `styles.css` | All styling. Both styles' colours, fonts and radii mirror `src/common/theme/tokens.ts` (`palettes`, `nativeFonts`, `radii`); the pattern-type colours are from `PatternType.ts`. A token changed in the app should change here too |
 | `site.js` | The style switcher, loaded in every page's `<head>` so a returning visitor's style is set before the first paint |
 | `fonts/` | DM Serif Display, Manrope, IBM Plex Sans Condensed and IBM Plex Mono as WOFF2, subset to Latin from `assets/fonts/`, with their OFL licences |
@@ -61,8 +61,12 @@ These addresses are hard-coded and must change together when the site gets its o
   cropped off, scaled to 600 px wide, WebP at quality 82. The class video in them is a recording
   whose dancers haven't consented, so every frame of the original footage is under a strong
   Gaussian blur (the tap markers are pasted back on top); the anonymized silhouettes are not
-  blurred. Sharing can't be shot on the web build (no Firebase) and is still drawn; replace it
-  with a device screenshot when a phone is at hand.
+  blurred.
+- **Sharing screenshots.** The share sheet (`share-*`) and the suggestion shots (`suggest-*`) come
+  from the web build like the list shots, seeded with the same list marked as published (or, for
+  the subscriber's form, subscribed). The web build has no Firebase, so for the shots only, a local
+  patch turned `firebaseAvailable` on and had `PatternSuggestionService` hand back fixed
+  suggestions (Mia's Reverse Whip and Jonas's Throwout) and two left today; nothing was published.
 - **Privacy policy.** Keep `PRIVACY_POLICY.md` in step with the app: a new network connection,
   permission or kind of stored data belongs in it before it ships.
 - **Impressum.** A site run from Germany may need an Impressum (§ 5 DDG), depending on whether it
