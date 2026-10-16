@@ -27,7 +27,7 @@ screen mounted, so leaving it must unmount the player to stop the video, and the
 a page of players at once. `ReelsScreen` tracks focus with `useFocusEffect` and passes `active` down;
 `components/ReelVideoView.tsx` mounts the player only when active. Videos use the platform's own
 controls (play, time bar, fullscreen in landscape), as elsewhere in the app, on the style's
-background rather than black. YouTube links go through `YouTubeVideoItem`.
+background rather than black. YouTube and Vimeo links go through `EmbeddedVideoItem`.
 
 The visible page comes from `onViewableItemsChanged` with a module-level viewability config (a
 `FlatList` requires it to be referentially stable). In tests, call that prop inside `act()`

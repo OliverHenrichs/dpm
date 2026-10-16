@@ -1,5 +1,5 @@
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
-import { isYouTubeUrl } from "@/src/common/utils/YouTubeUtils";
+import { embeddedHost, playableLink } from "@/src/common/utils/videoHosts";
 
 /** Whether [text] is one http(s) address, as a video link must be. */
 export function isWebUrl(text: string): boolean {
@@ -37,7 +37,7 @@ export function linkedVideo(
 ): IVideoReference {
   return {
     type: "url",
-    value: url.trim(),
+    value: playableLink(url),
     ...(previous.generated && { generated: previous.generated }),
     ...(previous.transcript && { transcript: previous.transcript }),
   };
@@ -58,15 +58,21 @@ export function videoMimeType(uri: string): string {
   return (ext && MIME_TYPES[ext]) || "video/*";
 }
 
+/** Streams `expo-video` plays: HLS and DASH manifests (Vimeo's file links, Bunny, Cloudflare). */
+const STREAM_EXTENSIONS = new Set(["m3u8", "mpd"]);
+
 /**
- * Whether DPM can play [url] itself: a YouTube video, or a direct link to a video file. A page
- * that shows a video (Google Drive, Dropbox, Vimeo) is not a video file and does not play.
+ * Whether DPM can play [url] itself: a YouTube or Vimeo video, a direct link to a video file or
+ * a stream, or a Dropbox link to a video file (played as `raw=1`, see `playableLink`). A page
+ * that shows a video (Google Drive) is not a video file and does not play.
  */
 export function playsInApp(url: string): boolean {
-  if (isYouTubeUrl(url)) return true;
+  if (embeddedHost(url)) return true;
   try {
-    const ext = /\.([a-z0-9]{2,4})$/i.exec(new URL(url).pathname)?.[1];
-    return !!ext && ext.toLowerCase() in MIME_TYPES;
+    const ext = /\.([a-z0-9]{2,4})$/i
+      .exec(new URL(playableLink(url)).pathname)?.[1]
+      ?.toLowerCase();
+    return !!ext && (ext in MIME_TYPES || STREAM_EXTENSIONS.has(ext));
   } catch {
     return false;
   }

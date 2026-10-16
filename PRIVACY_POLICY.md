@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 13, 2026**
+**Last updated: October 16, 2026**
 
 ---
 
@@ -31,15 +31,15 @@ The app connects to the internet only for the following optional features, each 
 
 ### 3.1 Data stored on your device only
 
-| Data | Purpose | Where stored |
-|---|---|---|
-| Pattern lists, patterns, descriptions, tags, modifiers | Core app functionality | On-device (AsyncStorage) |
-| Video files you attach to patterns, including videos you record or edit in the app | Viewing, editing and exporting patterns | On-device local filesystem |
-| Transcripts of what is said in your videos | Reading and reusing what a teacher said | On-device (AsyncStorage) |
-| Words you corrected in transcripts | Getting the same words right in the list's later transcripts | On-device (AsyncStorage) |
-| Downloaded speech and suggestion models | Running the video tools offline | On-device local filesystem |
-| Your graph layout, active list, theme, app style and language | Restoring your settings | On-device (AsyncStorage) |
-| Your app icon colour | Showing the launcher icon you chose | On-device, by the operating system |
+| Data                                                                               | Purpose                                                      | Where stored                       |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- |
+| Pattern lists, patterns, descriptions, tags, modifiers                             | Core app functionality                                       | On-device (AsyncStorage)           |
+| Video files you attach to patterns, including videos you record or edit in the app | Viewing, editing and exporting patterns                      | On-device local filesystem         |
+| Transcripts of what is said in your videos                                         | Reading and reusing what a teacher said                      | On-device (AsyncStorage)           |
+| Words you corrected in transcripts                                                 | Getting the same words right in the list's later transcripts | On-device (AsyncStorage)           |
+| Downloaded speech and suggestion models                                            | Running the video tools offline                              | On-device local filesystem         |
+| Your graph layout, active list, theme, app style and language                      | Restoring your settings                                      | On-device (AsyncStorage)           |
+| Your app icon colour                                                               | Showing the launcher icon you chose                          | On-device, by the operating system |
 
 None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature, or share a video to another app (section 3.4). Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts". An editable export of a list you have published also carries that list's share key, so whoever imports it can update or stop sharing the published list (that is how you move it to a new phone); a read-only export never does.
 
@@ -55,13 +55,13 @@ If your videos show other people, such as teachers or other dancers, you are res
 
 When you choose to **publish a pattern list**, the following is sent to and stored in Google Firebase Firestore:
 
-| Data | Purpose |
-|---|---|
-| Pattern list content (name, the list's dance, pattern types, pattern names, descriptions, counts, rhythms, levels, tags, prerequisites, modifiers) | Sharing the list with subscribers |
-| Video URLs you have attached (the link text only, not the video file itself) | Enabling subscribers to view linked videos |
-| A randomly generated 8-character share code (your "list ID") | Identifying your list in the cloud |
-| Timestamps (`publishedAt`, `publisherVersion`) | Detecting updates on subscriber devices |
-| An owner record: your anonymous user ID and the list's share key (a random secret created on your phone) | Making sure only you can update or stop sharing your list. Nobody can read this record, including subscribers |
+| Data                                                                                                                                               | Purpose                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Pattern list content (name, the list's dance, pattern types, pattern names, descriptions, counts, rhythms, levels, tags, prerequisites, modifiers) | Sharing the list with subscribers                                                                             |
+| Video URLs you have attached (the link text only, not the video file itself)                                                                       | Enabling subscribers to view linked videos                                                                    |
+| A randomly generated 8-character share code (your "list ID")                                                                                       | Identifying your list in the cloud                                                                            |
+| Timestamps (`publishedAt`, `publisherVersion`)                                                                                                     | Detecting updates on subscriber devices                                                                       |
+| An owner record: your anonymous user ID and the list's share key (a random secret created on your phone)                                           | Making sure only you can update or stop sharing your list. Nobody can read this record, including subscribers |
 
 **Anonymous sign-in.** The first time you publish, the app signs in to **Google Firebase Authentication** anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists. Subscribing to a list never signs in.
 
@@ -78,9 +78,9 @@ This does **not** happen when you use the app without publishing or subscribing.
 
 ### 3.4 Online videos
 
-When you play a video that you (or the publisher of a list you subscribed to) attached by URL, the app loads it from wherever it is hosted. YouTube links play in YouTube's embedded player. To show a preview image of a YouTube link, for example in the pattern editor or in the Reels overview, the app loads that video's thumbnail from YouTube (img.youtube.com) without you pressing play. The host, for example **YouTube (Google)**, receives your IP address and device information, and may set cookies or collect usage data under its own privacy policy. We receive none of this data.
+When you play a video that you (or the publisher of a list you subscribed to) attached by URL, the app loads it from wherever it is hosted. YouTube links play in YouTube's embedded player and Vimeo links in Vimeo's (player.vimeo.com). To show a preview image of a YouTube link, for example in the pattern editor or in the Reels overview, the app loads that video's thumbnail from YouTube (img.youtube.com) without you pressing play; for a Vimeo link it asks Vimeo for the preview image (vimeo.com/api/oembed.json), which sends Vimeo the link. The host, for example **YouTube (Google)** or **Vimeo**, receives your IP address and device information, and may set cookies or collect usage data under its own privacy policy. We receive none of this data.
 
-**Putting a video online.** When you tap the cloud button on a video saved on your phone and then *Share video*, the system share menu hands that video file to the app you choose, for example YouTube. The app sends nothing itself; what the other app does with the video is covered by its own privacy policy. The link you bring back replaces the video in your pattern and is treated like any other online video. The app reads your clipboard only when you tap *Paste copied link*, and keeps only the link it finds there.
+**Putting a video online.** When you tap the cloud button on a video saved on your phone and then _Share video_, the system share menu hands that video file to the app you choose, for example YouTube. The app sends nothing itself; what the other app does with the video is covered by its own privacy policy. The link you bring back replaces the video in your pattern and is treated like any other online video. The app reads your clipboard only when you tap _Paste copied link_, and keeps only the link it finds there.
 
 **Sharing to the app.** The app appears in your phone's share menu for links and videos. When you share one to it, the app reads only what you shared, and keeps it only if you add it to a pattern; a shared video is then copied into the app's own storage.
 
@@ -90,12 +90,12 @@ The speech-to-text and suggestion features need models that are downloaded once,
 
 ### 3.6 Device permissions
 
-| Permission | Used for |
-|---|---|
-| Camera | Scanning a share QR code, and recording a video for a pattern with the system camera. The camera image used for scanning is processed on the device and not stored. |
-| Microphone (iOS only) | The sound of videos you record for a pattern. On Android the system camera app records the sound, and the app itself does not request microphone access. |
-| Photos / videos | Choosing a video from your gallery to attach to a pattern. Only the videos you pick are read, and they are copied into the app's own storage. |
-| Notifications | Telling you when video work you started (shortening, anonymizing, transcribing) has finished while the app was in the background. The app asks the first time you start such work. Notifications are created on the device; nothing is sent from a server. |
+| Permission            | Used for                                                                                                                                                                                                                                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Camera                | Scanning a share QR code, and recording a video for a pattern with the system camera. The camera image used for scanning is processed on the device and not stored.                                                                                        |
+| Microphone (iOS only) | The sound of videos you record for a pattern. On Android the system camera app records the sound, and the app itself does not request microphone access.                                                                                                   |
+| Photos / videos       | Choosing a video from your gallery to attach to a pattern. Only the videos you pick are read, and they are copied into the app's own storage.                                                                                                              |
+| Notifications         | Telling you when video work you started (shortening, anonymizing, transcribing) has finished while the app was in the background. The app asks the first time you start such work. Notifications are created on the device; nothing is sent from a server. |
 
 You can refuse or withdraw any of these permissions in your device settings; only the feature that needs it stops working.
 
@@ -103,13 +103,13 @@ You can refuse or withdraw any of these permissions in your device settings; onl
 
 ## 4. Legal basis for processing (GDPR Art. 6)
 
-| Processing activity | Legal basis |
-|---|---|
-| Storing and processing your data on your device, including the video tools | Necessary for the performance of the service you requested (Art. 6(1)(b)) |
-| Publishing your list to Firebase | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time |
-| Anonymous sign-in and the owner record when you publish | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b)) |
-| IP address collection by Firebase | Legitimate interest in operating a secure service (Art. 6(1)(f)) |
-| Connecting to a video host or to Hugging Face at your request | Necessary for the performance of the service you requested (Art. 6(1)(b)) |
+| Processing activity                                                        | Legal basis                                                                                                                           |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Storing and processing your data on your device, including the video tools | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
+| Publishing your list to Firebase                                           | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time                                          |
+| Anonymous sign-in and the owner record when you publish                    | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b)) |
+| IP address collection by Firebase                                          | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                      |
+| Connecting to a video host or to Hugging Face at your request              | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
 
 ---
 
@@ -127,6 +127,7 @@ Data location: **Europe (europe-west, Belgium)** for Firestore. Published lists 
 When you use the features in sections 3.4 and 3.5, your device connects directly to these services. They process your IP address as **independent controllers** under their own policies, and may do so outside the EU/EEA, including in the United States:
 
 - **YouTube / Google LLC** (online videos): https://policies.google.com/privacy
+- **Vimeo, Inc.** (online videos): https://vimeo.com/privacy
 - **Hugging Face, Inc.** (model downloads): https://huggingface.co/privacy
 - The host of any other online video you attach
 
@@ -136,15 +137,15 @@ We do **not** sell your data to third parties and do not use your data for adver
 
 ## 6. Data retention
 
-| Data | Retention |
-|---|---|
-| Local device data | Until you uninstall the app or delete it in the app (a list, a pattern, a video) |
-| Downloaded models | Until you delete them under Settings → On-device models, or uninstall the app |
-| Published Firestore document | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry. |
-| Owner record of a published list | Removed together with the list when you stop sharing it |
-| Anonymous user ID (Firebase Authentication) | Kept while you might still publish from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
-| Firebase infrastructure logs (IP, timestamps) | Governed by Google's own retention policy (typically 30–180 days) |
-| Logs kept by video hosts, Hugging Face and GitHub | Governed by each service's own policy |
+| Data                                              | Retention                                                                                                                                                                      |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Local device data                                 | Until you uninstall the app or delete it in the app (a list, a pattern, a video)                                                                                               |
+| Downloaded models                                 | Until you delete them under Settings → On-device models, or uninstall the app                                                                                                  |
+| Published Firestore document                      | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.                            |
+| Owner record of a published list                  | Removed together with the list when you stop sharing it                                                                                                                        |
+| Anonymous user ID (Firebase Authentication)       | Kept while you might still publish from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
+| Firebase infrastructure logs (IP, timestamps)     | Governed by Google's own retention policy (typically 30–180 days)                                                                                                              |
+| Logs kept by video hosts, Hugging Face and GitHub | Governed by each service's own policy                                                                                                                                          |
 
 ---
 
@@ -162,7 +163,7 @@ You have the right to:
 
 Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.
 
-For data held by YouTube, Hugging Face or GitHub, please use their own privacy tools or contact them directly; we have no access to it.
+For data held by YouTube, Vimeo, Hugging Face or GitHub, please use their own privacy tools or contact them directly; we have no access to it.
 
 ---
 

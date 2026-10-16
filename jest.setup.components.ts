@@ -113,6 +113,8 @@ jest.mock("expo-notifications", () => ({
 // usable jest implementation. See AGENTS.md — the YouTube player is kept behind
 // YouTubeVideoItem precisely so it can be swapped out like this.
 jest.mock("react-native-youtube-iframe", () => "YoutubePlayer");
+// The Vimeo player is a plain WebView (VimeoVideoItem), stood down the same way.
+jest.mock("react-native-webview", () => ({ WebView: "WebView" }));
 
 jest.mock("react-native-qrcode-svg", () => "QRCode");
 

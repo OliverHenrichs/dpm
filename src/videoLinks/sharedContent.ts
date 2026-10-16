@@ -1,4 +1,5 @@
 import { findWebUrl } from "@/src/videoLinks/videoLinks";
+import { playableLink } from "@/src/common/utils/videoHosts";
 
 /** What another app shared to DPM, as far as DPM can use it. */
 export type SharedContent =
@@ -24,6 +25,6 @@ export function readSharedContent(share: IncomingShare): SharedContent {
   );
   if (video) return { kind: "video", uri: video.path };
   const url = findWebUrl(share.webUrl) ?? findWebUrl(share.text);
-  if (url) return { kind: "link", url };
+  if (url) return { kind: "link", url: playableLink(url) };
   return { kind: "unusable" };
 }

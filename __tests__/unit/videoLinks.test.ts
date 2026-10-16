@@ -87,6 +87,15 @@ describe("readSharedContent", () => {
     ).toEqual({ kind: "link", url: "https://youtu.be/abc" });
   });
 
+  it("takes a shared Dropbox link as the file it points at", () => {
+    expect(
+      readSharedContent({ text: "https://www.dropbox.com/s/a/whip.mp4?dl=0" }),
+    ).toEqual({
+      kind: "link",
+      url: "https://www.dropbox.com/s/a/whip.mp4?raw=1",
+    });
+  });
+
   it("prefers a video file over the caption shared with it", () => {
     expect(
       readSharedContent({
@@ -120,8 +129,15 @@ describe("videoMimeType", () => {
 });
 
 describe("playsInApp", () => {
-  it("plays YouTube videos and direct links to a video file", () => {
+  it("plays YouTube and Vimeo videos, direct links to a video file, and streams", () => {
     expect(playsInApp("https://youtu.be/abc123")).toBe(true);
+    expect(playsInApp("https://vimeo.com/76979871/8272103f6e")).toBe(true);
+    expect(playsInApp("https://cdn.example.com/whip/playlist.m3u8")).toBe(true);
+    expect(playsInApp("https://cdn.example.com/whip/manifest.mpd")).toBe(true);
+    // Played as raw=1, which serves the file.
+    expect(
+      playsInApp("https://www.dropbox.com/scl/fi/x/whip.mp4?rlkey=k&dl=0"),
+    ).toBe(true);
     expect(playsInApp("https://www.youtube.com/watch?v=abc123")).toBe(true);
     expect(playsInApp("https://example.com/clips/whip.MP4?dl=1")).toBe(true);
   });

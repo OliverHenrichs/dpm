@@ -9,25 +9,25 @@ everywhere. Depth lives next to the code it governs, in a nested `AGENTS.md` tha
 open a file in that directory. Creating a _new_ file in a directory does not pull its `AGENTS.md`
 in, so read the one listed below before you add code there.
 
-| File | Read it before touching |
-|---|---|
-| `src/common/AGENTS.md` | App chrome: `AppHeader`, drawer and tabs, the Android edge band, modals and the system bars, dismissal touches |
-| `src/common/theme/AGENTS.md` | Styles: Unistyles, design tokens, colour roles, fonts, the two app styles, the setup's traps |
-| `src/common/ui/AGENTS.md` | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery |
-| `src/pattern/data/AGENTS.md` | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates |
-| `src/pattern/list/AGENTS.md` | `usePatternCrud`, modifiers, sorting, always-mounted modals |
-| `src/pattern/rhythm/AGENTS.md` | Rhythm notation, its link to counts, composing one step by step |
-| `src/pattern/graph/AGENTS.md` | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity |
-| `src/reels/AGENTS.md` | The Reels tab |
-| `src/anonymize/AGENTS.md` | Video jobs (`jobStore`), review, Shorten and Anonymize, providers |
-| `src/transcribe/AGENTS.md` | Speech transcription (Whisper), the model store |
-| `src/suggest/AGENTS.md` | Name and description suggestions (on-device LLM) |
-| `src/videoLinks/AGENTS.md` | Putting a local video online and its link back, links and videos shared to DPM |
-| `modules/AGENTS.md` | The local native Expo modules and their gitignored model weights |
-| `src/changelog/AGENTS.md` | The bundled changelog, the what's-new hint after an update, releasing a version's notes |
-| `src/settings/AGENTS.md` | Settings screen, i18n machinery, device locale, language/style/icon persistence |
-| `src/firebase/AGENTS.md` | Firestore sharing, ownership, security rules, configuration |
-| `__tests__/AGENTS.md` | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite |
+| File                           | Read it before touching                                                                                        |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `src/common/AGENTS.md`         | App chrome: `AppHeader`, drawer and tabs, the Android edge band, modals and the system bars, dismissal touches |
+| `src/common/theme/AGENTS.md`   | Styles: Unistyles, design tokens, colour roles, fonts, the two app styles, the setup's traps                   |
+| `src/common/ui/AGENTS.md`      | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery                                      |
+| `src/pattern/data/AGENTS.md`   | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates          |
+| `src/pattern/list/AGENTS.md`   | `usePatternCrud`, modifiers, sorting, always-mounted modals                                                    |
+| `src/pattern/rhythm/AGENTS.md` | Rhythm notation, its link to counts, composing one step by step                                                |
+| `src/pattern/graph/AGENTS.md`  | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity                           |
+| `src/reels/AGENTS.md`          | The Reels tab                                                                                                  |
+| `src/anonymize/AGENTS.md`      | Video jobs (`jobStore`), review, Shorten and Anonymize, providers                                              |
+| `src/transcribe/AGENTS.md`     | Speech transcription (Whisper), the model store                                                                |
+| `src/suggest/AGENTS.md`        | Name and description suggestions (on-device LLM)                                                               |
+| `src/videoLinks/AGENTS.md`     | Putting a local video online and its link back, links and videos shared to DPM                                 |
+| `modules/AGENTS.md`            | The local native Expo modules and their gitignored model weights                                               |
+| `src/changelog/AGENTS.md`      | The bundled changelog, the what's-new hint after an update, releasing a version's notes                        |
+| `src/settings/AGENTS.md`       | Settings screen, i18n machinery, device locale, language/style/icon persistence                                |
+| `src/firebase/AGENTS.md`       | Firestore sharing, ownership, security rules, configuration                                                    |
+| `__tests__/AGENTS.md`          | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite                         |
 
 `AGENT_TASKS.md` is the design history (bugs B*, changes S*/M*/L*, foundation F*): why things are
 the way they are, with device findings. It is long; read the section a code comment cites
@@ -51,14 +51,14 @@ Navigation is **file-based expo-router**; there is no `@react-navigation/*` depe
 `expo-router/drawer`, and `useNavigation` / `useFocusEffect` / `router` / `usePathname` from
 `expo-router`. Screens navigate with `router.navigate("/patterns")`, not a `navigation` prop.
 
-| Route file | Path | Screen |
-|---|---|---|
-| `app/index.tsx` | `/` | `src/pattern/list/PatternListSelector.tsx` (*Lists*) |
-| `app/(list)/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` (*List* tab) |
-| `app/(list)/graph.tsx` | `/graph` | `src/pattern/graph/PatternGraphScreen.tsx` (*Map* tab) |
-| `app/(list)/reels.tsx` | `/reels` | `src/reels/ReelsScreen.tsx` (*Reels* tab) |
-| `app/settings.tsx` | `/settings` | `src/settings/SettingsScreen.tsx` |
-| `app/gallery.tsx` | `/gallery` | `src/common/ui/DesignGallery.tsx` (dev builds only) |
+| Route file                | Path        | Screen                                                 |
+| ------------------------- | ----------- | ------------------------------------------------------ |
+| `app/index.tsx`           | `/`         | `src/pattern/list/PatternListSelector.tsx` (_Lists_)   |
+| `app/(list)/patterns.tsx` | `/patterns` | `src/pattern/list/PatternListManager.tsx` (_List_ tab) |
+| `app/(list)/graph.tsx`    | `/graph`    | `src/pattern/graph/PatternGraphScreen.tsx` (_Map_ tab) |
+| `app/(list)/reels.tsx`    | `/reels`    | `src/reels/ReelsScreen.tsx` (_Reels_ tab)              |
+| `app/settings.tsx`        | `/settings` | `src/settings/SettingsScreen.tsx`                      |
+| `app/gallery.tsx`         | `/gallery`  | `src/common/ui/DesignGallery.tsx` (dev builds only)    |
 
 Every file in `app/` becomes a route, so route files are one-line re-exports and the code lives in
 `src/`. A group does not change a URL. `src/common/components/DrawerRoutes.ts` is the single source
@@ -78,14 +78,14 @@ directly.
 
 All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.ts`, `Dance.ts`).
 
-| Type | Id | Key detail |
-|---|---|---|
-| `IPatternList` | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark) |
-| `PatternType` | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId` |
-| `IPattern` | integer | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs` |
-| `IModifier` | UUID string | `position: "prefix" \| "postfix" \| "amends"`; `universal`; `videoRefs` used only when universal |
-| `IPatternModifierRef` | — | `{ modifierId, videoRefs }`: a non-universal modifier attached to one pattern, with videos of that pattern danced with it |
-| `IVideoReference` | — | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it |
+| Type                  | Id          | Key detail                                                                                                                                                                                                                                                                                           |
+| --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IPatternList`        | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark) |
+| `PatternType`         | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId`                                                                                                                                                                                                                          |
+| `IPattern`            | integer     | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs`                                                                                                                           |
+| `IModifier`           | UUID string | `position: "prefix" \| "postfix" \| "amends"`; `universal`; `videoRefs` used only when universal                                                                                                                                                                                                     |
+| `IPatternModifierRef` | —           | `{ modifierId, videoRefs }`: a non-universal modifier attached to one pattern, with videos of that pattern danced with it                                                                                                                                                                            |
+| `IVideoReference`     | —           | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it                                                                                                                     |
 
 `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`. `PatternType.ts` also
 exports `PATTERN_TYPE_COLORS`, `generateUUID()`, `normalizeSlug()` and `isSlugUnique()`.
@@ -121,7 +121,7 @@ inherit a stranger's position.
 - **Screen edges.** `SCREEN_EDGE_INSET` is applied once, as `PageContainer`'s horizontal padding,
   to keep clear of Android's back-gesture band. Do not pad individual scrollers.
 - **Platform splits.** Metro prefers `Foo.web.tsx` over `Foo.tsx` for web; both must export the
-  same shape. The six today: `YouTubeVideoItem`, `PatternNodeGroup`, `theme/ServerStyles`,
+  same shape. The seven today: `YouTubeVideoItem`, `VimeoVideoItem`, `PatternNodeGroup`, `theme/ServerStyles`,
   `src/transcribe/whisper`, `src/suggest/llama`, `src/firebase/auth`. Route graph node presses
   through `PatternNodeGroup`, never `onPress` on an SVG element.
 - **A package that reads its native module at import** takes the app down on a build without it,
@@ -139,8 +139,8 @@ inherit a stranger's position.
 ## On-device video tools (Android only for now)
 
 Edit Pattern → Videos → **Edit video** (`src/anonymize/components/VideoEditPanel.tsx`) offers
-*Shorten*, *Anonymize* (a silhouette) and *Transcribe speech*; the transcript sheet offers *Suggest
-name and description*. Settings → *On-device models* downloads and deletes the models. Everything
+_Shorten_, _Anonymize_ (a silhouette) and _Transcribe speech_; the transcript sheet offers _Suggest
+name and description_. Settings → _On-device models_ downloads and deletes the models. Everything
 heavy runs through one queue, `jobStore`, one job at a time, because the phone cannot hold two
 models. A shortened or anonymized video waits for the user's review before the pattern changes,
 and nothing is written into a description without an explicit tap. A local video goes online

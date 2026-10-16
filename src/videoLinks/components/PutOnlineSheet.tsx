@@ -162,6 +162,9 @@ const PutOnlineBody: React.FC<{
       <AppText variant="caption" color="textMuted" style={styles.how}>
         {t("videoOnlineHowYouTube")}
       </AppText>
+      <AppText variant="caption" color="textMuted" style={styles.how}>
+        {t("videoOnlineHowVimeo")}
+      </AppText>
       <AppText variant="caption" color="textMuted" style={styles.paragraph}>
         {t("videoOnlineHowDrive")}
       </AppText>

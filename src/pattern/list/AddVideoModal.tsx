@@ -11,6 +11,7 @@ import {
 } from "@/src/common/utils/CommonStyles";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import { playsInApp } from "@/src/videoLinks/videoLinks";
+import { playableLink } from "@/src/common/utils/videoHosts";
 
 export type AddVideoModalProps = {
   visible: boolean;
@@ -82,7 +83,7 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
     setUrlError("");
     setWarned("");
     onClose();
-    onAddUrl(trimmed, startTime);
+    onAddUrl(playableLink(trimmed), startTime);
   };
 
   return (
