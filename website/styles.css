@@ -826,6 +826,22 @@ section {
   }
 }
 
+/* Illustrations share the page's colours, so they follow the theme. */
+.art-surface {
+  fill: var(--surface);
+}
+
+.art-label-muted {
+  fill: var(--text-muted);
+  font: 600 11px var(--font-body);
+}
+
+.art-code {
+  fill: var(--text);
+  font: 600 34px var(--font-mono);
+  letter-spacing: 3px;
+}
+
 /* ── FAQ ────────────────────────────────────────────────────────────────── */
 
 .faq details {
