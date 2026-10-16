@@ -63,7 +63,7 @@ When you choose to **publish a pattern list**, the following is sent to and stor
 | Timestamps (`publishedAt`, `publisherVersion`)                                                                                                     | Detecting updates on subscriber devices                                                                       |
 | An owner record: your anonymous user ID and the list's share key (a random secret created on your phone)                                           | Making sure only you can update or stop sharing your list. Nobody can read this record, including subscribers |
 
-**Anonymous sign-in.** The first time you publish, or suggest a pattern to a list you subscribe to, the app signs in to **Google Firebase Authentication** anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists. Subscribing to a list on its own never signs in.
+**Anonymous sign-in.** The first time you publish, suggest a pattern to a list you subscribe to, or ask to join a members-only list, the app signs in to **Google Firebase Authentication** anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists, or a member of the lists you joined. Subscribing to an open list on its own never signs in.
 
 **Pattern suggestions.** A publisher can let the subscribers of a list suggest new patterns. When you **send a suggestion**, the following is stored in Firestore under the list:
 
@@ -74,6 +74,8 @@ When you choose to **publish a pattern list**, the following is sent to and stor
 | When it was sent, and a count of suggestions sent that day                                                                                                     | Enforcing the publisher's daily limit                                                                       |
 
 Only the publisher of the list can read suggestions. If the publisher **mutes** a subscriber, a record of that subscriber's anonymous user ID and the name they signed with is kept under the list, readable by the publisher and by that subscriber's app.
+
+**Members-only lists.** A publisher can make a list readable only by the subscribers they let in. When you **ask to join** such a list, a record of your anonymous user ID, the name you give if you enter one, and whether you are waiting, let in or turned away is stored in Firestore under the list. It is readable by the publisher and by your own app, and it is deleted when the publisher stops sharing the list. If you publish a members-only list, the same record is kept for everyone who asks to join it.
 
 **We do not collect:** your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID above is the only identifier, and it is not linked to you as a person.
 
@@ -113,15 +115,16 @@ You can refuse or withdraw any of these permissions in your device settings; onl
 
 ## 4. Legal basis for processing (GDPR Art. 6)
 
-| Processing activity                                                          | Legal basis                                                                                                                           |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Storing and processing your data on your device, including the video tools   | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
-| Publishing your list to Firebase                                             | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time                                          |
-| Anonymous sign-in and the owner record when you publish                      | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b)) |
-| Sending a pattern suggestion, with your anonymous ID and the name you choose | Your explicit action (consent — Art. 6(1)(a))                                                                                         |
-| A publisher's daily limit and mute records                                   | Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f))                 |
-| IP address collection by Firebase                                            | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                      |
-| Connecting to a video host or to Hugging Face at your request                | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
+| Processing activity                                                                | Legal basis                                                                                                                           |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Storing and processing your data on your device, including the video tools         | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
+| Publishing your list to Firebase                                                   | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time                                          |
+| Anonymous sign-in and the owner record when you publish                            | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b)) |
+| Sending a pattern suggestion, with your anonymous ID and the name you choose       | Your explicit action (consent — Art. 6(1)(a))                                                                                         |
+| Asking to join a members-only list, with your anonymous ID and the name you choose | Your explicit action (consent — Art. 6(1)(a))                                                                                         |
+| A publisher's daily limit and mute records                                         | Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f))                 |
+| IP address collection by Firebase                                                  | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                      |
+| Connecting to a video host or to Hugging Face at your request                      | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
 
 ---
 

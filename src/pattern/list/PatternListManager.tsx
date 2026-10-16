@@ -41,6 +41,9 @@ import { useListSuggestions } from "@/src/pattern/suggestions/useListSuggestions
 import SuggestionsButton from "@/src/pattern/suggestions/SuggestionsButton";
 import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
 import SuggestionsModal from "@/src/pattern/suggestions/SuggestionsModal";
+import { managesMembers } from "@/src/pattern/members/members";
+import { useMembers } from "@/src/pattern/members/useMembers";
+import MembersModal from "@/src/pattern/members/MembersModal";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
@@ -96,6 +99,13 @@ const PatternListManager = () => {
     firebaseAvailable &&
     receivesSuggestions(activeList) &&
     (!!activeList?.suggestions || suggestions.length > 0);
+  // Members-only lists (src/pattern/members/): the publisher lets subscribers in here.
+  const [isManagingMembers, setIsManagingMembers] = useState(false);
+  const { members } = useMembers(activeList);
+  const showsMembers = firebaseAvailable && managesMembers(activeList);
+  const waitingToJoin = members.filter(
+    (m) => m.membership === "requested",
+  ).length;
 
   // "New pattern" for a video shared to DPM from another app (src/videoLinks/): it arrives as
   // route params and seeds the add form like "From a video". The params are cleared once read,
@@ -385,6 +395,15 @@ const PatternListManager = () => {
           />
         )}
 
+        {showsMembers && activeList && (
+          <MembersModal
+            visible={isManagingMembers}
+            list={activeList}
+            members={members}
+            onClose={() => setIsManagingMembers(false)}
+          />
+        )}
+
         <AnonymizeJobsBanner openAction={openJobPattern} />
 
         {/* Tab strip */}
@@ -421,20 +440,33 @@ const PatternListManager = () => {
               onEdit={handleEditPattern}
               selectedPattern={selectedPattern}
               headerActions={
-                mayBeSuggestedTo ? (
-                  <SuggestionsButton
-                    onPress={() => setIsSuggesting(true)}
-                    accessibilityLabel={t("suggestPattern")}
-                  />
-                ) : reviewsSuggestions ? (
-                  <SuggestionsButton
-                    onPress={() => setIsReviewingSuggestions(true)}
-                    accessibilityLabel={t("suggestionsReviewLabel", {
-                      count: suggestions.length,
-                    })}
-                    count={suggestions.length}
-                  />
-                ) : undefined
+                <>
+                  {showsMembers && (
+                    <SuggestionsButton
+                      icon="account-group-outline"
+                      activeIcon="account-group"
+                      onPress={() => setIsManagingMembers(true)}
+                      accessibilityLabel={t("membersButtonLabel", {
+                        count: waitingToJoin,
+                      })}
+                      count={waitingToJoin}
+                    />
+                  )}
+                  {mayBeSuggestedTo ? (
+                    <SuggestionsButton
+                      onPress={() => setIsSuggesting(true)}
+                      accessibilityLabel={t("suggestPattern")}
+                    />
+                  ) : reviewsSuggestions ? (
+                    <SuggestionsButton
+                      onPress={() => setIsReviewingSuggestions(true)}
+                      accessibilityLabel={t("suggestionsReviewLabel", {
+                        count: suggestions.length,
+                      })}
+                      count={suggestions.length}
+                    />
+                  ) : null}
+                </>
               }
             />
           ) : (

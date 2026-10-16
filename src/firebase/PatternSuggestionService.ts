@@ -1,6 +1,7 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   Firestore,
   getDoc,
@@ -40,8 +41,8 @@ import {
  * - `suggestions/{auto id}`: one suggestion (`SuggestionDocument`), read only by the owner;
  * - `suggestionCounters/{d<day>[_<uid>]}`: how many were sent that UTC day, for the list or one
  *   subscriber, which is what the security rules hold the daily limit against;
- * - `subscribers/{uid}`: the publisher's record of a subscriber (`SubscriberRecord`); for now
- *   only a mute.
+ * - `subscribers/{uid}`: the publisher's record of a subscriber (`SubscriberRecord`): a mute,
+ *   and on a members-only list a membership (`MembershipService.ts`).
  *
  * See `src/pattern/suggestions/AGENTS.md` and `firestore.rules`.
  */
@@ -73,14 +74,18 @@ export interface PatternSuggestion {
 }
 
 /**
- * `sharedLists/{code}/subscribers/{uid}`. Only `muted` today; members-only lists are meant to
- * add their statuses here rather than in a second record.
+ * `sharedLists/{code}/subscribers/{uid}`: a mute, a membership of a members-only list
+ * (`src/firebase/MembershipService.ts`), or both. One of the two is always there.
  */
 export interface SubscriberRecord {
-  status: "muted";
+  status?: "muted";
+  membership?: Membership;
   name?: string;
   updatedAt: Timestamp;
 }
+
+/** Where a subscriber stands with a members-only list. */
+export type Membership = "requested" | "member" | "declined";
 
 export interface MutedSubscriber {
   uid: string;
@@ -205,7 +210,7 @@ export async function submitSuggestion(
 
 class LimitReached extends Error {}
 
-function isPermissionDenied(e: unknown): boolean {
+export function isPermissionDenied(e: unknown): boolean {
   return (
     typeof e === "object" &&
     e !== null &&
@@ -222,7 +227,7 @@ function isPermissionDenied(e: unknown): boolean {
  * anonymous id only once it has published from it: after a reinstall, or on a new phone with an
  * editable export, the first refusal re-confirms ownership with the share key and tries again.
  */
-async function asOwner<T>(
+export async function asOwner<T>(
   list: IPatternList,
   attempt: () => Promise<T>,
 ): Promise<T> {
@@ -288,7 +293,7 @@ export function subscribeToMutedSubscribers(
   );
 }
 
-function subscribeAsOwner(
+export function subscribeAsOwner(
   list: IPatternList,
   build: (firestore: Firestore, code: string) => ReturnType<typeof query>,
   onDocs: (docs: { id: string; data: Record<string, unknown> }[]) => void,
@@ -350,7 +355,10 @@ export async function deleteSuggestion(
   );
 }
 
-/** Stop taking suggestions from one subscriber. Their pending suggestions stay for review. */
+/**
+ * Stop taking suggestions from one subscriber. Their pending suggestions stay for review. A
+ * merge, so a member of a members-only list stays a member.
+ */
 export async function muteSubscriber(
   list: IPatternList,
   uid: string,
@@ -360,23 +368,38 @@ export async function muteSubscriber(
   const code = requireCode(list);
   const trimmed = name?.trim().slice(0, 40);
   await asOwner(list, () =>
-    setDoc(doc(sub(firestore, code, SUBSCRIBERS), uid), {
-      status: "muted",
-      ...(trimmed && { name: trimmed }),
-      updatedAt: serverTimestamp(),
-    }),
+    setDoc(
+      doc(sub(firestore, code, SUBSCRIBERS), uid),
+      {
+        status: "muted",
+        ...(trimmed && { name: trimmed }),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    ),
   );
 }
 
+/** Take a mute back. A record that also holds a membership keeps it. */
 export async function unmuteSubscriber(
   list: IPatternList,
   uid: string,
 ): Promise<void> {
   const firestore = requireDb();
   const code = requireCode(list);
-  await asOwner(list, () =>
-    deleteDoc(doc(sub(firestore, code, SUBSCRIBERS), uid)),
-  );
+  const ref = doc(sub(firestore, code, SUBSCRIBERS), uid);
+  await asOwner(list, async () => {
+    const record = await getDoc(ref);
+    if ((record.data() as SubscriberRecord | undefined)?.membership) {
+      await setDoc(
+        ref,
+        { status: deleteField(), updatedAt: serverTimestamp() },
+        { merge: true },
+      );
+    } else {
+      await deleteDoc(ref);
+    }
+  });
 }
 
 function requireCode(list: IPatternList): string {

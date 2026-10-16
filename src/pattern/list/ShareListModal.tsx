@@ -32,6 +32,7 @@ import {
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import AppDialog from "@/src/common/components/AppDialog";
+import { withMembersOnly } from "@/src/pattern/members/members";
 
 interface ShareListModalProps {
   visible: boolean;
@@ -72,13 +73,24 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
     list.suggestions,
   );
 
-  /** The list with these suggestion settings; none removes the key (Firestore rejects undefined). */
-  const withPolicy = (next: ISuggestionPolicy | undefined): IPatternList => {
-    const { suggestions: _previous, ...rest } = list;
+  // Whether only subscribers let in may read it (src/pattern/members/); published like the policy.
+  const [membersOnly, setMembersOnly] = useState(!!list.membersOnly);
+  const [confirmMembersOnly, setConfirmMembersOnly] = useState(false);
+
+  /**
+   * The list with these settings; none removes the key (Firestore rejects undefined).
+   */
+  const withSettings = (
+    next: ISuggestionPolicy | undefined,
+    closed: boolean,
+  ): IPatternList => {
+    const { suggestions: _previous, ...rest } = withMembersOnly(list, closed);
     return next ? { ...rest, suggestions: next } : rest;
   };
 
-  const handlePublish = async (target: IPatternList = withPolicy(policy)) => {
+  const handlePublish = async (
+    target: IPatternList = withSettings(policy, membersOnly),
+  ) => {
     setError(null);
     setIsLoading(true);
     try {
@@ -87,7 +99,10 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       // What is published did not change; show that.
-      if (isPublished) setPolicy(list.suggestions);
+      if (isPublished) {
+        setPolicy(list.suggestions);
+        setMembersOnly(!!list.membersOnly);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +110,12 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
 
   const changePolicy = (next: ISuggestionPolicy | undefined) => {
     setPolicy(next);
-    if (isPublished) handlePublish(withPolicy(next));
+    if (isPublished) handlePublish(withSettings(next, membersOnly));
+  };
+
+  const changeMembersOnly = (closed: boolean) => {
+    setMembersOnly(closed);
+    if (isPublished) handlePublish(withSettings(policy, closed));
   };
 
   const handleUnpublish = async () => {
@@ -181,6 +201,23 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                 )}
                 <Text style={styles.hint}>{t("shareCodeHint")}</Text>
               </>
+            )}
+
+            {firebaseAvailable && (
+              <View style={styles.suggestions}>
+                <SwitchRow
+                  title={t("membersOnly")}
+                  description={t("membersOnlyHint")}
+                  value={membersOnly}
+                  disabled={isLoading}
+                  onValueChange={(on) =>
+                    // Closing a published list shuts out everyone subscribed so far.
+                    on && isPublished
+                      ? setConfirmMembersOnly(true)
+                      : changeMembersOnly(on)
+                  }
+                />
+              </View>
             )}
 
             {firebaseAvailable && (
@@ -272,6 +309,20 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           </ScrollView>
         </View>
       </ModalOverlay>
+
+      {/* ── Members-only confirmation, on a published list ─────────────── */}
+      <AppDialog
+        visible={confirmMembersOnly}
+        title={t("membersOnlyConfirmTitle")}
+        message={t("membersOnlyConfirmMessage")}
+        closeLabel={t("cancel")}
+        onClose={() => setConfirmMembersOnly(false)}
+        confirmLabel={t("membersOnlyConfirm")}
+        onConfirm={() => {
+          setConfirmMembersOnly(false);
+          changeMembersOnly(true);
+        }}
+      />
 
       {/* ── Unpublish confirmation dialog ────────────────────────────── */}
       <AppDialog

@@ -6,6 +6,13 @@ import { app } from "@/src/firebase/firebaseConfig";
  * the session itself and has no `getReactNativePersistence`, which is why
  * this is a platform split.
  */
+export async function restoreSignIn(): Promise<string | null> {
+  if (!app) throw new Error("Firebase is not configured.");
+  const appAuth = getAuth(app);
+  await appAuth.authStateReady();
+  return appAuth.currentUser?.uid ?? null;
+}
+
 export async function ensureSignedIn(): Promise<string> {
   if (!app) throw new Error("Firebase is not configured.");
   const appAuth = getAuth(app);

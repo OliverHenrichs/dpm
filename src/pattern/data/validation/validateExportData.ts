@@ -474,6 +474,8 @@ function normalizeList(
         per: raw.suggestions.per,
       },
     }),
+    // 3.7. Anything but `true` means the list is open to anyone with its code.
+    ...(raw.membersOnly === true && { membersOnly: true as const }),
     patterns,
   };
 }

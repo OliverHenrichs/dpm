@@ -605,6 +605,24 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("members-only lists (3.7)", () => {
+    it("keeps that only members may read the published list", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], { shareCode: "ABCD1234", membersOnly: true }),
+      ]);
+
+      expect(importResult.patternLists![0].membersOnly).toBe(true);
+    });
+
+    it("drops anything but true", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], { membersOnly: "yes" as never }),
+      ]);
+
+      expect(importResult.patternLists![0]).not.toHaveProperty("membersOnly");
+    });
+  });
+
   describe("export envelope", () => {
     it("writes the current format version and a parseable date", async () => {
       const { exported } = await roundTrip([listWith([])]);

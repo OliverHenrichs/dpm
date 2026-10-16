@@ -805,3 +805,172 @@ describe("muting", () => {
     await assertFails(setDoc(record(as(PUBLISHER)), data));
   });
 });
+
+describe("members-only lists", () => {
+  const record = (db: Firestore, uid = SUBSCRIBER) =>
+    doc(db, "sharedLists", CODE, "subscribers", uid);
+  const listDoc = (db: Firestore) => doc(db, "sharedLists", CODE);
+
+  function membersOnlyList(): SharedListDocument {
+    const data = sharedListDoc();
+    data.list.membersOnly = true;
+    return data;
+  }
+
+  const request = (db: Firestore, uid = SUBSCRIBER, name?: string) =>
+    setDoc(record(db, uid), {
+      membership: "requested",
+      ...(name && { name }),
+      updatedAt: serverTimestamp(),
+    });
+
+  const setMembership = (uid: string, membership: string) =>
+    seedDoc(["sharedLists", CODE, "subscribers", uid], {
+      membership,
+      updatedAt: Timestamp.now(),
+    });
+
+  it("accepts publishing a members-only list, and only `true` as the setting", async () => {
+    await assertSucceeds(publish(as(PUBLISHER), membersOnlyList()));
+    const bad = sharedListDoc();
+    (bad.list as unknown as Record<string, unknown>).membersOnly = false;
+    await assertFails(publish(as(PUBLISHER), bad));
+  });
+
+  it("refuses everyone but members and the owner", async () => {
+    await seed(membersOnlyList());
+    await setMembership(SUBSCRIBER, "member");
+    await setMembership(OTHER, "requested");
+    await assertFails(getDoc(listDoc(anonymous())));
+    await assertFails(getDoc(listDoc(as(OTHER))));
+    await assertFails(getDoc(listDoc(as("stranger-uid"))));
+    await assertSucceeds(getDoc(listDoc(as(SUBSCRIBER))));
+    await assertSucceeds(getDoc(listDoc(as(PUBLISHER))));
+  });
+
+  it("still answers a code that does not exist with not-found", async () => {
+    const snap = await assertSucceeds(getDoc(listDoc(as(SUBSCRIBER))));
+    expect(snap.exists()).toBe(false);
+  });
+
+  it("refuses a declined or removed member", async () => {
+    await seed(membersOnlyList());
+    await setMembership(SUBSCRIBER, "declined");
+    await assertFails(getDoc(listDoc(as(SUBSCRIBER))));
+  });
+
+  it("lets a subscriber ask to join, once, for themselves only", async () => {
+    await seed(membersOnlyList());
+    await assertSucceeds(request(as(SUBSCRIBER), SUBSCRIBER, "Alex"));
+    // Asking again, or letting oneself in, is the owner's to answer.
+    await assertFails(request(as(SUBSCRIBER)));
+    await assertFails(
+      setDoc(record(as(SUBSCRIBER)), {
+        membership: "member",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(request(as(SUBSCRIBER), OTHER));
+    await assertFails(deleteDoc(record(as(SUBSCRIBER))));
+  });
+
+  it("refuses a request that lets the subscriber in or carries a mute", async () => {
+    await seed(membersOnlyList());
+    await assertFails(
+      setDoc(record(as(SUBSCRIBER)), {
+        membership: "member",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      setDoc(record(as(SUBSCRIBER)), {
+        membership: "requested",
+        status: "muted",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("refuses a request to an open list, or one that does not exist", async () => {
+    await assertFails(request(as(SUBSCRIBER)));
+    await seed(sharedListDoc());
+    await assertFails(request(as(SUBSCRIBER)));
+  });
+
+  it("refuses a declined subscriber asking again", async () => {
+    await seed(membersOnlyList());
+    await setMembership(SUBSCRIBER, "declined");
+    await assertFails(request(as(SUBSCRIBER)));
+  });
+
+  it("lets a muted subscriber ask to join, keeping the mute", async () => {
+    await seed(membersOnlyList());
+    await seedDoc(["sharedLists", CODE, "subscribers", SUBSCRIBER], {
+      status: "muted",
+      updatedAt: Timestamp.now(),
+    });
+    await assertSucceeds(
+      setDoc(
+        record(as(SUBSCRIBER)),
+        { membership: "requested", updatedAt: serverTimestamp() },
+        { merge: true },
+      ),
+    );
+    await assertFails(
+      setDoc(record(as(SUBSCRIBER)), {
+        membership: "requested",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("lets the owner let in, decline and remove", async () => {
+    await seed(membersOnlyList());
+    await setMembership(SUBSCRIBER, "requested");
+    for (const membership of ["member", "declined", "member"]) {
+      await assertSucceeds(
+        setDoc(
+          record(as(PUBLISHER)),
+          { membership, updatedAt: serverTimestamp() },
+          { merge: true },
+        ),
+      );
+    }
+    await assertSucceeds(deleteDoc(record(as(PUBLISHER))));
+  });
+
+  it("lets the owner mute a member without ending the membership", async () => {
+    await seed(membersOnlyList());
+    await setMembership(SUBSCRIBER, "member");
+    await assertSucceeds(
+      setDoc(
+        record(as(PUBLISHER)),
+        { status: "muted", updatedAt: serverTimestamp() },
+        { merge: true },
+      ),
+    );
+    await assertSucceeds(getDoc(listDoc(as(SUBSCRIBER))));
+  });
+
+  it.each([
+    { membership: "invited", updatedAt: "now" },
+    { updatedAt: "now" },
+    { membership: "member" },
+  ])("refuses the malformed record %j", async (raw) => {
+    await seed(membersOnlyList());
+    const data = {
+      ...raw,
+      ...("updatedAt" in raw && { updatedAt: serverTimestamp() }),
+    };
+    await assertFails(setDoc(record(as(PUBLISHER)), data));
+  });
+
+  it("takes suggestions to a members-only list from members only", async () => {
+    const data = membersOnlyList();
+    data.list.suggestions = { dailyLimit: 2, per: "subscriber" };
+    await seed(data);
+    await assertFails(suggest(as(OTHER), OTHER, 1));
+    await setMembership(SUBSCRIBER, "member");
+    await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+  });
+});

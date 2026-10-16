@@ -68,6 +68,12 @@ export interface IPatternList {
    * subscriber's copy says whether to offer it; the security rules enforce it.
    */
   suggestions?: ISuggestionPolicy;
+  /**
+   * Whether only the subscribers the publisher has let in may read the published list
+   * (`src/pattern/members/`). Absent means anyone with the share code may. Published with the
+   * list; the security rules enforce it.
+   */
+  membersOnly?: true;
 }
 
 /** How many pattern suggestions a published list takes a day (UTC), counted for whom. */

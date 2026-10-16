@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
+import {
+  NoAccessError,
+  subscribeToSharedList,
+} from "@/src/firebase/FirebaseListService";
 import {
   getPatternListById,
   savePatternList,
@@ -16,20 +19,30 @@ import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
  *
  * When the publisher unpublishes (document deleted), the local copy is kept,
  * made editable, shareCode cleared, and detachedListName is set so the caller
- * can render a themed AppDialog notification.
+ * can render a themed AppDialog notification. A subscriber who may no longer
+ * read the list (it became members-only, or the publisher removed them) is
+ * detached the same way, with `detachedReason` saying so.
  */
 export function useSharedList(
   shareCode: string | undefined,
   listId: string | undefined,
   onUpdated: () => void,
-): { detachedListName: string | null; clearDetachedName: () => void } {
+  membersOnly = false,
+): {
+  detachedListName: string | null;
+  detachedReason: DetachReason;
+  clearDetachedName: () => void;
+} {
   const onUpdatedRef = useRef(onUpdated);
   useEffect(() => {
     onUpdatedRef.current = onUpdated;
   });
 
-  const [detachedListName, setDetachedListName] = useState<string | null>(null);
-  const clearDetachedName = () => setDetachedListName(null);
+  const [detached, setDetached] = useState<{
+    name: string;
+    reason: DetachReason;
+  } | null>(null);
+  const clearDetachedName = () => setDetached(null);
 
   useEffect(() => {
     if (!shareCode) return;
@@ -53,10 +66,16 @@ export function useSharedList(
         }
       },
       async (err) => {
-        if (err.message === "Shared list no longer exists." && listId) {
+        const noAccess = err instanceof NoAccessError;
+        if (
+          (err.message === "Shared list no longer exists." || noAccess) &&
+          listId
+        ) {
           try {
             const existing = await getPatternListById(listId);
-            if (existing) {
+            // The publisher's own list is never refused to its owner for long: ownership is
+            // re-confirmed on the next publish. Only a subscriber's copy is detached.
+            if (existing && (!noAccess || existing.readonly)) {
               await savePatternList({
                 ...existing,
                 shareCode: undefined,
@@ -65,7 +84,10 @@ export function useSharedList(
               onUpdatedRef.current();
               // Only notify subscribers — publishers have readonly === undefined
               if (existing.readonly) {
-                setDetachedListName(existing.name);
+                setDetached({
+                  name: existing.name,
+                  reason: noAccess ? "noAccess" : "unpublished",
+                });
               }
             }
           } catch (saveErr) {
@@ -75,8 +97,16 @@ export function useSharedList(
           console.warn("useSharedList: subscription error", err.message);
         }
       },
+      { membersOnly },
     );
-  }, [shareCode, listId]);
+  }, [shareCode, listId, membersOnly]);
 
-  return { detachedListName, clearDetachedName };
+  return {
+    detachedListName: detached?.name ?? null,
+    detachedReason: detached?.reason ?? "unpublished",
+    clearDetachedName,
+  };
 }
+
+/** Why a subscribed list stopped syncing: unpublished, or no longer readable by this phone. */
+export type DetachReason = "unpublished" | "noAccess";

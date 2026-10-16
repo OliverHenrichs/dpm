@@ -151,10 +151,11 @@ export const ActivePatternListProvider: React.FC<{
   // Live subscription: when the active list has a shareCode, keep it in sync
   // with Firestore. Updates are persisted to AsyncStorage then the state is
   // refreshed, so the user always sees the publisher's latest version.
-  const { detachedListName, clearDetachedName } = useSharedList(
+  const { detachedListName, detachedReason, clearDetachedName } = useSharedList(
     activeList?.shareCode,
     activeList?.id,
     loadActiveListAndPatterns,
+    !!activeList?.membersOnly,
   );
 
   const value: ActivePatternListContextType = {
@@ -176,7 +177,12 @@ export const ActivePatternListProvider: React.FC<{
         title={t("listUnpublishedTitle")}
         message={
           detachedListName
-            ? t("listUnpublishedMessage", { name: detachedListName })
+            ? t(
+                detachedReason === "noAccess"
+                  ? "listNoAccessMessage"
+                  : "listUnpublishedMessage",
+                { name: detachedListName },
+              )
             : ""
         }
         onClose={clearDetachedName}

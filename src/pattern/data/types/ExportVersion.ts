@@ -16,8 +16,9 @@ export const SUPPORTED_MAJOR = 3;
  * 4: lists may carry `shareKey` (control of a published list).
  * 5: patterns may carry `createdAt` (the day headers of the date sort).
  * 6: lists may carry `suggestions` (subscribers may suggest patterns).
+ * 7: lists may carry `membersOnly` (only subscribers let in may read the published list).
  */
-export const SUPPORTED_MINOR = 6;
+export const SUPPORTED_MINOR = 7;
 
 export interface ParsedVersion {
   major: number;
