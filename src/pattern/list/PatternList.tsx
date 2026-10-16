@@ -48,6 +48,8 @@ type PatternListProps = {
   /** Scrolls this pattern into view whenever the value changes. */
   reveal?: { id: number; at: number };
   onEdit: (pattern: IPattern) => void;
+  /** More actions in the header, before the lock or '+' (pattern suggestions). */
+  headerActions?: React.ReactNode;
 };
 
 const PatternList: React.FC<PatternListProps> = (props) => {
@@ -181,6 +183,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         onAdd={
           props.onAddFromVideo ? () => setIsAddMenuVisible(true) : props.onAdd
         }
+        extraActions={props.headerActions}
       />
 
       <FlatList

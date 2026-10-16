@@ -1,13 +1,34 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Clipboard, Modal, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Clipboard,
+  Modal,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { Button, IconButton } from "@/src/common/ui";
+import {
+  Button,
+  Chip,
+  IconButton,
+  SegmentedControl,
+  SwitchRow,
+} from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { alpha } from "@/src/common/theme/tokens";
 import { Icon } from "@/src/common/ui/Icon";
 import QRCode from "react-native-qrcode-svg";
 import { useTranslation } from "react-i18next";
-import { IPatternList, IPattern } from "@/src/pattern/types/IPatternList";
+import {
+  IPatternList,
+  IPattern,
+  ISuggestionPolicy,
+} from "@/src/pattern/types/IPatternList";
+import {
+  DAILY_LIMIT_CHOICES,
+  DEFAULT_SUGGESTION_POLICY,
+} from "@/src/pattern/suggestions/suggestions";
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -45,18 +66,36 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   );
 
   const isPublished = !!list.shareCode;
+  // Whether subscribers may suggest patterns. Before the first publish it waits for the
+  // Publish button; on a published list a change is published at once.
+  const [policy, setPolicy] = useState<ISuggestionPolicy | undefined>(
+    list.suggestions,
+  );
 
-  const handlePublish = async () => {
+  /** The list with these suggestion settings; none removes the key (Firestore rejects undefined). */
+  const withPolicy = (next: ISuggestionPolicy | undefined): IPatternList => {
+    const { suggestions: _previous, ...rest } = list;
+    return next ? { ...rest, suggestions: next } : rest;
+  };
+
+  const handlePublish = async (target: IPatternList = withPolicy(policy)) => {
     setError(null);
     setIsLoading(true);
     try {
-      const { shareCode, shareKey } = await publishList(list, patterns);
-      onPublished({ ...list, shareCode, shareKey });
+      const { shareCode, shareKey } = await publishList(target, patterns);
+      onPublished({ ...target, shareCode, shareKey });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      // What is published did not change; show that.
+      if (isPublished) setPolicy(list.suggestions);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const changePolicy = (next: ISuggestionPolicy | undefined) => {
+    setPolicy(next);
+    if (isPublished) handlePublish(withPolicy(next));
   };
 
   const handleUnpublish = async () => {
@@ -91,85 +130,146 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
     >
       <ModalOverlay>
         <View style={styles.card}>
-          <Text style={styles.title}>{t("shareToCloud")}</Text>
-          <Text style={styles.listName}>{list.name}</Text>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <Text style={styles.title}>{t("shareToCloud")}</Text>
+            <Text style={styles.listName}>{list.name}</Text>
 
-          {!firebaseAvailable && (
-            <View style={styles.warningBox}>
-              <Icon
-                name="alert-circle-outline"
-                size={18}
-                color={theme.colors.danger}
-              />
-              <Text style={styles.warningText}>{t("sharingNotAvailable")}</Text>
-            </View>
-          )}
-
-          {firebaseAvailable && isPublished && list.shareCode && (
-            <>
-              <Text style={styles.sectionLabel}>{t("shareCode")}</Text>
-              <View style={styles.codeRow}>
-                <Text style={styles.code}>{list.shareCode}</Text>
-                <IconButton
-                  icon={copied ? "check" : "content-copy"}
-                  size={theme.iconSize.md}
-                  color={copied ? "success" : "primary"}
-                  onPress={handleCopy}
-                  accessibilityLabel={t("copyShareCode")}
+            {!firebaseAvailable && (
+              <View style={styles.warningBox}>
+                <Icon
+                  name="alert-circle-outline"
+                  size={18}
+                  color={theme.colors.danger}
                 />
-                <IconButton
-                  icon={showQr ? "qrcode-remove" : "qrcode"}
-                  size={theme.iconSize.md}
-                  onPress={() => setShowQr((v) => !v)}
-                  accessibilityLabel={t(showQr ? "hideQrCode" : "showQrCode")}
-                />
+                <Text style={styles.warningText}>
+                  {t("sharingNotAvailable")}
+                </Text>
               </View>
-              {showQr && (
-                <View style={styles.qrContainer}>
-                  <QRCode
-                    value={list.shareCode}
-                    size={160}
-                    color={theme.colors.text}
-                    backgroundColor={theme.colors.surface}
+            )}
+
+            {firebaseAvailable && isPublished && list.shareCode && (
+              <>
+                <Text style={styles.sectionLabel}>{t("shareCode")}</Text>
+                <View style={styles.codeRow}>
+                  <Text style={styles.code}>{list.shareCode}</Text>
+                  <IconButton
+                    icon={copied ? "check" : "content-copy"}
+                    size={theme.iconSize.md}
+                    color={copied ? "success" : "primary"}
+                    onPress={handleCopy}
+                    accessibilityLabel={t("copyShareCode")}
+                  />
+                  <IconButton
+                    icon={showQr ? "qrcode-remove" : "qrcode"}
+                    size={theme.iconSize.md}
+                    onPress={() => setShowQr((v) => !v)}
+                    accessibilityLabel={t(showQr ? "hideQrCode" : "showQrCode")}
                   />
                 </View>
-              )}
-              <Text style={styles.hint}>{t("shareCodeHint")}</Text>
-            </>
-          )}
+                {showQr && (
+                  <View style={styles.qrContainer}>
+                    <QRCode
+                      value={list.shareCode}
+                      size={160}
+                      color={theme.colors.text}
+                      backgroundColor={theme.colors.surface}
+                    />
+                  </View>
+                )}
+                <Text style={styles.hint}>{t("shareCodeHint")}</Text>
+              </>
+            )}
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+            {firebaseAvailable && (
+              <View style={styles.suggestions}>
+                <SwitchRow
+                  title={t("allowSuggestions")}
+                  description={t("allowSuggestionsHint")}
+                  value={!!policy}
+                  disabled={isLoading}
+                  onValueChange={(on) =>
+                    changePolicy(
+                      on ? (policy ?? DEFAULT_SUGGESTION_POLICY) : undefined,
+                    )
+                  }
+                />
+                {policy && (
+                  <>
+                    <Text style={styles.sectionLabel}>
+                      {t("suggestionsDailyLimit")}
+                    </Text>
+                    <View style={styles.chipRow}>
+                      {DAILY_LIMIT_CHOICES.map((n) => (
+                        <Chip
+                          key={n}
+                          label={String(n)}
+                          selected={policy.dailyLimit === n}
+                          disabled={isLoading}
+                          onPress={() =>
+                            policy.dailyLimit !== n &&
+                            changePolicy({ ...policy, dailyLimit: n })
+                          }
+                        />
+                      ))}
+                    </View>
+                    <SegmentedControl
+                      kind="choice"
+                      accessibilityLabel={t("suggestionsCountedFor")}
+                      segments={[
+                        {
+                          value: "subscriber",
+                          label: t("suggestionsPerSubscriber"),
+                        },
+                        { value: "list", label: t("suggestionsInTotal") },
+                      ]}
+                      value={policy.per}
+                      onChange={(per) =>
+                        !isLoading &&
+                        policy.per !== per &&
+                        changePolicy({ ...policy, per })
+                      }
+                    />
+                  </>
+                )}
+              </View>
+            )}
 
-          {isLoading ? (
-            <ActivityIndicator
-              size="large"
-              color={theme.colors.primary}
-              style={styles.spinner}
-            />
-          ) : (
-            <View style={styles.buttonCol}>
-              {firebaseAvailable && (
-                <Button
-                  title={isPublished ? t("syncToCloud") : t("publishToCloud")}
-                  icon="cloud-upload-outline"
-                  onPress={handlePublish}
-                />
-              )}
-              {firebaseAvailable && isPublished && (
-                <Button
-                  title={t("unpublish")}
-                  icon="cloud-off-outline"
-                  variant="dangerOutline"
-                  onPress={() => setConfirmUnpublish(true)}
-                />
-              )}
-              <Button
-                title={t("cancel")}
-                variant="secondary"
-                onPress={onClose}
+            {error && <Text style={styles.errorText}>{error}</Text>}
+
+            {isLoading ? (
+              <ActivityIndicator
+                size="large"
+                color={theme.colors.primary}
+                style={styles.spinner}
               />
-            </View>
-          )}
+            ) : (
+              <View style={styles.buttonCol}>
+                {firebaseAvailable && (
+                  <Button
+                    title={isPublished ? t("syncToCloud") : t("publishToCloud")}
+                    icon="cloud-upload-outline"
+                    onPress={() => handlePublish()}
+                  />
+                )}
+                {firebaseAvailable && isPublished && (
+                  <Button
+                    title={t("unpublish")}
+                    icon="cloud-off-outline"
+                    variant="dangerOutline"
+                    onPress={() => setConfirmUnpublish(true)}
+                  />
+                )}
+                <Button
+                  title={t("cancel")}
+                  variant="secondary"
+                  onPress={onClose}
+                />
+              </View>
+            )}
+          </ScrollView>
         </View>
       </ModalOverlay>
 
@@ -213,6 +313,22 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.space.xxl,
     width: "100%",
     maxWidth: 420,
+    maxHeight: "100%",
+  },
+  scroll: {
+    flexGrow: 0,
+  },
+  scrollContent: {
+    flexGrow: 0,
+  },
+  suggestions: {
+    gap: theme.space.sm,
+    marginBottom: theme.space.xl,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: theme.space.sm,
   },
   title: {
     ...theme.typography.headline,

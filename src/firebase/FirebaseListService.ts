@@ -1,6 +1,9 @@
 import {
+  collection,
   doc,
+  Firestore,
   getDoc,
+  getDocs,
   onSnapshot,
   setDoc,
   Unsubscribe,
@@ -10,8 +13,11 @@ import {
   APP_TOKEN,
   db,
   firebaseAvailable,
+  SUBSCRIBERS,
   SHARED_LIST_OWNERS_COLLECTION,
   SHARED_LISTS_COLLECTION,
+  SUGGESTION_COUNTERS,
+  SUGGESTIONS,
 } from "@/src/firebase/firebaseConfig";
 import { ensureSignedIn } from "@/src/firebase/auth";
 import { generateShareKey } from "@/src/firebase/shareKey";
@@ -165,8 +171,53 @@ export async function syncPublishedList(
 }
 
 /**
- * Remove a published list and its owner record from Firestore.
- * After this call, subscribers will receive a "list no longer exists" error.
+ * Make this phone's anonymous id the owner on record of a published list, with
+ * its share key: a no-op when it already is, a takeover after a reinstall or on
+ * a new phone. Whatever the rules check against the owner (unpublishing,
+ * reading suggestions) needs it first.
+ */
+export async function confirmOwnership(list: IPatternList): Promise<void> {
+  const firestore = requireDb();
+  if (!list.shareCode) {
+    throw new Error("Cannot confirm ownership: list has no shareCode.");
+  }
+  const shareKey = await resolveShareKey(list);
+  const uid = await ensureSignedIn();
+  await setDoc(
+    doc(firestore, SHARED_LIST_OWNERS_COLLECTION, list.shareCode),
+    ownerRecord(uid, shareKey),
+  );
+}
+
+/** Firestore takes at most 500 writes in a batch. */
+const BATCH_LIMIT = 500;
+
+/**
+ * Delete every suggestion, counter and mute of a list, as its confirmed owner.
+ * Done before the list goes: nobody could read or delete them afterwards.
+ */
+async function deleteSuggestionData(
+  firestore: Firestore,
+  shareCode: string,
+): Promise<void> {
+  const listRef = doc(firestore, SHARED_LISTS_COLLECTION, shareCode);
+  const snaps = await Promise.all(
+    [SUGGESTIONS, SUGGESTION_COUNTERS, SUBSCRIBERS].map((name) =>
+      getDocs(collection(listRef, name)),
+    ),
+  );
+  const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
+  for (let i = 0; i < refs.length; i += BATCH_LIMIT) {
+    const batch = writeBatch(firestore);
+    refs.slice(i, i + BATCH_LIMIT).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+}
+
+/**
+ * Remove a published list, its subscribers' suggestions and its owner record
+ * from Firestore. After this call, subscribers will receive a "list no longer
+ * exists" error.
  *
  * Ownership is confirmed (or taken over with the key) first: a delete carries
  * no data, so the rules can only compare the caller with the owner on record.
@@ -176,15 +227,13 @@ export async function unpublishList(list: IPatternList): Promise<void> {
   if (!list.shareCode) {
     throw new Error("Cannot unpublish: list has no shareCode.");
   }
-  const shareKey = await resolveShareKey(list);
-  const uid = await ensureSignedIn();
+  await confirmOwnership(list);
+  await deleteSuggestionData(firestore, list.shareCode);
   const ownerRef = doc(
     firestore,
     SHARED_LIST_OWNERS_COLLECTION,
     list.shareCode,
   );
-
-  await setDoc(ownerRef, ownerRecord(uid, shareKey));
   const batch = writeBatch(firestore);
   batch.delete(doc(firestore, SHARED_LISTS_COLLECTION, list.shareCode));
   batch.delete(ownerRef);
