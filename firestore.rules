@@ -13,7 +13,18 @@ rules_version = '2';
 // - nothing can enumerate either collection; a list is read by its code only;
 // - a write must be a well-formed shared list stored under its own code,
 //   carrying the app token;
-// - nothing outside these two collections can be read or written at all.
+// - nothing outside these two collections can be read or written at all,
+//   except a shared list's suggestions (below).
+//
+// Suggestions: a publisher can let subscribers suggest new patterns
+// (`list.suggestions`: a daily limit, counted for the whole list or per
+// subscriber). A subscriber signs in anonymously to suggest, so every
+// suggestion carries an author id the publisher can mute. The limit is
+// counted here, not in the app: each suggestion is written together with
+// today's counter (UTC days), and the counter may only go up by one, with a
+// suggestion that did not exist before, up to the limit. Only the owner reads
+// suggestions, counters' listings and subscriber records; a subscriber may
+// read today's counter and their own record, so the app can say why it cannot send.
 //
 // The app token is compared by its SHA-256, so the repository (public) holds
 // only the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in
@@ -39,12 +50,54 @@ service cloud.firestore {
       return /databases/$(database)/documents/sharedLists/$(code);
     }
 
+    function hasAppToken(data) {
+      return data.appToken is string
+        && hashing.sha256(data.appToken).toHexString().lower()
+          == 'ee5aebaefc65b937e5a9d46f6500688554af84a8d0011f25d835bfb36e90e05b';
+    }
+
+    function suggestionPath(code, id) {
+      return /databases/$(database)/documents/sharedLists/$(code)/suggestions/$(id);
+    }
+
+    function counterPath(code, id) {
+      return /databases/$(database)/documents/sharedLists/$(code)/suggestionCounters/$(id);
+    }
+
+    function subscriberPath(code, uid) {
+      return /databases/$(database)/documents/sharedLists/$(code)/subscribers/$(uid);
+    }
+
+    function isMuted(code, uid) {
+      return exists(subscriberPath(code, uid))
+        && get(subscriberPath(code, uid)).data.status == 'muted';
+    }
+
+    // The owner on record. Subcollection reads and writes are checked
+    // against it; the app re-confirms ownership with the key when refused.
+    function isOwner(code) {
+      return signedIn()
+        && get(ownerPath(code)).data.ownerUid == request.auth.uid;
+    }
+
+    // The day of `request.time` in UTC, as days since the epoch: what a
+    // suggestion counter is named by.
+    function today() {
+      return string(int(math.floor(request.time.toMillis() / 86400000)));
+    }
+
+    // `IPatternList.suggestions`: present means suggestions are allowed.
+    function isSuggestionPolicy(policy) {
+      return policy is map
+        && policy.keys().hasOnly(['dailyLimit', 'per'])
+        && policy.keys().hasAll(['dailyLimit', 'per'])
+        && policy.dailyLimit is int
+        && policy.dailyLimit >= 1
+        && policy.dailyLimit <= 100
+        && policy.per in ['list', 'subscriber'];
+    }
+
     match /sharedLists/{shareCode} {
-      function hasAppToken(data) {
-        return data.appToken is string
-          && hashing.sha256(data.appToken).toHexString().lower()
-            == 'ee5aebaefc65b937e5a9d46f6500688554af84a8d0011f25d835bfb36e90e05b';
-      }
 
       // SharedListDocument, exactly as publishList() writes it. The share
       // key must never be in it: subscribers read this document.
@@ -59,6 +112,8 @@ service cloud.firestore {
           && data.list.shareCode == shareCode
           && !('readonly' in data.list)
           && !('shareKey' in data.list)
+          && (!('suggestions' in data.list)
+            || isSuggestionPolicy(data.list.suggestions))
           && data.patterns is list
           && data.patterns.size() <= 5000
           && data.publisherVersion is int
@@ -116,6 +171,142 @@ service cloud.firestore {
 
       allow delete: if signedIn()
         && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /sharedLists/{shareCode}/suggestions/{suggestionId} {
+      // A pattern as the suggest form builds it (NewPattern, URL videos
+      // only). Its references are checked again when the publisher accepts it.
+      function isSuggestedPattern(p) {
+        return p is map
+          && p.keys().hasOnly(['name', 'typeId', 'counts', 'level', 'rhythm',
+            'prerequisites', 'description', 'tags', 'videoRefs', 'modifierRefs'])
+          && p.keys().hasAll(['name', 'typeId', 'counts', 'prerequisites',
+            'description', 'tags', 'videoRefs', 'modifierRefs'])
+          && p.name is string
+          && p.name.size() > 0
+          && p.name.size() <= 100
+          && p.typeId is string
+          && p.typeId.size() <= 64
+          && p.counts is int
+          && p.counts >= 0
+          && p.counts <= 1000
+          && (!('level' in p) || (p.level is string && p.level.size() <= 32))
+          && (!('rhythm' in p) || (p.rhythm is string && p.rhythm.size() <= 200))
+          && p.description is string
+          && p.description.size() <= 2000
+          && p.prerequisites is list
+          && p.prerequisites.size() <= 50
+          && p.tags is list
+          && p.tags.size() <= 20
+          && p.videoRefs is list
+          && p.videoRefs.size() <= 10
+          && p.modifierRefs is list
+          && p.modifierRefs.size() <= 50;
+      }
+
+      function isSuggestion(data) {
+        return data.keys().hasOnly(
+            ['authorUid', 'authorName', 'pattern', 'createdAt', 'appToken'])
+          && data.keys().hasAll(['authorUid', 'pattern', 'createdAt', 'appToken'])
+          && data.authorUid == request.auth.uid
+          && (!('authorName' in data)
+            || (data.authorName is string
+              && data.authorName.size() > 0
+              && data.authorName.size() <= 40))
+          && data.createdAt == request.time
+          && hasAppToken(data)
+          && isSuggestedPattern(data.pattern);
+      }
+
+      function counterIdFor(policy) {
+        return policy.per == 'subscriber'
+          ? 'd' + today() + '_' + request.auth.uid
+          : 'd' + today();
+      }
+
+      // Today's counter goes up by one in the same write, names this
+      // suggestion, and stays within the limit.
+      function isCounted(policy) {
+        let path = counterPath(shareCode, counterIdFor(policy));
+        let before = exists(path) ? get(path).data.count : 0;
+        let after = getAfter(path).data;
+        return after.count == before + 1
+          && after.count <= policy.dailyLimit
+          && after.last == suggestionId;
+      }
+
+      function mayCreate() {
+        let policy = get(listPath(shareCode)).data.list.get('suggestions', null);
+        return policy != null
+          && !isMuted(shareCode, request.auth.uid)
+          && isCounted(policy);
+      }
+
+      allow get, list, delete: if isShareCode(shareCode) && isOwner(shareCode);
+      allow create: if isShareCode(shareCode)
+        && signedIn()
+        && isSuggestion(request.resource.data)
+        && mayCreate();
+      allow update: if false;
+    }
+
+    match /sharedLists/{shareCode}/suggestionCounters/{counterId} {
+      function isCounter(data) {
+        return data.keys().hasOnly(['count', 'last'])
+          && data.keys().hasAll(['count', 'last'])
+          && data.count is int
+          && data.last is string;
+      }
+
+      // Only today's counters, and only the list's or the caller's own: no
+      // one can use up tomorrow's limit or another subscriber's.
+      function isTodaysCounter() {
+        return counterId == 'd' + today()
+          || counterId == 'd' + today() + '_' + request.auth.uid;
+      }
+
+      // Every count is a suggestion by the caller created in the same write.
+      function countsNewSuggestion(data) {
+        let path = suggestionPath(shareCode, data.last);
+        return !exists(path)
+          && existsAfter(path)
+          && getAfter(path).data.authorUid == request.auth.uid;
+      }
+
+      allow get: if signedIn();
+      allow list, delete: if isShareCode(shareCode) && isOwner(shareCode);
+      allow create: if signedIn()
+        && isTodaysCounter()
+        && isCounter(request.resource.data)
+        && request.resource.data.count == 1
+        && countsNewSuggestion(request.resource.data);
+      allow update: if signedIn()
+        && isTodaysCounter()
+        && isCounter(request.resource.data)
+        && request.resource.data.count == resource.data.count + 1
+        && countsNewSuggestion(request.resource.data);
+    }
+
+    // The publisher's record of one subscriber, named by their anonymous id:
+    // for now only a mute (`status: 'muted'`), with the name they signed their
+    // suggestions with. Kept general so a later status (a member of a
+    // members-only list) can live here too.
+    match /sharedLists/{shareCode}/subscribers/{uid} {
+      function isSubscriberRecord(data) {
+        return data.keys().hasOnly(['status', 'name', 'updatedAt'])
+          && data.keys().hasAll(['status', 'updatedAt'])
+          && data.status in ['muted']
+          && data.updatedAt == request.time
+          && (!('name' in data)
+            || (data.name is string && data.name.size() <= 40));
+      }
+
+      allow get: if signedIn()
+        && (request.auth.uid == uid || isOwner(shareCode));
+      allow list, delete: if isShareCode(shareCode) && isOwner(shareCode);
+      allow create, update: if isShareCode(shareCode)
+        && isOwner(shareCode)
+        && isSubscriberRecord(request.resource.data);
     }
 
     match /{document=**} {

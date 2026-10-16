@@ -12,6 +12,8 @@ interface PatternListHeaderProps {
   onSort: () => void;
   onFilter: () => void;
   onAdd: () => void;
+  /** Shown before the lock or '+': suggesting a pattern, or reviewing suggestions. */
+  extraActions?: React.ReactNode;
 }
 
 const PatternListHeader: React.FC<PatternListHeaderProps> = ({
@@ -20,6 +22,7 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
   onSort,
   onFilter,
   onAdd,
+  extraActions,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -38,6 +41,7 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
         onPress={onFilter}
         accessibilityLabel={t("filterPatterns")}
       />
+      {extraActions}
       {isReadonly ? (
         <Icon
           name="lock-outline"

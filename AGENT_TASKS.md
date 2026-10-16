@@ -1501,6 +1501,31 @@ On clip 1 the follower's arm to the joined hands now shows over the leader. At t
 hand is on his shoulder, neither is visible in the original either, so nothing is drawn there,
 which is correct.
 
+**Steadier skeleton (2026-10-13).** The skeleton shook and blinked (Oliver's report). Causes
+read from the code, not measured on a device: the crop followed the mask's bounds every frame,
+so one mask cell of jitter moved and rescaled the crop and every joint with it, and likely upset
+MediaPipe's own VIDEO-mode tracking between frames; the drawn joints were the raw model output
+(only the ±2-frame draw average, which at 15 tracked fps is about ±1 pose); a visibility
+hovering at 0.5 switched bones on and off; and a single missed pose dropped the whole skeleton.
+Now (`PoseSkeletons.kt`, `JointSmoother.kt`): a crop is kept while the dancer fits in it with
+10% room (fresh crops get 35%, and shrink once 1.6× too large); joints go through a One Euro
+filter (min cutoff 1.5 Hz, beta 40; on synthetic joints it halved the shake of a still joint and
+kept a swinging arm within ~3 px); visibility has hysteresis (on at 0.55, off under 0.35); and a
+pose missed for up to 2 tracked frames is carried along with the mask's centre.
+
+On the phone (Basic Whip video 2) the shake was gone, but where one dancer hid behind the other
+the hidden one's skeleton was drawn on the front one's body (~4.7 s, ~10.3 s), and when his hand
+reached for her face her skeleton collapsed into a column (~14.4 s). Now a pose whose torso lies
+mostly (3 of 4 joints) on cells the partner's mask claims more strongly counts as missed, and an
+arm whose elbow or wrist jumps more than a shoulder width relative to its shoulder in one tracked
+frame is held back that frame unless the next frame confirms it. Those two fixed ~10.3 s and the
+face cover at ~4.5 s. Halving the greyed band near the dancer's own torso fixed ~14.4 s but let
+his forearm beside her shoulder through, and her arm followed his for two seconds (~13 s); now
+nothing only her own mask claims is greyed instead. With only his head showing (~4.7 s), the
+model fitted a whole body around his head into the background, so a pose whose torso lies off
+the dancer's own mask also counts as missed, and no pose is looked for while a dancer shows less
+than 30% of her usual area.
+
 **Speed on a Pixel 10a** (ms per frame, clip 1):
 
 | Stage | Before | Loops fixed | + worker thread | + 15 fps |
