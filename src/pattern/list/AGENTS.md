@@ -72,5 +72,7 @@ nothing selected.
 - The pattern list's **+** offers _New pattern_, _From a video_ (gallery) and _Record a video_
   (system camera). The video seeds the new pattern's form; after saving, the app offers to edit it
   (`src/anonymize/AGENTS.md`).
+- A local video's tile also offers _Put online_, and a video shared to DPM can open the add form
+  through `newVideo` route params (`src/videoLinks/AGENTS.md`).
 - `PatternListTemplateModal` creates and sets up a list: template, name, types, dance.
 - `ShareListModal` / `SubscribeListModal` are the sharing UI (`src/firebase/AGENTS.md`).

@@ -10,6 +10,7 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import { RevealTextInput } from "@/src/common/components/reveal";
+import { playsInApp } from "@/src/videoLinks/videoLinks";
 
 export type AddVideoModalProps = {
   visible: boolean;
@@ -30,11 +31,14 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
   const [url, setUrl] = useState("");
   const [startTimeText, setStartTimeText] = useState("");
   const [urlError, setUrlError] = useState("");
+  /** The link already warned about as one DPM cannot play; adding it again goes ahead. */
+  const [warned, setWarned] = useState("");
 
   const handleClose = () => {
     setUrl("");
     setStartTimeText("");
     setUrlError("");
+    setWarned("");
     onClose();
   };
 
@@ -42,6 +46,8 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
     handleClose();
     onPickFromLibrary();
   };
+
+  const warning = !!url.trim() && warned === url.trim();
 
   const parseStartTime = (text: string): number | undefined => {
     const trimmed = text.trim();
@@ -66,10 +72,15 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
       setUrlError(t("videoUrlInvalid"));
       return;
     }
+    if (!playsInApp(trimmed) && warned !== trimmed) {
+      setWarned(trimmed);
+      return;
+    }
     const startTime = parseStartTime(startTimeText);
     setUrl("");
     setStartTimeText("");
     setUrlError("");
+    setWarned("");
     onClose();
     onAddUrl(trimmed, startTime);
   };
@@ -119,8 +130,11 @@ const AddVideoModal: React.FC<AddVideoModalProps> = ({
           onChangeText={setStartTimeText}
           keyboardType="numbers-and-punctuation"
         />
+        {warning && (
+          <Text style={styles.errorText}>{t("videoLinkWontPlay")}</Text>
+        )}
         <Button
-          title={t("addUrl")}
+          title={warning ? t("videoLinkUseAnyway") : t("addUrl")}
           icon="link-variant"
           onPress={handleAddUrl}
         />

@@ -16,6 +16,7 @@ import { ActivePatternListProvider } from "@/src/pattern/data/components/ActiveP
 import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import DrawerContent from "@/src/common/components/DrawerContent";
 import WhatsNewHint from "@/src/changelog/components/WhatsNewHint";
+import ShareInHandler from "@/src/videoLinks/components/ShareInHandler";
 import {
   DRAWER_ROUTES,
   LIST_GROUP,
@@ -120,6 +121,8 @@ function AppDrawer() {
         </SafeAreaView>
         {/* After an update, what changed since the version last seen. */}
         <WhatsNewHint />
+        {/* A link or a video shared to DPM from another app (src/videoLinks/). */}
+        <ShareInHandler />
       </AnonymizeJobsProvider>
     </ActivePatternListProvider>
   );
