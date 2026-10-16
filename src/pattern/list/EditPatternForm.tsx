@@ -68,6 +68,9 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import { RevealTextInput } from "@/src/common/components/reveal";
+import PutOnlineSheet, {
+  PutOnlineTarget,
+} from "@/src/videoLinks/components/PutOnlineSheet";
 
 type EditPatternFormProps = {
   patterns: IPattern[];
@@ -143,6 +146,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     useState<AnonymizeTarget | null>(null);
   const [transcriptTarget, setTranscriptTarget] =
     useState<TranscriptTarget | null>(null);
+  const [putOnlineTarget, setPutOnlineTarget] =
+    useState<PutOnlineTarget | null>(null);
   const { activeList } = useActivePatternList();
   const { jobs } = useAnonymizeJobs();
   const startTranscription = useStartTranscription();
@@ -354,6 +359,25 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       ...(ref.transcript && { transcript: ref.transcript }),
     });
   };
+
+  // Put online: upload a local video with another app, then its link takes the video's place
+  // (src/videoLinks/). Only where the videos can be changed, the same as editing them.
+  const canPutOnline =
+    !!activeList && !activeList.readonly && !isActiveVideoReadonly;
+  const openPutOnline = (ref: IVideoReference) => {
+    if (!activeList || ref.type !== "local") return;
+    setPutOnlineTarget({
+      listId: activeList.id,
+      sourceUri: ref.value,
+      patternName: newPattern.name.trim() || t("addPatternNew"),
+    });
+  };
+  // The link has replaced the video (pasted, or shared back from the other app): nothing left
+  // to put online.
+  const putOnlineOpen =
+    putOnlineTarget && draftUris.has(putOnlineTarget.sourceUri)
+      ? putOnlineTarget
+      : null;
 
   // What was said in a video (L4): opened from its thumbnail, or from Edit video.
   const openTranscript = (ref: IVideoReference) => {
@@ -569,6 +593,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onEditVideoAt={
           canEditVideos
             ? (index) => openEditor(activeVideoRefs[index])
+            : undefined
+        }
+        onPutOnlineAt={
+          canPutOnline
+            ? (index) => openPutOnline(activeVideoRefs[index])
             : undefined
         }
         onOpenTranscript={(index) => openTranscript(activeVideoRefs[index])}
@@ -823,6 +852,10 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 )
             : undefined
         }
+      />
+      <PutOnlineSheet
+        target={putOnlineOpen}
+        onClose={() => setPutOnlineTarget(null)}
       />
       <AddVideoModal
         visible={showAddVideoModal}

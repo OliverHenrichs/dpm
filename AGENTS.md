@@ -23,6 +23,7 @@ in, so read the one listed below before you add code there.
 | `src/transcribe/AGENTS.md` | Speech transcription (Whisper), the model store |
 | `src/suggest/AGENTS.md` | Name and description suggestions (on-device LLM) |
 | `src/pattern/suggestions/AGENTS.md` | Pattern suggestions from a shared list's subscribers: daily limits, muting, review |
+| `src/videoLinks/AGENTS.md` | Putting a local video online and its link back, links and videos shared to DPM |
 | `modules/AGENTS.md` | The local native Expo modules and their gitignored model weights |
 | `src/changelog/AGENTS.md` | The bundled changelog, the what's-new hint after an update, releasing a version's notes |
 | `src/settings/AGENTS.md` | Settings screen, i18n machinery, device locale, language/style/icon persistence |
@@ -143,8 +144,9 @@ Edit Pattern → Videos → **Edit video** (`src/anonymize/components/VideoEditP
 name and description*. Settings → *On-device models* downloads and deletes the models. Everything
 heavy runs through one queue, `jobStore`, one job at a time, because the phone cannot hold two
 models. A shortened or anonymized video waits for the user's review before the pattern changes,
-and nothing is written into a description without an explicit tap. Transcripts never go into a
-published list and leave in an export only on opt-in. Details in `src/anonymize/`,
+and nothing is written into a description without an explicit tap. A local video goes online
+through the user's own apps and comes back as a link (_Put online_, `src/videoLinks/`).
+Transcripts never go into a published list and leave in an export only on opt-in. Details in `src/anonymize/`,
 `src/transcribe/`, `src/suggest/` and `modules/` (their `AGENTS.md`).
 
 ## Filtering

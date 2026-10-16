@@ -118,6 +118,22 @@ describe("EditPatternForm — videos", () => {
       });
     });
 
+    it("asks before adding a link DPM cannot play", async () => {
+      const drive = "https://drive.google.com/file/d/abc/view";
+      const { saved } = renderForm(
+        createTestPattern(TYPE.id, { id: 1, name: "Whip" }),
+      );
+
+      await addUrlVideo(drive);
+      expect(
+        await screen.findByText(/This link won't play in DPM/),
+      ).toBeOnTheScreen();
+      fireEvent.press(screen.getByText("Use it anyway"));
+      save();
+
+      expect(saved().videoRefs).toEqual([{ type: "url", value: drive }]);
+    });
+
     it("refuses something that is not a URL", async () => {
       const { saved } = renderForm(
         createTestPattern(TYPE.id, { id: 1, name: "Whip" }),

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
 import { Modal, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { SegmentedControl } from "@/src/common/ui";
@@ -39,6 +40,7 @@ import { useListSuggestions } from "@/src/pattern/suggestions/useListSuggestions
 import SuggestionsButton from "@/src/pattern/suggestions/SuggestionsButton";
 import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
 import SuggestionsModal from "@/src/pattern/suggestions/SuggestionsModal";
+import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
@@ -95,6 +97,33 @@ const PatternListManager = () => {
     receivesSuggestions(activeList) &&
     (!!activeList?.suggestions || suggestions.length > 0);
 
+  // "New pattern" for a video shared to DPM from another app (src/videoLinks/): it arrives as
+  // route params and seeds the add form like "From a video". The params are cleared once read,
+  // so coming back to the tab does not open the form again.
+  const { newVideo, newVideoType } = useLocalSearchParams<{
+    newVideo?: string;
+    newVideoType?: string;
+  }>();
+  // Read during render, as the form's state is adjusted to a prop; `seenVideo` keeps it to once.
+  // Not before the list is loaded: whether it is read-only is not known until then.
+  const { isLoading } = useActivePatternList();
+  const [seenVideo, setSeenVideo] = useState<string>();
+  if (!isLoading && newVideo !== seenVideo) {
+    setSeenVideo(newVideo);
+    if (newVideo && !isReadonly) {
+      setInitialVideos([
+        { type: newVideoType === "url" ? "url" : "local", value: newVideo },
+      ]);
+      setActiveTab("patterns");
+      setIsAddingNew(true);
+    }
+  }
+  useEffect(() => {
+    if (newVideo && newVideo === seenVideo) {
+      router.setParams({ newVideo: undefined, newVideoType: undefined });
+    }
+  }, [newVideo, seenVideo]);
+
   // The mutations live in usePatternCrud; what is left here is which modal is
   // open. Each returns whether it was applied, so a rejected edit — a blank
   // name, a read-only list — leaves the form open instead of silently
@@ -105,7 +134,9 @@ const PatternListManager = () => {
     const accepted = await addPattern(pattern);
     if (!accepted) return accepted;
     setIsAddingNew(false);
-    const seeded = initialVideos?.[0]?.value;
+    // Only a video on the phone can be edited; a shared link seeds the form too.
+    const seeded =
+      initialVideos?.[0]?.type === "local" ? initialVideos[0].value : undefined;
     setInitialVideos(undefined);
     if (
       activeList &&

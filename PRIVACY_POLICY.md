@@ -41,7 +41,7 @@ The app connects to the internet only for the following optional features, each 
 | Your graph layout, active list, theme, app style and language | Restoring your settings | On-device (AsyncStorage) |
 | Your app icon colour | Showing the launcher icon you chose | On-device, by the operating system |
 
-None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature. Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts". An editable export of a list you have published also carries that list's share key, so whoever imports it can update or stop sharing the published list (that is how you move it to a new phone); a read-only export never does.
+None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature, or share a video to another app (section 3.4). Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts". An editable export of a list you have published also carries that list's share key, so whoever imports it can update or stop sharing the published list (that is how you move it to a new phone); a read-only export never does.
 
 ### 3.2 On-device video tools
 
@@ -89,6 +89,10 @@ This does **not** happen when you use the app without publishing or subscribing.
 ### 3.4 Online videos
 
 When you play a video that you (or the publisher of a list you subscribed to) attached by URL, the app loads it from wherever it is hosted. YouTube links play in YouTube's embedded player. To show a preview image of a YouTube link, for example in the pattern editor or in the Reels overview, the app loads that video's thumbnail from YouTube (img.youtube.com) without you pressing play. The host, for example **YouTube (Google)**, receives your IP address and device information, and may set cookies or collect usage data under its own privacy policy. We receive none of this data.
+
+**Putting a video online.** When you tap the cloud button on a video saved on your phone and then *Share video*, the system share menu hands that video file to the app you choose, for example YouTube. The app sends nothing itself; what the other app does with the video is covered by its own privacy policy. The link you bring back replaces the video in your pattern and is treated like any other online video. The app reads your clipboard only when you tap *Paste copied link*, and keeps only the link it finds there.
+
+**Sharing to the app.** The app appears in your phone's share menu for links and videos. When you share one to it, the app reads only what you shared, and keeps it only if you add it to a pattern; a shared video is then copied into the app's own storage.
 
 ### 3.5 Model downloads
 
