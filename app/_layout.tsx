@@ -1,10 +1,15 @@
 // First, before anything that creates styles: web's static renderer loads the
 // routes directly and never runs `index.ts`, which does the same on device.
+import "@/src/common/theme/adoptServerStyles";
 import "@/src/common/theme/unistyles";
 import { restoreStoredLanguage } from "@/src/i18n";
 import React, { useEffect, useState } from "react";
 import { Platform } from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import {
+  StyleSheet,
+  useUnistyles,
+  withUnistyles,
+} from "react-native-unistyles";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { Drawer, getDrawerStatusFromState } from "expo-router/drawer";
@@ -71,7 +76,7 @@ function AppDrawer() {
           dark phone would otherwise get white icons on a white bar. */}
       <StatusBar style={rt.themeName === "dark" ? "light" : "dark"} />
       <AnonymizeJobsProvider>
-        <SafeAreaView style={styles.flexView}>
+        <AppSafeAreaView style={styles.flexView}>
           <Drawer
             screenOptions={{
               drawerPosition: "right",
@@ -118,7 +123,7 @@ function AppDrawer() {
                 still opens on them. */}
             <Drawer.Screen name={LIST_GROUP} />
           </Drawer>
-        </SafeAreaView>
+        </AppSafeAreaView>
         {/* After an update, what changed since the version last seen. */}
         <WhatsNewHint />
         {/* A link or a video shared to DPM from another app (src/videoLinks/). */}
@@ -127,6 +132,11 @@ function AppDrawer() {
     </ActivePatternListProvider>
   );
 }
+
+// A third-party view: on web it renders a plain react-native-web View, which
+// cannot read a Unistyles style, so it drops `flex: 1` and the whole app
+// collapses to zero height. `withUnistyles` hands it plain styles instead.
+const AppSafeAreaView = withUnistyles(SafeAreaView);
 
 const styles = StyleSheet.create((theme) => ({
   flexView: {
