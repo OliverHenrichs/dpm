@@ -12,7 +12,12 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 
 | File | What it is |
 |---|---|
-| `index.html` | The landing page. The list, map, filter, modifier, sharing, suggestion, Reels and video-tool examples are real app screenshots (`img/shots/`), and follow the style and light or dark |
+| `index.html` | The landing page: what DPM is, and a card for each of the four pages below |
+| `yourself.html` | **On your own**: keeping track of your own progress. List, Map and Reels, filtering, modifiers, the video tools |
+| `sharing.html` | **With classmates**: classmates or friends following one list that one of them keeps. Publishing, suggestions, _Put online_, passing a file round |
+| `teaching.html` | **As a teacher**: a course list under the teacher's control. Members only, suggestion limits, video hosts with limited public access |
+| `students.html` | **As a student**: what a subscriber gets, and how to subscribe |
+| (all pages) | The screenshots are real app screenshots (`img/shots/`) and follow the style and light or dark. Every page carries the same header (the four pages, `aria-current` on the one shown, and the style switcher) and footer, written out in each file: a change to either goes in all of them, and in `build-privacy.py` |
 | `styles.css` | All styling. Both styles' colours, fonts and radii mirror `src/common/theme/tokens.ts` (`palettes`, `nativeFonts`, `radii`); the pattern-type colours are from `PatternType.ts`. A token changed in the app should change here too |
 | `site.js` | The style switcher, loaded in every page's `<head>` so a returning visitor's style is set before the first paint |
 | `fonts/` | DM Serif Display, Manrope, IBM Plex Sans Condensed and IBM Plex Mono as WOFF2, subset to Latin from `assets/fonts/`, with their OFL licences |
@@ -43,13 +48,15 @@ served at `https://oliverhenrichs.github.io/dpm/`.
 
 These addresses are hard-coded and must change together when the site gets its own domain:
 
-- `index.html`: `canonical`, `og:url`, `og:image`
+- `index.html`, `yourself.html`, `sharing.html`, `teaching.html`, `students.html`: `canonical`,
+  `og:url`, `og:image`
 - `404.html`: the `/dpm/` prefix (becomes `/` on a root domain)
 
 ## Before launch
 
-- **Store badges.** When the listings go live, replace the "In active development" line in the
-  hero with the official Google Play and App Store badges.
+- **Store badges.** When the listings go live, replace the "In development" line in the
+  landing page's hero, and "On Android for now" on the student page, with the official Google
+  Play and App Store badges.
 - **Screenshots.** The list, map, filter and modifier shots come from the app's web build at
   phone size (412 × 870, saved 600 px wide), with a West Coast Swing group list ("WCS · Thursday
   group", tagged by course and festival, with a rhythm on each figure and a manual network layout)
