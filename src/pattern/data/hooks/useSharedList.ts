@@ -4,6 +4,10 @@ import {
   subscribeToSharedList,
 } from "@/src/firebase/FirebaseListService";
 import {
+  refreshSubscription,
+  removeSubscription,
+} from "@/src/firebase/SubscriptionService";
+import {
   getPatternListById,
   savePatternList,
   savePatterns,
@@ -22,6 +26,10 @@ import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
  * can render a themed AppDialog notification. A subscriber who may no longer
  * read the list (it became members-only, or the publisher removed them) is
  * detached the same way, with `detachedReason` saying so.
+ *
+ * A subscriber's phone counts itself towards the publisher's subscriber count
+ * once it has read the list (`SubscriptionService.ts`), and stops counting
+ * when the list is detached.
  */
 export function useSharedList(
   shareCode: string | undefined,
@@ -61,6 +69,9 @@ export function useSharedList(
           await savePatternList(listToSave);
           await savePatterns(updated.id, updated.patterns);
           onUpdatedRef.current();
+          refreshSubscription(shareCode).catch((err) =>
+            console.warn("useSharedList: failed to count subscription", err),
+          );
         } catch (err) {
           console.warn("useSharedList: failed to persist update", err);
         }
@@ -82,6 +93,9 @@ export function useSharedList(
                 readonly: undefined,
               });
               onUpdatedRef.current();
+              removeSubscription(shareCode).catch(() => {
+                // The list is gone or closed to this phone; the record ages out.
+              });
               // Only notify subscribers — publishers have readonly === undefined
               if (existing.readonly) {
                 setDetached({

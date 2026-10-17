@@ -611,5 +611,13 @@
   "membersAsked": "You've asked to join. Once the publisher lets you in, look the code up again.",
   "membersLookUpAgain": "Look up again",
   "membersDeclinedYou": "The publisher hasn't let you in to this list.",
-  "membersAskFailed": "Your request could not be sent. Check your connection and try again."
+  "membersAskFailed": "Your request could not be sent. Check your connection and try again.",
+  "subscriberCount": "Subscribers",
+  "subscriberCountLoading": "Counting subscribers",
+  "subscriberCountUnavailable": "Not available right now",
+  "subscriberCountHint": "Phones that have this list and opened it in the last {{days}} days.",
+  "unsubscribeList": "Unsubscribe from List",
+  "unsubscribe": "Unsubscribe",
+  "unsubscribeListConfirm": "Remove '{{name}}' from this phone? You can subscribe again with its share code.",
+  "subscribedListHint": "You follow this list. Only its publisher can change it."
 }

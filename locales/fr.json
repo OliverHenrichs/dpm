@@ -611,5 +611,13 @@
   "membersAsked": "Vous avez demandé à rejoindre la liste. Une fois admis par l'éditeur, recherchez à nouveau le code.",
   "membersLookUpAgain": "Rechercher à nouveau",
   "membersDeclinedYou": "L'éditeur ne vous a pas admis dans cette liste.",
-  "membersAskFailed": "Votre demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez."
+  "membersAskFailed": "Votre demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez.",
+  "subscriberCount": "Abonnés",
+  "subscriberCountLoading": "Comptage des abonnés",
+  "subscriberCountUnavailable": "Indisponible pour le moment",
+  "subscriberCountHint": "Téléphones qui ont cette liste et l'ont ouverte ces {{days}} derniers jours.",
+  "unsubscribeList": "Se désabonner de la liste",
+  "unsubscribe": "Se désabonner",
+  "unsubscribeListConfirm": "Retirer « {{name}} » de ce téléphone ? Vous pourrez vous réabonner avec son code de partage.",
+  "subscribedListHint": "Vous suivez cette liste. Seule la personne qui la publie peut la modifier."
 }

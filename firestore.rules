@@ -14,7 +14,7 @@ rules_version = '2';
 // - a write must be a well-formed shared list stored under its own code,
 //   carrying the app token;
 // - nothing outside these two collections can be read or written at all,
-//   except a shared list's suggestions (below).
+//   except a shared list's suggestions and subscriptions (below).
 //
 // Suggestions: a publisher can let subscribers suggest new patterns
 // (`list.suggestions`: a daily limit, counted for the whole list or per
@@ -32,6 +32,13 @@ rules_version = '2';
 // owner sets `member` or `declined`. Members, and the owner, read the list as
 // before; everyone else is refused, which tells the app the list is closed
 // (a code that does not exist still reads as not-found).
+//
+// Subscriber count: every subscribing phone keeps a record under the list,
+// `subscriptions/{id}`, named by a random id it keeps for that list (not its
+// anonymous user id; subscribing to an open list never signs in), holding
+// only when it last synced the list. Only the owner may list them, which is
+// how the publisher counts them; nobody can read a single one. The id is the
+// phone's secret, so whoever holds it may refresh or delete that record.
 //
 // The app token is compared by its SHA-256, so the repository (public) holds
 // only the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in
@@ -356,6 +363,37 @@ service cloud.firestore {
         && signedIn()
         && ((isOwner(shareCode) && isSubscriberRecord(request.resource.data))
           || isJoinRequest());
+    }
+
+    // One subscribing phone, named by its random id for this list
+    // (SubscriptionStorage.generateSubscriptionId: 32 characters).
+    match /sharedLists/{shareCode}/subscriptions/{subscriptionId} {
+      function isSubscription(data) {
+        return data.keys().hasOnly(['seenAt', 'appToken'])
+          && data.keys().hasAll(['seenAt', 'appToken'])
+          && data.seenAt == request.time
+          && hasAppToken(data);
+      }
+
+      // Only a phone that may read the list counts towards it.
+      function mayRead() {
+        return exists(listPath(shareCode))
+          && (!get(listPath(shareCode)).data.list.get('membersOnly', false)
+            || isMember(shareCode));
+      }
+
+      function isSubscriptionId() {
+        return subscriptionId.matches('^[A-Za-z0-9_-]{32}$');
+      }
+
+      allow get: if false;
+      allow list: if isShareCode(shareCode) && isOwner(shareCode);
+      allow create, update: if isShareCode(shareCode)
+        && isSubscriptionId()
+        && isSubscription(request.resource.data)
+        && mayRead();
+      allow delete: if isShareCode(shareCode)
+        && (isSubscriptionId() || isOwner(shareCode));
     }
 
     match /{document=**} {

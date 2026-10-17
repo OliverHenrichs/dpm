@@ -2,6 +2,7 @@ import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
+import { removeSubscription } from "@/src/firebase/SubscriptionService";
 import PatternListSelector from "@/src/pattern/list/PatternListSelector";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
@@ -22,6 +23,11 @@ jest.mock("@/src/firebase/FirebaseListService", () => ({
   publishList: jest.fn(),
   unpublishList: jest.fn(),
   fetchSharedList: jest.fn(),
+}));
+
+jest.mock("@/src/firebase/SubscriptionService", () => ({
+  refreshSubscription: jest.fn(async () => undefined),
+  removeSubscription: jest.fn(async () => undefined),
 }));
 
 beforeEach(() => {
@@ -179,6 +185,69 @@ describe("PatternListSelector", () => {
           "This list is read-only and cannot be edited or deleted.",
         ),
       ).toBeOnTheScreen();
+    });
+  });
+
+  describe("unsubscribing", () => {
+    const subscribed = () =>
+      createTestPatternList({
+        name: "Thursday Group",
+        readonly: true,
+        shareCode: "ABCD1234",
+      });
+
+    it("is offered for a subscribed list, not edit or delete", async () => {
+      await renderSelector([subscribed()]);
+
+      fireEvent(screen.getByText("Thursday Group"), "longPress");
+
+      expect(screen.getByText("Unsubscribe from List")).toBeOnTheScreen();
+      expect(screen.queryByText("Delete Pattern List")).toBeNull();
+      expect(
+        screen.getByText(
+          "You follow this list. Only its publisher can change it.",
+        ),
+      ).toBeOnTheScreen();
+    });
+
+    it("is not offered for a read-only import", async () => {
+      await renderSelector([
+        createTestPatternList({ name: "Imported", readonly: true }),
+      ]);
+
+      fireEvent(screen.getByText("Imported"), "longPress");
+
+      expect(screen.queryByText("Unsubscribe from List")).toBeNull();
+    });
+
+    it("asks first, then removes the list and stops counting this phone", async () => {
+      const list = subscribed();
+      await renderSelector([list]);
+
+      fireEvent(screen.getByText("Thursday Group"), "longPress");
+      fireEvent.press(screen.getByText("Unsubscribe from List"));
+      expect(
+        screen.getByText(
+          "Remove 'Thursday Group' from this phone? You can subscribe again with its share code.",
+        ),
+      ).toBeOnTheScreen();
+      fireEvent.press(screen.getByText("Unsubscribe"));
+
+      await waitFor(async () => expect(await storedLists()).toEqual([]));
+      expect(removeSubscription).toHaveBeenCalledWith("ABCD1234");
+    });
+
+    it("still removes the list when the phone is offline", async () => {
+      (removeSubscription as jest.Mock).mockRejectedValueOnce(
+        new Error("offline"),
+      );
+      await renderSelector([subscribed()]);
+
+      fireEvent(screen.getByText("Thursday Group"), "longPress");
+      fireEvent.press(screen.getByText("Unsubscribe from List"));
+      fireEvent.press(screen.getByText("Unsubscribe"));
+
+      await waitFor(async () => expect(await storedLists()).toEqual([]));
     });
   });
 
