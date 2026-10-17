@@ -18,7 +18,10 @@ import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
-import { getCommonListContainer } from "@/src/common/utils/CommonStyles";
+import {
+  getCommonFormSheet,
+  getCommonListContainer,
+} from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 import * as ImagePicker from "expo-image-picker";
@@ -495,16 +498,7 @@ const styles = StyleSheet.create((theme) => ({
     marginHorizontal: theme.space.sm,
     marginBottom: theme.space.sm,
   },
-  modalContent: {
-    borderRadius: theme.radius.none,
-    padding: theme.space.xl,
-    // The full width, always: sized to its content, the pattern form narrowed and widened as
-    // its sections folded and opened.
-    width: "100%",
-    maxHeight: "100%",
-    ...theme.elevation.md,
-    backgroundColor: theme.colors.surface,
-  },
+  modalContent: getCommonFormSheet(theme),
   emptyStateContainer: {
     flex: 1,
     justifyContent: "center",

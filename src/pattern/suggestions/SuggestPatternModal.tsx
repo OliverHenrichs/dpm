@@ -8,6 +8,8 @@ import { RevealTextInput } from "@/src/common/components/reveal";
 import AppDialog from "@/src/common/components/AppDialog";
 import { Button } from "@/src/common/ui";
 import {
+  getCommonDialogCard,
+  getCommonFormSheet,
   getCommonInput,
   getCommonLabel,
 } from "@/src/common/utils/CommonStyles";
@@ -222,14 +224,7 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  formContent: {
-    borderRadius: theme.radius.none,
-    padding: theme.space.xl,
-    width: "100%",
-    maxHeight: "100%",
-    ...theme.elevation.md,
-    backgroundColor: theme.colors.surface,
-  },
+  formContent: getCommonFormSheet(theme),
   header: {
     gap: theme.space.xs,
     marginBottom: theme.space.md,
@@ -245,10 +240,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.danger,
   },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 420,
     gap: theme.space.lg,
   },

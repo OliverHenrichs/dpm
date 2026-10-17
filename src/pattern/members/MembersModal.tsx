@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { getCommonDialogCard } from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -151,10 +152,7 @@ const MembersBody: React.FC<MembersModalProps> = ({
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 480,
     maxHeight: "100%",
     gap: theme.space.sm,

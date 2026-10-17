@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Modal, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import {
+  getCommonDialogCard,
+  getCommonCodeInput,
+} from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
-import { useCameraPermissions } from "expo-camera";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import QrCodeScanner from "@/src/common/components/QrCodeScanner";
+import { useQrScanner } from "@/src/common/components/useQrScanner";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import { Button, IconButton } from "@/src/common/ui";
 import {
@@ -37,8 +41,6 @@ const TakeOverListModal: React.FC<TakeOverListModalProps> = ({
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const takeOver = async (value: string) => {
     const trimmed = value.trim().toUpperCase();
@@ -65,23 +67,13 @@ const TakeOverListModal: React.FC<TakeOverListModalProps> = ({
     }
   };
 
-  const handleScanPress = async () => {
-    if (!cameraPermission?.granted) {
-      const result = await requestCameraPermission();
-      if (!result.granted) {
-        setError(t("cameraPermissionDenied"));
-        return;
-      }
-    }
-    setScanning(true);
-  };
-
-  const handleScanned = (data: string) => {
-    setScanning(false);
-    const trimmed = data.trim().toUpperCase();
-    setCode(trimmed);
-    void takeOver(trimmed);
-  };
+  const scanner = useQrScanner(
+    (scanned) => {
+      setCode(scanned);
+      void takeOver(scanned);
+    },
+    () => setError(t("cameraPermissionDenied")),
+  );
 
   return (
     <>
@@ -112,7 +104,7 @@ const TakeOverListModal: React.FC<TakeOverListModalProps> = ({
                 icon="qrcode-scan"
                 variant="filled"
                 size={theme.iconSize.md}
-                onPress={handleScanPress}
+                onPress={scanner.start}
                 accessibilityLabel={t("scanQrCode")}
                 style={styles.scanButton}
               />
@@ -146,10 +138,8 @@ const TakeOverListModal: React.FC<TakeOverListModalProps> = ({
       </Modal>
 
       <QrCodeScanner
-        visible={scanning}
+        {...scanner.scannerProps}
         hint={t("scanHandoverCodeHint")}
-        onScanned={handleScanned}
-        onClose={() => setScanning(false)}
       />
     </>
   );
@@ -157,10 +147,7 @@ const TakeOverListModal: React.FC<TakeOverListModalProps> = ({
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 420,
   },
   title: {
@@ -183,18 +170,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.md,
     marginBottom: theme.space.sm,
   },
-  input: {
-    ...theme.typography.headline,
-    flex: 1,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.md,
-    letterSpacing: 3,
-    color: theme.colors.text,
-  },
+  input: getCommonCodeInput(theme),
   scanButton: {
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.space.lg,

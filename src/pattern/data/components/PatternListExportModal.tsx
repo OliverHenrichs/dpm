@@ -3,6 +3,7 @@ import { Modal, ScrollView, Switch, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { getCommonDialogCard } from "@/src/common/utils/CommonStyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { useTranslation } from "react-i18next";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
@@ -166,10 +167,7 @@ const ExportSheet: React.FC<Omit<PatternListExportModalProps, "visible">> = ({
 };
 const styles = StyleSheet.create((theme) => ({
   modalContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 500,
     maxHeight: "80%",
   },

@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import {
+  getCommonDialogCard,
+  getCommonFormSheet,
+} from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import RevealScrollView from "@/src/common/components/RevealScrollView";
@@ -254,19 +258,9 @@ const SuggestionsBody: React.FC<SuggestionsModalProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  formContent: {
-    borderRadius: theme.radius.none,
-    padding: theme.space.xl,
-    width: "100%",
-    maxHeight: "100%",
-    ...theme.elevation.md,
-    backgroundColor: theme.colors.surface,
-  },
+  formContent: getCommonFormSheet(theme),
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 480,
     maxHeight: "100%",
     gap: theme.space.sm,

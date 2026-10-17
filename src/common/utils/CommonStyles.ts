@@ -91,6 +91,44 @@ export const getCommonListContainer = (theme: AppTheme) =>
     backgroundColor: theme.colors.background,
   }) satisfies ViewStyle;
 
+/** A dialog's card inside `ModalOverlay`. Each dialog adds its own `maxWidth`. */
+export const getCommonDialogCard = (theme: AppTheme) =>
+  ({
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xxl,
+    width: "100%",
+  }) satisfies ViewStyle;
+
+/**
+ * A pattern form inside `ModalOverlay` (add, edit, suggest, review a suggestion). The full width,
+ * always: sized to its content, the form narrowed and widened as its sections folded and opened.
+ */
+export const getCommonFormSheet = (theme: AppTheme) =>
+  ({
+    borderRadius: theme.radius.none,
+    padding: theme.space.xl,
+    width: "100%",
+    maxHeight: "100%",
+    ...theme.elevation.md,
+    backgroundColor: theme.colors.surface,
+  }) satisfies ViewStyle;
+
+/** A field for typing a code someone passed on (a share or handover code). */
+export const getCommonCodeInput = (theme: AppTheme) =>
+  ({
+    ...theme.typography.headline,
+    flex: 1,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+    letterSpacing: 3,
+    color: theme.colors.text,
+  }) satisfies ViewStyle & TextStyle;
+
 export const commonStyles = StyleSheet.create((theme) => ({
   sectionTitle: {
     ...theme.typography.title,
