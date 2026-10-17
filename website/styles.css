@@ -362,7 +362,7 @@ p {
 }
 
 /* On a phone the four pages move to a row of their own under the brand, since they are how
-   the site is read; the row scrolls sideways rather than wrapping if it runs out of room. */
+   the site is read, and wrap rather than hide one off the edge. */
 @media (max-width: 680px) {
   .site-header .wrap {
     flex-wrap: wrap;
@@ -374,10 +374,9 @@ p {
   .site-nav {
     order: 3;
     width: 100%;
-    gap: 18px;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    gap: 2px 16px;
     padding: 4px 0 10px;
-    scrollbar-width: none;
   }
 
   .site-nav a {
@@ -557,7 +556,7 @@ section {
 
 @media (max-width: 680px) {
   [id] {
-    scroll-margin-top: 104px;
+    scroll-margin-top: 136px;
   }
 }
 

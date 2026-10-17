@@ -13,10 +13,10 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 | File | What it is |
 |---|---|
 | `index.html` | The landing page: what DPM is, and a card for each of the four pages below |
-| `yourself.html` | **Yourself**: keeping track of your own progress. List, Map and Reels, filtering, modifiers, the video tools |
-| `sharing.html` | **Sharing**: classmates or friends following one list that one of them keeps. Publishing, suggestions, _Put online_, passing a file round |
-| `teaching.html` | **Teaching**: a course list under the teacher's control. Members only, suggestion limits, video hosts with limited public access |
-| `students.html` | **Students**: what a subscriber gets, and how to subscribe |
+| `yourself.html` | **On your own**: keeping track of your own progress. List, Map and Reels, filtering, modifiers, the video tools |
+| `sharing.html` | **With classmates**: classmates or friends following one list that one of them keeps. Publishing, suggestions, _Put online_, passing a file round |
+| `teaching.html` | **As a teacher**: a course list under the teacher's control. Members only, suggestion limits, video hosts with limited public access |
+| `students.html` | **As a student**: what a subscriber gets, and how to subscribe |
 | (all pages) | The screenshots are real app screenshots (`img/shots/`) and follow the style and light or dark. Every page carries the same header (the four pages, `aria-current` on the one shown, and the style switcher) and footer, written out in each file: a change to either goes in all of them, and in `build-privacy.py` |
 | `styles.css` | All styling. Both styles' colours, fonts and radii mirror `src/common/theme/tokens.ts` (`palettes`, `nativeFonts`, `radii`); the pattern-type colours are from `PatternType.ts`. A token changed in the app should change here too |
 | `site.js` | The style switcher, loaded in every page's `<head>` so a returning visitor's style is set before the first paint |
@@ -55,7 +55,7 @@ These addresses are hard-coded and must change together when the site gets its o
 ## Before launch
 
 - **Store badges.** When the listings go live, replace the "In development" line in the
-  landing page's hero, and "On Android for now" on the Students page, with the official Google
+  landing page's hero, and "On Android for now" on the student page, with the official Google
   Play and App Store badges.
 - **Screenshots.** The list, map, filter and modifier shots come from the app's web build at
   phone size (412 × 870, saved 600 px wide), with a West Coast Swing group list ("WCS · Thursday
