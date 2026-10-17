@@ -22,6 +22,7 @@ in, so read the one listed below before you add code there.
 | `src/anonymize/AGENTS.md` | Video jobs (`jobStore`), review, Shorten and Anonymize, providers |
 | `src/transcribe/AGENTS.md` | Speech transcription (Whisper), the model store |
 | `src/suggest/AGENTS.md` | Name and description suggestions (on-device LLM) |
+| `src/pattern/suggestions/AGENTS.md` | Pattern suggestions from a shared list's subscribers: daily limits, muting, review |
 | `src/videoLinks/AGENTS.md` | Putting a local video online and its link back, links and videos shared to DPM |
 | `modules/AGENTS.md` | The local native Expo modules and their gitignored model weights |
 | `src/changelog/AGENTS.md` | The bundled changelog, the what's-new hint after an update, releasing a version's notes |
@@ -80,7 +81,7 @@ All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.
 
 | Type | Id | Key detail |
 |---|---|---|
-| `IPatternList` | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark) |
+| `IPatternList` | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark), `suggestions` (whether subscribers may suggest patterns, and how many a day) |
 | `PatternType` | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId` |
 | `IPattern` | integer | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs` |
 | `IModifier` | UUID string | `position: "prefix" \| "postfix" \| "amends"`; `universal`; `videoRefs` used only when universal |

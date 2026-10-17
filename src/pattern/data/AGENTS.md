@@ -16,6 +16,7 @@ Unqualified paths are relative to `src/pattern/data/`.
 | `@language`, `@theme`, `@appStyle` | settings                                       | `src/settings/data/`                         |
 | `@graphDragHintDismissed`          | the drag hint was dismissed                    | `src/pattern/graph/data/GraphHintStorage.ts` |
 | `@changelogSeenVersion`, `@whatsNewHintEnabled` | the newest changelog version seen, the hint's switch | `src/changelog/ChangelogStorage.ts` |
+| `@suggesterName` | the name last used to sign a pattern suggestion | `src/pattern/suggestions/SuggesterNameStorage.ts` |
 
 Settings live under their own keys, outside any list, so they survive deleting every list.
 
@@ -95,7 +96,7 @@ replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.5.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.6.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -135,6 +136,8 @@ Version history (what each minor added):
   over control of the published list; a read-only export leaves it out.
 - **3.5** `IPattern.createdAt` (epoch ms, set by `addPattern`), for the date sort's day headers.
   Anything but a positive number is dropped quietly. Never published (`publishedPattern`).
+- **3.6** `IPatternList.suggestions` (`{ dailyLimit, per }`), whether subscribers of the published
+  list may suggest patterns (`src/pattern/suggestions/`). A malformed one is dropped quietly.
 
 ## Shared list context
 

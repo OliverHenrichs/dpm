@@ -62,6 +62,20 @@ export interface IPatternList {
   nextPatternId?: number;
   /** The dance the list is for: its terms help transcription. Absent means none in particular. */
   dance?: Dance;
+  /**
+   * Whether subscribers of the published list may suggest new patterns, and how many a day
+   * (`src/pattern/suggestions/`). Absent means they may not. Published with the list, so a
+   * subscriber's copy says whether to offer it; the security rules enforce it.
+   */
+  suggestions?: ISuggestionPolicy;
+}
+
+/** How many pattern suggestions a published list takes a day (UTC), counted for whom. */
+export interface ISuggestionPolicy {
+  /** 1 to `MAX_SUGGESTIONS_PER_DAY`. */
+  dailyLimit: number;
+  /** `list`: one limit shared by every subscriber; `subscriber`: each gets the limit. */
+  per: "list" | "subscriber";
 }
 
 /**

@@ -1,4 +1,5 @@
 import { isDance } from "@/src/pattern/types/Dance";
+import { MAX_SUGGESTIONS_PER_DAY } from "@/src/pattern/suggestions/suggestions";
 import {
   normalizeRhythm,
   rhythmMatchesCounts,
@@ -7,6 +8,7 @@ import {
   IModifier,
   IPattern,
   IPatternModifierRef,
+  ISuggestionPolicy,
   ITranscriptSegment,
   IVideoReference,
   IVideoTranscript,
@@ -413,6 +415,16 @@ function normalizePatterns(
   });
 }
 
+function isSuggestionPolicy(v: unknown): v is ISuggestionPolicy {
+  return (
+    isObject(v) &&
+    isInteger(v.dailyLimit) &&
+    v.dailyLimit >= 1 &&
+    v.dailyLimit <= MAX_SUGGESTIONS_PER_DAY &&
+    (v.per === "list" || v.per === "subscriber")
+  );
+}
+
 function normalizeList(
   raw: unknown,
   index: number,
@@ -454,6 +466,14 @@ function normalizeList(
     ...(isNonEmptyString(raw.shareKey) && { shareKey: raw.shareKey }),
     // A dance this build does not know only loses its suggestions.
     ...(isDance(raw.dance) && { dance: raw.dance }),
+    // 3.6. A malformed setting is dropped: the list then takes no suggestions until the
+    // publisher sets it again.
+    ...(isSuggestionPolicy(raw.suggestions) && {
+      suggestions: {
+        dailyLimit: raw.suggestions.dailyLimit,
+        per: raw.suggestions.per,
+      },
+    }),
     patterns,
   };
 }

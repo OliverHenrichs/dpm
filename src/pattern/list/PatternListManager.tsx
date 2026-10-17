@@ -31,6 +31,15 @@ import AnonymizeJobsBanner from "@/src/anonymize/components/AnonymizeJobsBanner"
 import { canShortenVideos } from "@/src/anonymize/shortenVideo";
 import { AnonymizeJob, jobStore } from "@/src/anonymize/jobs/jobStore";
 import { patternHasVideo } from "@/src/anonymize/jobs/replaceVideo";
+import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
+import {
+  canSuggestTo,
+  receivesSuggestions,
+} from "@/src/pattern/suggestions/suggestions";
+import { useListSuggestions } from "@/src/pattern/suggestions/useListSuggestions";
+import SuggestionsButton from "@/src/pattern/suggestions/SuggestionsButton";
+import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
+import SuggestionsModal from "@/src/pattern/suggestions/SuggestionsModal";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 
 const PatternListManager = () => {
@@ -77,6 +86,16 @@ const PatternListManager = () => {
   const [reveal, setReveal] = useState<{ id: number; at: number }>();
   const [anonymizeTarget, setAnonymizeTarget] =
     useState<AnonymizeTarget | null>(null);
+  // Pattern suggestions (src/pattern/suggestions/): a subscriber sends them, the publisher
+  // reviews them here.
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isReviewingSuggestions, setIsReviewingSuggestions] = useState(false);
+  const { suggestions } = useListSuggestions(activeList);
+  const mayBeSuggestedTo = firebaseAvailable && canSuggestTo(activeList);
+  const reviewsSuggestions =
+    firebaseAvailable &&
+    receivesSuggestions(activeList) &&
+    (!!activeList?.suggestions || suggestions.length > 0);
 
   // "New pattern" for a video shared to DPM from another app (src/videoLinks/): it arrives as
   // route params and seeds the add form like "From a video". The params are cleared once read,
@@ -343,6 +362,29 @@ const PatternListManager = () => {
           onClose={() => setAnonymizeTarget(null)}
         />
 
+        {mayBeSuggestedTo && (
+          <SuggestPatternModal
+            visible={isSuggesting}
+            list={activeList}
+            patterns={patterns}
+            patternTypes={patternTypes}
+            modifiers={modifiers}
+            onClose={() => setIsSuggesting(false)}
+          />
+        )}
+        {reviewsSuggestions && (
+          <SuggestionsModal
+            visible={isReviewingSuggestions}
+            list={activeList}
+            patterns={patterns}
+            patternTypes={patternTypes}
+            modifiers={modifiers}
+            suggestions={suggestions}
+            onClose={() => setIsReviewingSuggestions(false)}
+            onAccept={addPattern}
+          />
+        )}
+
         <AnonymizeJobsBanner openAction={openJobPattern} />
 
         {/* Tab strip */}
@@ -378,6 +420,22 @@ const PatternListManager = () => {
               reveal={reveal}
               onEdit={handleEditPattern}
               selectedPattern={selectedPattern}
+              headerActions={
+                mayBeSuggestedTo ? (
+                  <SuggestionsButton
+                    onPress={() => setIsSuggesting(true)}
+                    accessibilityLabel={t("suggestPattern")}
+                  />
+                ) : reviewsSuggestions ? (
+                  <SuggestionsButton
+                    onPress={() => setIsReviewingSuggestions(true)}
+                    accessibilityLabel={t("suggestionsReviewLabel", {
+                      count: suggestions.length,
+                    })}
+                    count={suggestions.length}
+                  />
+                ) : undefined
+              }
             />
           ) : (
             <ModifierList
