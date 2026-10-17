@@ -8,6 +8,9 @@ Optional Firestore-backed list sharing. The app runs local-only when credentials
 - `shareKey.ts` — `generateShareKey()`, the publisher's 256-bit secret for one list.
 - `publishedContent.ts` — `publishedPattern`, `publishedModifiers`: what of a list goes into the published document (URL videos only, no transcripts).
 - `MembershipService.ts` — members-only lists: asking to join, where a subscriber stands, letting in and turning away, in the same `subscribers` records; see `src/pattern/members/AGENTS.md`. `fetchSharedList` throws `MembersOnlyError` and `subscribeToSharedList` reports `NoAccessError` when the rules refuse a read.
+- `HandoverService.ts` — handing a published list over to someone who follows it: offers under
+  `sharedLists/{code}/handovers/{handoverCode}`, accepted together with an owner record carrying a
+  new key and `handover`; see `src/pattern/handover/AGENTS.md`.
 - `PatternSuggestionService.ts` — subscribers' pattern suggestions under a shared list (`suggestions`, `suggestionCounters`, `subscribers` subcollections); see `src/pattern/suggestions/AGENTS.md`. `confirmOwnership(list)` (in `FirebaseListService`) writes the owner record with the key, for anything the rules check against the owner; `unpublishList` deletes the suggestion subcollections before the list, since nobody could reach them afterwards.
 - `useSharedList` (`src/pattern/data/hooks/useSharedList.ts`) — called inside `ActivePatternListProvider`; maintains a live `onSnapshot` listener while `activeList.shareCode` is set; handles publisher unpublishing (clears `shareCode`/`readonly` locally and surfaces a themed dialog).
 
@@ -24,7 +27,9 @@ members-only list (then they sign in anonymously; `src/pattern/suggestions/AGENT
 list has an **owner record** in `sharedListOwners/{shareCode}`: `{ ownerUid, key }`, readable by
 nobody. Only the owner on record may update or delete the list. `key` is the list's **share key**
 (`IPatternList.shareKey`), and presenting it moves ownership to the caller — that is how the
-publisher keeps control after a reinstall (new anonymous id) or on a new phone.
+publisher keeps control after a reinstall (new anonymous id) or on a new phone. The key itself
+changes only on a **handover** (`src/pattern/handover/`), in the same batch that accepts the
+owner's offer; the old key then stops working.
 
 - **Every publish writes the owner record and the list in one batch**, so the first publish
   creates the record and every sync re-confirms it (a no-op, or a takeover with the key). The
@@ -49,8 +54,8 @@ publisher keeps control after a reinstall (new anonymous id) or on a new phone.
 Change it together with `FirebaseListService`: the rules accept exactly the document
 `publishList()` writes (the five `SharedListDocument` keys, stored under its own 8-character
 code, no `readonly` or `shareKey` on the stored list, a well-formed `suggestions` setting if any),
-allow `get` by code (members and the owner only, for a members-only list) but never `list`, and deny everything outside the two collections and the
-three suggestion subcollections.
+allow `get` by code (members and the owner only, for a members-only list) but never `list`, and deny everything outside the two collections, the
+three suggestion subcollections and `handovers`.
 
 - **The app token is compared by its SHA-256.** The repository is public, so it holds the hash,
   not `FIREBASE_APP_TOKEN`. Rotating the token means new values in `.env` and every EAS

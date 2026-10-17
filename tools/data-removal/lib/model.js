@@ -5,7 +5,7 @@
  * loads the snapshot and carries out the plans.
  *
  * A snapshot is every document the app writes to Firestore, as plain values:
- * the shared lists, their owner records, and the three subcollections under a
+ * the shared lists, their owner records, and the four subcollections under a
  * list (`src/firebase/AGENTS.md`).
  */
 
@@ -14,6 +14,8 @@ const OWNERS = "sharedListOwners";
 const SUGGESTIONS = "suggestions";
 const COUNTERS = "suggestionCounters";
 const SUBSCRIBERS = "subscribers";
+/** Handover offers, named by their one-time code (`src/pattern/handover/`). */
+const HANDOVERS = "handovers";
 /** Ids the operator has blocked: the rules refuse their writes (`notBlocked`). */
 const BLOCKED = "blockedUsers";
 
@@ -28,7 +30,7 @@ const TAKEDOWN_OWNER = "removed-by-operator";
 const SECRET_FIELDS = new Set(["key", "appToken"]);
 
 /**
- * @typedef {"list" | "owner" | "suggestion" | "counter" | "subscriber"} DocKind
+ * @typedef {"list" | "owner" | "suggestion" | "counter" | "subscriber" | "handover"} DocKind
  * @typedef {{ kind: DocKind, path: string, code: string, id: string, data: Record<string, unknown> }} Doc
  * @typedef {{ doc: Doc, field: string, value: string }} Hit
  */
@@ -47,6 +49,7 @@ function describePath(path) {
       [SUGGESTIONS]: "suggestion",
       [COUNTERS]: "counter",
       [SUBSCRIBERS]: "subscriber",
+      [HANDOVERS]: "handover",
     }[parts[2]];
     if (kind) return { kind, code: parts[1], id: parts[3] };
   }
@@ -173,7 +176,8 @@ function planListRemoval(docs, code, { allowRepublish = false } = {}) {
 /**
  * Removing what one anonymous user id left: their suggestions, their
  * subscriber records (join requests, mutes, the name they gave), their own
- * daily counters, and their Firebase Authentication account. Lists they
+ * daily counters, the handover offers they made or accepted, and their
+ * Firebase Authentication account. Lists they
  * publish are named in `ownedLists`; their owner records hold the id, so the
  * tool removes those lists too, or nothing, never just the account.
  */
@@ -182,7 +186,9 @@ function planUserRemoval(docs, uid) {
     (d) =>
       (d.kind === "suggestion" && d.data.authorUid === uid) ||
       (d.kind === "subscriber" && d.id === uid) ||
-      (d.kind === "counter" && d.id.endsWith(`_${uid}`)),
+      (d.kind === "counter" && d.id.endsWith(`_${uid}`)) ||
+      (d.kind === "handover" &&
+        (d.data.fromUid === uid || d.data.acceptedBy === uid)),
   );
   const ownedLists = docs
     .filter((d) => d.kind === "owner" && d.data.ownerUid === uid)
@@ -206,6 +212,7 @@ module.exports = {
   SUGGESTIONS,
   COUNTERS,
   SUBSCRIBERS,
+  HANDOVERS,
   BLOCKED,
   TAKEDOWN_OWNER,
   describePath,
