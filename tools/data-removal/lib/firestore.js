@@ -13,6 +13,7 @@ const {
   SUGGESTIONS,
   COUNTERS,
   SUBSCRIBERS,
+  HANDOVERS,
   BLOCKED,
   TAKEDOWN_OWNER,
   makeDoc,
@@ -86,6 +87,7 @@ async function loadSnapshot(db) {
     db.collectionGroup(SUGGESTIONS).get(),
     db.collectionGroup(COUNTERS).get(),
     db.collectionGroup(SUBSCRIBERS).get(),
+    db.collectionGroup(HANDOVERS).get(),
   ]);
   return snaps.flatMap((snap) =>
     snap.docs.map((d) => makeDoc(d.ref.path, plain(d.data()))),

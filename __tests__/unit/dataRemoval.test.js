@@ -199,6 +199,28 @@ describe("planUserRemoval", () => {
     ]);
   });
 
+  it("collects the handover offers a user made or accepted", () => {
+    const docs = [
+      ...snapshot(),
+      makeDoc(`sharedLists/${CODE}/handovers/HND0VER123`, {
+        fromUid: PUBLISHER,
+        acceptedBy: KID,
+      }),
+      makeDoc(`sharedLists/${OTHER}/handovers/HND0VER456`, {
+        fromUid: KID,
+      }),
+    ];
+    expect(describePath(`sharedLists/${CODE}/handovers/HND0VER123`).kind).toBe(
+      "handover",
+    );
+    const paths = planUserRemoval(docs, KID).deletes.map((d) => d.path);
+    expect(paths).toContain(`sharedLists/${CODE}/handovers/HND0VER123`);
+    expect(paths).toContain(`sharedLists/${OTHER}/handovers/HND0VER456`);
+    expect(planUserRemoval(docs, PUBLISHER).deletes.map((d) => d.path)).toEqual(
+      [`sharedLists/${CODE}/handovers/HND0VER123`],
+    );
+  });
+
   it("names the lists a publisher owns", () => {
     expect(planUserRemoval(snapshot(), PUBLISHER)).toEqual({
       uid: PUBLISHER,

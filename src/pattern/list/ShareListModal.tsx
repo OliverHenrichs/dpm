@@ -33,6 +33,7 @@ import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import AppDialog from "@/src/common/components/AppDialog";
 import { withMembersOnly } from "@/src/pattern/members/members";
+import HandoverSection from "@/src/pattern/handover/HandoverSection";
 
 interface ShareListModalProps {
   visible: boolean;
@@ -272,6 +273,10 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   </>
                 )}
               </View>
+            )}
+
+            {firebaseAvailable && isPublished && (
+              <HandoverSection list={list} />
             )}
 
             {error && <Text style={styles.errorText}>{error}</Text>}
