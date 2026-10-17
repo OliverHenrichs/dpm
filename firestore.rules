@@ -33,6 +33,9 @@ rules_version = '2';
 // before; everyone else is refused, which tells the app the list is closed
 // (a code that does not exist still reads as not-found).
 //
+// Blocked: the operator can block one anonymous id (`blockedUsers/{uid}`,
+// tools/data-removal). It may then not publish, suggest or ask to join.
+//
 // The app token is compared by its SHA-256, so the repository (public) holds
 // only the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in
 // every EAS environment, a rebuild, and a new hash below; old builds stop
@@ -47,6 +50,14 @@ service cloud.firestore {
 
     function signedIn() {
       return request.auth != null;
+    }
+
+    // An installation the operator has blocked (tools/data-removal,
+    // `block-user`): it may no longer publish, suggest or ask to join. It can
+    // still unpublish its own lists. Nobody reads `blockedUsers`; only the
+    // Admin SDK writes it.
+    function notBlocked() {
+      return !exists(/databases/$(database)/documents/blockedUsers/$(request.auth.uid));
     }
 
     function ownerPath(code) {
@@ -151,6 +162,7 @@ service cloud.firestore {
       // the owner is checked as it stands once the batch has applied.
       allow create, update: if isShareCode(shareCode)
         && signedIn()
+        && notBlocked()
         && hasAppToken(request.resource.data)
         && isSharedList(request.resource.data)
         && getAfter(ownerPath(shareCode)).data.ownerUid == request.auth.uid;
@@ -182,13 +194,16 @@ service cloud.firestore {
       // after which a list still without an owner can no longer be changed.
       allow create: if isShareCode(shareCode)
         && signedIn()
+        && notBlocked()
         && isOwnerRecord(request.resource.data)
         && (!exists(listPath(shareCode))
           || request.time < timestamp.date(2027, 4, 1));
 
       // Same key: either nothing changes, or ownership moves to the caller
       // (the publisher after a reinstall, or on a new phone).
+      // A blocked owner may still re-confirm itself, so it can unpublish.
       allow update: if signedIn()
+        && (notBlocked() || resource.data.ownerUid == request.auth.uid)
         && isOwnerRecord(request.resource.data)
         && request.resource.data.key == resource.data.key;
 
@@ -270,6 +285,7 @@ service cloud.firestore {
       allow get, list, delete: if isShareCode(shareCode) && isOwner(shareCode);
       allow create: if isShareCode(shareCode)
         && signedIn()
+        && notBlocked()
         && isSuggestion(request.resource.data)
         && mayCreate();
       allow update: if false;
@@ -355,7 +371,7 @@ service cloud.firestore {
       allow create, update: if isShareCode(shareCode)
         && signedIn()
         && ((isOwner(shareCode) && isSubscriberRecord(request.resource.data))
-          || isJoinRequest());
+          || (isJoinRequest() && notBlocked()));
     }
 
     match /{document=**} {

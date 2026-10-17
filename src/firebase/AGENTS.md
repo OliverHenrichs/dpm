@@ -63,6 +63,19 @@ three suggestion subcollections.
 - **Deploying** is `npm run rules:deploy` (`firebase login` once; the project id comes from
   `.env`). It changes production for every installed app: run the rules tests first.
 
+## Removing data as the operator
+
+`tools/data-removal/` (`npm run data -- find|show|remove-list|remove-user|…`, README there) is the
+operator's laptop tool for erasure requests and content that must not be published (a child's
+data): it searches every shared document with the Admin SDK and deletes a list, a user's records
+or a suggestion. A removed list keeps a **takedown record** in `sharedListOwners/{code}` (owner
+`removed-by-operator`, a key nobody holds), so the publisher's next edit cannot re-publish it; the
+rules test "keeps a list taken down by the operator from coming back" holds that in place. A rules
+change must keep it refused. `block-user` writes `blockedUsers/{uid}`, which the rules check
+(`notBlocked()`) on every publish, owner-record write, suggestion and join request; a blocked
+owner may still re-confirm itself to unpublish. A new write path must check it too. A new collection or field the app writes is something `find` should
+see: add it to `lib/model.js` / `lib/firestore.js` (`loadSnapshot`).
+
 ## Configuration
 
 `app.config.ts` reads these from the environment (copy `.env.example` to `.env`, gitignored):
