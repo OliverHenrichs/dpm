@@ -86,14 +86,14 @@ export function useGraphPositions(
       setStored(layout);
       void saveGraphLayout(listId, layout);
     },
-    [listId, resolved.positions],
+    [listId, resolved.positions, setStored],
   );
 
   const resetLayout = useCallback(async () => {
     if (!listId) return;
     await clearGraphLayout(listId);
     setStored(null);
-  }, [listId]);
+  }, [listId, setStored]);
 
   return {
     positions: resolved.positions,
