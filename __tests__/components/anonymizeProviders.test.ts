@@ -1,3 +1,9 @@
+import {
+  onDeviceFaces,
+  onDeviceTracking,
+} from "@/src/anonymize/providers/onDeviceTracking";
+import { ALL_PROVIDERS } from "@/src/anonymize/providers/allProviders";
+
 const mockAnonymize = jest.fn();
 
 jest.mock("@/modules/video-anonymize", () => ({
@@ -7,12 +13,6 @@ jest.mock("@/modules/video-anonymize", () => ({
     addListener: () => ({ remove: jest.fn() }),
   },
 }));
-
-import {
-  onDeviceFaces,
-  onDeviceTracking,
-} from "@/src/anonymize/providers/onDeviceTracking";
-import { ALL_PROVIDERS } from "@/src/anonymize/providers/allProviders";
 
 describe("on-device anonymize providers", () => {
   beforeEach(() => mockAnonymize.mockResolvedValue({ uri: "file:///out.mp4" }));
