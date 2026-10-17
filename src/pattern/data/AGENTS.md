@@ -5,18 +5,18 @@ Unqualified paths are relative to `src/pattern/data/`.
 
 ## Persistence (AsyncStorage)
 
-| Key                                | Holds                                          | Owner                                        |
-| ---------------------------------- | ---------------------------------------------- | -------------------------------------------- |
-| `@patternLists`                    | `IPatternList[]`, **without** patterns         | `PatternListStorage.ts`                      |
-| `@patterns_{listId}`               | `IPattern[]` of one list                       | `PatternListStorage.ts`                      |
-| `@activeListId`                    | the active list's UUID                         | `PatternListStorage.ts`                      |
-| `@schemaVersion`                   | the migrated data's version                    | `migrations/index.ts`                        |
-| `@graphLayout_{listId}`            | a user-arranged network layout                 | `src/pattern/graph/data/`                    |
-| `@transcriptCorrections_{listId}`  | transcript fixes learned from the user's edits | `src/transcribe/data/`                       |
-| `@language`, `@theme`, `@appStyle` | settings                                       | `src/settings/data/`                         |
-| `@graphDragHintDismissed`          | the drag hint was dismissed                    | `src/pattern/graph/data/GraphHintStorage.ts` |
-| `@changelogSeenVersion`, `@whatsNewHintEnabled` | the newest changelog version seen, the hint's switch | `src/changelog/ChangelogStorage.ts` |
-| `@suggesterName` | the name last used to sign a pattern suggestion | `src/pattern/suggestions/SuggesterNameStorage.ts` |
+| Key                                             | Holds                                                | Owner                                             |
+| ----------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| `@patternLists`                                 | `IPatternList[]`, **without** patterns               | `PatternListStorage.ts`                           |
+| `@patterns_{listId}`                            | `IPattern[]` of one list                             | `PatternListStorage.ts`                           |
+| `@activeListId`                                 | the active list's UUID                               | `PatternListStorage.ts`                           |
+| `@schemaVersion`                                | the migrated data's version                          | `migrations/index.ts`                             |
+| `@graphLayout_{listId}`                         | a user-arranged network layout                       | `src/pattern/graph/data/`                         |
+| `@transcriptCorrections_{listId}`               | transcript fixes learned from the user's edits       | `src/transcribe/data/`                            |
+| `@language`, `@theme`, `@appStyle`              | settings                                             | `src/settings/data/`                              |
+| `@graphDragHintDismissed`                       | the drag hint was dismissed                          | `src/pattern/graph/data/GraphHintStorage.ts`      |
+| `@changelogSeenVersion`, `@whatsNewHintEnabled` | the newest changelog version seen, the hint's switch | `src/changelog/ChangelogStorage.ts`               |
+| `@suggesterName`                                | the name last used to sign a pattern suggestion      | `src/pattern/suggestions/SuggesterNameStorage.ts` |
 
 Settings live under their own keys, outside any list, so they survive deleting every list.
 
@@ -96,7 +96,7 @@ replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.6.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.7.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -138,6 +138,8 @@ Version history (what each minor added):
   Anything but a positive number is dropped quietly. Never published (`publishedPattern`).
 - **3.6** `IPatternList.suggestions` (`{ dailyLimit, per }`), whether subscribers of the published
   list may suggest patterns (`src/pattern/suggestions/`). A malformed one is dropped quietly.
+- **3.7** `IPatternList.membersOnly` (`true` or absent), whether only subscribers the publisher
+  let in may read the published list (`src/pattern/members/`). Anything but `true` is dropped.
 
 ## Shared list context
 

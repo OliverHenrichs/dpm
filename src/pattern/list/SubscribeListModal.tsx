@@ -8,7 +8,15 @@ import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
 import { useCameraPermissions } from "expo-camera";
 import QrCodeScanner from "@/src/common/components/QrCodeScanner";
-import { fetchSharedList } from "@/src/firebase/FirebaseListService";
+import {
+  fetchSharedList,
+  MembersOnlyError,
+} from "@/src/firebase/FirebaseListService";
+import {
+  getOwnMembership,
+  requestMembership,
+} from "@/src/firebase/MembershipService";
+import type { Membership } from "@/src/firebase/PatternSuggestionService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
@@ -37,14 +45,16 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
   const [preview, setPreview] = useState<PatternListWithPatterns | null>(null);
   const [scanning, setScanning] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  // A members-only list this phone is not let into (src/pattern/members/): where it stands.
+  const [closed, setClosed] = useState<{
+    code: string;
+    membership: Membership | null;
+  } | null>(null);
+  const [joinName, setJoinName] = useState("");
 
-  const handleLookup = async () => {
-    const trimmed = code.trim().toUpperCase();
-    if (trimmed.length !== 8) {
-      setError(t("invalidShareCode"));
-      return;
-    }
+  const lookUp = async (trimmed: string) => {
     setError(null);
+    setClosed(null);
     setIsLoading(true);
     try {
       const result = await fetchSharedList(trimmed);
@@ -65,7 +75,37 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
       }
       setPreview(result);
     } catch (e) {
+      if (e instanceof MembersOnlyError) {
+        // Without signing in: a phone that never asked has no id, and needs none to be told.
+        const membership = await getOwnMembership(trimmed).catch(() => null);
+        setClosed({ code: trimmed, membership });
+        return;
+      }
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLookup = async () => {
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed.length !== 8) {
+      setError(t("invalidShareCode"));
+      return;
+    }
+    await lookUp(trimmed);
+  };
+
+  const handleAskToJoin = async () => {
+    if (!closed) return;
+    setError(null);
+    setIsLoading(true);
+    try {
+      const membership = await requestMembership(closed.code, joinName);
+      setClosed({ code: closed.code, membership });
+    } catch (e) {
+      console.warn("SubscribeListModal: asking to join failed", e);
+      setError(t("membersAskFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -96,29 +136,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
       setError(null);
       setPreview(null);
       // Auto-lookup after scan
-      setTimeout(() => {
-        setError(null);
-        setIsLoading(true);
-        fetchSharedList(trimmed)
-          .then((result) => {
-            if (!result) {
-              setError(t("shareCodeNotFound"));
-              return;
-            }
-            const localMatch = existingLists.find((l) => l.id === result.id);
-            if (localMatch) {
-              setError(
-                localMatch.shareCode === trimmed
-                  ? t("subscribeErrorOwnList")
-                  : t("subscribeErrorAlreadySubscribed"),
-              );
-              return;
-            }
-            setPreview(result);
-          })
-          .catch((e) => setError(e instanceof Error ? e.message : String(e)))
-          .finally(() => setIsLoading(false));
-      }, 100);
+      setTimeout(() => void lookUp(trimmed), 100);
     } else {
       setError(t("invalidShareCode"));
     }
@@ -128,6 +146,8 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
     setCode("");
     setError(null);
     setPreview(null);
+    setClosed(null);
+    setJoinName("");
     setScanning(false);
     onClose();
   };
@@ -168,6 +188,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                       setCode(v.toUpperCase());
                       setError(null);
                       setPreview(null);
+                      setClosed(null);
                     }}
                     placeholder="ABC12345"
                     placeholderTextColor={theme.colors.textMuted}
@@ -203,6 +224,53 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     color={theme.colors.primary}
                     style={styles.spinner}
                   />
+                )}
+
+                {closed && !isLoading && (
+                  <View style={styles.closedBox}>
+                    <Text style={styles.previewName}>
+                      {t("membersOnlyListTitle")}
+                    </Text>
+                    {closed.membership === null && (
+                      <>
+                        <Text style={styles.previewMeta}>
+                          {t("membersOnlyAskHint")}
+                        </Text>
+                        <RevealTextInput
+                          style={styles.nameInput}
+                          value={joinName}
+                          onChangeText={setJoinName}
+                          placeholder={t("membersAskNamePlaceholder")}
+                          placeholderTextColor={theme.colors.textMuted}
+                          maxLength={40}
+                        />
+                        <Button
+                          title={t("membersAskToJoin")}
+                          icon="account-plus-outline"
+                          onPress={handleAskToJoin}
+                        />
+                      </>
+                    )}
+                    {(closed.membership === "requested" ||
+                      closed.membership === "member") && (
+                      <>
+                        <Text style={styles.previewMeta}>
+                          {t("membersAsked")}
+                        </Text>
+                        <Button
+                          title={t("membersLookUpAgain")}
+                          variant="secondary"
+                          icon="refresh"
+                          onPress={() => void lookUp(closed.code)}
+                        />
+                      </>
+                    )}
+                    {closed.membership === "declined" && (
+                      <Text style={styles.previewMeta}>
+                        {t("membersDeclinedYou")}
+                      </Text>
+                    )}
+                  </View>
                 )}
 
                 {preview && (
@@ -310,6 +378,23 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.space.md,
     marginTop: theme.space.sm,
     marginBottom: theme.space.xs,
+  },
+  closedBox: {
+    gap: theme.space.sm,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.radius.md,
+    padding: theme.space.md,
+    marginTop: theme.space.sm,
+  },
+  nameInput: {
+    ...theme.typography.body,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.sm,
+    color: theme.colors.text,
   },
   previewName: {
     ...theme.typography.label,

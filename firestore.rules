@@ -26,6 +26,13 @@ rules_version = '2';
 // suggestions, counters' listings and subscriber records; a subscriber may
 // read today's counter and their own record, so the app can say why it cannot send.
 //
+// Members only: a publisher can close a list (`list.membersOnly`), so only
+// subscribers they have let in may read it. A subscriber signs in anonymously
+// and asks to join (`subscribers/{uid}` with `membership: 'requested'`); the
+// owner sets `member` or `declined`. Members, and the owner, read the list as
+// before; everyone else is refused, which tells the app the list is closed
+// (a code that does not exist still reads as not-found).
+//
 // The app token is compared by its SHA-256, so the repository (public) holds
 // only the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in
 // every EAS environment, a rebuild, and a new hash below; old builds stop
@@ -70,7 +77,15 @@ service cloud.firestore {
 
     function isMuted(code, uid) {
       return exists(subscriberPath(code, uid))
-        && get(subscriberPath(code, uid)).data.status == 'muted';
+        && get(subscriberPath(code, uid)).data.get('status', '') == 'muted';
+    }
+
+    // A subscriber the owner has let into a members-only list.
+    function isMember(code) {
+      return signedIn()
+        && exists(subscriberPath(code, request.auth.uid))
+        && get(subscriberPath(code, request.auth.uid)).data.get('membership', '')
+          == 'member';
     }
 
     // The owner on record. Subcollection reads and writes are checked
@@ -114,6 +129,7 @@ service cloud.firestore {
           && !('shareKey' in data.list)
           && (!('suggestions' in data.list)
             || isSuggestionPolicy(data.list.suggestions))
+          && (!('membersOnly' in data.list) || data.list.membersOnly == true)
           && data.patterns is list
           && data.patterns.size() <= 5000
           && data.publisherVersion is int
@@ -121,7 +137,14 @@ service cloud.firestore {
           && data.publishedAt.size() <= 40;
       }
 
-      allow get: if isShareCode(shareCode);
+      // Open lists to anyone with the code; members-only ones to members and
+      // the owner. A missing document reads as not-found, so a refusal means
+      // "members only", never "no such code".
+      allow get: if isShareCode(shareCode)
+        && (resource == null
+          || !resource.data.list.get('membersOnly', false)
+          || isMember(shareCode)
+          || isOwner(shareCode));
       allow list: if false;
 
       // publishList() writes the owner record and the list in one batch, so
@@ -236,9 +259,11 @@ service cloud.firestore {
       }
 
       function mayCreate() {
-        let policy = get(listPath(shareCode)).data.list.get('suggestions', null);
+        let list = get(listPath(shareCode)).data.list;
+        let policy = list.get('suggestions', null);
         return policy != null
           && !isMuted(shareCode, request.auth.uid)
+          && (!list.get('membersOnly', false) || isMember(shareCode))
           && isCounted(policy);
       }
 
@@ -288,25 +313,49 @@ service cloud.firestore {
     }
 
     // The publisher's record of one subscriber, named by their anonymous id:
-    // for now only a mute (`status: 'muted'`), with the name they signed their
-    // suggestions with. Kept general so a later status (a member of a
-    // members-only list) can live here too.
+    // a mute (`status: 'muted'`), a membership of a members-only list
+    // (`membership`), or both, with the name they gave.
     match /sharedLists/{shareCode}/subscribers/{uid} {
       function isSubscriberRecord(data) {
-        return data.keys().hasOnly(['status', 'name', 'updatedAt'])
-          && data.keys().hasAll(['status', 'updatedAt'])
-          && data.status in ['muted']
+        return data.keys().hasOnly(['status', 'membership', 'name', 'updatedAt'])
+          && data.keys().hasAll(['updatedAt'])
+          && (('status' in data) || ('membership' in data))
+          && (!('status' in data) || data.status in ['muted'])
+          && (!('membership' in data)
+            || data.membership in ['requested', 'member', 'declined'])
           && data.updatedAt == request.time
           && (!('name' in data)
             || (data.name is string && data.name.size() <= 40));
+      }
+
+      function isMembersOnly() {
+        return exists(listPath(shareCode))
+          && get(listPath(shareCode)).data.list.get('membersOnly', false) == true;
+      }
+
+      // A subscriber asking to join a members-only list: only for themselves,
+      // only `requested`, and only once. A record that already has a
+      // membership (asked, let in, declined) is the owner's to change.
+      function isJoinRequest() {
+        let data = request.resource.data;
+        return request.auth.uid == uid
+          && isMembersOnly()
+          && isSubscriberRecord(data)
+          && data.membership == 'requested'
+          && (resource == null
+            ? !('status' in data)
+            : !('membership' in resource.data)
+              && data.diff(resource.data).affectedKeys()
+                .hasOnly(['membership', 'name', 'updatedAt']));
       }
 
       allow get: if signedIn()
         && (request.auth.uid == uid || isOwner(shareCode));
       allow list, delete: if isShareCode(shareCode) && isOwner(shareCode);
       allow create, update: if isShareCode(shareCode)
-        && isOwner(shareCode)
-        && isSubscriberRecord(request.resource.data);
+        && signedIn()
+        && ((isOwner(shareCode) && isSubscriberRecord(request.resource.data))
+          || isJoinRequest());
     }
 
     match /{document=**} {

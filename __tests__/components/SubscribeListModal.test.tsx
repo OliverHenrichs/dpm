@@ -28,6 +28,7 @@ jest.mock("@/src/firebase/firebaseConfig", () => ({
 }));
 
 jest.mock("@/src/firebase/FirebaseListService", () => ({
+  MembersOnlyError: class MembersOnlyError extends Error {},
   fetchSharedList: jest.fn(),
   syncPublishedList: jest.fn(),
   subscribeToSharedList: jest.fn(),

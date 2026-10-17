@@ -32,6 +32,16 @@ function getAppAuth(): Auth {
 }
 
 /**
+ * The anonymous id this phone already has, or null, without ever creating one. Reading a
+ * members-only list needs it on the request, and a member signed in when they asked to join.
+ */
+export async function restoreSignIn(): Promise<string | null> {
+  const appAuth = getAppAuth();
+  await appAuth.authStateReady();
+  return appAuth.currentUser?.uid ?? null;
+}
+
+/**
  * Sign in anonymously if not signed in yet, and return the user id.
  *
  * There is no account and nothing to show: the id only lets the security

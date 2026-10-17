@@ -19,7 +19,7 @@ import {
   SUGGESTION_COUNTERS,
   SUGGESTIONS,
 } from "@/src/firebase/firebaseConfig";
-import { ensureSignedIn } from "@/src/firebase/auth";
+import { ensureSignedIn, restoreSignIn } from "@/src/firebase/auth";
 import { generateShareKey } from "@/src/firebase/shareKey";
 import {
   publishedModifiers,
@@ -240,17 +240,57 @@ export async function unpublishList(list: IPatternList): Promise<void> {
   await batch.commit();
 }
 
+/** The list is members-only and this phone is not let in (yet): `src/pattern/members/`. */
+export class MembersOnlyError extends Error {
+  constructor() {
+    super("This shared list is for members only.");
+    this.name = "MembersOnlyError";
+  }
+}
+
+/** A subscribed list this phone may no longer read: it became members-only, or it was removed. */
+export class NoAccessError extends Error {
+  constructor() {
+    super("No access to the shared list.");
+    this.name = "NoAccessError";
+  }
+}
+
+function isPermissionDenied(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    (e as { code?: string }).code === "permission-denied"
+  );
+}
+
 /**
  * Fetch a shared list once by share code.
- * Returns null when the code does not exist.
+ * Returns null when the code does not exist, and throws `MembersOnlyError` when it is
+ * members-only and this phone is not a member. A member signed in when they asked to join, but
+ * the request carries that id only once auth has been restored, so a refusal is tried again
+ * after restoring it (never creating an id).
  */
 export async function fetchSharedList(
   shareCode: string,
 ): Promise<PatternListWithPatterns | null> {
   const firestore = requireDb();
-  const snap = await getDoc(
-    doc(firestore, SHARED_LISTS_COLLECTION, shareCode.toUpperCase()),
-  );
+  const ref = doc(firestore, SHARED_LISTS_COLLECTION, shareCode.toUpperCase());
+  const read = async () => {
+    try {
+      return await getDoc(ref);
+    } catch (e) {
+      if (isPermissionDenied(e)) throw new MembersOnlyError();
+      throw e;
+    }
+  };
+  let snap;
+  try {
+    snap = await read();
+  } catch (e) {
+    if (!(e instanceof MembersOnlyError) || !(await restoreSignIn())) throw e;
+    snap = await read();
+  }
   if (!snap.exists()) return null;
   const data = snap.data() as SharedListDocument;
   return { ...data.list, patterns: data.patterns };
@@ -267,22 +307,59 @@ export function subscribeToSharedList(
   shareCode: string,
   onUpdate: (list: PatternListWithPatterns) => void,
   onError: (err: Error) => void,
+  options: {
+    /** A members-only list: restore this phone's id before listening, or members are refused. */
+    membersOnly?: boolean;
+  } = {},
 ): Unsubscribe {
   if (!firebaseAvailable || !db) {
     onError(new Error("Firebase is not configured."));
     return () => {};
   }
+  const firestore = db;
+  let unsubscribe: Unsubscribe | null = null;
+  let stopped = false;
+  let retried = false;
 
-  return onSnapshot(
-    doc(db, SHARED_LISTS_COLLECTION, shareCode.toUpperCase()),
-    (snap) => {
-      if (!snap.exists()) {
-        onError(new Error("Shared list no longer exists."));
-        return;
-      }
-      const data = snap.data() as SharedListDocument;
-      onUpdate({ ...data.list, patterns: data.patterns });
-    },
-    (err) => onError(new Error(err.message)),
-  );
+  const listen = () => {
+    if (stopped) return;
+    unsubscribe = onSnapshot(
+      doc(firestore, SHARED_LISTS_COLLECTION, shareCode.toUpperCase()),
+      (snap) => {
+        if (!snap.exists()) {
+          onError(new Error("Shared list no longer exists."));
+          return;
+        }
+        const data = snap.data() as SharedListDocument;
+        onUpdate({ ...data.list, patterns: data.patterns });
+      },
+      (err) => {
+        if (!isPermissionDenied(err)) {
+          onError(new Error(err.message));
+          return;
+        }
+        // Refused: the list became members-only, or this phone was removed. Unless the
+        // request went out before auth was restored, which one more try with it rules out.
+        if (retried) {
+          onError(new NoAccessError());
+          return;
+        }
+        retried = true;
+        restoreSignIn().then(
+          (uid) => (uid ? listen() : onError(new NoAccessError())),
+          () => onError(new NoAccessError()),
+        );
+      },
+    );
+  };
+
+  if (options.membersOnly) {
+    restoreSignIn().then(listen, listen);
+  } else {
+    listen();
+  }
+  return () => {
+    stopped = true;
+    unsubscribe?.();
+  };
 }

@@ -7,6 +7,7 @@ Optional Firestore-backed list sharing. The app runs local-only when credentials
 - `auth.ts` / `auth.web.ts` — `ensureSignedIn()`: anonymous Firebase Auth, created lazily on the first publish (subscribing never signs in), persisted in AsyncStorage on native. A platform split because only the react-native build of `firebase/auth` has `getReactNativePersistence` (typed in `firebaseAuthReactNative.d.ts`).
 - `shareKey.ts` — `generateShareKey()`, the publisher's 256-bit secret for one list.
 - `publishedContent.ts` — `publishedPattern`, `publishedModifiers`: what of a list goes into the published document (URL videos only, no transcripts).
+- `MembershipService.ts` — members-only lists: asking to join, where a subscriber stands, letting in and turning away, in the same `subscribers` records; see `src/pattern/members/AGENTS.md`. `fetchSharedList` throws `MembersOnlyError` and `subscribeToSharedList` reports `NoAccessError` when the rules refuse a read.
 - `PatternSuggestionService.ts` — subscribers' pattern suggestions under a shared list (`suggestions`, `suggestionCounters`, `subscribers` subcollections); see `src/pattern/suggestions/AGENTS.md`. `confirmOwnership(list)` (in `FirebaseListService`) writes the owner record with the key, for anything the rules check against the owner; `unpublishList` deletes the suggestion subcollections before the list, since nobody could reach them afterwards.
 - `useSharedList` (`src/pattern/data/hooks/useSharedList.ts`) — called inside `ActivePatternListProvider`; maintains a live `onSnapshot` listener while `activeList.shareCode` is set; handles publisher unpublishing (clears `shareCode`/`readonly` locally and surfaces a themed dialog).
 
@@ -17,8 +18,9 @@ A published list is pushed opportunistically wherever it changes: `usePatternCru
 
 ## Ownership and security rules
 
-Subscribers only read, without signing in, unless they suggest a pattern (then they sign in
-anonymously; `src/pattern/suggestions/AGENTS.md`). A publisher signs in anonymously, and each published
+Subscribers only read, without signing in, unless they suggest a pattern or ask to join a
+members-only list (then they sign in anonymously; `src/pattern/suggestions/AGENTS.md`,
+`src/pattern/members/AGENTS.md`). A members-only list is readable by its members and owner only. A publisher signs in anonymously, and each published
 list has an **owner record** in `sharedListOwners/{shareCode}`: `{ ownerUid, key }`, readable by
 nobody. Only the owner on record may update or delete the list. `key` is the list's **share key**
 (`IPatternList.shareKey`), and presenting it moves ownership to the caller — that is how the
@@ -47,7 +49,7 @@ publisher keeps control after a reinstall (new anonymous id) or on a new phone.
 Change it together with `FirebaseListService`: the rules accept exactly the document
 `publishList()` writes (the five `SharedListDocument` keys, stored under its own 8-character
 code, no `readonly` or `shareKey` on the stored list, a well-formed `suggestions` setting if any),
-allow `get` by code but never `list`, and deny everything outside the two collections and the
+allow `get` by code (members and the owner only, for a members-only list) but never `list`, and deny everything outside the two collections and the
 three suggestion subcollections.
 
 - **The app token is compared by its SHA-256.** The repository is public, so it holds the hash,

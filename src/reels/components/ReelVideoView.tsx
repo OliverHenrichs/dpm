@@ -3,8 +3,8 @@ import { View } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Icon } from "@/src/common/ui/Icon";
-import YouTubeVideoItem from "@/src/common/components/YouTubeVideoItem";
-import { isYouTubeUrl } from "@/src/common/utils/YouTubeUtils";
+import EmbeddedVideoItem from "@/src/common/components/EmbeddedVideoItem";
+import { embeddedHost, playableLink } from "@/src/common/utils/videoHosts";
 import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
 
@@ -25,7 +25,8 @@ interface ReelVideoViewProps {
  * video to load, so a tap before then is not lost.
  */
 function DirectReel({ video }: { video: IVideoReference }) {
-  const player = useVideoPlayer(video.value, (p) => {
+  const source = video.type === "url" ? playableLink(video.value) : video.value;
+  const player = useVideoPlayer(source, (p) => {
     capVideoBuffer(p);
     p.loop = true;
     if (video.startTime) p.currentTime = video.startTime;
@@ -58,10 +59,10 @@ export default function ReelVideoView({
         color={theme.colors.textMuted}
       />
     );
-  } else if (video.type === "url" && isYouTubeUrl(video.value)) {
-    // YouTube's own player, with its own controls.
+  } else if (video.type === "url" && embeddedHost(video.value)) {
+    // YouTube's or Vimeo's own player, with its own controls.
     content = (
-      <YouTubeVideoItem videoRef={video} width={width} height={height} />
+      <EmbeddedVideoItem videoRef={video} width={width} height={height} />
     );
   } else {
     content = <DirectReel video={video} />;

@@ -4,8 +4,8 @@ import { capVideoBuffer } from "@/src/common/utils/videoBuffer";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
-import YouTubeVideoItem from "@/src/common/components/YouTubeVideoItem";
-import { isYouTubeUrl } from "@/src/common/utils/YouTubeUtils";
+import EmbeddedVideoItem from "@/src/common/components/EmbeddedVideoItem";
+import { embeddedHost, playableLink } from "@/src/common/utils/videoHosts";
 
 /** A player's height in the carousel; an empty slot that stands in for one matches it. */
 export const VIDEO_HEIGHT = 200;
@@ -17,9 +17,11 @@ type VideoItemProps = {
   paused?: boolean;
 };
 
-/** Direct-URL / local video player powered by expo-video. */
+/** Direct-URL (a file or a stream) / local video player powered by expo-video. */
 const DirectVideoItem: FC<VideoItemProps> = ({ videoRef, paused }) => {
-  const player = useVideoPlayer(videoRef.value, (p) => {
+  const source =
+    videoRef.type === "url" ? playableLink(videoRef.value) : videoRef.value;
+  const player = useVideoPlayer(source, (p) => {
     capVideoBuffer(p);
     p.loop = false;
     if (videoRef.startTime) {
@@ -43,8 +45,8 @@ const DirectVideoItem: FC<VideoItemProps> = ({ videoRef, paused }) => {
 
 export const VideoItem: FC<VideoItemProps> = ({ videoRef, width, paused }) => (
   <View style={[localStyles.videoItemContainer, { width }]}>
-    {videoRef.type === "url" && isYouTubeUrl(videoRef.value) ? (
-      <YouTubeVideoItem videoRef={videoRef} width={width} />
+    {videoRef.type === "url" && embeddedHost(videoRef.value) ? (
+      <EmbeddedVideoItem videoRef={videoRef} width={width} />
     ) : (
       <DirectVideoItem videoRef={videoRef} width={width} paused={paused} />
     )}

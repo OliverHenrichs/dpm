@@ -1,3 +1,8 @@
+import {
+  getVimeoThumbnailUrl,
+  isVimeoUrl,
+} from "@/src/common/utils/VimeoUtils";
+
 /**
  * Extracts a YouTube video ID from common URL formats:
  *  - https://www.youtube.com/watch?v=ID
@@ -48,7 +53,7 @@ export function getYouTubeThumbnailUrl(videoId: string): string {
 
 /**
  * Generates display thumbnails for an array of IVideoReference entries.
- * - URL references: returns a YouTube thumbnail URL when possible, otherwise "".
+ * - URL references: a YouTube thumbnail URL, a Vimeo one (asked of Vimeo), otherwise "".
  * - Local references: attempts to extract a video frame via expo-video-thumbnails.
  * Returns a string[] of the same length as `videoRefs`.
  */
@@ -64,6 +69,8 @@ export async function generateVideoThumbnails(
       if (isYouTubeUrl(ref.value)) {
         const id = extractYouTubeVideoId(ref.value);
         results.push(id ? getYouTubeThumbnailUrl(id) : "");
+      } else if (isVimeoUrl(ref.value)) {
+        results.push(await getVimeoThumbnailUrl(ref.value));
       } else {
         results.push("");
       }

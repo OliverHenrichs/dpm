@@ -32,10 +32,19 @@ ourselves means paying for and moderating footage of identifiable dancers.
 
 Rules:
 
-- **A link DPM cannot play needs a second tap** (`playsInApp`: YouTube, or a direct link to a
-  video file). A Drive or Dropbox page would reach subscribers as a video that does not play; the
-  sheet, the share-in dialog and the plain _Add video_ → link form (`src/pattern/list/AddVideoModal.tsx`)
-  all say so. YouTube is the one host recommended.
+- **A link DPM cannot play needs a second tap** (`playsInApp`: YouTube, Vimeo, or a direct link
+  to a video file or an HLS/DASH stream). A Drive page would reach subscribers as a video that
+  does not play; the sheet, the share-in dialog and the plain _Add video_ → link form
+  (`src/pattern/list/AddVideoModal.tsx`) all say so. YouTube and Vimeo are the hosts recommended.
+- **Hosts live in `src/common/utils/videoHosts.ts`.** `embeddedHost` says which links play in
+  their host's own player (`src/common/components/EmbeddedVideoItem.tsx`: YouTube, Vimeo);
+  everything else goes to `expo-video`. `playableLink` rewrites a Dropbox share link to `raw=1`,
+  which serves the file instead of a page; links are stored rewritten (Add video, the swap,
+  share-in), and players rewrite again for links saved before. A new host is an entry there, a
+  player beside `VimeoVideoItem` (with its `.web.tsx`), a thumbnail in `generateVideoThumbnails`,
+  and a line in `PRIVACY_POLICY.md` 3.4.
+- **A Vimeo link keeps its privacy hash** (`vimeo.com/ID/HASH`, `?h=`): an unlisted video does
+  not play without it. A password-protected one asks for the password in Vimeo's player.
 - **The clipboard is read only on a tap.** `clipboard.ts` requires `expo-clipboard` lazily, behind
   `requireOptionalNativeModule`, because the package reads its native module at import; without
   it (web, Jest, an older dev client) the paste button is hidden.
