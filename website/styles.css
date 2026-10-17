@@ -331,10 +331,24 @@ p {
   height: 36px;
 }
 
+/* The four pages, under a small "Usage" label, set apart from the style switch by a rule. */
 .site-nav {
   display: flex;
+  align-items: baseline;
   gap: 20px;
   font-size: 0.95rem;
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.nav-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.75;
+  margin-right: -8px;
 }
 
 .site-nav a {
@@ -355,12 +369,6 @@ p {
   text-underline-offset: 6px;
 }
 
-@media (max-width: 900px) {
-  .site-nav .optional {
-    display: none;
-  }
-}
-
 /* On a phone the four pages move to a row of their own under the brand, since they are how
    the site is read, and wrap rather than hide one off the edge. */
 @media (max-width: 680px) {
@@ -377,6 +385,11 @@ p {
     flex-wrap: wrap;
     gap: 2px 16px;
     padding: 4px 0 10px;
+    border-right: 0;
+  }
+
+  .nav-label {
+    margin-right: 0;
   }
 
   .site-nav a {

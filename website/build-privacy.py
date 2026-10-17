@@ -34,12 +34,12 @@ TEMPLATE = """<!doctype html>
           <img src="img/logo.png" alt="" width="36" height="36" />
           DPM
         </a>
-        <nav class="site-nav" aria-label="Main">
+        <nav class="site-nav" aria-label="Usage">
+          <span class="nav-label" aria-hidden="true">Usage</span>
           <a href="yourself.html">On your own</a>
           <a href="sharing.html">With classmates</a>
           <a href="teaching.html">As a teacher</a>
           <a href="students.html">As a student</a>
-          <a class="optional" href="https://github.com/OliverHenrichs/dpm">GitHub</a>
         </nav>
         <div class="style-switch" role="group" aria-label="Page style, as in the app" hidden>
           <button type="button" data-style-choice="after-hours" aria-pressed="true"><span class="ah-label">After Hours</span></button>
