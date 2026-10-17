@@ -30,7 +30,7 @@ describe("the example list", () => {
     expect(byName("Sugar Tuck").prerequisites).toEqual([
       byName("Sugar Push").id,
     ]);
-    expect(byName("Tuck Turn").prerequisites).toEqual([
+    expect(byName("Travelling Tuck").prerequisites).toEqual([
       byName("Left Side Pass").id,
     ]);
     expect(byName("Basket Whip").prerequisites).toEqual([
