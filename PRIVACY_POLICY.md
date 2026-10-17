@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 16, 2026**
+**Last updated: October 17, 2026**
 
 ---
 
@@ -115,16 +115,17 @@ You can refuse or withdraw any of these permissions in your device settings; onl
 
 ## 4. Legal basis for processing (GDPR Art. 6)
 
-| Processing activity                                                                | Legal basis                                                                                                                           |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Storing and processing your data on your device, including the video tools         | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
-| Publishing your list to Firebase                                                   | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time                                          |
-| Anonymous sign-in and the owner record when you publish                            | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b)) |
-| Sending a pattern suggestion, with your anonymous ID and the name you choose       | Your explicit action (consent — Art. 6(1)(a))                                                                                         |
-| Asking to join a members-only list, with your anonymous ID and the name you choose | Your explicit action (consent — Art. 6(1)(a))                                                                                         |
-| A publisher's daily limit and mute records                                         | Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f))                 |
-| IP address collection by Firebase                                                  | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                      |
-| Connecting to a video host or to Hugging Face at your request                      | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
+| Processing activity                                                                | Legal basis                                                                                                                                |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Storing and processing your data on your device, including the video tools         | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                                  |
+| Publishing your list to Firebase                                                   | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time                                               |
+| Anonymous sign-in and the owner record when you publish                            | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b))      |
+| Sending a pattern suggestion, with your anonymous ID and the name you choose       | Your explicit action (consent — Art. 6(1)(a))                                                                                              |
+| Asking to join a members-only list, with your anonymous ID and the name you choose | Your explicit action (consent — Art. 6(1)(a))                                                                                              |
+| A publisher's daily limit and mute records                                         | Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f))                      |
+| Blocking an anonymous ID from publishing, suggesting and asking to join            | Legitimate interest in keeping removed or unlawful content (for example a child's personal data) from being published again (Art. 6(1)(f)) |
+| IP address collection by Firebase                                                  | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                           |
+| Connecting to a video host or to Hugging Face at your request                      | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                                  |
 
 ---
 
@@ -161,6 +162,7 @@ We do **not** sell your data to third parties and do not use your data for adver
 | A pattern suggestion                              | Until the publisher adds or dismisses it, or stops sharing the list                                                                                                                       |
 | Daily suggestion counts and mute records          | Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time)                                                                                         |
 | Anonymous user ID (Firebase Authentication)       | Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
+| Block record (anonymous user ID, date)            | Kept only if we block an installation from publishing, for example after removing content that must not be published; deleted when we lift the block or delete that anonymous ID          |
 | Firebase infrastructure logs (IP, timestamps)     | Governed by Google's own retention policy (typically 30–180 days)                                                                                                                         |
 | Logs kept by video hosts, Hugging Face and GitHub | Governed by each service's own policy                                                                                                                                                     |
 
