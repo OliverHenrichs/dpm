@@ -19,14 +19,21 @@
           DPM
         </a>
         <nav class="site-nav" aria-label="Main">
-          <a href="./">Home</a>
-          <a href="https://github.com/OliverHenrichs/dpm">GitHub</a>
+          <a href="yourself.html">Yourself</a>
+          <a href="sharing.html">Sharing</a>
+          <a href="teaching.html">Teaching</a>
+          <a href="students.html">Students</a>
+          <a class="optional" href="https://github.com/OliverHenrichs/dpm">GitHub</a>
         </nav>
+        <div class="style-switch" role="group" aria-label="Page style, as in the app" hidden>
+          <button type="button" data-style-choice="after-hours" aria-pressed="true"><span class="ah-label">After Hours</span></button>
+          <button type="button" data-style-choice="clipboard" aria-pressed="false"><span class="cb-label">Clipboard</span></button>
+        </div>
       </div>
     </header>
     <main class="wrap prose">
 <h1>Privacy Policy — DancePatternMapper (DPM)</h1>
-<p><strong>Last updated: October 4, 2026</strong></p>
+<p><strong>Last updated: October 16, 2026</strong></p>
 <hr>
 <h2>1. Who we are</h2>
 <p><strong>App name:</strong> DancePatternMapper (DPM)<br>
@@ -71,21 +78,31 @@
 <td>On-device (AsyncStorage)</td>
 </tr>
 <tr>
+<td>Words you corrected in transcripts</td>
+<td>Getting the same words right in the list's later transcripts</td>
+<td>On-device (AsyncStorage)</td>
+</tr>
+<tr>
 <td>Downloaded speech and suggestion models</td>
 <td>Running the video tools offline</td>
 <td>On-device local filesystem</td>
 </tr>
 <tr>
-<td>Your graph layout, active list, theme and language</td>
+<td>Your graph layout, active list, theme, app style and language</td>
 <td>Restoring your settings</td>
 <td>On-device (AsyncStorage)</td>
 </tr>
+<tr>
+<td>Your app icon colour</td>
+<td>Showing the launcher icon you chose</td>
+<td>On-device, by the operating system</td>
+</tr>
 </tbody>
 </table>
-<p>None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature. Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts". An editable export of a list you have published also carries that list's share key, so whoever imports it can update or stop sharing the published list (that is how you move it to a new phone); a read-only export never does.</p>
+<p>None of this data leaves your device unless you explicitly use the Export or Cloud Sharing feature, or share a video to another app (section 3.4). Exports are files you send yourself; they include local videos only if you choose to, and transcripts only if you tick "Include transcripts". An editable export of a list you have published also carries that list's share key, so whoever imports it can update or stop sharing the published list (that is how you move it to a new phone); a read-only export never does.</p>
 <h3>3.2 On-device video tools</h3>
-<p>Shortening a video, anonymizing it (turning the dancers into silhouettes), transcribing its speech and suggesting a pattern name and description are all processed <strong>entirely on your device</strong>. The video, its audio, the transcript and the suggestion are never sent to us or to anyone else.</p>
-<p>An anonymized video shows the dancers as silhouettes and contains no sound. People may still be recognisable from their body shape, movement or surroundings, so treat it with the same care as the original.</p>
+<p>Shortening a video, anonymizing it (turning the dancers into silhouettes, or covering their faces), transcribing its speech and suggesting a pattern name and description are all processed <strong>entirely on your device</strong>. The video, its audio, the transcript and the suggestion are never sent to us or to anyone else.</p>
+<p>An anonymized video contains no sound. It shows the dancers either as silhouettes, or as filmed with their faces covered and the room around them blurred. People may still be recognisable from their body shape, clothing, movement or surroundings, and a face can slip through when a dancer turns fast or is hidden, so check the result and treat it with the same care as the original.</p>
 <p>If your videos show other people, such as teachers or other dancers, you are responsible for having their permission to record, keep and share those videos.</p>
 <h3>3.3 Data uploaded to our cloud service (Cloud Sharing only)</h3>
 <p>When you choose to <strong>publish a pattern list</strong>, the following is sent to and stored in Google Firebase Firestore:</p>
@@ -98,7 +115,7 @@
 </thead>
 <tbody>
 <tr>
-<td>Pattern list content (name, pattern types, pattern names, descriptions, tags, prerequisites, modifiers)</td>
+<td>Pattern list content (name, the list's dance, pattern types, pattern names, descriptions, counts, rhythms, levels, tags, prerequisites, modifiers)</td>
 <td>Sharing the list with subscribers</td>
 </tr>
 <tr>
@@ -119,7 +136,32 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Anonymous sign-in.</strong> The first time you publish, the app signs in to <strong>Google Firebase Authentication</strong> anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists. Subscribing to a list never signs in.</p>
+<p><strong>Anonymous sign-in.</strong> The first time you publish, suggest a pattern to a list you subscribe to, or ask to join a members-only list, the app signs in to <strong>Google Firebase Authentication</strong> anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists, or a member of the lists you joined. Subscribing to an open list on its own never signs in.</p>
+<p><strong>Pattern suggestions.</strong> A publisher can let the subscribers of a list suggest new patterns. When you <strong>send a suggestion</strong>, the following is stored in Firestore under the list:</p>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The suggested pattern (name, type, counts, rhythm, level, description, tags, prerequisites, modifiers, and video URLs; never local video files or transcripts)</td>
+<td>Letting the publisher review it and add it to the list</td>
+</tr>
+<tr>
+<td>Your anonymous user ID, and the name you sign it with if you enter one</td>
+<td>Showing the publisher who sent it, counting the publisher's daily limit, and letting the publisher mute you</td>
+</tr>
+<tr>
+<td>When it was sent, and a count of suggestions sent that day</td>
+<td>Enforcing the publisher's daily limit</td>
+</tr>
+</tbody>
+</table>
+<p>Only the publisher of the list can read suggestions. If the publisher <strong>mutes</strong> a subscriber, a record of that subscriber's anonymous user ID and the name they signed with is kept under the list, readable by the publisher and by that subscriber's app.</p>
+<p><strong>Members-only lists.</strong> A publisher can make a list readable only by the subscribers they let in. When you <strong>ask to join</strong> such a list, a record of your anonymous user ID, the name you give if you enter one, and whether you are waiting, let in or turned away is stored in Firestore under the list. It is readable by the publisher and by your own app, and it is deleted when the publisher stops sharing the list. If you publish a members-only list, the same record is kept for everyone who asks to join it.</p>
 <p><strong>We do not collect:</strong> your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID above is the only identifier, and it is not linked to you as a person.</p>
 <p><strong>Local video files and transcripts are never uploaded.</strong> Only URL-based video references are included in the cloud document.</p>
 <p>When you publish or subscribe, Google Firebase automatically records:</p>
@@ -129,9 +171,11 @@
 </ul>
 <p>This does <strong>not</strong> happen when you use the app without publishing or subscribing.</p>
 <h3>3.4 Online videos</h3>
-<p>When you play a video that you (or the publisher of a list you subscribed to) attached by URL, the app loads it from wherever it is hosted. YouTube links play in YouTube's embedded player. The host, for example <strong>YouTube (Google)</strong>, receives your IP address and device information, and may set cookies or collect usage data under its own privacy policy. We receive none of this data.</p>
+<p>When you play a video that you (or the publisher of a list you subscribed to) attached by URL, the app loads it from wherever it is hosted. YouTube links play in YouTube's embedded player and Vimeo links in Vimeo's (player.vimeo.com). To show a preview image of a YouTube link, for example in the pattern editor or in the Reels overview, the app loads that video's thumbnail from YouTube (img.youtube.com) without you pressing play; for a Vimeo link it asks Vimeo for the preview image (vimeo.com/api/oembed.json), which sends Vimeo the link. The host, for example <strong>YouTube (Google)</strong> or <strong>Vimeo</strong>, receives your IP address and device information, and may set cookies or collect usage data under its own privacy policy. We receive none of this data.</p>
+<p><strong>Putting a video online.</strong> When you tap the cloud button on a video saved on your phone and then <em>Share video</em>, the system share menu hands that video file to the app you choose, for example YouTube. The app sends nothing itself; what the other app does with the video is covered by its own privacy policy. The link you bring back replaces the video in your pattern and is treated like any other online video. The app reads your clipboard only when you tap <em>Paste copied link</em>, and keeps only the link it finds there.</p>
+<p><strong>Sharing to the app.</strong> The app appears in your phone's share menu for links and videos. When you share one to it, the app reads only what you shared, and keeps it only if you add it to a pattern; a shared video is then copied into the app's own storage.</p>
 <h3>3.5 Model downloads</h3>
-<p>The speech-to-text and suggestion features need models that are downloaded once, when you first use the feature and after the app has shown you the download size. The models are fetched from <strong>Hugging Face</strong> (huggingface.co and its content delivery network). Hugging Face receives your <strong>IP address</strong> and the usual request metadata (such as time and the file requested). Nothing about you, your videos or your patterns is sent. You can delete downloaded models at any time under Settings → On-device models.</p>
+<p>The speech-to-text and suggestion features need models that are downloaded once, when you first use the feature or download them under Settings → On-device models, and always after the app has shown you the download size. The models are fetched from <strong>Hugging Face</strong> (huggingface.co and its content delivery network). Hugging Face receives your <strong>IP address</strong> and the usual request metadata (such as time and the file requested). Nothing about you, your videos or your patterns is sent. You can delete downloaded models at any time under Settings → On-device models.</p>
 <h3>3.6 Device permissions</h3>
 <table>
 <thead>
@@ -183,6 +227,18 @@
 <td>Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b))</td>
 </tr>
 <tr>
+<td>Sending a pattern suggestion, with your anonymous ID and the name you choose</td>
+<td>Your explicit action (consent — Art. 6(1)(a))</td>
+</tr>
+<tr>
+<td>Asking to join a members-only list, with your anonymous ID and the name you choose</td>
+<td>Your explicit action (consent — Art. 6(1)(a))</td>
+</tr>
+<tr>
+<td>A publisher's daily limit and mute records</td>
+<td>Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f))</td>
+</tr>
+<tr>
 <td>IP address collection by Firebase</td>
 <td>Legitimate interest in operating a secure service (Art. 6(1)(f))</td>
 </tr>
@@ -197,13 +253,14 @@
 <p>We use the following third-party data processor:</p>
 <p><strong>Google LLC</strong> (Firebase / Firestore, Firebase Authentication)<br>
 Role: Data Processor<br>
-Purpose: Cloud storage of published pattern lists, and the anonymous sign-in of publishers<br>
+Purpose: Cloud storage of published pattern lists and their suggestions, and the anonymous sign-in of publishers and of subscribers who suggest patterns<br>
 Privacy policy: https://policies.google.com/privacy<br>
 Data Processing Terms: https://firebase.google.com/terms/data-processing-terms<br>
-Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Published lists and owner records are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.</p>
+Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Published lists, owner records and suggestions are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers and of subscribers who suggest patterns, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.</p>
 <p>When you use the features in sections 3.4 and 3.5, your device connects directly to these services. They process your IP address as <strong>independent controllers</strong> under their own policies, and may do so outside the EU/EEA, including in the United States:</p>
 <ul>
 <li><strong>YouTube / Google LLC</strong> (online videos): https://policies.google.com/privacy</li>
+<li><strong>Vimeo, Inc.</strong> (online videos): https://vimeo.com/privacy</li>
 <li><strong>Hugging Face, Inc.</strong> (model downloads): https://huggingface.co/privacy</li>
 <li>The host of any other online video you attach</li>
 </ul>
@@ -228,15 +285,23 @@ Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Pub
 </tr>
 <tr>
 <td>Published Firestore document</td>
-<td>Until you stop sharing the list in the app (Dances → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.</td>
+<td>Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.</td>
 </tr>
 <tr>
 <td>Owner record of a published list</td>
 <td>Removed together with the list when you stop sharing it</td>
 </tr>
 <tr>
+<td>A pattern suggestion</td>
+<td>Until the publisher adds or dismisses it, or stops sharing the list</td>
+</tr>
+<tr>
+<td>Daily suggestion counts and mute records</td>
+<td>Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time)</td>
+</tr>
+<tr>
 <td>Anonymous user ID (Firebase Authentication)</td>
-<td>Kept while you might still publish from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time</td>
+<td>Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time</td>
 </tr>
 <tr>
 <td>Firebase infrastructure logs (IP, timestamps)</td>
@@ -258,15 +323,15 @@ Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Pub
 <li><strong>Objection</strong> — object to processing based on legitimate interest</li>
 <li><strong>Lodge a complaint</strong> — with your national data protection authority (e.g. the <a href="https://www.bfdi.bund.de/">BfDI</a> in Germany, the <a href="https://ico.org.uk/">ICO</a> in the UK)</li>
 </ul>
-<p><strong>How to delete your published data:</strong> Open the app → Dances → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document and its owner record. For anything else, contact us at dance-pattern-mapper@pm.me.</p>
+<p><strong>How to delete your published data:</strong> Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts and mute records. For anything else, contact us at dance-pattern-mapper@pm.me.</p>
 <p>Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.</p>
-<p>For data held by YouTube, Hugging Face or GitHub, please use their own privacy tools or contact them directly; we have no access to it.</p>
+<p>For data held by YouTube, Vimeo, Hugging Face or GitHub, please use their own privacy tools or contact them directly; we have no access to it.</p>
 <hr>
 <h2>8. Children</h2>
 <p>The app is not directed at children under 13 (or under 16 in the EU). We do not knowingly collect personal data from children. If you believe a child has submitted personal data through the cloud sharing feature, please contact us and we will delete it.</p>
 <hr>
 <h2>9. Security</h2>
-<p>We use cryptographically secure random number generation (CSPRNG) to create share codes and share keys. Published lists are protected by Firestore Security Rules: only the publisher's anonymous ID, or whoever holds the list's share key, can update or delete a list, and nobody can list or browse the published lists. However, any person who obtains a share code can read the corresponding list — do not publish lists containing sensitive personal information.</p>
+<p>We use cryptographically secure random number generation (CSPRNG) to create share codes and share keys. Published lists are protected by Firestore Security Rules: only the publisher's anonymous ID, or whoever holds the list's share key, can update or delete a list, and nobody can list or browse the published lists. However, any person who obtains a share code can read the corresponding list, unless you made it members only, in which case only the subscribers you let in can read it. Either way, do not publish lists containing sensitive personal information.</p>
 <p>Downloaded models are checked against a fixed SHA-256 checksum before use, so a corrupted or altered file is rejected.</p>
 <hr>
 <h2>10. This website</h2>

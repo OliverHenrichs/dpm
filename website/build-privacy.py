@@ -35,9 +35,16 @@ TEMPLATE = """<!doctype html>
           DPM
         </a>
         <nav class="site-nav" aria-label="Main">
-          <a href="./">Home</a>
-          <a href="https://github.com/OliverHenrichs/dpm">GitHub</a>
+          <a href="yourself.html">Yourself</a>
+          <a href="sharing.html">Sharing</a>
+          <a href="teaching.html">Teaching</a>
+          <a href="students.html">Students</a>
+          <a class="optional" href="https://github.com/OliverHenrichs/dpm">GitHub</a>
         </nav>
+        <div class="style-switch" role="group" aria-label="Page style, as in the app" hidden>
+          <button type="button" data-style-choice="after-hours" aria-pressed="true"><span class="ah-label">After Hours</span></button>
+          <button type="button" data-style-choice="clipboard" aria-pressed="false"><span class="cb-label">Clipboard</span></button>
+        </div>
       </div>
     </header>
     <main class="wrap prose">
