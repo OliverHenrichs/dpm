@@ -25,6 +25,7 @@ in, so read the one listed below before you add code there.
 | `src/videoLinks/AGENTS.md`          | Putting a local video online and its link back, links and videos shared to DPM                                 |
 | `src/pattern/suggestions/AGENTS.md` | Pattern suggestions from a shared list's subscribers: daily limits, muting, review                             |
 | `src/pattern/members/AGENTS.md`     | Members-only lists: asking to join, letting in, losing access                                                  |
+| `src/pattern/handover/AGENTS.md`    | Handing a published list over to a subscriber, who keeps its share code                                        |
 | `modules/AGENTS.md`                 | The local native Expo modules and their gitignored model weights                                               |
 | `src/changelog/AGENTS.md`           | The bundled changelog, the what's-new hint after an update, releasing a version's notes                        |
 | `src/settings/AGENTS.md`            | Settings screen, i18n machinery, device locale, language/style/icon persistence                                |

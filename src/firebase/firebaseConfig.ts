@@ -54,3 +54,10 @@ export const SHARED_LIST_OWNERS_COLLECTION = "sharedListOwners";
 export const SUGGESTIONS = "suggestions";
 export const SUGGESTION_COUNTERS = "suggestionCounters";
 export const SUBSCRIBERS = "subscribers";
+
+/**
+ * Subcollection of a shared list holding its owner's handover offers
+ * (`HandoverService.ts`), each named by its one-time code:
+ * `{ fromUid, offeredAt, acceptedBy?, acceptedAt? }`.
+ */
+export const HANDOVERS = "handovers";

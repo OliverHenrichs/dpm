@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 16, 2026**
+**Last updated: October 17, 2026**
 
 ---
 
@@ -76,6 +76,8 @@ When you choose to **publish a pattern list**, the following is sent to and stor
 Only the publisher of the list can read suggestions. If the publisher **mutes** a subscriber, a record of that subscriber's anonymous user ID and the name they signed with is kept under the list, readable by the publisher and by that subscriber's app.
 
 **Members-only lists.** A publisher can make a list readable only by the subscribers they let in. When you **ask to join** such a list, a record of your anonymous user ID, the name you give if you enter one, and whether you are waiting, let in or turned away is stored in Firestore under the list. It is readable by the publisher and by your own app, and it is deleted when the publisher stops sharing the list. If you publish a members-only list, the same record is kept for everyone who asks to join it.
+
+**Handing a list over.** A publisher can hand a list over to someone who follows it. The app then stores, under the list, a one-time offer named by a random handover code, with the publisher's anonymous user ID and when it was made. When the new owner enters the code, their anonymous user ID and the time are added to the offer, and the owner record names them with a new share key. The offer is readable only by the list's owner and by the publisher who made it, and the previous publisher's app deletes it once it has followed the handover.
 
 **We do not collect:** your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID above is the only identifier, and it is not linked to you as a person.
 
@@ -158,6 +160,7 @@ We do **not** sell your data to third parties and do not use your data for adver
 | Downloaded models                                 | Until you delete them under Settings → On-device models, or uninstall the app                                                                                                             |
 | Published Firestore document                      | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.                                       |
 | Owner record of a published list                  | Removed together with the list when you stop sharing it                                                                                                                                   |
+| A handover offer                                  | Until the previous publisher's app has followed the handover, the publisher withdraws it, or the list stops being shared. An offer nobody accepts stops working after 7 days.             |
 | A pattern suggestion                              | Until the publisher adds or dismisses it, or stops sharing the list                                                                                                                       |
 | Daily suggestion counts and mute records          | Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time)                                                                                         |
 | Anonymous user ID (Firebase Authentication)       | Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
@@ -176,7 +179,7 @@ You have the right to:
 - **Objection** — object to processing based on legitimate interest
 - **Lodge a complaint** — with your national data protection authority (e.g. the [BfDI](https://www.bfdi.bund.de/) in Germany, the [ICO](https://ico.org.uk/) in the UK)
 
-**How to delete your published data:** Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts and mute records. For anything else, contact us at dance-pattern-mapper@pm.me.
+**How to delete your published data:** Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts, mute records and handover offers. For anything else, contact us at dance-pattern-mapper@pm.me.
 
 Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.
 

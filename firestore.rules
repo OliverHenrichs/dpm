@@ -14,7 +14,7 @@ rules_version = '2';
 // - a write must be a well-formed shared list stored under its own code,
 //   carrying the app token;
 // - nothing outside these two collections can be read or written at all,
-//   except a shared list's suggestions (below).
+//   except a shared list's suggestions and handover offers (below).
 //
 // Suggestions: a publisher can let subscribers suggest new patterns
 // (`list.suggestions`: a daily limit, counted for the whole list or per
@@ -32,6 +32,14 @@ rules_version = '2';
 // owner sets `member` or `declined`. Members, and the owner, read the list as
 // before; everyone else is refused, which tells the app the list is closed
 // (a code that does not exist still reads as not-found).
+//
+// Handing over: the owner can give the list to someone who follows it. The
+// owner creates a one-time offer, `handovers/{code}`, named by a 10-character
+// code they pass on in person; whoever presents that code within 7 days
+// accepts it and, in the same write, becomes the owner on record with a new
+// key, which locks the old owner's key out. The list keeps its share code, so
+// everyone subscribed keeps following it. The old owner can still see the
+// accepted offer, which is how their app learns to follow instead.
 //
 // The app token is compared by its SHA-256, so the repository (public) holds
 // only the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in
@@ -73,6 +81,15 @@ service cloud.firestore {
 
     function subscriberPath(code, uid) {
       return /databases/$(database)/documents/sharedLists/$(code)/subscribers/$(uid);
+    }
+
+    function handoverPath(code, token) {
+      return /databases/$(database)/documents/sharedLists/$(code)/handovers/$(token);
+    }
+
+    // HandoverService.generateHandoverCode: 10 characters, 0-9 and A-Z.
+    function isHandoverCode(token) {
+      return token is string && token.matches('^[0-9A-Z]{10}$');
     }
 
     function isMuted(code, uid) {
@@ -163,13 +180,27 @@ service cloud.firestore {
     }
 
     match /sharedListOwners/{shareCode} {
+      // `handover` names the offer a takeover accepts (below); only
+      // acceptHandover() writes it.
       function isOwnerRecord(data) {
-        return data.keys().hasOnly(['ownerUid', 'key'])
+        return data.keys().hasOnly(['ownerUid', 'key', 'handover'])
           && data.keys().hasAll(['ownerUid', 'key'])
           && data.ownerUid == request.auth.uid
           && data.key is string
           && data.key.size() >= 32
-          && data.key.size() <= 128;
+          && data.key.size() <= 128
+          && (!('handover' in data) || isHandoverCode(data.handover));
+      }
+
+      // The offer named by `token` exists, was still open before this write,
+      // and is accepted by the caller in this same write. The list must
+      // exist: a list taken down keeps an owner record nobody may claim.
+      function acceptsOffer(token) {
+        let path = handoverPath(shareCode, token);
+        return exists(listPath(shareCode))
+          && exists(path)
+          && !('acceptedBy' in get(path).data)
+          && getAfter(path).data.get('acceptedBy', '') == request.auth.uid;
       }
 
       // The record holds the key, so nobody may read it, owner included.
@@ -187,10 +218,13 @@ service cloud.firestore {
           || request.time < timestamp.date(2027, 4, 1));
 
       // Same key: either nothing changes, or ownership moves to the caller
-      // (the publisher after a reinstall, or on a new phone).
+      // (the publisher after a reinstall, or on a new phone). A new key only
+      // with a handover the caller accepts in the same write.
       allow update: if signedIn()
         && isOwnerRecord(request.resource.data)
-        && request.resource.data.key == resource.data.key;
+        && (request.resource.data.key == resource.data.key
+          || ('handover' in request.resource.data
+            && acceptsOffer(request.resource.data.handover)));
 
       allow delete: if signedIn()
         && resource.data.ownerUid == request.auth.uid;
@@ -356,6 +390,46 @@ service cloud.firestore {
         && signedIn()
         && ((isOwner(shareCode) && isSubscriberRecord(request.resource.data))
           || isJoinRequest());
+    }
+
+    // A handover offer, named by its code: the owner's to create and withdraw,
+    // the code holder's to accept once, within 7 days. The owner who made it
+    // still reads it after the handover; nobody else ever does.
+    match /sharedLists/{shareCode}/handovers/{token} {
+      function isOffer(data) {
+        return data.keys().hasOnly(['fromUid', 'offeredAt'])
+          && data.keys().hasAll(['fromUid', 'offeredAt'])
+          && data.fromUid == request.auth.uid
+          && data.offeredAt == request.time;
+      }
+
+      // Accepting: only the acceptance is added, by the caller, while the
+      // offer is open, together with the owner record naming the caller.
+      function isAcceptance() {
+        let data = request.resource.data;
+        return !('acceptedBy' in resource.data)
+          && request.time < resource.data.offeredAt + duration.value(7, 'd')
+          && data.diff(resource.data).affectedKeys()
+            .hasOnly(['acceptedBy', 'acceptedAt'])
+          && data.acceptedBy == request.auth.uid
+          && data.acceptedAt == request.time
+          && exists(listPath(shareCode))
+          && getAfter(ownerPath(shareCode)).data.ownerUid == request.auth.uid
+          && getAfter(ownerPath(shareCode)).data.get('handover', '') == token;
+      }
+
+      function isOwnOffer() {
+        return signedIn() && resource.data.fromUid == request.auth.uid;
+      }
+
+      allow get, list: if isOwnOffer() || isOwner(shareCode);
+      allow create: if isShareCode(shareCode)
+        && isHandoverCode(token)
+        && signedIn()
+        && isOwner(shareCode)
+        && isOffer(request.resource.data);
+      allow update: if signedIn() && isAcceptance();
+      allow delete: if isOwnOffer() || isOwner(shareCode);
     }
 
     match /{document=**} {
