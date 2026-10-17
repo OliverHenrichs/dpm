@@ -94,25 +94,31 @@ export function useNodeDrag(
   // callback needs a wrapper rather than a spare `undefined`.
   const cancelDrag = useCallback((_ignored: number) => cancel(), [cancel]);
 
+  // The node under a touch on the canvas, or null. Both gestures hit-test the same way.
+  const nodeAt = (x: number, y: number): number | null => {
+    "worklet";
+    const point = screenToContent(
+      x,
+      y,
+      {
+        width: transform.viewportWidth.get(),
+        height: transform.viewportHeight.get(),
+      },
+      {
+        scale: transform.scale.get(),
+        translateX: transform.translateX.get(),
+        translateY: transform.translateY.get(),
+      },
+      { width: contentWidth, height: contentHeight },
+    );
+    return findNodeAt(point, positions);
+  };
+
   const pan = Gesture.Pan()
     .enabled(enabled)
     .activateAfterLongPress(DRAG_ACTIVATION_MS)
     .onStart((event) => {
-      const point = screenToContent(
-        event.x,
-        event.y,
-        {
-          width: transform.viewportWidth.get(),
-          height: transform.viewportHeight.get(),
-        },
-        {
-          scale: transform.scale.get(),
-          translateX: transform.translateX.get(),
-          translateY: transform.translateY.get(),
-        },
-        { width: contentWidth, height: contentHeight },
-      );
-      const id = findNodeAt(point, positions);
+      const id = nodeAt(event.x, event.y);
       activeId.set(id);
       if (id === null) return;
 
@@ -159,21 +165,7 @@ export function useNodeDrag(
   const tap = Gesture.Tap()
     .enabled(enabled)
     .onEnd((event) => {
-      const point = screenToContent(
-        event.x,
-        event.y,
-        {
-          width: transform.viewportWidth.get(),
-          height: transform.viewportHeight.get(),
-        },
-        {
-          scale: transform.scale.get(),
-          translateX: transform.translateX.get(),
-          translateY: transform.translateY.get(),
-        },
-        { width: contentWidth, height: contentHeight },
-      );
-      const id = findNodeAt(point, positions);
+      const id = nodeAt(event.x, event.y);
       if (id !== null) scheduleOnRN(tapped, id);
     });
 

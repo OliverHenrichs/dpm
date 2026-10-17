@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { ScrollView, useWindowDimensions } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -15,7 +15,7 @@ import {
   drawNodes,
 } from "@/src/pattern/graph/render/GraphPrimitives";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
-import { useTranslation } from "react-i18next";
+import GraphEmptyState from "@/src/pattern/graph/components/GraphEmptyState";
 import {
   ELIDED_DASH,
   MIN_PATTERN_HEIGHT,
@@ -43,7 +43,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   onNodeTap,
 }) => {
   const patterns = model.patterns;
-  const { t } = useTranslation();
   const { theme } = useUnistyles();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
 
@@ -81,15 +80,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     }, [patterns, patternTypes, screenHeight, screenWidth, model.depthMap]);
 
   if (patterns.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
-          {t(
-            hasActiveFilter ? "noPatternsMatchFilter" : "noPatternsToVisualize",
-          )}
-        </Text>
-      </View>
-    );
+    return <GraphEmptyState hasActiveFilter={hasActiveFilter} />;
   }
 
   return (
@@ -213,18 +204,6 @@ const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: theme.colors.background,
-    padding: theme.space.xxxl,
-  },
-  emptyText: {
-    ...theme.typography.body,
-    color: theme.colors.textMuted,
-    textAlign: "center",
   },
 }));
 
