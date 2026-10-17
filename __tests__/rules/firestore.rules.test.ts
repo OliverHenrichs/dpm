@@ -306,6 +306,21 @@ describe("ownership", () => {
     await assertSucceeds(publish(as(PUBLISHER)));
   });
 
+  it("keeps a list taken down by the operator from coming back (tools/data-removal)", async () => {
+    // What `remove-list` leaves: no list, and an owner record with a fresh
+    // key nobody holds, naming an owner no device can be.
+    await seed(null, {
+      ownerUid: "removed-by-operator",
+      key: "t".repeat(64),
+      removedAt: Timestamp.now(),
+    });
+    await assertFails(publish(as(PUBLISHER)));
+    await assertFails(unpublish(as(PUBLISHER)));
+    await assertFails(
+      setDoc(doc(as(PUBLISHER), "sharedListOwners", CODE), owner(PUBLISHER)),
+    );
+  });
+
   it("hides owner records from everyone, the owner included", async () => {
     await seed(sharedListDoc());
     await assertFails(getDoc(doc(as(PUBLISHER), "sharedListOwners", CODE)));
