@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "أصبحت «{{name}}» ملكك. تصل تعديلاتك إلى كل المشتركين فيها.",
   "listHandedOverTitle": "تم تسليم القائمة",
   "listHandedOverMessage": "أصبحت «{{name}}» ملكًا للشخص الذي سلّمتها له. تتابع نسختك نسخته، وهي هنا للقراءة فقط.",
-  "scanHandoverCodeHint": "وجّه الكاميرا نحو رمز QR الخاص بالتسليم"
+  "scanHandoverCodeHint": "وجّه الكاميرا نحو رمز QR الخاص بالتسليم",
+  "subscriberCount": "المشتركون",
+  "subscriberCountLoading": "جارٍ عدّ المشتركين",
+  "subscriberCountUnavailable": "غير متاح حاليًا",
+  "subscriberCountHint": "الهواتف التي لديها هذه القائمة وفتحتها خلال آخر {{days}} يومًا.",
+  "unsubscribeList": "إلغاء الاشتراك في القائمة",
+  "unsubscribe": "إلغاء الاشتراك",
+  "unsubscribeListConfirm": "إزالة «{{name}}» من هذا الهاتف؟ يمكنك الاشتراك مجددًا برمز المشاركة.",
+  "subscribedListHint": "أنت تتابع هذه القائمة. ناشرها وحده يمكنه تغييرها."
 }

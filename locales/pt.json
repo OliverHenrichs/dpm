@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "\"{{name}}\" agora é sua. Suas alterações chegam a todos os inscritos.",
   "listHandedOverTitle": "Lista repassada",
   "listHandedOverMessage": "\"{{name}}\" agora pertence à pessoa para quem você a passou. Sua cópia segue a dela e aqui é só para leitura.",
-  "scanHandoverCodeHint": "Aponte a câmera para o QR code de repasse"
+  "scanHandoverCodeHint": "Aponte a câmera para o QR code de repasse",
+  "subscriberCount": "Assinantes",
+  "subscriberCountLoading": "Contando assinantes",
+  "subscriberCountUnavailable": "Indisponível no momento",
+  "subscriberCountHint": "Celulares que têm esta lista e a abriram nos últimos {{days}} dias.",
+  "unsubscribeList": "Cancelar assinatura da lista",
+  "unsubscribe": "Cancelar assinatura",
+  "unsubscribeListConfirm": "Remover \"{{name}}\" deste celular? Você pode assinar de novo com o código de compartilhamento.",
+  "subscribedListHint": "Você segue esta lista. Só quem a publica pode alterá-la."
 }

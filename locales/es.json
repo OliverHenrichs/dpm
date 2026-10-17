@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "Ahora «{{name}}» es tuya. Tus cambios llegan a todos sus suscriptores.",
   "listHandedOverTitle": "Lista cedida",
   "listHandedOverMessage": "«{{name}}» pertenece ahora a la persona a quien se la cediste. Tu copia sigue la suya y aquí es solo de lectura.",
-  "scanHandoverCodeHint": "Apunta la cámara al código QR de cesión"
+  "scanHandoverCodeHint": "Apunta la cámara al código QR de cesión",
+  "subscriberCount": "Suscriptores",
+  "subscriberCountLoading": "Contando suscriptores",
+  "subscriberCountUnavailable": "No disponible ahora mismo",
+  "subscriberCountHint": "Teléfonos que tienen esta lista y la abrieron en los últimos {{days}} días.",
+  "unsubscribeList": "Cancelar la suscripción",
+  "unsubscribe": "Cancelar suscripción",
+  "unsubscribeListConfirm": "¿Quitar «{{name}}» de este teléfono? Puedes volver a suscribirte con su código.",
+  "subscribedListHint": "Sigues esta lista. Solo quien la publica puede cambiarla."
 }

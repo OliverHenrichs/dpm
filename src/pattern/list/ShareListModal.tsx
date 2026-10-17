@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Clipboard,
@@ -31,6 +31,10 @@ import {
 } from "@/src/pattern/suggestions/suggestions";
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
+import {
+  ACTIVE_SUBSCRIPTION_DAYS,
+  countSubscribers,
+} from "@/src/firebase/SubscriptionService";
 import AppDialog from "@/src/common/components/AppDialog";
 import { withMembersOnly } from "@/src/pattern/members/members";
 import HandoverSection from "@/src/pattern/handover/HandoverSection";
@@ -68,6 +72,32 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
   );
 
   const isPublished = !!list.shareCode;
+
+  // How many phones follow the published list, for the code it was counted for; null when
+  // counting failed. Still loading while it belongs to no code or another one.
+  const [counted, setCounted] = useState<{
+    shareCode: string;
+    count: number | null;
+  }>();
+  useEffect(() => {
+    const shareCode = list.shareCode;
+    if (!firebaseAvailable || !shareCode) return;
+    let cancelled = false;
+    countSubscribers(list).then(
+      (count) => !cancelled && setCounted({ shareCode, count }),
+      (e: unknown) => {
+        console.warn("Counting subscribers failed:", e);
+        if (!cancelled) setCounted({ shareCode, count: null });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+    // Counted again only for another published list, not on every settings change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list.shareCode]);
+  const subscriberCount =
+    counted && counted.shareCode === list.shareCode ? counted.count : undefined;
   // Whether subscribers may suggest patterns. Before the first publish it waits for the
   // Publish button; on a published list a change is published at once.
   const [policy, setPolicy] = useState<ISuggestionPolicy | undefined>(
@@ -201,6 +231,31 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   </View>
                 )}
                 <Text style={styles.hint}>{t("shareCodeHint")}</Text>
+
+                <Text style={styles.sectionLabel}>{t("subscriberCount")}</Text>
+                <View style={styles.countRow}>
+                  <Icon
+                    name="account-multiple-outline"
+                    size={theme.iconSize.md}
+                    color={theme.colors.primary}
+                  />
+                  {subscriberCount === undefined ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={theme.colors.primary}
+                      accessibilityLabel={t("subscriberCountLoading")}
+                    />
+                  ) : (
+                    <Text style={styles.count}>
+                      {subscriberCount === null
+                        ? t("subscriberCountUnavailable")
+                        : String(subscriberCount)}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.hint}>
+                  {t("subscriberCountHint", { days: ACTIVE_SUBSCRIPTION_DAYS })}
+                </Text>
               </>
             )}
 
@@ -418,6 +473,17 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     letterSpacing: 4,
     color: theme.colors.primary,
+    fontVariant: ["tabular-nums"],
+  },
+  countRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.sm,
+    marginBottom: theme.space.sm,
+  },
+  count: {
+    ...theme.typography.title,
+    color: theme.colors.text,
     fontVariant: ["tabular-nums"],
   },
   qrContainer: {

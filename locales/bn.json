@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "\"{{name}}\" এখন আপনার। আপনার পরিবর্তন এর সব সাবস্ক্রাইবারের কাছে পৌঁছাবে।",
   "listHandedOverTitle": "তালিকা হস্তান্তর হয়েছে",
   "listHandedOverMessage": "\"{{name}}\" এখন সেই ব্যক্তির, যাঁকে আপনি এটি দিয়েছেন। আপনার কপি তাঁর কপি অনুসরণ করে এবং এখানে শুধু পড়া যায়।",
-  "scanHandoverCodeHint": "ক্যামেরা হস্তান্তরের QR কোডের দিকে ধরুন"
+  "scanHandoverCodeHint": "ক্যামেরা হস্তান্তরের QR কোডের দিকে ধরুন",
+  "subscriberCount": "যুক্ত সদস্য",
+  "subscriberCountLoading": "যুক্ত সদস্য গোনা হচ্ছে",
+  "subscriberCountUnavailable": "এখন পাওয়া যাচ্ছে না",
+  "subscriberCountHint": "যে ফোনগুলোতে এই তালিকা আছে এবং গত {{days}} দিনে খোলা হয়েছে।",
+  "unsubscribeList": "তালিকা থেকে বেরিয়ে যান",
+  "unsubscribe": "বেরিয়ে যান",
+  "unsubscribeListConfirm": "'{{name}}' এই ফোন থেকে সরাবেন? শেয়ার কোড দিয়ে আবার যুক্ত হতে পারবেন।",
+  "subscribedListHint": "আপনি এই তালিকায় যুক্ত। শুধু এর প্রকাশক এটি বদলাতে পারেন।"
 }

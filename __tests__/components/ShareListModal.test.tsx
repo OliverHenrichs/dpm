@@ -2,6 +2,7 @@ import React from "react";
 import { Clipboard } from "react-native";
 import ShareListModal from "@/src/pattern/list/ShareListModal";
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
+import { countSubscribers } from "@/src/firebase/SubscriptionService";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import {
   createTestPattern,
@@ -37,6 +38,15 @@ jest.mock("@/src/firebase/FirebaseListService", () => ({
   subscribeToSharedList: jest.fn(),
 }));
 
+jest.mock("@/src/firebase/SubscriptionService", () => ({
+  ACTIVE_SUBSCRIPTION_DAYS: 90,
+  countSubscribers: jest.fn(),
+}));
+
+const mockedCount = countSubscribers as jest.MockedFunction<
+  typeof countSubscribers
+>;
+
 const mockedPublish = publishList as jest.MockedFunction<typeof publishList>;
 const mockedUnpublish = unpublishList as jest.MockedFunction<
   typeof unpublishList
@@ -49,6 +59,7 @@ beforeEach(() => {
     shareKey: "test-share-key",
   });
   mockedUnpublish.mockResolvedValue(undefined);
+  mockedCount.mockResolvedValue(0);
 });
 
 function renderShare(
@@ -164,6 +175,40 @@ describe("ShareListModal", () => {
       expect(screen.getByLabelText("Show QR code")).toBeOnTheScreen();
       fireEvent.press(screen.getByLabelText("Show QR code"));
       expect(screen.getByLabelText("Hide QR code")).toBeOnTheScreen();
+    });
+  });
+
+  describe("the subscriber count", () => {
+    it("shows how many phones follow a published list", async () => {
+      mockedCount.mockResolvedValue(12);
+      const list = published();
+      renderShare(list);
+
+      expect(screen.getByText("Subscribers")).toBeOnTheScreen();
+      expect(await screen.findByText("12")).toBeOnTheScreen();
+      expect(mockedCount).toHaveBeenCalledWith(list);
+      expect(
+        screen.getByText(
+          "Phones that have this list and opened it in the last 90 days.",
+        ),
+      ).toBeOnTheScreen();
+    });
+
+    it("says so when it cannot count, rather than showing zero", async () => {
+      mockedCount.mockRejectedValue(new Error("offline"));
+      renderShare(published());
+
+      expect(
+        await screen.findByText("Not available right now"),
+      ).toBeOnTheScreen();
+      expect(screen.queryByText("0")).toBeNull();
+    });
+
+    it("is not counted for a list that is not published", () => {
+      renderShare();
+
+      expect(screen.queryByText("Subscribers")).toBeNull();
+      expect(mockedCount).not.toHaveBeenCalled();
     });
   });
 

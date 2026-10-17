@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "« {{name}} » est désormais à vous. Vos modifications parviennent à tous ses abonnés.",
   "listHandedOverTitle": "Liste transmise",
   "listHandedOverMessage": "« {{name}} » appartient désormais à la personne à qui vous l'avez transmise. Votre copie suit la sienne et est en lecture seule ici.",
-  "scanHandoverCodeHint": "Pointez l'appareil photo vers le QR code de transmission"
+  "scanHandoverCodeHint": "Pointez l'appareil photo vers le QR code de transmission",
+  "subscriberCount": "Abonnés",
+  "subscriberCountLoading": "Comptage des abonnés",
+  "subscriberCountUnavailable": "Indisponible pour le moment",
+  "subscriberCountHint": "Téléphones qui ont cette liste et l'ont ouverte ces {{days}} derniers jours.",
+  "unsubscribeList": "Se désabonner de la liste",
+  "unsubscribe": "Se désabonner",
+  "unsubscribeListConfirm": "Retirer « {{name}} » de ce téléphone ? Vous pourrez vous réabonner avec son code de partage.",
+  "subscribedListHint": "Vous suivez cette liste. Seule la personne qui la publie peut la modifier."
 }

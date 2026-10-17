@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "\"{{name}}\" अब आपकी है। आपके बदलाव इसके सभी सब्सक्राइबर तक पहुँचेंगे।",
   "listHandedOverTitle": "सूची सौंप दी गई",
   "listHandedOverMessage": "\"{{name}}\" अब उस व्यक्ति की है जिसे आपने इसे सौंपा। आपकी कॉपी उनकी कॉपी को फ़ॉलो करती है और यहाँ सिर्फ़ पढ़ने के लिए है।",
-  "scanHandoverCodeHint": "कैमरा सौंपने वाले QR कोड की ओर करें"
+  "scanHandoverCodeHint": "कैमरा सौंपने वाले QR कोड की ओर करें",
+  "subscriberCount": "सदस्य",
+  "subscriberCountLoading": "सदस्य गिने जा रहे हैं",
+  "subscriberCountUnavailable": "अभी उपलब्ध नहीं",
+  "subscriberCountHint": "वे फ़ोन जिनमें यह सूची है और जिन्होंने पिछले {{days}} दिनों में इसे खोला है।",
+  "unsubscribeList": "सूची की सदस्यता छोड़ें",
+  "unsubscribe": "सदस्यता छोड़ें",
+  "unsubscribeListConfirm": "'{{name}}' को इस फ़ोन से हटाएँ? आप इसके साझा कोड से फिर सदस्यता ले सकते हैं।",
+  "subscribedListHint": "आप इस सूची के सदस्य हैं। इसे सिर्फ़ इसका प्रकाशक बदल सकता है।"
 }

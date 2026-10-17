@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "„{{name}}“ gehört jetzt dir. Deine Änderungen erreichen alle Abonnenten.",
   "listHandedOverTitle": "Liste übergeben",
   "listHandedOverMessage": "„{{name}}“ gehört jetzt der Person, der du sie übergeben hast. Deine Kopie folgt ihrer und ist hier schreibgeschützt.",
-  "scanHandoverCodeHint": "Kamera auf den Übergabe-QR-Code richten"
+  "scanHandoverCodeHint": "Kamera auf den Übergabe-QR-Code richten",
+  "subscriberCount": "Abonnenten",
+  "subscriberCountLoading": "Abonnenten werden gezählt",
+  "subscriberCountUnavailable": "Gerade nicht verfügbar",
+  "subscriberCountHint": "Handys, die diese Liste haben und sie in den letzten {{days}} Tagen geöffnet haben.",
+  "unsubscribeList": "Liste abbestellen",
+  "unsubscribe": "Abbestellen",
+  "unsubscribeListConfirm": "'{{name}}' von diesem Handy entfernen? Mit dem Freigabecode kannst du sie wieder abonnieren.",
+  "subscribedListHint": "Du folgst dieser Liste. Nur wer sie veröffentlicht, kann sie ändern."
 }

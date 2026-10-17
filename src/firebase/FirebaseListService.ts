@@ -15,6 +15,7 @@ import {
   firebaseAvailable,
   HANDOVERS,
   SUBSCRIBERS,
+  SUBSCRIPTIONS,
   SHARED_LIST_OWNERS_COLLECTION,
   SHARED_LISTS_COLLECTION,
   SUGGESTION_COUNTERS,
@@ -195,8 +196,8 @@ export async function confirmOwnership(list: IPatternList): Promise<void> {
 const BATCH_LIMIT = 500;
 
 /**
- * Delete every suggestion, counter, subscriber record and handover offer of a
- * list, as its confirmed owner.
+ * Delete every suggestion, counter, subscriber record, subscription and handover
+ * offer of a list, as its confirmed owner.
  * Done before the list goes: nobody could read or delete them afterwards.
  */
 async function deleteSuggestionData(
@@ -205,9 +206,13 @@ async function deleteSuggestionData(
 ): Promise<void> {
   const listRef = doc(firestore, SHARED_LISTS_COLLECTION, shareCode);
   const snaps = await Promise.all(
-    [SUGGESTIONS, SUGGESTION_COUNTERS, SUBSCRIBERS, HANDOVERS].map((name) =>
-      getDocs(collection(listRef, name)),
-    ),
+    [
+      SUGGESTIONS,
+      SUGGESTION_COUNTERS,
+      SUBSCRIBERS,
+      SUBSCRIPTIONS,
+      HANDOVERS,
+    ].map((name) => getDocs(collection(listRef, name))),
   );
   const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
   for (let i = 0; i < refs.length; i += BATCH_LIMIT) {

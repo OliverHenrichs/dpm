@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
   Firestore,
+  getCountFromServer,
   getDoc,
   getDocs,
   query,
@@ -1272,5 +1273,81 @@ describe("blocked installations (tools/data-removal block-user)", () => {
   it("hides the block list from everyone", async () => {
     await block(SUBSCRIBER);
     await assertFails(getDoc(doc(as(SUBSCRIBER), "blockedUsers", SUBSCRIBER)));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Subscriber count
+// ---------------------------------------------------------------------------
+
+describe("subscriber count", () => {
+  const SUB_ID = "s".repeat(32);
+  const OTHER_ID = "o".repeat(32);
+  const subscriptionsOf = (db: Firestore) =>
+    collection(db, "sharedLists", CODE, "subscriptions");
+  const record = (db: Firestore, id = SUB_ID) =>
+    doc(db, "sharedLists", CODE, "subscriptions", id);
+
+  /** What refreshSubscription() writes. */
+  const register = (db: Firestore, id = SUB_ID, data: object = {}) =>
+    setDoc(record(db, id), {
+      seenAt: serverTimestamp(),
+      appToken: TEST_TOKEN,
+      ...data,
+    });
+
+  it("counts a subscriber that never signed in, and refreshes it", async () => {
+    await seed(sharedListDoc());
+    await assertSucceeds(register(anonymous()));
+    await assertSucceeds(register(anonymous()));
+  });
+
+  it("refuses a record for a list that does not exist", async () => {
+    await assertFails(register(anonymous()));
+  });
+
+  it.each<[string, string, object]>([
+    ["a malformed id", "short", {}],
+    ["no app token", SUB_ID, { appToken: "wrong" }],
+    ["a client time", SUB_ID, { seenAt: Timestamp.now() }],
+    ["extra fields", SUB_ID, { name: "Alex" }],
+  ])("refuses a record with %s", async (_label, id, data) => {
+    await seed(sharedListDoc());
+    await assertFails(register(anonymous(), id, data));
+  });
+
+  it("counts on a members-only list only its members", async () => {
+    const data = sharedListDoc();
+    data.list.membersOnly = true;
+    await seed(data);
+    await assertFails(register(anonymous()));
+    await assertFails(register(as(SUBSCRIBER)));
+    await seedDoc(["sharedLists", CODE, "subscribers", SUBSCRIBER], {
+      membership: "member",
+      updatedAt: Timestamp.now(),
+    });
+    await assertSucceeds(register(as(SUBSCRIBER)));
+  });
+
+  it("lets only the owner count, and nobody read a single record", async () => {
+    await seed(sharedListDoc());
+    await register(anonymous());
+    await register(anonymous(), OTHER_ID);
+    const snap = await assertSucceeds(
+      getCountFromServer(subscriptionsOf(as(PUBLISHER))),
+    );
+    expect(snap.data().count).toBe(2);
+    await assertFails(getCountFromServer(subscriptionsOf(as(SUBSCRIBER))));
+    await assertFails(getDocs(subscriptionsOf(anonymous())));
+    await assertFails(getDoc(record(anonymous())));
+    await assertFails(getDoc(record(as(PUBLISHER))));
+  });
+
+  it("lets the holder of the id, or the owner, remove a record", async () => {
+    await seed(sharedListDoc());
+    await register(anonymous());
+    await register(anonymous(), OTHER_ID);
+    await assertSucceeds(deleteDoc(record(anonymous())));
+    await assertSucceeds(deleteDoc(record(as(PUBLISHER), OTHER_ID)));
   });
 });

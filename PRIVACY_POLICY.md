@@ -79,7 +79,9 @@ Only the publisher of the list can read suggestions. If the publisher **mutes** 
 
 **Handing a list over.** A publisher can hand a list over to someone who follows it. The app then stores, under the list, a one-time offer named by a random handover code, with the publisher's anonymous user ID and when it was made. When the new owner enters the code, their anonymous user ID and the time are added to the offer, and the owner record names them with a new share key. The offer is readable only by the list's owner and by the publisher who made it, and the previous publisher's app deletes it once it has followed the handover.
 
-**We do not collect:** your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID above is the only identifier, and it is not linked to you as a person.
+**Subscriber count.** When you subscribe to a list, your app stores a **subscription record** in Firestore under that list: a random ID your app creates for that one list, and when your app last synced the list (at most once each time you start the app). The ID is different for every list you subscribe to, it is not your anonymous user ID, and subscribing to an open list still does not sign in. The publisher sees only how many records were synced in the last 90 days, never the records themselves; nobody else can read them. Your record is deleted when you unsubscribe in the app (Lists → the list's "more" button → Unsubscribe from List) or when the publisher stops sharing the list. If you uninstall the app without unsubscribing, the record stops counting after 90 days and is deleted when the publisher stops sharing the list.
+
+**We do not collect:** your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID and the per-list subscription IDs above are the only identifiers, and none of them is linked to you as a person.
 
 **Local video files and transcripts are never uploaded.** Only URL-based video references are included in the cloud document.
 
@@ -126,6 +128,7 @@ You can refuse or withdraw any of these permissions in your device settings; onl
 | Asking to join a members-only list, with your anonymous ID and the name you choose | Your explicit action (consent — Art. 6(1)(a))                                                                                              |
 | A publisher's daily limit and mute records                                         | Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f))                      |
 | Blocking an anonymous ID from publishing, suggesting and asking to join            | Legitimate interest in keeping removed or unlawful content (for example a child's personal data) from being published again (Art. 6(1)(f)) |
+| Subscription records counted for a list's publisher                                | Legitimate interest of the publisher in knowing how many people follow their list (Art. 6(1)(f))                                           |
 | IP address collection by Firebase                                                  | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                           |
 | Connecting to a video host or to Hugging Face at your request                      | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                                  |
 
@@ -137,10 +140,10 @@ We use the following third-party data processor:
 
 **Google LLC** (Firebase / Firestore, Firebase Authentication)  
 Role: Data Processor  
-Purpose: Cloud storage of published pattern lists and their suggestions, and the anonymous sign-in of publishers and of subscribers who suggest patterns  
+Purpose: Cloud storage of published pattern lists, their suggestions and subscription records, and the anonymous sign-in of publishers and of subscribers who suggest patterns  
 Privacy policy: https://policies.google.com/privacy  
 Data Processing Terms: https://firebase.google.com/terms/data-processing-terms  
-Data location: **Europe (europe-west, Belgium)** for Firestore. Published lists, owner records and suggestions are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers and of subscribers who suggest patterns, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.
+Data location: **Europe (europe-west, Belgium)** for Firestore. Published lists, owner records, suggestions and subscription records are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers and of subscribers who suggest patterns, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.
 
 When you use the features in sections 3.4 and 3.5, your device connects directly to these services. They process your IP address as **independent controllers** under their own policies, and may do so outside the EU/EEA, including in the United States:
 
@@ -164,6 +167,7 @@ We do **not** sell your data to third parties and do not use your data for adver
 | A handover offer                                  | Until the previous publisher's app has followed the handover, the publisher withdraws it, or the list stops being shared. An offer nobody accepts stops working after 7 days.             |
 | A pattern suggestion                              | Until the publisher adds or dismisses it, or stops sharing the list                                                                                                                       |
 | Daily suggestion counts and mute records          | Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time)                                                                                         |
+| Subscription record of a list you subscribe to    | Until you unsubscribe or the publisher stops sharing the list; it stops counting 90 days after your app last synced the list                                                              |
 | Anonymous user ID (Firebase Authentication)       | Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
 | Block record (anonymous user ID, date)            | Kept only if we block an installation from publishing, for example after removing content that must not be published; deleted when we lift the block or delete that anonymous ID          |
 | Firebase infrastructure logs (IP, timestamps)     | Governed by Google's own retention policy (typically 30–180 days)                                                                                                                         |

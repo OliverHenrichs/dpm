@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "You now own \"{{name}}\". Your edits reach everyone subscribed to it.",
   "listHandedOverTitle": "List handed over",
   "listHandedOverMessage": "\"{{name}}\" now belongs to the person you handed it to. Your copy follows theirs and is read-only here.",
-  "scanHandoverCodeHint": "Point the camera at the handover QR code"
+  "scanHandoverCodeHint": "Point the camera at the handover QR code",
+  "subscriberCount": "Subscribers",
+  "subscriberCountLoading": "Counting subscribers",
+  "subscriberCountUnavailable": "Not available right now",
+  "subscriberCountHint": "Phones that have this list and opened it in the last {{days}} days.",
+  "unsubscribeList": "Unsubscribe from List",
+  "unsubscribe": "Unsubscribe",
+  "unsubscribeListConfirm": "Remove '{{name}}' from this phone? You can subscribe again with its share code.",
+  "subscribedListHint": "You follow this list. Only its publisher can change it."
 }

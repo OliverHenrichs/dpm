@@ -61,3 +61,10 @@ export const SUBSCRIBERS = "subscribers";
  * `{ fromUid, offeredAt, acceptedBy?, acceptedAt? }`.
  */
 export const HANDOVERS = "handovers";
+
+/**
+ * Subcollection of a shared list counting its subscribers (`SubscriptionService.ts`): one record
+ * per subscribing phone, `{ seenAt, appToken }`, named by a random id per list. Only the owner
+ * may list it.
+ */
+export const SUBSCRIPTIONS = "subscriptions";

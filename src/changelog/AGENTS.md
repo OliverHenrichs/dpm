@@ -1,7 +1,7 @@
 # Changelog and the what's-new hint — `src/changelog/`
 
 `changelog.ts` holds `CHANGELOG`, every released version's notes, newest first, bundled with the
-app (no network). Settings → *What's new* lists all of it (`components/ChangelogSheet.tsx`) and
+app (no network). Settings → _What's new_ lists all of it (`components/ChangelogSheet.tsx`) and
 holds the switch for the hint. `components/WhatsNewHint.tsx`, mounted once in `app/_layout.tsx`,
 shows the entries a user has not seen yet the first time they open a new version.
 

@@ -632,5 +632,13 @@
   "takeOverSuccessMessage": "“{{name}}”现在归你所有。你的修改会同步给所有订阅者。",
   "listHandedOverTitle": "列表已移交",
   "listHandedOverMessage": "“{{name}}”现在属于你移交的那个人。你的副本跟随对方的版本，在这里为只读。",
-  "scanHandoverCodeHint": "将摄像头对准移交二维码"
+  "scanHandoverCodeHint": "将摄像头对准移交二维码",
+  "subscriberCount": "订阅者",
+  "subscriberCountLoading": "正在统计订阅者",
+  "subscriberCountUnavailable": "暂时无法获取",
+  "subscriberCountHint": "拥有此列表并在过去 {{days}} 天内打开过它的手机。",
+  "unsubscribeList": "取消订阅列表",
+  "unsubscribe": "取消订阅",
+  "unsubscribeListConfirm": "从这部手机上移除“{{name}}”？之后可以用分享码重新订阅。",
+  "subscribedListHint": "你订阅了此列表，只有发布者可以修改它。"
 }
