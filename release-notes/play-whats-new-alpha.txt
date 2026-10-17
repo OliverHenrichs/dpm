@@ -1,20 +1,18 @@
 <en-US>
-1.1.0
-• Anonymize can cover only the faces, as an alternative to silhouettes.
-• The dancers you tap to anonymize are outlined in their colour.
-• Brazilian Zouk, with a template of basic patterns.
-• The West Coast Swing template shows what builds on what; try the example list.
-• Tags are picked like prerequisites, with short searches like "sgpsh".
-• Text fields stay above the keyboard.
-• Save waits until the pattern has a name.
+1.2.0
+• Members-only lists: only the people you let in can open them.
+• Subscribers can suggest patterns to a shared list, with a daily limit.
+• Put a phone video online and bring its link back; share links and videos to DPM.
+• Paste a copied link; DPM asks before adding a link it can't play.
+• Vimeo, Dropbox and stream links play inside DPM.
+• Steadier skeletons in anonymized videos.
 </en-US>
 <de-DE>
-1.1.0
-• Anonymisieren kann statt Silhouetten nur die Gesichter verdecken.
-• Die zum Anonymisieren angetippten Tanzenden sind in ihrer Farbe umrandet.
-• Brazilian Zouk, mit einer Vorlage der Grundfiguren.
-• Die West-Coast-Swing-Vorlage zeigt, was worauf aufbaut; probier die Beispielliste.
-• Tags werden wie Voraussetzungen gewählt, mit kurzen Suchen wie „sgpsh“.
-• Textfelder bleiben über der Tastatur.
-• Speichern geht erst, wenn die Figur einen Namen hat.
+1.2.0
+• Listen nur für Mitglieder: Öffnen kann sie nur, wen du hereinlässt.
+• Abonnierende können einer geteilten Liste Figuren vorschlagen, mit Tageslimit.
+• Handyvideos online stellen und den Link zurückholen; Links und Videos an DPM teilen.
+• Kopierten Link einfügen; DPM fragt vor Links nach, die es nicht abspielen kann.
+• Vimeo-, Dropbox- und Stream-Links spielen direkt in DPM.
+• Ruhigere Skelette in anonymisierten Videos.
 </de-DE>
