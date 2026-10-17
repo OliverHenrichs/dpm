@@ -41,9 +41,8 @@ Settings live under their own keys, outside any list, so they survive deleting e
   `@transcriptCorrections_*` key; `deletePatternList` removes the list's three.
   `collectOrphanedPatternKeys` reclaims `@patterns_*` entries whose list is gone; it runs once,
   unawaited, after the provider's first load and must never delay or fail first paint.
-- **Read-time repair stays even with migrations**: `loadPatterns` normalises shape and scrubs
-  dangling prerequisites (`src/pattern/graph/AGENTS.md`, "Prerequisite integrity"), because imports
-  and cloud syncs arrive after migrations have run.
+- `loadPatterns` also repairs on read (shape, dangling prerequisites), and keeps doing so beside
+  the migrations: `src/pattern/graph/AGENTS.md`, "Prerequisite integrity".
 
 ## Pattern ids
 

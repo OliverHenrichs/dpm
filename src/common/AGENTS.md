@@ -87,11 +87,19 @@ close and back buttons are their way out.
 
 ## Video players
 
-- `components/VideoItem.tsx` plays any video reference: YouTube links through
-  `YouTubeVideoItem`, everything else with expo-video and the platform's own controls.
+- `components/VideoItem.tsx` plays any video reference: a link whose host has its own player
+  (`embeddedHost`, `utils/videoHosts.ts`: YouTube, Vimeo) through `EmbeddedVideoItem`,
+  everything else with expo-video and the platform's own controls.
   `VideoCarousel` pages through a pattern's videos and renders nothing until measured
   (`__tests__/AGENTS.md`).
-- **YouTube stays behind `components/YouTubeVideoItem.tsx`.** It uses `react-native-youtube-iframe`,
+- **YouTube stays behind `components/YouTubeVideoItem.tsx`** (and Vimeo behind `VimeoVideoItem`). It uses `react-native-youtube-iframe`,
   which renders through `react-native-webview`, which has no web build; `YouTubeVideoItem.web.tsx`
   embeds the iframe directly. Importing `react-native-youtube-iframe` anywhere reachable from web
   breaks the web bundle.
+
+## Codes passed between phones
+
+A share code and a handover code are shown with `components/ShareableCode.tsx` (copy, QR on
+request) and scanned with `QrCodeScanner` through `components/useQrScanner.ts`, which asks for
+the camera and hands the code on trimmed and upper-cased. Render the scanner beside the modal that
+opens it, not inside.

@@ -16,8 +16,8 @@ straight on the context. The hook owns, in one place:
   (`repairDanglingPrerequisites`), deleting a modifier scrubs it from every `modifierRefs`;
 - `applyReplacements`, which swaps in a video a finished job replaced while the form was open
   (`src/anonymize/AGENTS.md`);
-- the opportunistic Firestore push: when the list has a `shareCode`, `syncPublishedList` fires
-  unawaited after the local write and its failure never fails the edit.
+- the opportunistic Firestore push (`syncPublishedList`, unawaited, after the local write;
+  `src/firebase/AGENTS.md`).
 
 Every mutation returns whether it was applied, so a caller can keep a form open on rejection.
 `PatternListManager` holds only which tab and modal is open. Add a mutation to the hook.
@@ -44,8 +44,8 @@ painted blank headers when a flat list gained them.
 
 A row shows type, level (when set) and video count; the rest waits in the expanded details
 (`PatternDetails`, shared with the graph's modal; see `src/pattern/graph/AGENTS.md`). Level is
-optional throughout: tapping the chosen level clears it by **removing the key**, since Firestore
-rejects `undefined`. The same goes for any optional field that reaches a published list.
+optional throughout: tapping the chosen level clears it by **removing the key**, as for every
+optional field that reaches a published list (`src/firebase/AGENTS.md`).
 
 ## Always-mounted modals must not snapshot props
 

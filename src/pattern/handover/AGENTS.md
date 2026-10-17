@@ -36,8 +36,7 @@ the new owner sees them. The confirmation dialog says so.
   to pick from. Whoever enters it first, within 7 days (`HANDOVER_DAYS`, also in the rules), wins.
 - The old owner learns of the handover only while that list is active on their phone. Until then
   their edits stay local (pushes are refused, and a failed push never fails a local edit).
-- `unpublishList` deletes the `handovers` subcollection with the suggestion data. The operator's
-  data tool (`tools/data-removal`) finds offers too, and `remove-user` deletes the ones a user
+- The operator's data tool (`tools/data-removal`) finds offers too, and `remove-user` deletes the ones a user
   made or accepted.
 - Tests: rules in `__tests__/rules/firestore.rules.test.ts` ("handing over"), components in
   `__tests__/components/Handover.test.tsx`.

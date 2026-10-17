@@ -7,7 +7,7 @@ counted for the whole list or per subscriber, and can mute a subscriber. Not to 
 ## The setting
 
 `IPatternList.suggestions?: { dailyLimit, per: "list" | "subscriber" }`. Absent means suggestions
-are off; switching off **removes the key** (Firestore rejects `undefined`). It lives on the list,
+are off; switching off **removes the key** (`src/firebase/AGENTS.md`). It lives on the list,
 so `publishList` publishes it and every subscriber's copy carries it through `useSharedList`: that
 is how a subscriber's app knows whether to offer _Suggest a pattern_. It is set in
 `ShareListModal` (a published list publishes the change at once; an unpublished one waits for
@@ -44,7 +44,6 @@ Under `sharedLists/{code}`:
   `confirmOwnership` (the owner record re-written with the share key).
 - **Refusals say no, not why.** `submitSuggestion` asks again (`getSuggestionStanding`, and the
   list's current setting) to tell `muted`, `limit` and `closed` apart.
-- `unpublishList` deletes all three subcollections first.
 
 ## The app
 

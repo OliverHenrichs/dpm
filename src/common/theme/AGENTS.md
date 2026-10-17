@@ -31,8 +31,10 @@ const styles = StyleSheet.create((theme) => ({
   and open the drawer to check.
 - **Spread shared fragments inside a `StyleSheet.create`**, never at a `style=` prop
   (`{...styles.card}` cuts it off from theme updates). Fragments: `src/common/utils/CommonStyles.ts`
-  (`getCommonButton(theme)`, `getCommonInput(theme)`, `commonStyles`) and
-  `src/pattern/filter/FilterCommonStyles.ts` (`filterStyles`).
+  (`getCommonInput(theme)`, `getCommonDialogCard(theme)` for every dialog's card,
+  `getCommonFormSheet(theme)` for a pattern form in a modal, `commonStyles`, …) and
+  `src/pattern/filter/FilterCommonStyles.ts` (`filterStyles`). Reach for one before writing a
+  dialog's card again.
 - The two Reanimated-driven graph views (`DragOverlay`, `ZoomableCanvas`) keep React Native's
   `StyleSheet` for their theme-free layout.
 
@@ -116,6 +118,5 @@ From `@/src/common/ui` (`Icon`, `IconName`): one set, MaterialCommunityIcons via
   react-native-web view cannot read the style and drops it, silently (a lost `flex: 1` there
   collapsed the whole web app to zero height).
 - **Insets** come from Unistyles' runtime (`StyleSheet.create((theme, rt) => …)`, `rt.insets`), so
-  they follow rotation. The Jest mock reports them as zero and resolves every sheet against the
-  light theme at import, so a component test cannot observe a theme switch.
+  they follow rotation. What the Jest mock cannot show is in `__tests__/AGENTS.md`.
 - Unistyles is a native module: adding or upgrading it means rebuilding the dev client.

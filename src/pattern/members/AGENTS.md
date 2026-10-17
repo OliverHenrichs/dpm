@@ -9,18 +9,17 @@ app: this stops strangers with the code, not a member who forwards a video.
 ## The setting
 
 `IPatternList.membersOnly?: true`. Absent means open; switching off **removes the key**
-(`withMembersOnly`, Firestore rejects `undefined`). It is published with the list, so a member's
+(`withMembersOnly`; `src/firebase/AGENTS.md`). It is published with the list, so a member's
 copy carries it, set in `ShareListModal` next to the suggestions switch (a published list
 publishes the change at once, after a confirmation, since closing a list shuts out everyone
 subscribed so far), and exported since format 3.7.
 
 ## Firestore (`src/firebase/MembershipService.ts`, `firestore.rules`)
 
-A membership is a field of the publisher's record of a subscriber,
-`sharedLists/{code}/subscribers/{uid}`, the record pattern suggestions keep mutes in
-(`src/pattern/suggestions/AGENTS.md`): `{ status?: "muted", membership?: "requested" | "member" |
-"declined", name?, updatedAt }`, one of the two always present. Writes **merge**, so a mute and a
-membership never erase each other; unmuting a member removes only `status`.
+A membership is the `membership` field (`"requested" | "member" | "declined"`) of the
+publisher's record of a subscriber, `sharedLists/{code}/subscribers/{uid}`, the record pattern
+suggestions keep mutes in. Its shape and why writes merge are in
+`src/pattern/suggestions/AGENTS.md`.
 
 - **Reading the list.** `sharedLists/{code}` is readable by anyone while the list is open; once
   `list.membersOnly` is set, only by a `member` and the owner. A code that does not exist still
@@ -32,7 +31,6 @@ membership never erase each other; unmuting a member removes only `status`.
 - **Answering.** The owner sets `member` or `declined` (`setMembership`). _Remove_ is `declined`
   too, so a removed member cannot simply ask again; _Let in_ undoes it.
 - **Suggestions** to a members-only list come from members only.
-- `unpublishList` deletes the subscriber records with the rest of the suggestion data.
 
 ## Signing in, and when not to
 
