@@ -989,3 +989,65 @@ describe("members-only lists", () => {
     await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
   });
 });
+
+describe("blocked installations (tools/data-removal block-user)", () => {
+  const block = (uid: string) =>
+    seedDoc(["blockedUsers", uid], { blockedAt: Timestamp.now() });
+
+  it("refuses a blocked id's new list, and its sync of an existing one", async () => {
+    await block(PUBLISHER);
+    await assertFails(publish(as(PUBLISHER), sharedListDoc()));
+    await env.clearFirestore();
+    await seed(sharedListDoc());
+    await block(PUBLISHER);
+    await assertFails(publish(as(PUBLISHER)));
+  });
+
+  it("still lets a blocked owner unpublish", async () => {
+    await seed(sharedListDoc());
+    await block(PUBLISHER);
+    await assertSucceeds(
+      setDoc(doc(as(PUBLISHER), "sharedListOwners", CODE), owner(PUBLISHER)),
+    );
+    await assertSucceeds(unpublish(as(PUBLISHER)));
+  });
+
+  it("does not let a blocked id take over a list with its key", async () => {
+    await seed(sharedListDoc());
+    await block("new-phone-uid");
+    await assertFails(
+      setDoc(
+        doc(as("new-phone-uid"), "sharedListOwners", CODE),
+        owner("new-phone-uid"),
+      ),
+    );
+  });
+
+  it("refuses a blocked id's suggestions, and no one else's", async () => {
+    await seed(listTakingSuggestions());
+    await block(SUBSCRIBER);
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+    await assertSucceeds(suggest(as(OTHER), OTHER, 1));
+  });
+
+  it("refuses a blocked id's request to join", async () => {
+    const data = sharedListDoc();
+    data.list.membersOnly = true;
+    await seed(data);
+    await block(SUBSCRIBER);
+    await assertFails(
+      setDoc(
+        doc(as(SUBSCRIBER), "sharedLists", CODE, "subscribers", SUBSCRIBER),
+        {
+          membership: "requested",
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    );
+  });
+
+  it("hides the block list from everyone", async () => {
+    await block(SUBSCRIBER);
+    await assertFails(getDoc(doc(as(SUBSCRIBER), "blockedUsers", SUBSCRIBER)));
+  });
+});

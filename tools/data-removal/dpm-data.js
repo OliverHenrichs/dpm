@@ -39,6 +39,10 @@ const USAGE = `Usage: npm run data -- <command> [options]
   remove-suggestion <shareCode> <suggestionId>
                                 Delete one suggestion.
   release <shareCode>           Undo a takedown, so the publisher can publish again.
+  block-user <uid>              Stop that installation publishing, suggesting or asking
+                                to join, until the app is reinstalled. Its lists stay;
+                                remove them with remove-list.
+  unblock-user <uid>            Lift a block.
 
   --yes                         Do not ask before deleting.
   --dry-run                     Show what would be deleted, delete nothing.`;
@@ -113,6 +117,8 @@ async function find(conn, docs, query) {
     if (hits.length > 20) console.log(`  … and ${hits.length - 20} more`);
   }
   if (looksLikeUid(query)) {
+    const blocked = await store.blockedSince(conn.db, query);
+    if (blocked) console.log(`\n${query} is blocked since ${blocked}.`);
     const user = await store.findUser(conn.auth, query);
     if (user) {
       console.log(
@@ -186,7 +192,7 @@ async function removeList(conn, docs, code, flags) {
   );
   if (plan.ownerUid) {
     console.log(
-      `Publisher: ${plan.ownerUid} (\`remove-user ${plan.ownerUid}\` for their sign-in account)`,
+      `Publisher: ${plan.ownerUid} (\`block-user ${plan.ownerUid}\` keeps that phone from publishing again)`,
     );
   }
   if (flags.has("--dry-run")) return;
@@ -225,6 +231,11 @@ async function removeUser(conn, docs, uid, flags) {
       ? `  delete the sign-in account (created ${user.created})`
       : "  (no sign-in account)",
   );
+  if (await store.blockedSince(conn.db, uid)) {
+    console.log(
+      "  delete its block: with the account gone, the phone signs in with a new id anyway",
+    );
+  }
   if (flags.has("--dry-run")) return;
   if (!(await confirm(flags, `everything of ${uid}`, uid))) {
     console.log("Nothing deleted.");
@@ -270,6 +281,40 @@ async function release(conn, docs, code, flags) {
   console.log("Released.");
 }
 
+async function block(conn, uid, flags, unblock) {
+  const since = await store.blockedSince(conn.db, uid);
+  if (unblock) {
+    if (!since) {
+      console.log(`${uid} is not blocked.`);
+      return;
+    }
+    if (flags.has("--dry-run")) return;
+    await store.unblockUser(conn, uid);
+    console.log(`Unblocked ${uid}.`);
+    return;
+  }
+  if (since) {
+    console.log(`${uid} is already blocked (since ${since}).`);
+    return;
+  }
+  if (!(await store.findUser(conn.auth, uid))) {
+    console.log(`Note: ${uid} has no sign-in account; blocking it anyway.`);
+  }
+  console.log(
+    `Blocking ${uid}: the rules will refuse its publishing, suggesting and asking to join. Reinstalling the app gets a new id, which this does not cover.`,
+  );
+  if (flags.has("--dry-run")) return;
+  await store.blockUser(conn, uid);
+  console.log(`Blocked ${uid}.`);
+}
+
+function requireUid(uid) {
+  if (!uid || !looksLikeUid(uid)) {
+    throw new Error(`"${uid ?? ""}" is not a user id.`);
+  }
+  return uid;
+}
+
 function requireShareCode(code) {
   if (!code || !looksLikeShareCode(code)) {
     throw new Error(
@@ -288,6 +333,8 @@ async function main() {
     "remove-user",
     "remove-suggestion",
     "release",
+    "block-user",
+    "unblock-user",
   ];
   if (!commands.includes(command) || (command === "find" && !args[0])) {
     console.log(USAGE);
@@ -307,10 +354,7 @@ async function main() {
     case "remove-list":
       return removeList(conn, docs, requireShareCode(args[0]), flags);
     case "remove-user":
-      if (!args[0] || !looksLikeUid(args[0])) {
-        throw new Error(`"${args[0] ?? ""}" is not a user id.`);
-      }
-      return removeUser(conn, docs, args[0], flags);
+      return removeUser(conn, docs, requireUid(args[0]), flags);
     case "remove-suggestion":
       return removeSuggestion(
         conn,
@@ -321,6 +365,10 @@ async function main() {
       );
     case "release":
       return release(conn, docs, requireShareCode(args[0]), flags);
+    case "block-user":
+      return block(conn, requireUid(args[0]), flags, false);
+    case "unblock-user":
+      return block(conn, requireUid(args[0]), flags, true);
   }
 }
 

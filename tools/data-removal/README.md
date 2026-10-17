@@ -33,6 +33,8 @@ npm run data -- remove-list AB12CD34           # delete the list and everything 
 npm run data -- remove-user <user id>          # delete one person's suggestions, records and account
 npm run data -- remove-suggestion AB12CD34 <suggestion id>
 npm run data -- release AB12CD34               # undo a takedown
+npm run data -- block-user <user id>           # stop that installation publishing again
+npm run data -- unblock-user <user id>
 ```
 
 Every removal shows what it will delete and asks you to type the share code or user id back.
@@ -55,6 +57,13 @@ never searched or printed.
   mutes, the name they gave) and their own daily counters, then their Firebase Authentication
   account. If they publish lists, the owner records hold their id, so it refuses unless you add
   `--with-lists`, which removes and takes down those lists too.
+- **`block-user`** stops one installation: the rules refuse every publish, sync, suggestion
+  and request to join from that anonymous id (`blockedUsers/{uid}`), while it can still stop
+  sharing its own lists. Use it with `remove-list` when a publisher should not just publish the
+  same content under a new code. It keeps the account on purpose: **`remove-user` does not
+  stop anyone**, because the app signs in again with a fresh id, so `remove-user` also lifts any
+  block. Nothing stops a reinstall (or cleared app data), which gets a new id; with anonymous
+  sign-in there is no identity to ban.
 - **`remove-suggestion`** deletes one suggestion, for when the rest of that person's records
   should stay.
 

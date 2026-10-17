@@ -14,6 +14,8 @@ const OWNERS = "sharedListOwners";
 const SUGGESTIONS = "suggestions";
 const COUNTERS = "suggestionCounters";
 const SUBSCRIBERS = "subscribers";
+/** Ids the operator has blocked: the rules refuse their writes (`notBlocked`). */
+const BLOCKED = "blockedUsers";
 
 /**
  * What an owner record names as owner after a takedown. Firebase user ids are
@@ -204,6 +206,7 @@ module.exports = {
   SUGGESTIONS,
   COUNTERS,
   SUBSCRIBERS,
+  BLOCKED,
   TAKEDOWN_OWNER,
   describePath,
   makeDoc,

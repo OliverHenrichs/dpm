@@ -71,7 +71,9 @@ data): it searches every shared document with the Admin SDK and deletes a list, 
 or a suggestion. A removed list keeps a **takedown record** in `sharedListOwners/{code}` (owner
 `removed-by-operator`, a key nobody holds), so the publisher's next edit cannot re-publish it; the
 rules test "keeps a list taken down by the operator from coming back" holds that in place. A rules
-change must keep it refused. A new collection or field the app writes is something `find` should
+change must keep it refused. `block-user` writes `blockedUsers/{uid}`, which the rules check
+(`notBlocked()`) on every publish, owner-record write, suggestion and join request; a blocked
+owner may still re-confirm itself to unpublish. A new write path must check it too. A new collection or field the app writes is something `find` should
 see: add it to `lib/model.js` / `lib/firestore.js` (`loadSnapshot`).
 
 ## Configuration

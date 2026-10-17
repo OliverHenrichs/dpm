@@ -13,6 +13,7 @@ const {
   SUGGESTIONS,
   COUNTERS,
   SUBSCRIBERS,
+  BLOCKED,
   TAKEDOWN_OWNER,
   makeDoc,
 } = require("./model");
@@ -134,6 +135,28 @@ async function releaseTakedown(conn, code) {
   await conn.db.collection(OWNERS).doc(code).delete();
 }
 
+/** When an id was blocked, or null. */
+async function blockedSince(db, uid) {
+  const snap = await db.collection(BLOCKED).doc(uid).get();
+  return snap.exists ? plain(snap.get("blockedAt")) : null;
+}
+
+/**
+ * Blocks an id: the rules then refuse its publishing, suggesting and asking
+ * to join. Its account stays, so the phone keeps the blocked id; a deleted
+ * account would let it sign in afresh.
+ */
+async function blockUser(conn, uid) {
+  await conn.db
+    .collection(BLOCKED)
+    .doc(uid)
+    .set({ blockedAt: conn.Timestamp.now() });
+}
+
+async function unblockUser(conn, uid) {
+  await conn.db.collection(BLOCKED).doc(uid).delete();
+}
+
 /** Deletes single documents by path, in batches of at most 500. */
 async function deleteDocs(db, docs) {
   for (let i = 0; i < docs.length; i += 500) {
@@ -146,6 +169,8 @@ async function deleteDocs(db, docs) {
 /** Carries out `planUserRemoval` (the lists they own are removed separately). */
 async function removeUser(conn, plan) {
   await deleteDocs(conn.db, plan.deletes);
+  // The block holds the id too, and protects nothing once the account goes.
+  await unblockUser(conn, plan.uid);
   if (await findUser(conn.auth, plan.uid)) {
     await conn.auth.deleteUser(plan.uid);
   }
@@ -157,6 +182,9 @@ module.exports = {
   findUser,
   removeList,
   releaseTakedown,
+  blockedSince,
+  blockUser,
+  unblockUser,
   deleteDocs,
   removeUser,
 };
