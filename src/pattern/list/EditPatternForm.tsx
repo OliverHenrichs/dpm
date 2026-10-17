@@ -88,6 +88,14 @@ type EditPatternFormProps = {
   existing?: IPattern | null;
   /** Videos a new pattern starts with — "create a pattern from a video". */
   initialVideos?: IVideoReference[];
+  /** What a new pattern starts as: a subscriber's suggestion under review. */
+  initialPattern?: NewPattern;
+  /** Replaces "Add pattern" / "Edit pattern" above the form. */
+  title?: string;
+  /** Replaces "Save" on the form's main button. */
+  saveLabel?: string;
+  /** Shown between the title and the fields: who suggested it, a name to sign with. */
+  header?: React.ReactNode;
 };
 
 const levels = Object.values(PatternLevel);
@@ -100,6 +108,10 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   onCancel,
   existing,
   initialVideos,
+  initialPattern,
+  title,
+  saveLabel,
+  header,
 }) => {
   const { t } = useTranslation();
 
@@ -115,12 +127,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     modifierRefs: [],
   });
 
+  // What the form opens on: the pattern being edited, or a suggested one being added.
+  const seed: NewPattern | undefined = existing ?? initialPattern;
   const [newPattern, setNewPattern] = useState<NewPattern>(
-    existing ?? createDefaultPattern(),
+    seed ?? createDefaultPattern(),
   );
   // What is typed in the rhythm field. The pattern carries it only once it is a rhythm, and
   // then its counts follow it; until then the field says what is wrong.
-  const [rhythmDraft, setRhythmDraft] = useState(existing?.rhythm ?? "");
+  const [rhythmDraft, setRhythmDraft] = useState(seed?.rhythm ?? "");
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
@@ -514,8 +528,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   return (
     <View style={styles.addPatternContainer}>
       <Text style={styles.sectionTitle}>
-        {existing ? t("editPattern") : t("addPattern")}
+        {title ?? (existing ? t("editPattern") : t("addPattern"))}
       </Text>
+      {header}
       <View style={styles.inputRow}>
         <View style={styles.input}>
           <Text style={styles.label}>{t("patternName")}</Text>
@@ -666,7 +681,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <FormSection
         title={t("rhythm")}
         summary={rhythmDraft.trim() || t("formSectionEmpty")}
-        initiallyOpen={!!existing?.rhythm}
+        initiallyOpen={!!seed?.rhythm}
       >
         <View style={styles.rhythmBlock}>
           <RevealTextInput
@@ -712,7 +727,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <FormSection
         title={t("description")}
         summary={newPattern.description.trim() || t("formSectionEmpty")}
-        initiallyOpen={!!existing?.description.trim()}
+        initiallyOpen={!!seed?.description.trim()}
       >
         <RevealTextInput
           placeholder={t("description")}
@@ -728,7 +743,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <FormSection
         title={t("prerequisites")}
         summary={prerequisiteSummary || t("formSectionEmpty")}
-        initiallyOpen={!!existing?.prerequisites.length}
+        initiallyOpen={!!seed?.prerequisites.length}
       >
         <PatternPrerequisites
           patterns={patterns}
@@ -743,7 +758,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       <FormSection
         title={t("tags")}
         summary={newPattern.tags.join(", ") || t("formSectionEmpty")}
-        initiallyOpen={!!existing?.tags.length}
+        initiallyOpen={!!seed?.tags.length}
       >
         <PatternTags
           tags={newPattern.tags}
@@ -887,7 +902,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           style={styles.footerButton}
         />
         <Button
-          title={t("savePattern")}
+          title={saveLabel ?? t("savePattern")}
           onPress={handleFinish}
           disabled={!canSave}
           onDisabledPress={explainMissingName}

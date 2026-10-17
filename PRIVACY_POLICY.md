@@ -63,7 +63,17 @@ When you choose to **publish a pattern list**, the following is sent to and stor
 | Timestamps (`publishedAt`, `publisherVersion`)                                                                                                     | Detecting updates on subscriber devices                                                                       |
 | An owner record: your anonymous user ID and the list's share key (a random secret created on your phone)                                           | Making sure only you can update or stop sharing your list. Nobody can read this record, including subscribers |
 
-**Anonymous sign-in.** The first time you publish, the app signs in to **Google Firebase Authentication** anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists. Subscribing to a list never signs in.
+**Anonymous sign-in.** The first time you publish, or suggest a pattern to a list you subscribe to, the app signs in to **Google Firebase Authentication** anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists. Subscribing to a list on its own never signs in.
+
+**Pattern suggestions.** A publisher can let the subscribers of a list suggest new patterns. When you **send a suggestion**, the following is stored in Firestore under the list:
+
+| Data | Purpose |
+|---|---|
+| The suggested pattern (name, type, counts, rhythm, level, description, tags, prerequisites, modifiers, and video URLs; never local video files or transcripts) | Letting the publisher review it and add it to the list |
+| Your anonymous user ID, and the name you sign it with if you enter one | Showing the publisher who sent it, counting the publisher's daily limit, and letting the publisher mute you |
+| When it was sent, and a count of suggestions sent that day | Enforcing the publisher's daily limit |
+
+Only the publisher of the list can read suggestions. If the publisher **mutes** a subscriber, a record of that subscriber's anonymous user ID and the name they signed with is kept under the list, readable by the publisher and by that subscriber's app.
 
 **We do not collect:** your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID above is the only identifier, and it is not linked to you as a person.
 
@@ -103,13 +113,15 @@ You can refuse or withdraw any of these permissions in your device settings; onl
 
 ## 4. Legal basis for processing (GDPR Art. 6)
 
-| Processing activity                                                        | Legal basis                                                                                                                           |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Storing and processing your data on your device, including the video tools | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
-| Publishing your list to Firebase                                           | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time                                          |
-| Anonymous sign-in and the owner record when you publish                    | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b)) |
-| IP address collection by Firebase                                          | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                      |
-| Connecting to a video host or to Hugging Face at your request              | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                             |
+| Processing activity | Legal basis |
+|---|---|
+| Storing and processing your data on your device, including the video tools | Necessary for the performance of the service you requested (Art. 6(1)(b)) |
+| Publishing your list to Firebase | Your explicit action (consent — Art. 6(1)(a)); you can delete the published list at any time |
+| Anonymous sign-in and the owner record when you publish | Necessary for the performance of the publishing feature you requested, so that only you can change or remove your list (Art. 6(1)(b)) |
+| Sending a pattern suggestion, with your anonymous ID and the name you choose | Your explicit action (consent — Art. 6(1)(a)) |
+| A publisher's daily limit and mute records | Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f)) |
+| IP address collection by Firebase | Legitimate interest in operating a secure service (Art. 6(1)(f)) |
+| Connecting to a video host or to Hugging Face at your request | Necessary for the performance of the service you requested (Art. 6(1)(b)) |
 
 ---
 
@@ -119,10 +131,10 @@ We use the following third-party data processor:
 
 **Google LLC** (Firebase / Firestore, Firebase Authentication)  
 Role: Data Processor  
-Purpose: Cloud storage of published pattern lists, and the anonymous sign-in of publishers  
+Purpose: Cloud storage of published pattern lists and their suggestions, and the anonymous sign-in of publishers and of subscribers who suggest patterns  
 Privacy policy: https://policies.google.com/privacy  
 Data Processing Terms: https://firebase.google.com/terms/data-processing-terms  
-Data location: **Europe (europe-west, Belgium)** for Firestore. Published lists and owner records are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.
+Data location: **Europe (europe-west, Belgium)** for Firestore. Published lists, owner records and suggestions are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers and of subscribers who suggest patterns, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.
 
 When you use the features in sections 3.4 and 3.5, your device connects directly to these services. They process your IP address as **independent controllers** under their own policies, and may do so outside the EU/EEA, including in the United States:
 
@@ -137,15 +149,17 @@ We do **not** sell your data to third parties and do not use your data for adver
 
 ## 6. Data retention
 
-| Data                                              | Retention                                                                                                                                                                      |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Local device data                                 | Until you uninstall the app or delete it in the app (a list, a pattern, a video)                                                                                               |
-| Downloaded models                                 | Until you delete them under Settings → On-device models, or uninstall the app                                                                                                  |
-| Published Firestore document                      | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.                            |
-| Owner record of a published list                  | Removed together with the list when you stop sharing it                                                                                                                        |
-| Anonymous user ID (Firebase Authentication)       | Kept while you might still publish from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
-| Firebase infrastructure logs (IP, timestamps)     | Governed by Google's own retention policy (typically 30–180 days)                                                                                                              |
-| Logs kept by video hosts, Hugging Face and GitHub | Governed by each service's own policy                                                                                                                                          |
+| Data | Retention |
+|---|---|
+| Local device data | Until you uninstall the app or delete it in the app (a list, a pattern, a video) |
+| Downloaded models | Until you delete them under Settings → On-device models, or uninstall the app |
+| Published Firestore document | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry. |
+| Owner record of a published list | Removed together with the list when you stop sharing it |
+| A pattern suggestion | Until the publisher adds or dismisses it, or stops sharing the list |
+| Daily suggestion counts and mute records | Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time) |
+| Anonymous user ID (Firebase Authentication) | Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
+| Firebase infrastructure logs (IP, timestamps) | Governed by Google's own retention policy (typically 30–180 days) |
+| Logs kept by video hosts, Hugging Face and GitHub | Governed by each service's own policy |
 
 ---
 
@@ -159,7 +173,7 @@ You have the right to:
 - **Objection** — object to processing based on legitimate interest
 - **Lodge a complaint** — with your national data protection authority (e.g. the [BfDI](https://www.bfdi.bund.de/) in Germany, the [ICO](https://ico.org.uk/) in the UK)
 
-**How to delete your published data:** Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document and its owner record. For anything else, contact us at dance-pattern-mapper@pm.me.
+**How to delete your published data:** Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts and mute records. For anything else, contact us at dance-pattern-mapper@pm.me.
 
 Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.
 

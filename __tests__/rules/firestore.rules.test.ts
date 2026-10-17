@@ -11,7 +11,9 @@ import {
   Firestore,
   getDoc,
   getDocs,
+  serverTimestamp,
   setDoc,
+  Timestamp,
   setLogLevel,
   writeBatch,
 } from "firebase/firestore";
@@ -22,6 +24,11 @@ import type {
   SharedListDocument,
   SharedListOwnerDocument,
 } from "@/src/firebase/FirebaseListService";
+import type { ISuggestionPolicy } from "@/src/pattern/types/IPatternList";
+import {
+  counterIdFor,
+  suggestedPattern,
+} from "@/src/pattern/suggestions/suggestions";
 import {
   createTestPattern,
   createTestPatternList,
@@ -343,5 +350,458 @@ describe("everything else", () => {
         sharedListDoc(),
       ),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suggestions
+// ---------------------------------------------------------------------------
+
+const OTHER = "other-subscriber-uid";
+
+/** A shared list that takes suggestions under `policy`. */
+function listTakingSuggestions(
+  policy: ISuggestionPolicy = { dailyLimit: 2, per: "subscriber" },
+): SharedListDocument {
+  const data = sharedListDoc();
+  data.list.suggestions = policy;
+  return data;
+}
+
+function suggestionPattern(name = "Sugar Tuck") {
+  const typeId = sharedListDoc().list.patternTypes[0].id;
+  return suggestedPattern({
+    ...createTestPattern(typeId, { id: 99, name, prerequisites: [1] }),
+  });
+}
+
+let suggestionSeq = 0;
+
+/**
+ * What submitSuggestion() commits: the suggestion and today's counter, one up. `count` is the
+ * counter's new value; the overrides bend one part of it for the refusals.
+ */
+function suggest(
+  db: Firestore,
+  uid: string,
+  count: number,
+  opts: {
+    policy?: ISuggestionPolicy;
+    counterId?: string;
+    data?: Record<string, unknown>;
+    last?: string;
+    withoutCounter?: boolean;
+  } = {},
+): Promise<void> {
+  const id = `s${++suggestionSeq}`;
+  const policy = opts.policy ?? { dailyLimit: 2, per: "subscriber" };
+  const batch = writeBatch(db);
+  batch.set(doc(db, "sharedLists", CODE, "suggestions", id), {
+    authorUid: uid,
+    authorName: "Alex",
+    pattern: suggestionPattern(),
+    createdAt: serverTimestamp(),
+    appToken: TEST_TOKEN,
+    ...opts.data,
+  });
+  if (!opts.withoutCounter) {
+    batch.set(
+      doc(
+        db,
+        "sharedLists",
+        CODE,
+        "suggestionCounters",
+        opts.counterId ?? counterIdFor(policy, uid),
+      ),
+      { count, last: opts.last ?? id },
+    );
+  }
+  return batch.commit();
+}
+
+async function seedDoc(path: string[], data: object): Promise<void> {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const [first, ...rest] = path;
+    await setDoc(doc(ctx.firestore(), first as string, ...rest), data);
+  });
+}
+
+describe("suggestion settings", () => {
+  it("accepts a published list that takes suggestions", async () => {
+    await assertSucceeds(publish(as(PUBLISHER), listTakingSuggestions()));
+    await assertSucceeds(
+      publish(
+        as(PUBLISHER),
+        listTakingSuggestions({ dailyLimit: 100, per: "list" }),
+      ),
+    );
+  });
+
+  it.each([
+    { dailyLimit: 0, per: "list" },
+    { dailyLimit: 101, per: "list" },
+    { dailyLimit: 1.5, per: "list" },
+    { dailyLimit: 3, per: "everyone" },
+    { dailyLimit: 3 },
+    { dailyLimit: 3, per: "list", extra: true },
+  ])("refuses the malformed setting %j", async (policy) => {
+    await assertFails(
+      publish(
+        as(PUBLISHER),
+        listTakingSuggestions(policy as unknown as ISuggestionPolicy),
+      ),
+    );
+  });
+});
+
+describe("suggesting", () => {
+  it("accepts a suggestion with today's counter", async () => {
+    await seed(listTakingSuggestions());
+    await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+    await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 2));
+  });
+
+  it("accepts a suggestion without a name", async () => {
+    await seed(listTakingSuggestions());
+    const { authorName: _name, ...data } = {
+      authorUid: SUBSCRIBER,
+      authorName: "x",
+      pattern: suggestionPattern(),
+      createdAt: serverTimestamp(),
+      appToken: TEST_TOKEN,
+    };
+    const db = as(SUBSCRIBER);
+    const batch = writeBatch(db);
+    batch.set(doc(db, "sharedLists", CODE, "suggestions", "anon"), data);
+    batch.set(
+      doc(
+        db,
+        "sharedLists",
+        CODE,
+        "suggestionCounters",
+        counterIdFor({ dailyLimit: 2, per: "subscriber" }, SUBSCRIBER),
+      ),
+      { count: 1, last: "anon" },
+    );
+    await assertSucceeds(batch.commit());
+  });
+
+  it("refuses a suggestion past the limit per subscriber, but not another subscriber's", async () => {
+    await seed(listTakingSuggestions({ dailyLimit: 1, per: "subscriber" }));
+    await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 2));
+    // Restarting the count is no way round it.
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+    await assertSucceeds(suggest(as(OTHER), OTHER, 1));
+  });
+
+  it("counts every subscriber against a limit for the whole list", async () => {
+    const policy: ISuggestionPolicy = { dailyLimit: 2, per: "list" };
+    await seed(listTakingSuggestions(policy));
+    await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1, { policy }));
+    await assertSucceeds(suggest(as(OTHER), OTHER, 2, { policy }));
+    await assertFails(suggest(as(OTHER), OTHER, 3, { policy }));
+  });
+
+  it("refuses a suggestion counted in the wrong counter", async () => {
+    await seed(listTakingSuggestions({ dailyLimit: 5, per: "list" }));
+    // The policy counts for the whole list, so a per-subscriber counter is not it.
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+  });
+
+  it("refuses a suggestion to a list that does not take them", async () => {
+    await seed(sharedListDoc());
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+  });
+
+  it("refuses a suggestion to a list that does not exist", async () => {
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+  });
+
+  it("refuses a muted subscriber, and only them", async () => {
+    await seed(listTakingSuggestions());
+    await seedDoc(["sharedLists", CODE, "subscribers", SUBSCRIBER], {
+      status: "muted",
+      updatedAt: Timestamp.now(),
+    });
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+    await assertSucceeds(suggest(as(OTHER), OTHER, 1));
+  });
+
+  it("refuses a device that has not signed in", async () => {
+    await seed(listTakingSuggestions());
+    await assertFails(suggest(anonymous(), SUBSCRIBER, 1));
+  });
+
+  it("refuses a suggestion in someone else's name", async () => {
+    await seed(listTakingSuggestions());
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, { data: { authorUid: OTHER } }),
+    );
+  });
+
+  it("refuses a suggestion without its counter", async () => {
+    await seed(listTakingSuggestions());
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, { withoutCounter: true }),
+    );
+  });
+
+  it("refuses a counter that skips ahead or names another suggestion", async () => {
+    await seed(listTakingSuggestions({ dailyLimit: 5, per: "subscriber" }));
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 2));
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, { last: "someone-else" }),
+    );
+  });
+
+  it("refuses counting into another day or another subscriber's counter", async () => {
+    await seed(listTakingSuggestions({ dailyLimit: 5, per: "subscriber" }));
+    const tomorrow = Date.now() + 86_400_000;
+    const policy: ISuggestionPolicy = { dailyLimit: 5, per: "subscriber" };
+    // A counter write on its own, alongside a valid suggestion and counter.
+    const db = as(SUBSCRIBER);
+    const id = "with-extra";
+    const batch = writeBatch(db);
+    batch.set(doc(db, "sharedLists", CODE, "suggestions", id), {
+      authorUid: SUBSCRIBER,
+      pattern: suggestionPattern(),
+      createdAt: serverTimestamp(),
+      appToken: TEST_TOKEN,
+    });
+    batch.set(
+      doc(
+        db,
+        "sharedLists",
+        CODE,
+        "suggestionCounters",
+        counterIdFor(policy, SUBSCRIBER),
+      ),
+      { count: 1, last: id },
+    );
+    batch.set(
+      doc(
+        db,
+        "sharedLists",
+        CODE,
+        "suggestionCounters",
+        counterIdFor(policy, SUBSCRIBER, tomorrow),
+      ),
+      { count: 1, last: id },
+    );
+    await assertFails(batch.commit());
+
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, {
+        counterId: counterIdFor(policy, OTHER),
+      }),
+    );
+  });
+
+  it("refuses a counter bumped without a suggestion", async () => {
+    await seed(listTakingSuggestions());
+    await assertFails(
+      setDoc(
+        doc(
+          as(SUBSCRIBER),
+          "sharedLists",
+          CODE,
+          "suggestionCounters",
+          counterIdFor({ dailyLimit: 2, per: "subscriber" }, SUBSCRIBER),
+        ),
+        { count: 1, last: "nothing" },
+      ),
+    );
+  });
+
+  it.each([
+    ["a client timestamp", { createdAt: Timestamp.now() }],
+    ["no app token", { appToken: "guess" }],
+    ["an extra field", { extra: 1 }],
+    ["a long name", { authorName: "x".repeat(41) }],
+    ["no pattern name", { pattern: { ...suggestionPattern(), name: "" } }],
+    [
+      "a pattern field the app does not write",
+      { pattern: { ...suggestionPattern(), id: 3 } },
+    ],
+    [
+      "too many videos",
+      {
+        pattern: {
+          ...suggestionPattern(),
+          videoRefs: Array.from({ length: 11 }, () => ({
+            type: "url",
+            value: "https://youtu.be/x",
+          })),
+        },
+      },
+    ],
+  ])("refuses a suggestion with %s", async (_label, data) => {
+    await seed(listTakingSuggestions());
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1, { data }));
+  });
+
+  it("does not let a subscriber change a suggestion once sent", async () => {
+    await seed(listTakingSuggestions());
+    await suggest(as(SUBSCRIBER), SUBSCRIBER, 1);
+    await assertFails(
+      setDoc(
+        doc(
+          as(SUBSCRIBER),
+          "sharedLists",
+          CODE,
+          "suggestions",
+          `s${suggestionSeq}`,
+        ),
+        { authorUid: SUBSCRIBER },
+        { merge: true },
+      ),
+    );
+  });
+});
+
+describe("reading suggestions", () => {
+  beforeEach(async () => {
+    await seed(listTakingSuggestions());
+    await suggest(as(SUBSCRIBER), SUBSCRIBER, 1);
+  });
+
+  it("lets the owner read and delete them", async () => {
+    const snap = await assertSucceeds(
+      getDocs(collection(as(PUBLISHER), "sharedLists", CODE, "suggestions")),
+    );
+    expect(snap.size).toBe(1);
+    await assertSucceeds(
+      deleteDoc(
+        doc(
+          as(PUBLISHER),
+          "sharedLists",
+          CODE,
+          "suggestions",
+          `s${suggestionSeq}`,
+        ),
+      ),
+    );
+  });
+
+  it("hides them from subscribers, their author included", async () => {
+    await assertFails(
+      getDocs(collection(as(SUBSCRIBER), "sharedLists", CODE, "suggestions")),
+    );
+    await assertFails(
+      getDoc(
+        doc(
+          as(SUBSCRIBER),
+          "sharedLists",
+          CODE,
+          "suggestions",
+          `s${suggestionSeq}`,
+        ),
+      ),
+    );
+    await assertFails(
+      deleteDoc(
+        doc(
+          as(SUBSCRIBER),
+          "sharedLists",
+          CODE,
+          "suggestions",
+          `s${suggestionSeq}`,
+        ),
+      ),
+    );
+  });
+
+  it("lets a subscriber read a counter, but not list or delete them", async () => {
+    const id = counterIdFor({ dailyLimit: 2, per: "subscriber" }, SUBSCRIBER);
+    const snap = await assertSucceeds(
+      getDoc(
+        doc(as(SUBSCRIBER), "sharedLists", CODE, "suggestionCounters", id),
+      ),
+    );
+    expect(snap.data()?.count).toBe(1);
+    await assertFails(
+      getDocs(
+        collection(as(SUBSCRIBER), "sharedLists", CODE, "suggestionCounters"),
+      ),
+    );
+    await assertFails(
+      deleteDoc(
+        doc(as(SUBSCRIBER), "sharedLists", CODE, "suggestionCounters", id),
+      ),
+    );
+    await assertSucceeds(
+      deleteDoc(
+        doc(as(PUBLISHER), "sharedLists", CODE, "suggestionCounters", id),
+      ),
+    );
+  });
+});
+
+describe("muting", () => {
+  const record = (db: Firestore, uid = SUBSCRIBER) =>
+    doc(db, "sharedLists", CODE, "subscribers", uid);
+
+  beforeEach(async () => {
+    await seed(listTakingSuggestions());
+  });
+
+  it("lets the owner mute and unmute a subscriber", async () => {
+    await assertSucceeds(
+      setDoc(record(as(PUBLISHER)), {
+        status: "muted",
+        name: "Alex",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertSucceeds(
+      getDocs(collection(as(PUBLISHER), "sharedLists", CODE, "subscribers")),
+    );
+    await assertSucceeds(deleteDoc(record(as(PUBLISHER))));
+  });
+
+  it("does not let a subscriber mute or unmute anyone, themselves included", async () => {
+    await assertFails(
+      setDoc(record(as(SUBSCRIBER), OTHER), {
+        status: "muted",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await seedDoc(["sharedLists", CODE, "subscribers", SUBSCRIBER], {
+      status: "muted",
+      updatedAt: Timestamp.now(),
+    });
+    await assertFails(deleteDoc(record(as(SUBSCRIBER))));
+    await assertFails(
+      setDoc(record(as(SUBSCRIBER)), {
+        status: "muted",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("lets a subscriber read their own record only", async () => {
+    await seedDoc(["sharedLists", CODE, "subscribers", SUBSCRIBER], {
+      status: "muted",
+      updatedAt: Timestamp.now(),
+    });
+    await assertSucceeds(getDoc(record(as(SUBSCRIBER))));
+    await assertFails(getDoc(record(as(OTHER), SUBSCRIBER)));
+    await assertFails(
+      getDocs(collection(as(SUBSCRIBER), "sharedLists", CODE, "subscribers")),
+    );
+  });
+
+  it.each([
+    { status: "member", updatedAt: "now" },
+    { status: "muted" },
+    { status: "muted", name: "x".repeat(41), updatedAt: "now" },
+    { status: "muted", updatedAt: "now", extra: 1 },
+  ])("refuses the malformed record %j", async (raw) => {
+    const data = {
+      ...raw,
+      ...("updatedAt" in raw && { updatedAt: serverTimestamp() }),
+    };
+    await assertFails(setDoc(record(as(PUBLISHER)), data));
   });
 });

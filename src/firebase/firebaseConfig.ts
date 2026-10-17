@@ -44,3 +44,13 @@ export const SHARED_LISTS_COLLECTION = "sharedLists";
  * it to let only the publisher update or delete a list.
  */
 export const SHARED_LIST_OWNERS_COLLECTION = "sharedListOwners";
+
+/**
+ * Subcollections of a shared list holding its subscribers' pattern suggestions
+ * (`PatternSuggestionService.ts`): the suggestions, the daily counters the
+ * security rules hold the limit against, and the publisher's records of
+ * subscribers (`{ status: "muted", name?, updatedAt }`, by anonymous id).
+ */
+export const SUGGESTIONS = "suggestions";
+export const SUGGESTION_COUNTERS = "suggestionCounters";
+export const SUBSCRIBERS = "subscribers";

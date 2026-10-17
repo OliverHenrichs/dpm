@@ -9,25 +9,26 @@ everywhere. Depth lives next to the code it governs, in a nested `AGENTS.md` tha
 open a file in that directory. Creating a _new_ file in a directory does not pull its `AGENTS.md`
 in, so read the one listed below before you add code there.
 
-| File                           | Read it before touching                                                                                        |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `src/common/AGENTS.md`         | App chrome: `AppHeader`, drawer and tabs, the Android edge band, modals and the system bars, dismissal touches |
-| `src/common/theme/AGENTS.md`   | Styles: Unistyles, design tokens, colour roles, fonts, the two app styles, the setup's traps                   |
-| `src/common/ui/AGENTS.md`      | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery                                      |
-| `src/pattern/data/AGENTS.md`   | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates          |
-| `src/pattern/list/AGENTS.md`   | `usePatternCrud`, modifiers, sorting, always-mounted modals                                                    |
-| `src/pattern/rhythm/AGENTS.md` | Rhythm notation, its link to counts, composing one step by step                                                |
-| `src/pattern/graph/AGENTS.md`  | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity                           |
-| `src/reels/AGENTS.md`          | The Reels tab                                                                                                  |
-| `src/anonymize/AGENTS.md`      | Video jobs (`jobStore`), review, Shorten and Anonymize, providers                                              |
-| `src/transcribe/AGENTS.md`     | Speech transcription (Whisper), the model store                                                                |
-| `src/suggest/AGENTS.md`        | Name and description suggestions (on-device LLM)                                                               |
-| `src/videoLinks/AGENTS.md`     | Putting a local video online and its link back, links and videos shared to DPM                                 |
-| `modules/AGENTS.md`            | The local native Expo modules and their gitignored model weights                                               |
-| `src/changelog/AGENTS.md`      | The bundled changelog, the what's-new hint after an update, releasing a version's notes                        |
-| `src/settings/AGENTS.md`       | Settings screen, i18n machinery, device locale, language/style/icon persistence                                |
-| `src/firebase/AGENTS.md`       | Firestore sharing, ownership, security rules, configuration                                                    |
-| `__tests__/AGENTS.md`          | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite                         |
+| File | Read it before touching |
+|---|---|
+| `src/common/AGENTS.md` | App chrome: `AppHeader`, drawer and tabs, the Android edge band, modals and the system bars, dismissal touches |
+| `src/common/theme/AGENTS.md` | Styles: Unistyles, design tokens, colour roles, fonts, the two app styles, the setup's traps |
+| `src/common/ui/AGENTS.md` | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery |
+| `src/pattern/data/AGENTS.md` | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates |
+| `src/pattern/list/AGENTS.md` | `usePatternCrud`, modifiers, sorting, always-mounted modals |
+| `src/pattern/rhythm/AGENTS.md` | Rhythm notation, its link to counts, composing one step by step |
+| `src/pattern/graph/AGENTS.md` | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity |
+| `src/reels/AGENTS.md` | The Reels tab |
+| `src/anonymize/AGENTS.md` | Video jobs (`jobStore`), review, Shorten and Anonymize, providers |
+| `src/transcribe/AGENTS.md` | Speech transcription (Whisper), the model store |
+| `src/suggest/AGENTS.md` | Name and description suggestions (on-device LLM) |
+| `src/pattern/suggestions/AGENTS.md` | Pattern suggestions from a shared list's subscribers: daily limits, muting, review |
+| `src/videoLinks/AGENTS.md` | Putting a local video online and its link back, links and videos shared to DPM |
+| `modules/AGENTS.md` | The local native Expo modules and their gitignored model weights |
+| `src/changelog/AGENTS.md` | The bundled changelog, the what's-new hint after an update, releasing a version's notes |
+| `src/settings/AGENTS.md` | Settings screen, i18n machinery, device locale, language/style/icon persistence |
+| `src/firebase/AGENTS.md` | Firestore sharing, ownership, security rules, configuration |
+| `__tests__/AGENTS.md` | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite |
 
 `AGENT_TASKS.md` is the design history (bugs B*, changes S*/M*/L*, foundation F*): why things are
 the way they are, with device findings. It is long; read the section a code comment cites
@@ -78,14 +79,14 @@ directly.
 
 All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.ts`, `Dance.ts`).
 
-| Type                  | Id          | Key detail                                                                                                                                                                                                                                                                                           |
-| --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `IPatternList`        | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark) |
-| `PatternType`         | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId`                                                                                                                                                                                                                          |
-| `IPattern`            | integer     | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs`                                                                                                                           |
-| `IModifier`           | UUID string | `position: "prefix" \| "postfix" \| "amends"`; `universal`; `videoRefs` used only when universal                                                                                                                                                                                                     |
-| `IPatternModifierRef` | —           | `{ modifierId, videoRefs }`: a non-universal modifier attached to one pattern, with videos of that pattern danced with it                                                                                                                                                                            |
-| `IVideoReference`     | —           | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it                                                                                                                     |
+| Type | Id | Key detail |
+|---|---|---|
+| `IPatternList` | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark), `suggestions` (whether subscribers may suggest patterns, and how many a day) |
+| `PatternType` | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId` |
+| `IPattern` | integer | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs` |
+| `IModifier` | UUID string | `position: "prefix" \| "postfix" \| "amends"`; `universal`; `videoRefs` used only when universal |
+| `IPatternModifierRef` | — | `{ modifierId, videoRefs }`: a non-universal modifier attached to one pattern, with videos of that pattern danced with it |
+| `IVideoReference` | — | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it |
 
 `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`. `PatternType.ts` also
 exports `PATTERN_TYPE_COLORS`, `generateUUID()`, `normalizeSlug()` and `isSlugUnique()`.

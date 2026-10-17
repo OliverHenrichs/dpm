@@ -107,6 +107,14 @@ From `@/src/common/ui` (`Icon`, `IconName`): one set, MaterialCommunityIcons via
 - **Web's pre-rendered HTML carries class names only.** `ServerStyles.web.tsx`
   (`useServerUnistyles`) writes the CSS behind them into the page, both themes under
   `prefers-color-scheme`. The native `ServerStyles.tsx` renders nothing.
+- **That `<style>` tag is moved into `<head>` before Unistyles loads** (`adoptServerStyles.ts`,
+  imported ahead of `unistyles.ts`). It is rendered inside `#root`, and Unistyles adopts it as
+  the tag it writes to; React wipes `#root` when it renders from scratch (always in dev, after a
+  hydration mismatch in production), and the page then loses every style.
+- **A third-party component given a Unistyles style needs `withUnistyles`** (as `SafeAreaView`
+  in `app/_layout.tsx`). Only `react-native` imports are rewritten; on web a plain
+  react-native-web view cannot read the style and drops it, silently (a lost `flex: 1` there
+  collapsed the whole web app to zero height).
 - **Insets** come from Unistyles' runtime (`StyleSheet.create((theme, rt) => …)`, `rt.insets`), so
   they follow rotation. The Jest mock reports them as zero and resolves every sheet against the
   light theme at import, so a component test cannot observe a theme switch.

@@ -579,6 +579,32 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("suggestion settings (3.6)", () => {
+    it("keeps whether and how often subscribers may suggest patterns", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], {
+          shareCode: "ABCD1234",
+          suggestions: { dailyLimit: 5, per: "list" },
+        }),
+      ]);
+
+      expect(importResult.patternLists![0].suggestions).toEqual({
+        dailyLimit: 5,
+        per: "list",
+      });
+    });
+
+    it("drops a malformed setting rather than the list", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], {
+          suggestions: { dailyLimit: 0, per: "everyone" } as never,
+        }),
+      ]);
+
+      expect(importResult.patternLists![0]).not.toHaveProperty("suggestions");
+    });
+  });
+
   describe("export envelope", () => {
     it("writes the current format version and a parseable date", async () => {
       const { exported } = await roundTrip([listWith([])]);
