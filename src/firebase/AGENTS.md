@@ -8,6 +8,9 @@ Optional Firestore-backed list sharing. The app runs local-only when credentials
 - `shareKey.ts` — `generateShareKey()`, the publisher's 256-bit secret for one list.
 - `publishedContent.ts` — `publishedPattern`, `publishedModifiers`: what of a list goes into the published document (URL videos only, no transcripts).
 - `MembershipService.ts` — members-only lists: asking to join, where a subscriber stands, letting in and turning away, in the same `subscribers` records; see `src/pattern/members/AGENTS.md`. `fetchSharedList` throws `MembersOnlyError` and `subscribeToSharedList` reports `NoAccessError` when the rules refuse a read.
+- `HandoverService.ts` — handing a published list over to someone who follows it: offers under
+  `sharedLists/{code}/handovers/{handoverCode}`, accepted together with an owner record carrying a
+  new key and `handover`; see `src/pattern/handover/AGENTS.md`.
 - `PatternSuggestionService.ts` — subscribers' pattern suggestions under a shared list (`suggestions`, `suggestionCounters`, `subscribers` subcollections); see `src/pattern/suggestions/AGENTS.md`. `confirmOwnership(list)` (in `FirebaseListService`) writes the owner record with the key, for anything the rules check against the owner; `unpublishList` deletes the suggestion subcollections before the list, since nobody could reach them afterwards.
 - `SubscriptionService.ts` — the publisher's subscriber count: `refreshSubscription` (a subscriber's phone, once per launch after `useSharedList` has read the list), `removeSubscription` (Lists → _Unsubscribe from List_, or a list that stopped syncing), `countSubscribers` (`ShareListModal`, as owner). One record per phone in `sharedLists/{code}/subscriptions/{id}`, `{ seenAt, appToken }`, named by a **random id per list** kept in `@subscriptionIds` (`src/pattern/data/SubscriptionStorage.ts`), never the anonymous user id: subscribing to an open list still never signs in. Only the owner may list the records, nobody may get one, and whoever holds an id may refresh or delete its record. The count takes records seen in the last `ACTIVE_SUBSCRIPTION_DAYS` (90), because an uninstalled phone never says goodbye. Anyone with a share code could inflate the count with scripted writes; it is a display figure, nothing depends on it. The records live under the share code, so they survive a takeover or handover of the list; `unpublishList` deletes them with the suggestion data.
 - `useSharedList` (`src/pattern/data/hooks/useSharedList.ts`) — called inside `ActivePatternListProvider`; maintains a live `onSnapshot` listener while `activeList.shareCode` is set; handles publisher unpublishing (clears `shareCode`/`readonly` locally and surfaces a themed dialog).
@@ -25,7 +28,9 @@ members-only list (then they sign in anonymously; `src/pattern/suggestions/AGENT
 list has an **owner record** in `sharedListOwners/{shareCode}`: `{ ownerUid, key }`, readable by
 nobody. Only the owner on record may update or delete the list. `key` is the list's **share key**
 (`IPatternList.shareKey`), and presenting it moves ownership to the caller — that is how the
-publisher keeps control after a reinstall (new anonymous id) or on a new phone.
+publisher keeps control after a reinstall (new anonymous id) or on a new phone. The key itself
+changes only on a **handover** (`src/pattern/handover/`), in the same batch that accepts the
+owner's offer; the old key then stops working.
 
 - **Every publish writes the owner record and the list in one batch**, so the first publish
   creates the record and every sync re-confirms it (a no-op, or a takeover with the key). The
@@ -51,7 +56,7 @@ Change it together with `FirebaseListService`: the rules accept exactly the docu
 `publishList()` writes (the five `SharedListDocument` keys, stored under its own 8-character
 code, no `readonly` or `shareKey` on the stored list, a well-formed `suggestions` setting if any),
 allow `get` by code (members and the owner only, for a members-only list) but never `list`, and deny everything outside the two collections, the
-three suggestion subcollections and `subscriptions`.
+three suggestion subcollections, `handovers` and `subscriptions`.
 
 - **The app token is compared by its SHA-256.** The repository is public, so it holds the hash,
   not `FIREBASE_APP_TOKEN`. Rotating the token means new values in `.env` and every EAS
@@ -63,6 +68,19 @@ three suggestion subcollections and `subscriptions`.
   `npm test`; CI runs them in their own job.
 - **Deploying** is `npm run rules:deploy` (`firebase login` once; the project id comes from
   `.env`). It changes production for every installed app: run the rules tests first.
+
+## Removing data as the operator
+
+`tools/data-removal/` (`npm run data -- find|show|remove-list|remove-user|…`, README there) is the
+operator's laptop tool for erasure requests and content that must not be published (a child's
+data): it searches every shared document with the Admin SDK and deletes a list, a user's records
+or a suggestion. A removed list keeps a **takedown record** in `sharedListOwners/{code}` (owner
+`removed-by-operator`, a key nobody holds), so the publisher's next edit cannot re-publish it; the
+rules test "keeps a list taken down by the operator from coming back" holds that in place. A rules
+change must keep it refused. `block-user` writes `blockedUsers/{uid}`, which the rules check
+(`notBlocked()`) on every publish, owner-record write, suggestion and join request; a blocked
+owner may still re-confirm itself to unpublish. A new write path must check it too. A new collection or field the app writes is something `find` should
+see: add it to `lib/model.js` / `lib/firestore.js` (`loadSnapshot`).
 
 ## Configuration
 

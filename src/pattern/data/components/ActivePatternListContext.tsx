@@ -17,6 +17,7 @@ import {
 } from "@/src/pattern/data/PatternListStorage";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { useSharedList } from "@/src/pattern/data/hooks/useSharedList";
+import { useHandedOver } from "@/src/pattern/handover/useHandedOver";
 import { runMigrations } from "@/src/pattern/data/migrations";
 import { useTranslation } from "react-i18next";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -158,6 +159,12 @@ export const ActivePatternListProvider: React.FC<{
     !!activeList?.membersOnly,
   );
 
+  // The publisher's own list, handed over to someone else: it follows theirs from now on.
+  const { handedOverName, clearHandedOver } = useHandedOver(
+    activeList,
+    loadActiveListAndPatterns,
+  );
+
   const value: ActivePatternListContextType = {
     activeList,
     patterns,
@@ -186,6 +193,12 @@ export const ActivePatternListProvider: React.FC<{
             : ""
         }
         onClose={clearDetachedName}
+      />
+      <AppDialog
+        visible={handedOverName !== null}
+        title={t("listHandedOverTitle")}
+        message={t("listHandedOverMessage", { name: handedOverName ?? "" })}
+        onClose={clearHandedOver}
       />
     </ActivePatternListContext.Provider>
   );

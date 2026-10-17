@@ -33,7 +33,7 @@
     </header>
     <main class="wrap prose">
 <h1>Privacy Policy — DancePatternMapper (DPM)</h1>
-<p><strong>Last updated: October 16, 2026</strong></p>
+<p><strong>Last updated: October 17, 2026</strong></p>
 <hr>
 <h2>1. Who we are</h2>
 <p><strong>App name:</strong> DancePatternMapper (DPM)<br>
@@ -162,7 +162,9 @@
 </table>
 <p>Only the publisher of the list can read suggestions. If the publisher <strong>mutes</strong> a subscriber, a record of that subscriber's anonymous user ID and the name they signed with is kept under the list, readable by the publisher and by that subscriber's app.</p>
 <p><strong>Members-only lists.</strong> A publisher can make a list readable only by the subscribers they let in. When you <strong>ask to join</strong> such a list, a record of your anonymous user ID, the name you give if you enter one, and whether you are waiting, let in or turned away is stored in Firestore under the list. It is readable by the publisher and by your own app, and it is deleted when the publisher stops sharing the list. If you publish a members-only list, the same record is kept for everyone who asks to join it.</p>
-<p><strong>We do not collect:</strong> your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID above is the only identifier, and it is not linked to you as a person.</p>
+<p><strong>Handing a list over.</strong> A publisher can hand a list over to someone who follows it. The app then stores, under the list, a one-time offer named by a random handover code, with the publisher's anonymous user ID and when it was made. When the new owner enters the code, their anonymous user ID and the time are added to the offer, and the owner record names them with a new share key. The offer is readable only by the list's owner and by the publisher who made it, and the previous publisher's app deletes it once it has followed the handover.</p>
+<p><strong>Subscriber count.</strong> When you subscribe to a list, your app stores a <strong>subscription record</strong> in Firestore under that list: a random ID your app creates for that one list, and when your app last synced the list (at most once each time you start the app). The ID is different for every list you subscribe to, it is not your anonymous user ID, and subscribing to an open list still does not sign in. The publisher sees only how many records were synced in the last 90 days, never the records themselves; nobody else can read them. Your record is deleted when you unsubscribe in the app (Lists → the list's "more" button → Unsubscribe from List) or when the publisher stops sharing the list. If you uninstall the app without unsubscribing, the record stops counting after 90 days and is deleted when the publisher stops sharing the list.</p>
+<p><strong>We do not collect:</strong> your name, email address, phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID and the per-list subscription IDs above are the only identifiers, and none of them is linked to you as a person.</p>
 <p><strong>Local video files and transcripts are never uploaded.</strong> Only URL-based video references are included in the cloud document.</p>
 <p>When you publish or subscribe, Google Firebase automatically records:</p>
 <ul>
@@ -239,6 +241,14 @@
 <td>Legitimate interest of the publisher in keeping suggestions to their list manageable and free of abuse (Art. 6(1)(f))</td>
 </tr>
 <tr>
+<td>Blocking an anonymous ID from publishing, suggesting and asking to join</td>
+<td>Legitimate interest in keeping removed or unlawful content (for example a child's personal data) from being published again (Art. 6(1)(f))</td>
+</tr>
+<tr>
+<td>Subscription records counted for a list's publisher</td>
+<td>Legitimate interest of the publisher in knowing how many people follow their list (Art. 6(1)(f))</td>
+</tr>
+<tr>
 <td>IP address collection by Firebase</td>
 <td>Legitimate interest in operating a secure service (Art. 6(1)(f))</td>
 </tr>
@@ -253,10 +263,10 @@
 <p>We use the following third-party data processor:</p>
 <p><strong>Google LLC</strong> (Firebase / Firestore, Firebase Authentication)<br>
 Role: Data Processor<br>
-Purpose: Cloud storage of published pattern lists and their suggestions, and the anonymous sign-in of publishers and of subscribers who suggest patterns<br>
+Purpose: Cloud storage of published pattern lists, their suggestions and subscription records, and the anonymous sign-in of publishers and of subscribers who suggest patterns<br>
 Privacy policy: https://policies.google.com/privacy<br>
 Data Processing Terms: https://firebase.google.com/terms/data-processing-terms<br>
-Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Published lists, owner records and suggestions are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers and of subscribers who suggest patterns, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.</p>
+Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Published lists, owner records, suggestions and subscription records are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers and of subscribers who suggest patterns, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.</p>
 <p>When you use the features in sections 3.4 and 3.5, your device connects directly to these services. They process your IP address as <strong>independent controllers</strong> under their own policies, and may do so outside the EU/EEA, including in the United States:</p>
 <ul>
 <li><strong>YouTube / Google LLC</strong> (online videos): https://policies.google.com/privacy</li>
@@ -292,6 +302,10 @@ Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Pub
 <td>Removed together with the list when you stop sharing it</td>
 </tr>
 <tr>
+<td>A handover offer</td>
+<td>Until the previous publisher's app has followed the handover, the publisher withdraws it, or the list stops being shared. An offer nobody accepts stops working after 7 days.</td>
+</tr>
+<tr>
 <td>A pattern suggestion</td>
 <td>Until the publisher adds or dismisses it, or stops sharing the list</td>
 </tr>
@@ -300,8 +314,16 @@ Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Pub
 <td>Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time)</td>
 </tr>
 <tr>
+<td>Subscription record of a list you subscribe to</td>
+<td>Until you unsubscribe or the publisher stops sharing the list; it stops counting 90 days after your app last synced the list</td>
+</tr>
+<tr>
 <td>Anonymous user ID (Firebase Authentication)</td>
 <td>Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time</td>
+</tr>
+<tr>
+<td>Block record (anonymous user ID, date)</td>
+<td>Kept only if we block an installation from publishing, for example after removing content that must not be published; deleted when we lift the block or delete that anonymous ID</td>
 </tr>
 <tr>
 <td>Firebase infrastructure logs (IP, timestamps)</td>
@@ -323,7 +345,7 @@ Data location: <strong>Europe (europe-west, Belgium)</strong> for Firestore. Pub
 <li><strong>Objection</strong> — object to processing based on legitimate interest</li>
 <li><strong>Lodge a complaint</strong> — with your national data protection authority (e.g. the <a href="https://www.bfdi.bund.de/">BfDI</a> in Germany, the <a href="https://ico.org.uk/">ICO</a> in the UK)</li>
 </ul>
-<p><strong>How to delete your published data:</strong> Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts and mute records. For anything else, contact us at dance-pattern-mapper@pm.me.</p>
+<p><strong>How to delete your published data:</strong> Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts, mute records and handover offers. For anything else, contact us at dance-pattern-mapper@pm.me.</p>
 <p>Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.</p>
 <p>For data held by YouTube, Vimeo, Hugging Face or GitHub, please use their own privacy tools or contact them directly; we have no access to it.</p>
 <hr>

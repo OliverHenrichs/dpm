@@ -29,6 +29,7 @@ import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { removeSubscription } from "@/src/firebase/SubscriptionService";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { createExampleList } from "@/src/pattern/data/ExampleList";
+import TakeOverListModal from "@/src/pattern/handover/TakeOverListModal";
 
 const PatternListSelector: React.FC = () => {
   const { t } = useTranslation();
@@ -51,6 +52,11 @@ const PatternListSelector: React.FC = () => {
     PatternListWithPatterns["patterns"]
   >([]);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  // A subscribed list being taken over from its owner (src/pattern/handover/).
+  const [takeOverTarget, setTakeOverTarget] = useState<IPatternList | null>(
+    null,
+  );
+  const [takenOverName, setTakenOverName] = useState<string | null>(null);
 
   // Dialog state
   const [deleteConfirmTarget, setDeleteConfirmTarget] =
@@ -192,6 +198,19 @@ const PatternListSelector: React.FC = () => {
       console.error("Error persisting unpublish:", e);
     }
     setShareTarget(null);
+  };
+
+  /** The handover went through: the list is this phone's to edit and publish now. */
+  const handleTakenOver = async (updatedList: IPatternList) => {
+    setTakeOverTarget(null);
+    try {
+      await savePatternList(updatedList);
+      await loadLists();
+      await refreshActiveList();
+    } catch (e) {
+      console.error("Error saving a list taken over:", e);
+    }
+    setTakenOverName(updatedList.name);
   };
 
   /** Called when user confirms subscribing to a shared list. */
@@ -397,6 +416,18 @@ const PatternListSelector: React.FC = () => {
                 }
               />
             )}
+            {firebaseAvailable &&
+              listActionTarget?.readonly &&
+              listActionTarget.shareCode && (
+                <ListRow
+                  title={t("takeOverList")}
+                  icon="account-switch-outline"
+                  onPress={() => {
+                    setTakeOverTarget(listActionTarget);
+                    setListActionTarget(null);
+                  }}
+                />
+              )}
             {listActionTarget?.readonly && listActionTarget.shareCode && (
               <ListRow
                 title={t("unsubscribeList")}
@@ -440,6 +471,21 @@ const PatternListSelector: React.FC = () => {
           existingLists={patternLists}
           onClose={() => setShowSubscribeModal(false)}
           onSubscribe={handleSubscribeConfirm}
+        />
+
+        {/* ── Take over a subscribed list ─────────────────────────────── */}
+        {takeOverTarget && (
+          <TakeOverListModal
+            list={takeOverTarget}
+            onClose={() => setTakeOverTarget(null)}
+            onTakenOver={handleTakenOver}
+          />
+        )}
+        <AppDialog
+          visible={takenOverName !== null}
+          title={t("takeOverSuccessTitle")}
+          message={t("takeOverSuccessMessage", { name: takenOverName ?? "" })}
+          onClose={() => setTakenOverName(null)}
         />
 
         {/* ── Error dialog ────────────────────────────────────────────── */}

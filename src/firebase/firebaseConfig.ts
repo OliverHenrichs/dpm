@@ -56,6 +56,13 @@ export const SUGGESTION_COUNTERS = "suggestionCounters";
 export const SUBSCRIBERS = "subscribers";
 
 /**
+ * Subcollection of a shared list holding its owner's handover offers
+ * (`HandoverService.ts`), each named by its one-time code:
+ * `{ fromUid, offeredAt, acceptedBy?, acceptedAt? }`.
+ */
+export const HANDOVERS = "handovers";
+
+/**
  * Subcollection of a shared list counting its subscribers (`SubscriptionService.ts`): one record
  * per subscribing phone, `{ seenAt, appToken }`, named by a random id per list. Only the owner
  * may list it.

@@ -12,10 +12,12 @@ import {
   getCountFromServer,
   getDoc,
   getDocs,
+  query,
   serverTimestamp,
   setDoc,
   Timestamp,
   setLogLevel,
+  where,
   writeBatch,
 } from "firebase/firestore";
 import { createHash } from "crypto";
@@ -305,6 +307,21 @@ describe("ownership", () => {
   it("lets a list published before owner records be claimed", async () => {
     await seed(sharedListDoc(), null);
     await assertSucceeds(publish(as(PUBLISHER)));
+  });
+
+  it("keeps a list taken down by the operator from coming back (tools/data-removal)", async () => {
+    // What `remove-list` leaves: no list, and an owner record with a fresh
+    // key nobody holds, naming an owner no device can be.
+    await seed(null, {
+      ownerUid: "removed-by-operator",
+      key: "t".repeat(64),
+      removedAt: Timestamp.now(),
+    });
+    await assertFails(publish(as(PUBLISHER)));
+    await assertFails(unpublish(as(PUBLISHER)));
+    await assertFails(
+      setDoc(doc(as(PUBLISHER), "sharedListOwners", CODE), owner(PUBLISHER)),
+    );
   });
 
   it("hides owner records from everyone, the owner included", async () => {
@@ -973,6 +990,289 @@ describe("members-only lists", () => {
     await assertFails(suggest(as(OTHER), OTHER, 1));
     await setMembership(SUBSCRIBER, "member");
     await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+  });
+});
+
+describe("handing over", () => {
+  const TOKEN = "HND0VER123";
+  const NEW_KEY = "n".repeat(43);
+  const offerDoc = (db: Firestore, token = TOKEN) =>
+    doc(db, "sharedLists", CODE, "handovers", token);
+  const offers = (db: Firestore) =>
+    collection(db, "sharedLists", CODE, "handovers");
+
+  /** What offerHandover() writes. */
+  const offer = (db: Firestore, uid = PUBLISHER, token = TOKEN) =>
+    setDoc(offerDoc(db, token), {
+      fromUid: uid,
+      offeredAt: serverTimestamp(),
+    });
+
+  const seedOffer = (data: object = {}) =>
+    seedDoc(["sharedLists", CODE, "handovers", TOKEN], {
+      fromUid: PUBLISHER,
+      offeredAt: Timestamp.now(),
+      ...data,
+    });
+
+  /** What acceptHandover() commits: the acceptance and the owner record, with a new key. */
+  function accept(
+    db: Firestore,
+    uid = SUBSCRIBER,
+    opts: { token?: string; ownerData?: object; withoutOwner?: boolean } = {},
+  ): Promise<void> {
+    const token = opts.token ?? TOKEN;
+    const batch = writeBatch(db);
+    batch.update(offerDoc(db, token), {
+      acceptedBy: uid,
+      acceptedAt: serverTimestamp(),
+    });
+    if (!opts.withoutOwner) {
+      batch.set(
+        doc(db, "sharedListOwners", CODE),
+        opts.ownerData ?? { ownerUid: uid, key: NEW_KEY, handover: token },
+      );
+    }
+    return batch.commit();
+  }
+
+  it("lets the owner offer the list, and nobody else", async () => {
+    await seed(sharedListDoc());
+    await assertFails(offer(as(SUBSCRIBER), SUBSCRIBER));
+    await assertFails(offer(as(SUBSCRIBER), PUBLISHER));
+    await assertFails(offer(anonymous()));
+    await assertSucceeds(offer(as(PUBLISHER)));
+  });
+
+  it("refuses a malformed offer", async () => {
+    await seed(sharedListDoc());
+    await assertFails(offer(as(PUBLISHER), PUBLISHER, "short"));
+    await assertFails(offer(as(PUBLISHER), PUBLISHER, "hnd0ver123"));
+    await assertFails(offer(as(PUBLISHER), SUBSCRIBER));
+    await assertFails(
+      setDoc(offerDoc(as(PUBLISHER)), {
+        fromUid: PUBLISHER,
+        offeredAt: Timestamp.fromMillis(Date.now() + 86400000),
+      }),
+    );
+    await assertFails(
+      setDoc(offerDoc(as(PUBLISHER)), {
+        fromUid: PUBLISHER,
+        offeredAt: serverTimestamp(),
+        acceptedBy: SUBSCRIBER,
+      }),
+    );
+  });
+
+  it("hands the list over to whoever presents the code", async () => {
+    await seed(sharedListDoc());
+    await assertSucceeds(offer(as(PUBLISHER)));
+    await assertSucceeds(accept(as(SUBSCRIBER)));
+
+    // The new owner publishes with their key; the old one is locked out.
+    await assertSucceeds(
+      publish(as(SUBSCRIBER), sharedListDoc(), owner(SUBSCRIBER, NEW_KEY)),
+    );
+    await assertFails(publish(as(PUBLISHER)));
+    await assertFails(
+      setDoc(doc(as(PUBLISHER), "sharedListOwners", CODE), owner(PUBLISHER)),
+    );
+    await assertSucceeds(unpublish(as(SUBSCRIBER)));
+  });
+
+  it("lets the old owner see the accepted offer, then remove it", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    await assertSucceeds(accept(as(SUBSCRIBER)));
+    const snap = await assertSucceeds(
+      getDocs(query(offers(as(PUBLISHER)), where("fromUid", "==", PUBLISHER))),
+    );
+    expect(snap.docs.map((d) => d.data().acceptedBy)).toEqual([SUBSCRIBER]);
+    await assertSucceeds(deleteDoc(offerDoc(as(PUBLISHER))));
+  });
+
+  it("hides offers from everyone but the owner and who made them", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    await assertFails(getDoc(offerDoc(as(SUBSCRIBER))));
+    await assertFails(getDoc(offerDoc(anonymous())));
+    await assertFails(getDocs(offers(as(SUBSCRIBER))));
+    await assertFails(deleteDoc(offerDoc(as(SUBSCRIBER))));
+    await assertSucceeds(getDocs(offers(as(PUBLISHER))));
+    await assertSucceeds(deleteDoc(offerDoc(as(PUBLISHER))));
+  });
+
+  it("takes an offer once only", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    await assertSucceeds(accept(as(SUBSCRIBER)));
+    await assertFails(accept(as(OTHER)));
+    await assertFails(
+      accept(as(OTHER), OTHER, {
+        ownerData: { ownerUid: OTHER, key: "o".repeat(43), handover: TOKEN },
+      }),
+    );
+  });
+
+  it("refuses a wrong code", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    await assertFails(
+      accept(as(SUBSCRIBER), SUBSCRIBER, { token: "WRONG00000" }),
+    );
+  });
+
+  it("refuses an offer older than 7 days", async () => {
+    await seed(sharedListDoc());
+    await seedOffer({
+      offeredAt: Timestamp.fromMillis(Date.now() - 8 * 86400000),
+    });
+    await assertFails(accept(as(SUBSCRIBER)));
+  });
+
+  it("refuses a new key without accepting an offer in the same write", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    await assertFails(
+      setDoc(doc(as(SUBSCRIBER), "sharedListOwners", CODE), {
+        ownerUid: SUBSCRIBER,
+        key: NEW_KEY,
+        handover: TOKEN,
+      }),
+    );
+    await assertFails(
+      accept(as(SUBSCRIBER), SUBSCRIBER, { withoutOwner: true }),
+    );
+  });
+
+  it("refuses an acceptance in someone else's name", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    const db = as(SUBSCRIBER);
+    const batch = writeBatch(db);
+    batch.update(offerDoc(db), {
+      acceptedBy: OTHER,
+      acceptedAt: serverTimestamp(),
+    });
+    batch.set(doc(db, "sharedListOwners", CODE), {
+      ownerUid: SUBSCRIBER,
+      key: NEW_KEY,
+      handover: TOKEN,
+    });
+    await assertFails(batch.commit());
+  });
+
+  it("refuses an acceptance that changes the offer", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    const db = as(SUBSCRIBER);
+    const batch = writeBatch(db);
+    batch.set(offerDoc(db), {
+      fromUid: SUBSCRIBER,
+      offeredAt: Timestamp.now(),
+      acceptedBy: SUBSCRIBER,
+      acceptedAt: serverTimestamp(),
+    });
+    batch.set(doc(db, "sharedListOwners", CODE), {
+      ownerUid: SUBSCRIBER,
+      key: NEW_KEY,
+      handover: TOKEN,
+    });
+    await assertFails(batch.commit());
+  });
+
+  it("refuses taking over a list that is gone", async () => {
+    await seed(null);
+    await seedOffer();
+    await assertFails(accept(as(SUBSCRIBER)));
+  });
+
+  it("lets the new owner of a members-only list read it, and the old one as a member", async () => {
+    const data = sharedListDoc();
+    data.list.membersOnly = true;
+    await seed(data);
+    // offerHandover() lets the owner in as a member first, so they can follow.
+    await assertSucceeds(
+      setDoc(
+        doc(as(PUBLISHER), "sharedLists", CODE, "subscribers", PUBLISHER),
+        { membership: "member", updatedAt: serverTimestamp() },
+        { merge: true },
+      ),
+    );
+    await assertSucceeds(offer(as(PUBLISHER)));
+    await assertSucceeds(accept(as(SUBSCRIBER)));
+    await assertSucceeds(getDoc(doc(as(SUBSCRIBER), "sharedLists", CODE)));
+    await assertSucceeds(getDoc(doc(as(PUBLISHER), "sharedLists", CODE)));
+  });
+
+  it("does not let a blocked id take a list over (tools/data-removal block-user)", async () => {
+    await seed(sharedListDoc());
+    await seedOffer();
+    await seedDoc(["blockedUsers", SUBSCRIBER], { blockedAt: Timestamp.now() });
+    await assertFails(accept(as(SUBSCRIBER)));
+    await assertSucceeds(accept(as(OTHER), OTHER));
+  });
+});
+
+describe("blocked installations (tools/data-removal block-user)", () => {
+  const block = (uid: string) =>
+    seedDoc(["blockedUsers", uid], { blockedAt: Timestamp.now() });
+
+  it("refuses a blocked id's new list, and its sync of an existing one", async () => {
+    await block(PUBLISHER);
+    await assertFails(publish(as(PUBLISHER), sharedListDoc()));
+    await env.clearFirestore();
+    await seed(sharedListDoc());
+    await block(PUBLISHER);
+    await assertFails(publish(as(PUBLISHER)));
+  });
+
+  it("still lets a blocked owner unpublish", async () => {
+    await seed(sharedListDoc());
+    await block(PUBLISHER);
+    await assertSucceeds(
+      setDoc(doc(as(PUBLISHER), "sharedListOwners", CODE), owner(PUBLISHER)),
+    );
+    await assertSucceeds(unpublish(as(PUBLISHER)));
+  });
+
+  it("does not let a blocked id take over a list with its key", async () => {
+    await seed(sharedListDoc());
+    await block("new-phone-uid");
+    await assertFails(
+      setDoc(
+        doc(as("new-phone-uid"), "sharedListOwners", CODE),
+        owner("new-phone-uid"),
+      ),
+    );
+  });
+
+  it("refuses a blocked id's suggestions, and no one else's", async () => {
+    await seed(listTakingSuggestions());
+    await block(SUBSCRIBER);
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1));
+    await assertSucceeds(suggest(as(OTHER), OTHER, 1));
+  });
+
+  it("refuses a blocked id's request to join", async () => {
+    const data = sharedListDoc();
+    data.list.membersOnly = true;
+    await seed(data);
+    await block(SUBSCRIBER);
+    await assertFails(
+      setDoc(
+        doc(as(SUBSCRIBER), "sharedLists", CODE, "subscribers", SUBSCRIBER),
+        {
+          membership: "requested",
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    );
+  });
+
+  it("hides the block list from everyone", async () => {
+    await block(SUBSCRIBER);
+    await assertFails(getDoc(doc(as(SUBSCRIBER), "blockedUsers", SUBSCRIBER)));
   });
 });
 
