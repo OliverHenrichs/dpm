@@ -54,3 +54,10 @@ export const SHARED_LIST_OWNERS_COLLECTION = "sharedListOwners";
 export const SUGGESTIONS = "suggestions";
 export const SUGGESTION_COUNTERS = "suggestionCounters";
 export const SUBSCRIBERS = "subscribers";
+
+/**
+ * Subcollection of a shared list counting its subscribers (`SubscriptionService.ts`): one record
+ * per subscribing phone, `{ seenAt, appToken }`, named by a random id per list. Only the owner
+ * may list it.
+ */
+export const SUBSCRIPTIONS = "subscriptions";

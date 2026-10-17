@@ -611,5 +611,13 @@
   "membersAsked": "Has pedido unirte. Cuando el editor te admita, vuelve a buscar el código.",
   "membersLookUpAgain": "Buscar de nuevo",
   "membersDeclinedYou": "El editor no te ha admitido en esta lista.",
-  "membersAskFailed": "No se pudo enviar tu solicitud. Revisa tu conexión e inténtalo de nuevo."
+  "membersAskFailed": "No se pudo enviar tu solicitud. Revisa tu conexión e inténtalo de nuevo.",
+  "subscriberCount": "Suscriptores",
+  "subscriberCountLoading": "Contando suscriptores",
+  "subscriberCountUnavailable": "No disponible ahora mismo",
+  "subscriberCountHint": "Teléfonos que tienen esta lista y la abrieron en los últimos {{days}} días.",
+  "unsubscribeList": "Cancelar la suscripción",
+  "unsubscribe": "Cancelar suscripción",
+  "unsubscribeListConfirm": "¿Quitar «{{name}}» de este teléfono? Puedes volver a suscribirte con su código.",
+  "subscribedListHint": "Sigues esta lista. Solo quien la publica puede cambiarla."
 }

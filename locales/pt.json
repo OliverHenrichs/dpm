@@ -611,5 +611,13 @@
   "membersAsked": "Você pediu para entrar. Quando o editor aceitar, procure o código de novo.",
   "membersLookUpAgain": "Procurar de novo",
   "membersDeclinedYou": "O editor não aceitou você nesta lista.",
-  "membersAskFailed": "Não foi possível enviar seu pedido. Verifique sua conexão e tente de novo."
+  "membersAskFailed": "Não foi possível enviar seu pedido. Verifique sua conexão e tente de novo.",
+  "subscriberCount": "Assinantes",
+  "subscriberCountLoading": "Contando assinantes",
+  "subscriberCountUnavailable": "Indisponível no momento",
+  "subscriberCountHint": "Celulares que têm esta lista e a abriram nos últimos {{days}} dias.",
+  "unsubscribeList": "Cancelar assinatura da lista",
+  "unsubscribe": "Cancelar assinatura",
+  "unsubscribeListConfirm": "Remover \"{{name}}\" deste celular? Você pode assinar de novo com o código de compartilhamento.",
+  "subscribedListHint": "Você segue esta lista. Só quem a publica pode alterá-la."
 }

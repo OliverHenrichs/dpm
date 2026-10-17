@@ -26,6 +26,7 @@ import SubscribeListModal from "@/src/pattern/list/SubscribeListModal";
 import AppDialog from "@/src/common/components/AppDialog";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
+import { removeSubscription } from "@/src/firebase/SubscriptionService";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { createExampleList } from "@/src/pattern/data/ExampleList";
 
@@ -53,6 +54,8 @@ const PatternListSelector: React.FC = () => {
 
   // Dialog state
   const [deleteConfirmTarget, setDeleteConfirmTarget] =
+    useState<IPatternList | null>(null);
+  const [unsubscribeTarget, setUnsubscribeTarget] =
     useState<IPatternList | null>(null);
   const [errorDialog, setErrorDialog] = useState<{
     title: string;
@@ -94,6 +97,28 @@ const PatternListSelector: React.FC = () => {
     const list = deleteConfirmTarget;
     setDeleteConfirmTarget(null);
     try {
+      await deletePatternList(list.id);
+      await loadLists();
+      await refreshActiveList();
+    } catch {
+      showError(t("errorDeletingList"));
+    }
+  };
+
+  /**
+   * Remove a subscribed list from this phone and stop counting it for the publisher. Works
+   * offline too: the subscription record then drops out of the count on its own.
+   */
+  const confirmUnsubscribe = async () => {
+    if (!unsubscribeTarget) return;
+    const list = unsubscribeTarget;
+    setUnsubscribeTarget(null);
+    try {
+      if (list.shareCode) {
+        await removeSubscription(list.shareCode).catch((e) =>
+          console.warn("Removing the subscription failed:", e),
+        );
+      }
       await deletePatternList(list.id);
       await loadLists();
       await refreshActiveList();
@@ -372,9 +397,26 @@ const PatternListSelector: React.FC = () => {
                 }
               />
             )}
+            {listActionTarget?.readonly && listActionTarget.shareCode && (
+              <ListRow
+                title={t("unsubscribeList")}
+                icon="cloud-remove-outline"
+                destructive
+                onPress={() => {
+                  setUnsubscribeTarget(listActionTarget);
+                  setListActionTarget(null);
+                }}
+              />
+            )}
             {listActionTarget?.readonly && (
               <View style={styles.actionSheetOption}>
-                <Text style={styles.readonlyHint}>{t("readonlyListHint")}</Text>
+                <Text style={styles.readonlyHint}>
+                  {t(
+                    listActionTarget.shareCode
+                      ? "subscribedListHint"
+                      : "readonlyListHint",
+                  )}
+                </Text>
               </View>
             )}
           </View>
@@ -422,6 +464,20 @@ const PatternListSelector: React.FC = () => {
           confirmLabel={t("delete")}
           confirmDestructive
           onConfirm={confirmDeleteList}
+        />
+
+        {/* ── Unsubscribe confirmation dialog ──────────────────────────── */}
+        <AppDialog
+          visible={unsubscribeTarget !== null}
+          title={t("unsubscribeList")}
+          message={t("unsubscribeListConfirm", {
+            name: unsubscribeTarget?.name ?? "",
+          })}
+          closeLabel={t("cancel")}
+          onClose={() => setUnsubscribeTarget(null)}
+          confirmLabel={t("unsubscribe")}
+          confirmDestructive
+          onConfirm={confirmUnsubscribe}
         />
       </PageContainer>
     </View>

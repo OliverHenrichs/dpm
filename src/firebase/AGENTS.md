@@ -9,6 +9,7 @@ Optional Firestore-backed list sharing. The app runs local-only when credentials
 - `publishedContent.ts` — `publishedPattern`, `publishedModifiers`: what of a list goes into the published document (URL videos only, no transcripts).
 - `MembershipService.ts` — members-only lists: asking to join, where a subscriber stands, letting in and turning away, in the same `subscribers` records; see `src/pattern/members/AGENTS.md`. `fetchSharedList` throws `MembersOnlyError` and `subscribeToSharedList` reports `NoAccessError` when the rules refuse a read.
 - `PatternSuggestionService.ts` — subscribers' pattern suggestions under a shared list (`suggestions`, `suggestionCounters`, `subscribers` subcollections); see `src/pattern/suggestions/AGENTS.md`. `confirmOwnership(list)` (in `FirebaseListService`) writes the owner record with the key, for anything the rules check against the owner; `unpublishList` deletes the suggestion subcollections before the list, since nobody could reach them afterwards.
+- `SubscriptionService.ts` — the publisher's subscriber count: `refreshSubscription` (a subscriber's phone, once per launch after `useSharedList` has read the list), `removeSubscription` (Lists → _Unsubscribe from List_, or a list that stopped syncing), `countSubscribers` (`ShareListModal`, as owner). One record per phone in `sharedLists/{code}/subscriptions/{id}`, `{ seenAt, appToken }`, named by a **random id per list** kept in `@subscriptionIds` (`src/pattern/data/SubscriptionStorage.ts`), never the anonymous user id: subscribing to an open list still never signs in. Only the owner may list the records, nobody may get one, and whoever holds an id may refresh or delete its record. The count takes records seen in the last `ACTIVE_SUBSCRIPTION_DAYS` (90), because an uninstalled phone never says goodbye. Anyone with a share code could inflate the count with scripted writes; it is a display figure, nothing depends on it. The records live under the share code, so they survive a takeover or handover of the list; `unpublishList` deletes them with the suggestion data.
 - `useSharedList` (`src/pattern/data/hooks/useSharedList.ts`) — called inside `ActivePatternListProvider`; maintains a live `onSnapshot` listener while `activeList.shareCode` is set; handles publisher unpublishing (clears `shareCode`/`readonly` locally and surfaces a themed dialog).
 
 **Publisher flow**: `ShareListModal` → `publishList()` → `IPatternList.shareCode` set → stored locally; the modal can render the code as a QR code (`react-native-qrcode-svg`).
@@ -49,8 +50,8 @@ publisher keeps control after a reinstall (new anonymous id) or on a new phone.
 Change it together with `FirebaseListService`: the rules accept exactly the document
 `publishList()` writes (the five `SharedListDocument` keys, stored under its own 8-character
 code, no `readonly` or `shareKey` on the stored list, a well-formed `suggestions` setting if any),
-allow `get` by code (members and the owner only, for a members-only list) but never `list`, and deny everything outside the two collections and the
-three suggestion subcollections.
+allow `get` by code (members and the owner only, for a members-only list) but never `list`, and deny everything outside the two collections, the
+three suggestion subcollections and `subscriptions`.
 
 - **The app token is compared by its SHA-256.** The repository is public, so it holds the hash,
   not `FIREBASE_APP_TOKEN`. Rotating the token means new values in `.env` and every EAS

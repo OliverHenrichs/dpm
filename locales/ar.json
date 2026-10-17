@@ -611,5 +611,13 @@
   "membersAsked": "لقد طلبت الانضمام. بعد أن يقبلك الناشر، ابحث عن الرمز مرة أخرى.",
   "membersLookUpAgain": "البحث مرة أخرى",
   "membersDeclinedYou": "لم يقبلك الناشر في هذه القائمة.",
-  "membersAskFailed": "تعذّر إرسال طلبك. تحقق من اتصالك وحاول مرة أخرى."
+  "membersAskFailed": "تعذّر إرسال طلبك. تحقق من اتصالك وحاول مرة أخرى.",
+  "subscriberCount": "المشتركون",
+  "subscriberCountLoading": "جارٍ عدّ المشتركين",
+  "subscriberCountUnavailable": "غير متاح حاليًا",
+  "subscriberCountHint": "الهواتف التي لديها هذه القائمة وفتحتها خلال آخر {{days}} يومًا.",
+  "unsubscribeList": "إلغاء الاشتراك في القائمة",
+  "unsubscribe": "إلغاء الاشتراك",
+  "unsubscribeListConfirm": "إزالة «{{name}}» من هذا الهاتف؟ يمكنك الاشتراك مجددًا برمز المشاركة.",
+  "subscribedListHint": "أنت تتابع هذه القائمة. ناشرها وحده يمكنه تغييرها."
 }

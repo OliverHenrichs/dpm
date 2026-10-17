@@ -611,5 +611,13 @@
   "membersAsked": "你已申请加入。发布者允许后，请再次查找代码。",
   "membersLookUpAgain": "再次查找",
   "membersDeclinedYou": "发布者没有允许你加入此列表。",
-  "membersAskFailed": "无法发送你的申请。请检查网络连接后重试。"
+  "membersAskFailed": "无法发送你的申请。请检查网络连接后重试。",
+  "subscriberCount": "订阅者",
+  "subscriberCountLoading": "正在统计订阅者",
+  "subscriberCountUnavailable": "暂时无法获取",
+  "subscriberCountHint": "拥有此列表并在过去 {{days}} 天内打开过它的手机。",
+  "unsubscribeList": "取消订阅列表",
+  "unsubscribe": "取消订阅",
+  "unsubscribeListConfirm": "从这部手机上移除“{{name}}”？之后可以用分享码重新订阅。",
+  "subscribedListHint": "你订阅了此列表，只有发布者可以修改它。"
 }

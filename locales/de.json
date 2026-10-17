@@ -611,5 +611,13 @@
   "membersAsked": "Du hast um Aufnahme gebeten. Sobald der Herausgeber dich hereinlässt, such den Code noch einmal.",
   "membersLookUpAgain": "Noch einmal suchen",
   "membersDeclinedYou": "Der Herausgeber hat dich nicht in diese Liste gelassen.",
-  "membersAskFailed": "Deine Anfrage konnte nicht gesendet werden. Prüfe deine Verbindung und versuch es noch einmal."
+  "membersAskFailed": "Deine Anfrage konnte nicht gesendet werden. Prüfe deine Verbindung und versuch es noch einmal.",
+  "subscriberCount": "Abonnenten",
+  "subscriberCountLoading": "Abonnenten werden gezählt",
+  "subscriberCountUnavailable": "Gerade nicht verfügbar",
+  "subscriberCountHint": "Handys, die diese Liste haben und sie in den letzten {{days}} Tagen geöffnet haben.",
+  "unsubscribeList": "Liste abbestellen",
+  "unsubscribe": "Abbestellen",
+  "unsubscribeListConfirm": "'{{name}}' von diesem Handy entfernen? Mit dem Freigabecode kannst du sie wieder abonnieren.",
+  "subscribedListHint": "Du folgst dieser Liste. Nur wer sie veröffentlicht, kann sie ändern."
 }
