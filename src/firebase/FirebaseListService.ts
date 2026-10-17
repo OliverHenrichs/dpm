@@ -1,5 +1,4 @@
 import {
-  collection,
   doc,
   Firestore,
   getDoc,
@@ -24,13 +23,19 @@ import {
 import { ensureSignedIn, restoreSignIn } from "@/src/firebase/auth";
 import { generateShareKey } from "@/src/firebase/shareKey";
 import {
+  isPermissionDenied,
+  randomCode,
+  requireDb,
+  SHARE_CODE_LENGTH,
+  sharedListCollection,
+} from "@/src/firebase/firestoreAccess";
+import {
   publishedModifiers,
   publishedPattern,
 } from "@/src/firebase/publishedContent";
 import { getPatternListById } from "@/src/pattern/data/PatternListStorage";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
-import * as Crypto from "expo-crypto";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -60,24 +65,9 @@ export interface PublishedList {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Generate a cryptographically secure 8-character alphanumeric share code.
- * Uses expo-crypto (CSPRNG) instead of Math.random() to ensure sufficient
- * entropy, as required by GDPR Art. 32 (security of processing).
- */
+/** A new list's share code: what subscribers type in or scan. */
 function generateShareCode(): string {
-  const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const bytes = Crypto.getRandomValues(new Uint8Array(8));
-  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
-}
-
-function requireDb(): NonNullable<typeof db> {
-  if (!firebaseAvailable || !db) {
-    throw new Error(
-      "Firebase is not configured. Set the FIREBASE_* variables (see .env.example).",
-    );
-  }
-  return db;
+  return randomCode(SHARE_CODE_LENGTH);
 }
 
 // ---------------------------------------------------------------------------
@@ -204,7 +194,6 @@ async function deleteSuggestionData(
   firestore: Firestore,
   shareCode: string,
 ): Promise<void> {
-  const listRef = doc(firestore, SHARED_LISTS_COLLECTION, shareCode);
   const snaps = await Promise.all(
     [
       SUGGESTIONS,
@@ -212,7 +201,7 @@ async function deleteSuggestionData(
       SUBSCRIBERS,
       SUBSCRIPTIONS,
       HANDOVERS,
-    ].map((name) => getDocs(collection(listRef, name))),
+    ].map((name) => getDocs(sharedListCollection(firestore, shareCode, name))),
   );
   const refs = snaps.flatMap((snap) => snap.docs.map((d) => d.ref));
   for (let i = 0; i < refs.length; i += BATCH_LIMIT) {
@@ -262,14 +251,6 @@ export class NoAccessError extends Error {
     super("No access to the shared list.");
     this.name = "NoAccessError";
   }
-}
-
-function isPermissionDenied(e: unknown): boolean {
-  return (
-    typeof e === "object" &&
-    e !== null &&
-    (e as { code?: string }).code === "permission-denied"
-  );
 }
 
 /**

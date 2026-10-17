@@ -54,7 +54,7 @@ const SuggestionsBody: React.FC<SuggestionsModalProps> = ({
   onAccept,
 }) => {
   const { t, i18n } = useTranslation();
-  const muted = useMutedSubscribers(list, true);
+  const muted = useMutedSubscribers(list);
   const mutedIds = new Set(muted.map((m) => m.uid));
   const [reviewing, setReviewing] = useState<{
     suggestion: PatternSuggestion;

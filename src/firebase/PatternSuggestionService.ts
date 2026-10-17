@@ -1,11 +1,8 @@
 import {
-  collection,
   deleteDoc,
   deleteField,
   doc,
-  Firestore,
   getDoc,
-  onSnapshot,
   orderBy,
   query,
   runTransaction,
@@ -16,15 +13,19 @@ import {
 } from "firebase/firestore";
 import {
   APP_TOKEN,
-  db,
-  firebaseAvailable,
   SUBSCRIBERS,
   SHARED_LISTS_COLLECTION,
   SUGGESTION_COUNTERS,
   SUGGESTIONS,
 } from "@/src/firebase/firebaseConfig";
 import { ensureSignedIn } from "@/src/firebase/auth";
-import { confirmOwnership } from "@/src/firebase/FirebaseListService";
+import {
+  isPermissionDenied,
+  requireDb,
+  requireShareCode,
+  sharedListCollection,
+} from "@/src/firebase/firestoreAccess";
+import { asOwner, subscribeAsOwner } from "@/src/firebase/ownership";
 import {
   IPatternList,
   ISuggestionPolicy,
@@ -100,21 +101,6 @@ export interface SuggestionStanding {
 
 export type SubmitResult = "sent" | "muted" | "limit" | "closed";
 
-function requireDb(): Firestore {
-  if (!firebaseAvailable || !db) {
-    throw new Error("Firebase is not configured.");
-  }
-  return db;
-}
-
-function listDoc(firestore: Firestore, code: string) {
-  return doc(firestore, SHARED_LISTS_COLLECTION, code);
-}
-
-function sub(firestore: Firestore, code: string, name: string) {
-  return collection(listDoc(firestore, code), name);
-}
-
 // ---------------------------------------------------------------------------
 // Subscriber
 // ---------------------------------------------------------------------------
@@ -130,10 +116,10 @@ export async function getSuggestionStanding(
   const firestore = requireDb();
   const uid = await ensureSignedIn();
   const [mute, counter] = await Promise.all([
-    getDoc(doc(sub(firestore, shareCode, SUBSCRIBERS), uid)),
+    getDoc(doc(sharedListCollection(firestore, shareCode, SUBSCRIBERS), uid)),
     getDoc(
       doc(
-        sub(firestore, shareCode, SUGGESTION_COUNTERS),
+        sharedListCollection(firestore, shareCode, SUGGESTION_COUNTERS),
         counterIdFor(policy, uid),
       ),
     ),
@@ -163,9 +149,11 @@ export async function submitSuggestion(
   const firestore = requireDb();
   const uid = await ensureSignedIn();
   const name = authorName?.trim().slice(0, 40);
-  const suggestionRef = doc(sub(firestore, shareCode, SUGGESTIONS));
+  const suggestionRef = doc(
+    sharedListCollection(firestore, shareCode, SUGGESTIONS),
+  );
   const counterRef = doc(
-    sub(firestore, shareCode, SUGGESTION_COUNTERS),
+    sharedListCollection(firestore, shareCode, SUGGESTION_COUNTERS),
     counterIdFor(policy, uid),
   );
 
@@ -197,7 +185,9 @@ export async function submitSuggestion(
     if (!isPermissionDenied(e)) throw e;
     // Refused: say why if we can. The list may have stopped taking suggestions since this
     // copy synced, in which case the policy read here no longer exists.
-    const list = await getDoc(listDoc(firestore, shareCode));
+    const list = await getDoc(
+      doc(firestore, SHARED_LISTS_COLLECTION, shareCode),
+    );
     const current = (list.data()?.list as IPatternList | undefined)
       ?.suggestions;
     if (!current) return "closed";
@@ -210,36 +200,9 @@ export async function submitSuggestion(
 
 class LimitReached extends Error {}
 
-export function isPermissionDenied(e: unknown): boolean {
-  return (
-    typeof e === "object" &&
-    e !== null &&
-    (e as { code?: string }).code === "permission-denied"
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Publisher
 // ---------------------------------------------------------------------------
-
-/**
- * Run `attempt` as the list's owner. The rules check the owner record, which names this phone's
- * anonymous id only once it has published from it: after a reinstall, or on a new phone with an
- * editable export, the first refusal re-confirms ownership with the share key and tries again.
- */
-export async function asOwner<T>(
-  list: IPatternList,
-  attempt: () => Promise<T>,
-): Promise<T> {
-  await ensureSignedIn();
-  try {
-    return await attempt();
-  } catch (e) {
-    if (!isPermissionDenied(e)) throw e;
-    await confirmOwnership(list);
-    return attempt();
-  }
-}
 
 function toSuggestion(id: string, data: Record<string, unknown>) {
   const createdAt = data.createdAt;
@@ -265,7 +228,10 @@ export function subscribeToSuggestions(
   return subscribeAsOwner(
     list,
     (firestore, code) =>
-      query(sub(firestore, code, SUGGESTIONS), orderBy("createdAt", "asc")),
+      query(
+        sharedListCollection(firestore, code, SUGGESTIONS),
+        orderBy("createdAt", "asc"),
+      ),
     (docs) => onUpdate(docs.map(({ id, data }) => toSuggestion(id, data))),
     onError,
   );
@@ -279,7 +245,8 @@ export function subscribeToMutedSubscribers(
 ): Unsubscribe {
   return subscribeAsOwner(
     list,
-    (firestore, code) => query(sub(firestore, code, SUBSCRIBERS)),
+    (firestore, code) =>
+      query(sharedListCollection(firestore, code, SUBSCRIBERS)),
     (docs) =>
       onUpdate(
         docs
@@ -293,65 +260,17 @@ export function subscribeToMutedSubscribers(
   );
 }
 
-export function subscribeAsOwner(
-  list: IPatternList,
-  build: (firestore: Firestore, code: string) => ReturnType<typeof query>,
-  onDocs: (docs: { id: string; data: Record<string, unknown> }[]) => void,
-  onError: (err: Error) => void,
-): Unsubscribe {
-  if (!firebaseAvailable || !db || !list.shareCode) {
-    onError(new Error("Firebase is not configured."));
-    return () => {};
-  }
-  const firestore = db;
-  const code = list.shareCode;
-  let unsubscribe: Unsubscribe | null = null;
-  let stopped = false;
-  let retried = false;
-
-  const listen = () => {
-    if (stopped) return;
-    unsubscribe = onSnapshot(
-      build(firestore, code),
-      (snap) =>
-        onDocs(
-          snap.docs.map((d) => ({
-            id: d.id,
-            data: d.data() as Record<string, unknown>,
-          })),
-        ),
-      (err) => {
-        if (!retried && isPermissionDenied(err)) {
-          retried = true;
-          confirmOwnership(list).then(listen, (e: unknown) =>
-            onError(e instanceof Error ? e : new Error(String(e))),
-          );
-          return;
-        }
-        onError(new Error(err.message));
-      },
-    );
-  };
-
-  ensureSignedIn().then(listen, (e: unknown) =>
-    onError(e instanceof Error ? e : new Error(String(e))),
-  );
-
-  return () => {
-    stopped = true;
-    unsubscribe?.();
-  };
-}
-
 /** Remove a suggestion: dismissed, or accepted and added to the list. */
 export async function deleteSuggestion(
   list: IPatternList,
   suggestionId: string,
 ): Promise<void> {
   const firestore = requireDb();
-  const code = requireCode(list);
+  const code = requireShareCode(list);
   await asOwner(list, () =>
-    deleteDoc(doc(sub(firestore, code, SUGGESTIONS), suggestionId)),
+    deleteDoc(
+      doc(sharedListCollection(firestore, code, SUGGESTIONS), suggestionId),
+    ),
   );
 }
 
@@ -365,11 +284,11 @@ export async function muteSubscriber(
   name?: string,
 ): Promise<void> {
   const firestore = requireDb();
-  const code = requireCode(list);
+  const code = requireShareCode(list);
   const trimmed = name?.trim().slice(0, 40);
   await asOwner(list, () =>
     setDoc(
-      doc(sub(firestore, code, SUBSCRIBERS), uid),
+      doc(sharedListCollection(firestore, code, SUBSCRIBERS), uid),
       {
         status: "muted",
         ...(trimmed && { name: trimmed }),
@@ -386,8 +305,8 @@ export async function unmuteSubscriber(
   uid: string,
 ): Promise<void> {
   const firestore = requireDb();
-  const code = requireCode(list);
-  const ref = doc(sub(firestore, code, SUBSCRIBERS), uid);
+  const code = requireShareCode(list);
+  const ref = doc(sharedListCollection(firestore, code, SUBSCRIBERS), uid);
   await asOwner(list, async () => {
     const record = await getDoc(ref);
     if ((record.data() as SubscriberRecord | undefined)?.membership) {
@@ -400,9 +319,4 @@ export async function unmuteSubscriber(
       await deleteDoc(ref);
     }
   });
-}
-
-function requireCode(list: IPatternList): string {
-  if (!list.shareCode) throw new Error("The list is not published.");
-  return list.shareCode;
 }

@@ -20,18 +20,6 @@ function clipboard(): Clipboard | null {
   }
 }
 
-/**
- * Whether something was copied. Asking does not read it, so Android shows no "pasted from your
- * clipboard" notice until the user taps to paste.
- */
-export async function hasCopiedText(): Promise<boolean> {
-  try {
-    return (await clipboard()?.hasStringAsync()) ?? false;
-  } catch {
-    return false;
-  }
-}
-
 /** What was copied, or null. */
 export async function readCopiedText(): Promise<string | null> {
   try {

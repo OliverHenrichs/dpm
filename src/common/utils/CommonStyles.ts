@@ -15,13 +15,6 @@ export const getCommonBorder = (theme: AppTheme) =>
     borderColor: theme.colors.border,
   }) satisfies Pick<ViewStyle, "borderWidth" | "borderRadius" | "borderColor">;
 
-export const getCommonButton = (theme: AppTheme, bgColor?: string) =>
-  ({
-    padding: theme.space.sm,
-    borderRadius: theme.radius.md,
-    backgroundColor: bgColor || theme.colors.primary,
-  }) satisfies ViewStyle;
-
 const createCommonLabel = (
   theme: AppTheme,
   defaultColor: string,
@@ -96,14 +89,6 @@ export const getCommonListContainer = (theme: AppTheme) =>
     marginBottom: theme.space.sm,
     ...theme.elevation.sm,
     backgroundColor: theme.colors.background,
-  }) satisfies ViewStyle;
-
-export const getCommonAddButtonContainer = () =>
-  ({
-    position: "absolute",
-    top: 0,
-    right: 0,
-    zIndex: 10,
   }) satisfies ViewStyle;
 
 export const commonStyles = StyleSheet.create((theme) => ({

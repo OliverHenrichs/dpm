@@ -1,5 +1,4 @@
 import {
-  collection,
   deleteDoc,
   doc,
   Firestore,
@@ -14,10 +13,13 @@ import {
   APP_TOKEN,
   db,
   firebaseAvailable,
-  SHARED_LISTS_COLLECTION,
   SUBSCRIPTIONS,
 } from "@/src/firebase/firebaseConfig";
-import { asOwner } from "@/src/firebase/PatternSuggestionService";
+import {
+  requireDb,
+  sharedListCollection,
+} from "@/src/firebase/firestoreAccess";
+import { asOwner } from "@/src/firebase/ownership";
 import {
   forgetSubscriptionId,
   getSubscriptionId,
@@ -44,18 +46,8 @@ export interface SubscriptionDocument {
   appToken: string;
 }
 
-function requireDb(): Firestore {
-  if (!firebaseAvailable || !db) {
-    throw new Error("Firebase is not configured.");
-  }
-  return db;
-}
-
 function subscriptions(firestore: Firestore, shareCode: string) {
-  return collection(
-    doc(firestore, SHARED_LISTS_COLLECTION, shareCode),
-    SUBSCRIPTIONS,
-  );
+  return sharedListCollection(firestore, shareCode, SUBSCRIPTIONS);
 }
 
 /** Share codes this run of the app has already counted: once per launch is enough. */
@@ -110,9 +102,4 @@ export async function countSubscribers(list: IPatternList): Promise<number> {
     ),
   );
   return snap.data().count;
-}
-
-/** Forget which lists this launch counted. Tests only. */
-export function resetRefreshedSubscriptions(): void {
-  refreshed.clear();
 }

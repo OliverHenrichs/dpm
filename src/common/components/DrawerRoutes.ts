@@ -68,10 +68,6 @@ export const LIST_TABS: AppRoute[] = [
 /** Every screen with a title of its own, for the header. */
 export const ALL_ROUTES: AppRoute[] = [...DRAWER_ROUTES, ...LIST_TABS];
 
-export function isListTab(pathname: string): boolean {
-  return LIST_TABS.some((tab) => tab.href === pathname);
-}
-
 /**
  * The screen the app returns to from the header icon ("home" button): the drawer's first entry,
  * the overview of lists.
