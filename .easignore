@@ -43,6 +43,10 @@ yarn-error.*
 .env
 .env*.local
 
+# Firebase service account keys (tools/data-removal): keep them outside the repo
+*firebase-adminsdk*.json
+*admin-key*.json
+
 # typescript
 *.tsbuildinfo
 

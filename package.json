@@ -16,6 +16,7 @@
     "test:components": "jest --selectProjects components",
     "test:rules": "npx -y firebase-tools@15.32.1 emulators:exec --only firestore --project demo-dpm \"jest -c jest.rules.config.js\"",
     "rules:deploy": "node --env-file=.env scripts/deploy-firestore-rules.js",
+    "data": "node --env-file=.env tools/data-removal/dpm-data.js",
     "audit:check": "npm audit --json > audit.json; node scripts/check-audit.js audit.json",
     "assets:check": "node scripts/check-model-assets.js",
     "eas-build-pre-install": "node scripts/check-model-assets.js",

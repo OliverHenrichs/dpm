@@ -16,7 +16,8 @@ following it and nobody republishes a copy; that duplication is what this replac
    and `acceptedAt`, and the owner record becomes `{ ownerUid: me, key: <fresh share key>,
 handover: <handoverCode> }`. The rules let the owner record change its key only in a batch that
    accepts an open offer (exists, not accepted before, under 7 days old) for the caller, and only
-   while the list exists, so a taken-down list (PR #95's takedown record) cannot be claimed. The
+   while the list exists, so a taken-down list (the takedown record of `tools/data-removal`) cannot be claimed, and a
+   blocked id (`blockedUsers`) cannot accept. The
    new phone stores the list without `readonly`, with the new key: it is the publisher now.
 3. **Follow.** The old key no longer matches, so the old owner can neither publish nor take the
    list back. `useHandedOver` (in `ActivePatternListProvider`, for the active list this phone
@@ -35,6 +36,8 @@ the new owner sees them. The confirmation dialog says so.
   to pick from. Whoever enters it first, within 7 days (`HANDOVER_DAYS`, also in the rules), wins.
 - The old owner learns of the handover only while that list is active on their phone. Until then
   their edits stay local (pushes are refused, and a failed push never fails a local edit).
-- `unpublishList` deletes the `handovers` subcollection with the suggestion data.
+- `unpublishList` deletes the `handovers` subcollection with the suggestion data. The operator's
+  data tool (`tools/data-removal`) finds offers too, and `remove-user` deletes the ones a user
+  made or accepted.
 - Tests: rules in `__tests__/rules/firestore.rules.test.ts` ("handing over"), components in
   `__tests__/components/Handover.test.tsx`.
