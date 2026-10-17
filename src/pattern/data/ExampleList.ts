@@ -70,14 +70,14 @@ export function createExampleList(
       modifiers: ["with Inside Turn", "with Outside Turn", "with Duck"],
     },
     {
-      name: "Tuck Turn",
-      typeSlug: "tuck",
+      name: "Travelling Tuck",
+      typeSlug: "pass",
       counts: 6,
       level: "beginner",
       description: t("exampleDescTuckTurn"),
       tags: [beginners2],
       prerequisites: ["Left Side Pass"],
-      modifiers: ["with Free Spin"],
+      modifiers: [],
     },
     {
       name: "Basket Whip",
