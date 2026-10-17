@@ -192,7 +192,7 @@ The app is not directed at children under 13 (or under 16 in the EU). We do not 
 
 ## 9. Security
 
-We use cryptographically secure random number generation (CSPRNG) to create share codes and share keys. Published lists are protected by Firestore Security Rules: only the publisher's anonymous ID, or whoever holds the list's share key, can update or delete a list, and nobody can list or browse the published lists. However, any person who obtains a share code can read the corresponding list — do not publish lists containing sensitive personal information.
+We use cryptographically secure random number generation (CSPRNG) to create share codes and share keys. Published lists are protected by Firestore Security Rules: only the publisher's anonymous ID, or whoever holds the list's share key, can update or delete a list, and nobody can list or browse the published lists. However, any person who obtains a share code can read the corresponding list, unless you made it members only, in which case only the subscribers you let in can read it. Either way, do not publish lists containing sensitive personal information.
 
 Downloaded models are checked against a fixed SHA-256 checksum before use, so a corrupted or altered file is rejected.
 
