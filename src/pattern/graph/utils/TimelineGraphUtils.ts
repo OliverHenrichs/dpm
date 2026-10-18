@@ -9,6 +9,7 @@ import {
   VERTICAL_STACK_SPACING,
 } from "@/src/pattern/graph/types/Constants";
 import { applyCollisionAvoidance } from "@/src/pattern/graph/utils/CollisionAvoidanceUtils";
+import { orderLanes } from "@/src/pattern/graph/utils/laneOrder";
 
 export interface SwimlaneInfo {
   y: number;
@@ -46,19 +47,21 @@ export function calculateDynamicTimelineLayout(
   skipLevelEdgeInfos: SkipLevelEdgeInfo[];
   typeColorMap: Map<string, string>;
 } {
-  const grouped = groupPatternsByTypeId(patterns, patternTypes);
+  // Lanes for the types shown, linked types side by side (`laneOrder.ts`).
+  const lanes = orderLanes(patternTypes, patterns);
+  const grouped = groupPatternsByTypeId(patterns, lanes);
   const maxStackPerType = calculateMaxStackPerTypeDynamic(grouped, depthMap);
 
   let { swimlaneHeights, swimlaneStarts } = calculateSwimlaneSizesDynamic(
     maxStackPerType,
-    patternTypes,
+    lanes,
   );
 
   const positions = positionPatternsByPrerequisitesDynamic(
     grouped,
     depthMap,
     swimlaneStarts,
-    patternTypes,
+    lanes,
   );
 
   // Use the same collision avoidance logic
@@ -77,13 +80,13 @@ export function calculateDynamicTimelineLayout(
       positions,
       skipLevelEdgeInfos,
       swimlaneHeights,
-      patternTypes,
+      lanes,
     );
 
   const swimlanes = buildSwimlaneInformationDynamic(
     swimlaneHeights,
     adjustedSwimlaneStarts,
-    patternTypes,
+    lanes,
   );
 
   const typeColorMap = new Map<string, string>();

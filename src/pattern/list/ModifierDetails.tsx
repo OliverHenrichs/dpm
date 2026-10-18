@@ -33,6 +33,10 @@ const ModifierDetails: React.FC<ModifierDetailsProps> = ({
 
   return (
     <View style={styles.container}>
+      {modifier.description ? (
+        <Text style={styles.description}>{modifier.description}</Text>
+      ) : null}
+
       {/* Videos — only for universal modifiers */}
       {modifier.universal && (modifier.videoRefs ?? []).length > 0 && (
         <VideoCarousel videoRefs={modifier.videoRefs} />
@@ -71,6 +75,11 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: theme.space.none,
   },
   label: getCommonLabel(theme),
+  description: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.text,
+    marginBottom: theme.space.sm,
+  },
   emptyText: {
     ...getCommon2ndOrderLabel(theme),
     fontStyle: "italic",

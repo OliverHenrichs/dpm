@@ -29,7 +29,10 @@ import {
   getSuggesterName,
   setSuggesterName,
 } from "@/src/pattern/suggestions/SuggesterNameStorage";
-import { MAX_AUTHOR_NAME_LENGTH } from "@/src/pattern/suggestions/suggestions";
+import {
+  MAX_AUTHOR_NAME_LENGTH,
+  MAX_SUGGESTED_NAME_LENGTH,
+} from "@/src/pattern/suggestions/suggestions";
 
 interface SuggestPatternModalProps {
   visible: boolean;
@@ -160,6 +163,7 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
                 onCancel={onClose}
                 title={t("suggestPattern")}
                 saveLabel={t("suggestSend")}
+                nameMaxLength={MAX_SUGGESTED_NAME_LENGTH}
                 header={
                   <View style={styles.header}>
                     <Text style={styles.hint}>

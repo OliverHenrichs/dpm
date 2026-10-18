@@ -74,5 +74,11 @@ nothing selected.
   (`src/anonymize/AGENTS.md`).
 - A local video's tile also offers _Put online_, and a video shared to DPM can open the add form
   through `newVideo` route params (`src/videoLinks/AGENTS.md`).
-- `PatternListTemplateModal` creates and sets up a list: template, name, types, dance.
+- `PatternListTemplateModal` creates and sets up a list: template, name, types, dance. The List
+  tab opens it too, in edit mode (`saveList`), so types are edited where the patterns are.
+- `EditPatternForm`'s type picker ends in _New type_ when given `onAddType` (`addPatternType`
+  in `usePatternCrud`: unique name, the first unused palette colour), selecting the new type.
+- A modifier's position shows as _Entry_ / _During_ / _Exit_ (`prefix` / `amends` / `postfix`);
+  its optional `description` shows in the Modifiers tab and under the variant strip when picked.
+  With no variant picked, `PatternDetails` says what a variant is.
 - `ShareListModal` / `SubscribeListModal` are the sharing UI (`src/firebase/AGENTS.md`).

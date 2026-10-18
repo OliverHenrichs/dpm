@@ -35,7 +35,8 @@ import RevealScrollView from "@/src/common/components/RevealScrollView";
 interface PatternListTemplateModalProps {
   visible: boolean;
   onClose: () => void;
-  onCreateList: (list: IPatternList, initialPatterns: IPattern[]) => void;
+  /** Creating only; editing an existing list (`editList`) never calls it. */
+  onCreateList?: (list: IPatternList, initialPatterns: IPattern[]) => void;
   /** When set the modal opens straight into the configure step in edit mode */
   editList?: IPatternList;
   /** Type IDs that have at least one pattern — their ✕ button is disabled */
@@ -234,6 +235,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       // ── Create path ───────────────────────────────────────────────────
       const modifiers = createTemplateModifiers(
         TEMPLATE_MODIFIERS[selectedTemplate?.id ?? ""] ?? [],
+        t,
       );
       const created = {
         ...createPatternList(draftName.trim(), finalTypes),
@@ -249,7 +251,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         draftDance,
         modifiers,
       );
-      onCreateList(newList, initialPatterns);
+      onCreateList?.(newList, initialPatterns);
     }
     handleClose();
   };

@@ -56,6 +56,8 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
       .filter((ref) => ref.modifierId === modifierId)
       .reduce((count, ref) => count + ref.videoRefs.length, 0);
 
+  const selectedModifier = modifiers.find((m) => m.id === selectedModifierId);
+
   const hasAnyAttachedModifier =
     universalModifiers.length > 0 || attachedNonUniversal.length > 0;
 
@@ -128,6 +130,13 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
           />
         ))}
       </ScrollView>
+      {/* What the chosen variant changes; with none chosen, what a variant is. Someone who
+          opens a pattern from the Map has not seen the Modifiers tab (tester review 1). */}
+      {selectedModifier?.description ? (
+        <Text style={styles.note}>{selectedModifier.description}</Text>
+      ) : !isEditMode && selectedModifierId === null ? (
+        <Text style={styles.note}>{t("variantHint")}</Text>
+      ) : null}
     </View>
   );
 };
@@ -143,6 +152,11 @@ const styles = StyleSheet.create((theme) => ({
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: theme.space.xs,
+  },
+  note: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginTop: theme.space.xxs,
   },
   strip: {
     flexDirection: "row",

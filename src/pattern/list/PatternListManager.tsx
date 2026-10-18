@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Modal, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { SegmentedControl } from "@/src/common/ui";
+import { IconButton, SegmentedControl } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,
@@ -16,6 +16,7 @@ import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import RevealScrollView from "@/src/common/components/RevealScrollView";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
+import PatternListTemplateModal from "@/src/pattern/list/PatternListTemplateModal";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import {
@@ -63,7 +64,12 @@ const PatternListManager = () => {
     addModifier,
     editModifier,
     deleteModifier,
+    addPatternType,
+    saveList,
   } = usePatternCrud();
+  // The list's own settings (types above all), opened from here so adding a type does not
+  // mean leaving the list for the Lists screen (tester review 1).
+  const [isEditingList, setIsEditingList] = useState(false);
 
   const [selectedPattern, setSelectedPattern] = useState<IPattern | undefined>(
     undefined,
@@ -287,6 +293,7 @@ const PatternListManager = () => {
                   modifiers={modifiers}
                   onAccepted={handleAddPattern}
                   onCancel={closeAddForm}
+                  onAddType={addPatternType}
                   initialVideos={initialVideos}
                 />
               </RevealScrollView>
@@ -312,6 +319,7 @@ const PatternListManager = () => {
                   modifiers={modifiers}
                   onAccepted={handleSavePattern}
                   onCancel={() => setIsEditing(false)}
+                  onAddType={addPatternType}
                   existing={selectedPattern}
                 />
               </RevealScrollView>
@@ -407,6 +415,19 @@ const PatternListManager = () => {
           />
         )}
 
+        {activeList && !isReadonly && (
+          <PatternListTemplateModal
+            visible={isEditingList}
+            onClose={() => setIsEditingList(false)}
+            editList={activeList}
+            usedTypeIds={new Set(patterns.map((p) => p.typeId))}
+            onSaveList={async (list) => {
+              await saveList(list);
+              setIsEditingList(false);
+            }}
+          />
+        )}
+
         <AnonymizeJobsBanner openAction={openJobPattern} />
 
         {/* Tab strip */}
@@ -444,6 +465,13 @@ const PatternListManager = () => {
               selectedPattern={selectedPattern}
               headerActions={
                 <>
+                  {!isReadonly && (
+                    <IconButton
+                      icon="shape-outline"
+                      onPress={() => setIsEditingList(true)}
+                      accessibilityLabel={t("editTypes")}
+                    />
+                  )}
                   {showsMembers && (
                     <SuggestionsButton
                       icon="account-group-outline"

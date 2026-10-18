@@ -17,8 +17,9 @@ export const SUPPORTED_MAJOR = 3;
  * 5: patterns may carry `createdAt` (the day headers of the date sort).
  * 6: lists may carry `suggestions` (subscribers may suggest patterns).
  * 7: lists may carry `membersOnly` (only subscribers let in may read the published list).
+ * 8: modifiers may carry `description` (what the modifier changes).
  */
-export const SUPPORTED_MINOR = 7;
+export const SUPPORTED_MINOR = 8;
 
 export interface ParsedVersion {
   major: number;

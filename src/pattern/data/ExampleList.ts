@@ -105,7 +105,7 @@ export function createExampleList(
     createPatternType("whip", PATTERN_TYPE_COLORS.violet),
     createPatternType("tuck", PATTERN_TYPE_COLORS.amber),
   ];
-  const modifiers = createTemplateModifiers(WCS_MODIFIERS);
+  const modifiers = createTemplateModifiers(WCS_MODIFIERS, t);
   const patterns = resolveTemplatePatterns(figures, types, "wcs", modifiers);
   return {
     ...createPatternList(t("exampleListName"), types),

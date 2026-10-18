@@ -96,7 +96,7 @@ replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.7.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.8.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -140,6 +140,8 @@ Version history (what each minor added):
   list may suggest patterns (`src/pattern/suggestions/`). A malformed one is dropped quietly.
 - **3.7** `IPatternList.membersOnly` (`true` or absent), whether only subscribers the publisher
   let in may read the published list (`src/pattern/members/`). Anything but `true` is dropped.
+- **3.8** `IModifier.description`, what the modifier changes. Trimmed; blank or not text is
+  dropped quietly. Template modifiers bring a translated one (`TemplateModifier.descriptionKey`).
 
 ## Shared list context
 

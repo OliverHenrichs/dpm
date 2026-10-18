@@ -799,3 +799,53 @@ describe("PatternListManager", () => {
     });
   });
 });
+
+describe("PatternListManager pattern types", () => {
+  it("opens the list's types from the List tab and saves a new one", async () => {
+    const { list } = await renderManager([pattern(1, "Sugar Push")]);
+
+    fireEvent.press(screen.getByLabelText("Edit the list and its types"));
+    fireEvent.press(await screen.findByText("Add type"));
+    const names = screen.getAllByPlaceholderText("Type name");
+    fireEvent.changeText(names.at(-1)!, "pass");
+    fireEvent.press(screen.getByText("Save"));
+
+    await waitFor(async () =>
+      expect(
+        (await storedList(list.id)).patternTypes.map((t) => t.slug),
+      ).toEqual(["push", "pass"]),
+    );
+  });
+
+  it("closes the list's settings without saving", async () => {
+    const { list } = await renderManager([]);
+
+    fireEvent.press(screen.getByLabelText("Edit the list and its types"));
+    fireEvent.press(await screen.findByText("Add type"));
+    fireEvent.press(screen.getByText("Cancel"));
+
+    await waitFor(() => expect(screen.queryByText("Add type")).toBeNull());
+    expect((await storedList(list.id)).patternTypes).toHaveLength(1);
+  });
+
+  it("adds a type from the pattern form", async () => {
+    const { list } = await renderManager([]);
+    openAddForm();
+
+    fireEvent.press(await screen.findByText("New type"));
+    fireEvent.changeText(screen.getByLabelText("Type name"), "Whip");
+    fireEvent.press(screen.getAllByText("Add type").at(-1)!);
+
+    await waitFor(async () =>
+      expect(
+        (await storedList(list.id)).patternTypes.map((t) => t.slug),
+      ).toEqual(["push", "whip"]),
+    );
+  });
+
+  it("offers no type editing on a read-only list", async () => {
+    await renderManager([], { readonly: true });
+
+    expect(screen.queryByLabelText("Edit the list and its types")).toBeNull();
+  });
+});

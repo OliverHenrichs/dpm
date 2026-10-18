@@ -6,7 +6,12 @@ import {
   fireEvent,
   renderWithProviders,
   screen,
+  waitFor,
 } from "@/utils/renderWithProviders";
+import {
+  peekAsyncStorage,
+  seedAsyncStorage,
+} from "@/__mocks__/@react-native-async-storage/async-storage";
 
 const TYPES = [
   createTestPatternType({ slug: "push", color: "#FF0000" }),
@@ -19,7 +24,27 @@ const renderLegend = (patternTypes = TYPES) =>
 const expand = () => fireEvent.press(screen.getByText("Legend"));
 
 describe("Legend", () => {
+  describe("first visit", () => {
+    it("opens by itself the first time, and not again", async () => {
+      renderLegend();
+
+      expect(await screen.findByText("Type Colors:")).toBeOnTheScreen();
+      expect(peekAsyncStorage()["@graphLegendSeen"]).toBe("true");
+    });
+
+    it("stays closed once seen", async () => {
+      seedAsyncStorage({ "@graphLegendSeen": "true" });
+      renderLegend();
+
+      await waitFor(() => expect(screen.getByText("Legend")).toBeOnTheScreen());
+      expect(screen.queryByText("Type Colors:")).toBeNull();
+    });
+  });
+
   describe("collapsed", () => {
+    // Seen before, so it starts closed (first visit has its own tests above).
+    beforeEach(() => seedAsyncStorage({ "@graphLegendSeen": "true" }));
+
     it("is out of the way until asked for", () => {
       renderLegend();
 
@@ -45,6 +70,9 @@ describe("Legend", () => {
   });
 
   describe("what it explains", () => {
+    // Seen before, so it starts closed (first visit has its own tests above).
+    beforeEach(() => seedAsyncStorage({ "@graphLegendSeen": "true" }));
+
     it("names every pattern type in the list", () => {
       renderLegend();
       expand();
@@ -97,6 +125,8 @@ describe("Legend", () => {
   });
 
   describe("edge cases", () => {
+    beforeEach(() => seedAsyncStorage({ "@graphLegendSeen": "true" }));
+
     it("copes with a list that has no types", () => {
       renderLegend([]);
       expand();

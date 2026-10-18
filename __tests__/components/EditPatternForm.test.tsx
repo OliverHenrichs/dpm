@@ -343,16 +343,83 @@ describe("EditPatternForm rhythm", () => {
     expect(await save(onAccepted)).not.toHaveProperty("rhythm");
   });
 
-  it("offers no whole rhythms while the field is empty", async () => {
+  it("offers the dance's basic rhythms while the field is empty", async () => {
     const list = createTestPatternList({ dance: "wcs" });
-    renderNew({ lists: [list] });
+    const onAccepted = renderNew({ lists: [list] });
 
-    // A new pattern starts at 6 counts, which West Coast Swing has a basic rhythm for.
+    // A new pattern starts at 6 counts, which West Coast Swing has basic rhythms for.
+    fireEvent.press(await screen.findByText("1 2 3a4 5a6"));
+
+    expect(rhythmInput().props.value).toBe("1 2 3a4 5a6");
+    expect(screen.queryByText("1 2 3&4 5&6")).toBeNull();
+    expect(await save(onAccepted)).toMatchObject({
+      counts: 6,
+      rhythm: "1 2 3a4 5a6",
+    });
+  });
+
+  it("offers no whole rhythm without a dance", async () => {
+    renderNew({ lists: [createTestPatternList()] });
+
     expect(
       await screen.findByPlaceholderText("e.g. 1 2 3&4 5&6"),
     ).toBeOnTheScreen();
     expect(screen.queryByText("1 2 3&4 5&6")).toBeNull();
-    expect(screen.queryByText("1 2 3 4 5 6")).toBeNull();
+  });
+});
+
+describe("EditPatternForm new type", () => {
+  const PASS = createTestPatternType({ slug: "pass" });
+
+  it("adds a type from the picker and selects it", async () => {
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    const onAddType = jest.fn().mockResolvedValue(PASS);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+        onAddType={onAddType}
+      />,
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+
+    fireEvent.press(screen.getByText("New type"));
+    fireEvent.changeText(screen.getByLabelText("Type name"), "pass");
+    fireEvent.press(screen.getAllByText("Add type").at(-1)!);
+    await waitFor(() => expect(onAddType).toHaveBeenCalledWith("pass"));
+
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() => expect(onAccepted).toHaveBeenCalled());
+    expect(onAccepted.mock.calls[0][0].typeId).toBe(PASS.id);
+  });
+
+  it("says so when the name is already used", async () => {
+    const onAddType = jest.fn().mockResolvedValue(null);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={noop}
+        onCancel={noop}
+        onAddType={onAddType}
+      />,
+    );
+
+    fireEvent.press(screen.getByText("New type"));
+    fireEvent.changeText(screen.getByLabelText("Type name"), "push");
+    fireEvent.press(screen.getAllByText("Add type").at(-1)!);
+
+    expect(await screen.findByText("Name already used")).toBeOnTheScreen();
+  });
+
+  it("offers no new type without a way to add one", () => {
+    renderForm([]);
+
+    expect(screen.queryByText("New type")).toBeNull();
   });
 });
 

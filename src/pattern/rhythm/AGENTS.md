@@ -28,9 +28,10 @@ match its counts is a bug.
 
 `nextRhythmSteps` offers the next token to append (a step, a triple, a swung triple, a held
 beat), with an _Undo_ bubble (`removeLastRhythmStep`) that takes the last token off again, so a
-mistap is fixed without the keyboard. Whole rhythms are deliberately **not** offered for an empty
-field: guessed from the counts and the list's dance, they confused more than they helped.
-Templates give their starter patterns the dance's basic rhythm (`defaultRhythm`, from
+mistap is fixed without the keyboard. While the field is empty, the form offers the list's dance's
+basic rhythms for the counts (`basicRhythms`), one tap each, and nothing else: no step on every beat.
+They were taken out on 2026-10-11 as confusing and brought back on 2026-10-18 after a tester asked
+for them, now that the rhythm section is folded by default. Templates give their starter patterns the dance's basic rhythm (`defaultRhythm`, from
 `DANCE_RHYTHMS`; the dance is `IPatternList.dance`, `src/pattern/types/Dance.ts`).
 
 **Only add a dance's rhythm when it is the standard one**, verified, not guessed. Argentine tango

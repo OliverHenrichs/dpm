@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { Button } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import Svg, { Circle, Path } from "react-native-svg";
+import {
+  isLegendSeen,
+  markLegendSeen,
+} from "@/src/pattern/graph/data/GraphHintStorage";
 
 interface LegendProps {
   patternTypes: PatternType[];
@@ -16,6 +20,19 @@ const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Open by itself the first time the Map is shown, then stay out of the way.
+  useEffect(() => {
+    let active = true;
+    isLegendSeen().then((seen) => {
+      if (!active || seen) return;
+      setIsExpanded(true);
+      markLegendSeen();
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (!isExpanded) {
     return (
@@ -47,7 +64,9 @@ const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
         {patternTypes.map((type) => (
           <View style={styles.legendItem} key={type.id}>
             <View style={[styles.colorBox, { borderColor: type.color }]} />
-            <Text style={styles.legendText}>{type.slug} lane</Text>
+            <Text style={styles.legendText}>
+              {t("legendTypeLane", { type: type.slug })}
+            </Text>
           </View>
         ))}
       </View>
@@ -111,7 +130,9 @@ const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
         </View>
         <View style={styles.legendItem}>
           <Text style={styles.arrowText}>→</Text>
-          <Text style={styles.legendText}>Prerequisite direction</Text>
+          <Text style={styles.legendText}>
+            {t("legendPrerequisiteDirection")}
+          </Text>
         </View>
         {/* The badges a node draws in its bottom-right corner. Rendered here
             with the same shapes, not emoji, so the legend matches the graph
