@@ -17,6 +17,8 @@ export interface IModifier {
   position: ModifierPosition; // precedes / follows / modifies within
   universal: boolean;
   videoRefs: IVideoReference[]; // only used when universal === true
+  /** What the modifier changes, in a sentence. Optional; absent rather than empty. */
+  description?: string;
 }
 
 /**

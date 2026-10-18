@@ -99,7 +99,10 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
 
   const handleFinish = () => {
     if (!modifier.name.trim()) return;
-    onAccepted(modifier);
+    // An optional field that reaches a published list goes absent, never empty.
+    const { description, ...rest } = modifier;
+    const trimmed = description?.trim();
+    onAccepted(trimmed ? { ...rest, description: trimmed } : rest);
   };
 
   return (
@@ -117,6 +120,20 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
           onChangeText={(text) => setModifier({ ...modifier, name: text })}
           style={styles.input}
           placeholderTextColor={theme.colors.textMuted}
+        />
+
+        {/* Description */}
+        <Text style={styles.label}>{t("modifierDescription")}</Text>
+        <RevealTextInput
+          placeholder={t("modifierDescriptionPlaceholder")}
+          value={modifier.description ?? ""}
+          onChangeText={(text) =>
+            setModifier({ ...modifier, description: text })
+          }
+          multiline
+          style={styles.input}
+          placeholderTextColor={theme.colors.textMuted}
+          accessibilityLabel={t("modifierDescription")}
         />
 
         {/* Position */}

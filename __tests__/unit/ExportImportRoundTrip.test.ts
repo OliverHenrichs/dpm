@@ -623,6 +623,39 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("modifier descriptions (3.8)", () => {
+    const modifier = (description: unknown) => ({
+      id: "m1",
+      name: "with Duck",
+      position: "postfix" as const,
+      universal: false,
+      videoRefs: [],
+      description: description as string,
+    });
+
+    it("keeps what a modifier changes", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], { modifiers: [modifier("The leader ducks.")] }),
+      ]);
+
+      expect(importResult.patternLists![0].modifiers[0].description).toBe(
+        "The leader ducks.",
+      );
+    });
+
+    it("drops a blank or non-text description", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], {
+          modifiers: [modifier("  "), { ...modifier(3), id: "m2" }],
+        }),
+      ]);
+
+      importResult.patternLists![0].modifiers.forEach((m) =>
+        expect(m).not.toHaveProperty("description"),
+      );
+    });
+  });
+
   describe("export envelope", () => {
     it("writes the current format version and a parseable date", async () => {
       const { exported } = await roundTrip([listWith([])]);

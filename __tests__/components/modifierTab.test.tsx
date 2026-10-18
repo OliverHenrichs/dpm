@@ -237,7 +237,7 @@ describe("EditModifierForm", () => {
       const { saved } = renderForm();
 
       fireEvent.changeText(nameField(), "with a spin");
-      fireEvent.press(screen.getByText("Postfix"));
+      fireEvent.press(screen.getByText("Exit"));
       saveModifier();
 
       expect(saved()).toMatchObject({
@@ -245,6 +245,20 @@ describe("EditModifierForm", () => {
         position: "postfix",
         universal: false,
       });
+      expect(saved()).not.toHaveProperty("description");
+    });
+
+    it("keeps a description, trimmed", () => {
+      const { saved } = renderForm();
+
+      fireEvent.changeText(nameField(), "with Duck");
+      fireEvent.changeText(
+        screen.getByLabelText("Description"),
+        "  The leader ducks.  ",
+      );
+      saveModifier();
+
+      expect(saved().description).toBe("The leader ducks.");
     });
 
     it("refuses a blank name", () => {

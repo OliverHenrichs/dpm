@@ -176,3 +176,46 @@ describe("PatternDetailsModal", () => {
     });
   });
 });
+
+describe("PatternDetailsModal variants", () => {
+  const duck = {
+    id: "m-duck",
+    name: "with Duck",
+    position: "postfix" as const,
+    universal: false,
+    videoRefs: [],
+    description: "The leader ducks under the joined hands.",
+  };
+
+  function renderWithDuck() {
+    const subject = pattern({
+      modifierRefs: [{ modifierId: duck.id, videoRefs: [] }],
+    });
+    renderWithProviders(
+      <PatternDetailsModal
+        visible
+        pattern={subject}
+        allPatterns={[subject]}
+        patternTypes={[TYPE]}
+        modifiers={[duck]}
+        onClose={jest.fn()}
+      />,
+    );
+  }
+
+  it("says what a variant is before one is picked", () => {
+    renderWithDuck();
+
+    expect(screen.getByText(/A variant is this pattern/)).toBeOnTheScreen();
+  });
+
+  it("shows the picked modifier's description, under its dancer's position", () => {
+    renderWithDuck();
+
+    expect(screen.getByText("Exit")).toBeOnTheScreen();
+    fireEvent.press(screen.getByLabelText("with Duck"));
+
+    expect(screen.getByText(duck.description)).toBeOnTheScreen();
+    expect(screen.queryByText(/A variant is this pattern/)).toBeNull();
+  });
+});

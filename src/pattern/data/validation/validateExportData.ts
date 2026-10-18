@@ -248,6 +248,9 @@ function normalizeModifiers(
     )
       ? (entry.position as ModifierPosition)
       : "amends";
+    // 3.8: optional; anything but non-blank text is dropped quietly.
+    const description =
+      typeof entry.description === "string" ? entry.description.trim() : "";
     modifiers.push({
       id: entry.id,
       name: asString(entry.name, ""),
@@ -258,6 +261,7 @@ function normalizeModifiers(
         { list: where.list, modifier: asString(entry.name, entry.id) },
         warnings,
       ),
+      ...(description && { description }),
     });
   }
   return modifiers;

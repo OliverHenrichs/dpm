@@ -34,6 +34,8 @@ export interface TemplateModifier {
   name: string;
   position: ModifierPosition;
   universal: boolean;
+  /** Translation key of what it changes; the name stays the dance's own term. */
+  descriptionKey?: string;
 }
 
 /**
@@ -144,9 +146,13 @@ export function createPatternType(slug: string, color: string): PatternType {
   };
 }
 
-/** Turn a template's modifiers into the list's own, each with a fresh id. */
+/**
+ * Turn a template's modifiers into the list's own, each with a fresh id, and its description in
+ * the user's language when `t` is given.
+ */
 export function createTemplateModifiers(
   templateModifiers: TemplateModifier[],
+  t?: (key: string) => string,
 ): IModifier[] {
   return templateModifiers.map((tm) => ({
     id: generateUUID(),
@@ -154,6 +160,7 @@ export function createTemplateModifiers(
     position: tm.position,
     universal: tm.universal,
     videoRefs: [],
+    ...(t && tm.descriptionKey && { description: t(tm.descriptionKey) }),
   }));
 }
 
@@ -208,12 +215,42 @@ export function resolveTemplatePatterns(
  * an inside turn, so it goes only on figures that take one.
  */
 export const WCS_MODIFIERS: TemplateModifier[] = [
-  { name: "with Inside Turn", position: "amends", universal: false },
-  { name: "with Outside Turn", position: "amends", universal: false },
-  { name: "with Free Spin", position: "amends", universal: false },
-  { name: "with Duck", position: "postfix", universal: false },
-  { name: "Hesitation", position: "amends", universal: true },
-  { name: "with Hand Change", position: "amends", universal: true },
+  {
+    name: "with Inside Turn",
+    position: "amends",
+    universal: false,
+    descriptionKey: "modifierDescInsideTurn",
+  },
+  {
+    name: "with Outside Turn",
+    position: "amends",
+    universal: false,
+    descriptionKey: "modifierDescOutsideTurn",
+  },
+  {
+    name: "with Free Spin",
+    position: "amends",
+    universal: false,
+    descriptionKey: "modifierDescFreeSpin",
+  },
+  {
+    name: "with Duck",
+    position: "postfix",
+    universal: false,
+    descriptionKey: "modifierDescDuck",
+  },
+  {
+    name: "Hesitation",
+    position: "amends",
+    universal: true,
+    descriptionKey: "modifierDescHesitation",
+  },
+  {
+    name: "with Hand Change",
+    position: "amends",
+    universal: true,
+    descriptionKey: "modifierDescHandChange",
+  },
 ];
 
 /** Modifiers per template id; a template not listed brings none. */
