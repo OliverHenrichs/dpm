@@ -76,70 +76,61 @@ async function createExportData(
     pattern: T,
   ) => (includeTranscripts ? pattern : withoutTranscripts(pattern));
 
-  // Build the lists, optionally embedding videos and stripping local refs
+  // Embeds a group's local videos, keyed by their original path, or with `includeVideos` off
+  // drops them: a path on this phone means nothing on another.
+  const portable = async (
+    refs: IVideoReference[] | undefined,
+    context: string,
+  ): Promise<IVideoReference[]> => {
+    if (!includeVideos) return (refs ?? []).filter((r) => r.type !== "local");
+    for (const videoRef of refs ?? []) {
+      if (videoRef.type !== "local" || videos[videoRef.value]) continue;
+      const base64Data = await getVideo(videoRef, warnings, context);
+      if (base64Data) videos[videoRef.value] = base64Data;
+    }
+    return refs ?? [];
+  };
+
   const exportedLists: PatternListWithPatterns[] = [];
   for (const list of patternLists) {
-    // Process universal modifier videos
+    // Universal modifiers' own videos
     const exportedModifiers = [];
     for (const modifier of list.modifiers ?? []) {
-      if (includeVideos) {
-        await addModifierVideos(
-          modifier.id,
-          modifier.videoRefs,
-          videos,
-          warnings,
-        );
-        exportedModifiers.push(modifier);
-      } else {
-        const portableRefs = (modifier.videoRefs ?? []).filter(
-          (ref) => ref.type !== "local",
-        );
-        exportedModifiers.push({ ...modifier, videoRefs: portableRefs });
-      }
+      const videoRefs = await portable(
+        modifier.videoRefs,
+        `modifier:${modifier.id}`,
+      );
+      exportedModifiers.push(
+        includeVideos ? modifier : { ...modifier, videoRefs },
+      );
     }
 
     const exportedPatterns = [];
     for (const pattern of list.patterns) {
-      if (includeVideos) {
-        await addPatternVideos(pattern.id, pattern.videoRefs, videos, warnings);
-        // Process per-pattern modifier combination videos
-        const exportedModifierRefs = [];
-        for (const modRef of pattern.modifierRefs ?? []) {
-          await addModifierRefVideos(
-            pattern.id,
-            modRef.modifierId,
-            modRef.videoRefs,
-            videos,
-            warnings,
-          );
-          exportedModifierRefs.push(modRef);
-        }
-        exportedPatterns.push(
-          transcripts({
-            ...pattern,
-            modifierRefs: exportedModifierRefs,
-          }),
+      const videoRefs = await portable(
+        pattern.videoRefs,
+        `pattern:${pattern.id}`,
+      );
+      // Each modifier combination's videos
+      const modifierRefs = [];
+      for (const modRef of pattern.modifierRefs ?? []) {
+        const refs = await portable(
+          modRef.videoRefs,
+          `pattern:${pattern.id}+modifier:${modRef.modifierId}`,
         );
-      } else {
-        const portableRefs = (pattern.videoRefs ?? []).filter(
-          (ref) => ref.type !== "local",
-        );
-        const portableModifierRefs = (pattern.modifierRefs ?? []).map(
-          (modRef) => ({
-            ...modRef,
-            videoRefs: (modRef.videoRefs ?? []).filter(
-              (ref) => ref.type !== "local",
-            ),
-          }),
-        );
-        exportedPatterns.push(
-          withoutTranscripts({
-            ...pattern,
-            videoRefs: portableRefs,
-            modifierRefs: portableModifierRefs,
-          }),
+        modifierRefs.push(
+          includeVideos ? modRef : { ...modRef, videoRefs: refs },
         );
       }
+      exportedPatterns.push(
+        includeVideos
+          ? transcripts({ ...pattern, modifierRefs })
+          : withoutTranscripts({
+              ...pattern,
+              videoRefs: videoRefs,
+              modifierRefs,
+            }),
+      );
     }
     exportedLists.push({
       ...list,
@@ -161,61 +152,6 @@ async function createExportData(
     patternLists: exportedLists,
     videos,
   };
-}
-
-async function addPatternVideos(
-  patternId: number,
-  videoRefs: IVideoReference[] | undefined,
-  videos: IVideoList,
-  warnings: string[],
-) {
-  if (!videoRefs) return;
-  for (const videoRef of videoRefs) {
-    if (videoRef.type !== "local" || videos[videoRef.value]) continue;
-    const base64Data = await getVideo(
-      videoRef,
-      warnings,
-      `pattern:${patternId}`,
-    );
-    if (base64Data) videos[videoRef.value] = base64Data;
-  }
-}
-
-async function addModifierVideos(
-  modifierId: string,
-  videoRefs: IVideoReference[] | undefined,
-  videos: IVideoList,
-  warnings: string[],
-) {
-  if (!videoRefs) return;
-  for (const videoRef of videoRefs) {
-    if (videoRef.type !== "local" || videos[videoRef.value]) continue;
-    const base64Data = await getVideo(
-      videoRef,
-      warnings,
-      `modifier:${modifierId}`,
-    );
-    if (base64Data) videos[videoRef.value] = base64Data;
-  }
-}
-
-async function addModifierRefVideos(
-  patternId: number,
-  modifierId: string,
-  videoRefs: IVideoReference[] | undefined,
-  videos: IVideoList,
-  warnings: string[],
-) {
-  if (!videoRefs) return;
-  for (const videoRef of videoRefs) {
-    if (videoRef.type !== "local" || videos[videoRef.value]) continue;
-    const base64Data = await getVideo(
-      videoRef,
-      warnings,
-      `pattern:${patternId}+modifier:${modifierId}`,
-    );
-    if (base64Data) videos[videoRef.value] = base64Data;
-  }
 }
 
 async function getVideo(

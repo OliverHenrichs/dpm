@@ -40,6 +40,5 @@ false` empties the answer ("nothing to suggest"). The vocabulary is for spelling
 
 ## Testing
 
-`llama.rn` is mocked globally: `setLlamaAnswer` sets what the model says (an `Error` rejects),
-`llamaCalls` records inits, completions and releases. Answer quality, speed and memory are device
+`llama.rn` is mocked globally (`__tests__/AGENTS.md`). Answer quality, speed and memory are device
 checks, on real teacher footage in more than one language.

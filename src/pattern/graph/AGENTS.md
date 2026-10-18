@@ -32,10 +32,10 @@ The network view's canvas is `components/ZoomableCanvas.tsx` — Gesture Handler
 
 It replaced `@openspacelabs/react-native-zoomable-view`, which is implemented with `PanResponder`. **Do not reintroduce a `PanResponder`-based gesture here.** A node drag has to live in Gesture Handler's touch system, and the two systems do not negotiate — there is no `simultaneousHandlers` across that boundary, so whichever claimed a touch first won, non-deterministically from the user's point of view.
 
-- Everything is on the UI thread: shared values and `useAnimatedStyle`, never `setState` from a handler. Use `.get()` / `.set()`, not `.value` — the React Compiler is on and cannot see through bare `.value` access.
+- Everything is on the UI thread: shared values and `useAnimatedStyle`, never `setState` from a handler.
 - The transform array is `[{ translateX }, { translateY }, { scale }]`. Translate before scale, so offsets stay in screen pixels and a drag tracks the finger 1:1 at any zoom.
 - Pinch reports _cumulative_ scale; the canvas converts it to a per-frame factor so pinch and pan can both write `translate` without fighting.
-- **No `GestureHandlerRootView` is mounted in screens, deliberately.** On native the drawer supplies one (`react-native-drawer-layout`'s `Drawer.native` wraps its children); on web RNGH's root is a plain `View` plus a context flag. Nesting another around the graph would take that area out of the drawer's gesture tree. The exception is inside a React Native `Modal`, which renders in its own window: `BottomSheet` and `AnonymizeModal` mount their own (`src/common/AGENTS.md`).
+- **No `GestureHandlerRootView` is mounted in screens, deliberately.** On native the drawer supplies one (`react-native-drawer-layout`'s `Drawer.native` wraps its children); on web RNGH's root is a plain `View` plus a context flag. Nesting another around the graph would take that area out of the drawer's gesture tree. Inside a `Modal` it is the other way round (`src/common/AGENTS.md`).
 
 ## Manual layout
 
@@ -74,7 +74,7 @@ Because the node tap is a Gesture Handler tap now, **the canvas has no double-ta
 - **Screen deltas are divided by the live zoom.** Without that a dragged node lags the finger above 1:1 and outruns it below. The zoom is read from the shared value each frame rather than captured at gesture start.
 - `draggingId` is React state, set once at the start of a drag and cleared at the end. **Nothing re-renders per frame**: only the dragged node and the edges touching it follow a shared value, so the per-frame cost is a handful of worklets whatever the size of the graph (`render/DragOverlay.tsx`, `render/DraggedEdge.tsx`).
 - **The dragged node is drawn in its own `Animated.View` above the graph, not as an animated `<G>` inside the main `<Svg>`.** Animating an SVG group's transform props made the node disappear for the duration of the drag on device, while its edges followed correctly. A `View` transform is reliable everywhere, so the node is lifted into a small SVG of its own and the view moves; `drawNodes` skips it meanwhile so it does not ghost at its old position.
-- **The lift is not decoration.** Haptics are off system-wide for many people and silent on plenty of Android hardware, so the scale-up is what actually tells the user a node has been picked up. Never make a haptic the only feedback.
+- **The lift is not decoration.** The scale-up is what tells the user a node has been picked up, since a haptic is never the only feedback (`src/common/ui/AGENTS.md`).
 - A long press on empty canvas pans instead of doing nothing — the drag has already won the race by then, so the canvas pan will not fire.
 - **The gesture has no affordance**, so `components/GraphDragHint.tsx` says so in words. It was reported as "how would I move the graph items?" the first time it reached a device. Do not remove it without replacing the cue with something else.
 - **The canvas is measured from the positions actually drawn** (`model/canvasMetrics.ts`), not from the automatic layout — a node dragged beyond the automatic bounds would fall outside the SVG and stop being drawn. Those positions are deliberately _not_ re-normalised: that would shift every node whenever one was dragged past an edge. Positions are clamped at both ends (`MIN_GRAPH_COORDINATE`/`MAX_GRAPH_COORDINATE`) for the same reason.

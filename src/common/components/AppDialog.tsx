@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { StyleSheet } from "react-native-unistyles";
+import { getCommonDialogCard } from "@/src/common/utils/CommonStyles";
 import { AppText, Button } from "@/src/common/ui";
 
 interface AppDialogProps {
@@ -76,10 +77,7 @@ const AppDialog: React.FC<AppDialogProps> = ({
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 380,
     ...theme.elevation.lg,
   },

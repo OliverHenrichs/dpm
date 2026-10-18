@@ -59,7 +59,7 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
   }, [modifier.videoRefs]);
 
   const handlePickFromLibrary = async () => {
-    if (modifier.videoRefs && modifier.videoRefs.length >= 3) return;
+    if ((modifier.videoRefs?.length ?? 0) >= MAX_VIDEOS) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsMultipleSelection: true,

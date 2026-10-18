@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, Chip, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { getCommonDialogCard } from "@/src/common/utils/CommonStyles";
 import { useTranslation } from "react-i18next";
 import {
   createBachataList,
@@ -540,10 +541,7 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: theme.space.xxl,
   },
   modalContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 500,
     maxHeight: "88%",
     flexShrink: 1,

@@ -287,6 +287,22 @@ describe("EditPatternForm — videos", () => {
 
       expect(addVideoButton().props.accessibilityState?.disabled).toBeFalsy();
     });
+
+    it("still adds a video with three attached", async () => {
+      // The cap used to be 3, and a literal 3 left behind kept the add button doing nothing.
+      const { saved } = renderForm(
+        createTestPattern(TYPE.id, {
+          id: 1,
+          name: "Whip",
+          videoRefs: [0, 1, 2].map((i) => localVideo(`file:///${i}.mp4`)),
+        }),
+      );
+
+      await addUrlVideo("https://youtu.be/abc123");
+      save();
+
+      expect(saved().videoRefs).toHaveLength(4);
+    });
   });
 });
 

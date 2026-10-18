@@ -3,11 +3,16 @@ import { ActivityIndicator, Modal, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, IconButton } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import {
+  getCommonDialogCard,
+  getCommonCodeInput,
+} from "@/src/common/utils/CommonStyles";
 import { alpha } from "@/src/common/theme/tokens";
 import { Icon } from "@/src/common/ui/Icon";
 import { useTranslation } from "react-i18next";
-import { useCameraPermissions } from "expo-camera";
 import QrCodeScanner from "@/src/common/components/QrCodeScanner";
+import { useQrScanner } from "@/src/common/components/useQrScanner";
+import { SHARE_CODE_LENGTH } from "@/src/firebase/firestoreAccess";
 import {
   fetchSharedList,
   MembersOnlyError,
@@ -43,8 +48,6 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<PatternListWithPatterns | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   // A members-only list this phone is not let into (src/pattern/members/): where it stands.
   const [closed, setClosed] = useState<{
     code: string;
@@ -89,7 +92,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
 
   const handleLookup = async () => {
     const trimmed = code.trim().toUpperCase();
-    if (trimmed.length !== 8) {
+    if (trimmed.length !== SHARE_CODE_LENGTH) {
       setError(t("invalidShareCode"));
       return;
     }
@@ -117,30 +120,20 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
     handleClose();
   };
 
-  const handleScanPress = async () => {
-    if (!cameraPermission?.granted) {
-      const result = await requestCameraPermission();
-      if (!result.granted) {
-        setError(t("cameraPermissionDenied"));
-        return;
+  const scanner = useQrScanner(
+    (scanned) => {
+      if (scanned.length === SHARE_CODE_LENGTH) {
+        setCode(scanned);
+        setError(null);
+        setPreview(null);
+        // Auto-lookup after scan
+        setTimeout(() => void lookUp(scanned), 100);
+      } else {
+        setError(t("invalidShareCode"));
       }
-    }
-    setScanning(true);
-  };
-
-  const handleBarCodeScanned = (data: string) => {
-    const trimmed = data.trim().toUpperCase();
-    setScanning(false);
-    if (trimmed.length === 8) {
-      setCode(trimmed);
-      setError(null);
-      setPreview(null);
-      // Auto-lookup after scan
-      setTimeout(() => void lookUp(trimmed), 100);
-    } else {
-      setError(t("invalidShareCode"));
-    }
-  };
+    },
+    () => setError(t("cameraPermissionDenied")),
+  );
 
   const handleClose = () => {
     setCode("");
@@ -148,7 +141,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
     setPreview(null);
     setClosed(null);
     setJoinName("");
-    setScanning(false);
+    scanner.stop();
     onClose();
   };
 
@@ -193,7 +186,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     placeholder="ABC12345"
                     placeholderTextColor={theme.colors.textMuted}
                     autoCapitalize="characters"
-                    maxLength={8}
+                    maxLength={SHARE_CODE_LENGTH}
                     returnKeyType="search"
                     onSubmitEditing={handleLookup}
                   />
@@ -201,7 +194,7 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     icon="qrcode-scan"
                     variant="filled"
                     size={theme.iconSize.md}
-                    onPress={handleScanPress}
+                    onPress={scanner.start}
                     accessibilityLabel={t("scanQrCode")}
                     style={styles.lookupButton}
                   />
@@ -210,7 +203,9 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
                     variant="filled"
                     size={theme.iconSize.md}
                     onPress={handleLookup}
-                    disabled={code.trim().length !== 8 || isLoading}
+                    disabled={
+                      code.trim().length !== SHARE_CODE_LENGTH || isLoading
+                    }
                     accessibilityLabel={t("lookUpList")}
                     style={styles.lookupButton}
                   />
@@ -312,22 +307,14 @@ const SubscribeListModal: React.FC<SubscribeListModalProps> = ({
       </Modal>
 
       {/* ── QR code scanner ───────────────────────────────────────────── */}
-      <QrCodeScanner
-        visible={scanning}
-        hint={t("scanQrCodeHint")}
-        onScanned={handleBarCodeScanned}
-        onClose={() => setScanning(false)}
-      />
+      <QrCodeScanner {...scanner.scannerProps} hint={t("scanQrCodeHint")} />
     </>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 420,
   },
   title: {
@@ -345,18 +332,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.md,
     marginBottom: theme.space.sm,
   },
-  input: {
-    ...theme.typography.headline,
-    flex: 1,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.md,
-    letterSpacing: 3,
-    color: theme.colors.text,
-  },
+  input: getCommonCodeInput(theme),
   lookupButton: {
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.space.lg,

@@ -238,12 +238,12 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   };
 
   const openAddVideoModal = () => {
-    if (activeVideoRefs.length >= 3) return;
+    if (activeVideoRefs.length >= MAX_VIDEOS) return;
     setShowAddVideoModal(true);
   };
 
   const handlePickFromLibrary = async () => {
-    if (activeVideoRefs.length >= 3) return;
+    if (activeVideoRefs.length >= MAX_VIDEOS) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsMultipleSelection: true,
@@ -418,7 +418,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   };
 
   const pickForAnonymize = async () => {
-    if (activeVideoRefs.length >= 3) return;
+    if (activeVideoRefs.length >= MAX_VIDEOS) return;
     setShowAnonymizePicker(false);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
@@ -814,7 +814,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           icon="image-plus"
           variant="secondary"
           onPress={pickForAnonymize}
-          disabled={activeVideoRefs.length >= 3}
+          disabled={activeVideoRefs.length >= MAX_VIDEOS}
         />
       </BottomSheet>
       <AnonymizeModal

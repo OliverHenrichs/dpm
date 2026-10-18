@@ -9,17 +9,18 @@ import {
   Unsubscribe,
 } from "firebase/firestore";
 import {
-  db,
-  firebaseAvailable,
   SHARED_LISTS_COLLECTION,
   SUBSCRIBERS,
 } from "@/src/firebase/firebaseConfig";
 import { ensureSignedIn, restoreSignIn } from "@/src/firebase/auth";
 import {
-  asOwner,
   isPermissionDenied,
+  requireDb,
+  sharedListCollection,
+} from "@/src/firebase/firestoreAccess";
+import { asOwner, subscribeAsOwner } from "@/src/firebase/ownership";
+import type {
   Membership,
-  subscribeAsOwner,
   SubscriberRecord,
 } from "@/src/firebase/PatternSuggestionService";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
@@ -40,18 +41,8 @@ export interface ListMember {
   updatedAt: number;
 }
 
-function requireDb(): Firestore {
-  if (!firebaseAvailable || !db) {
-    throw new Error("Firebase is not configured.");
-  }
-  return db;
-}
-
 function recordRef(firestore: Firestore, code: string, uid: string) {
-  return doc(
-    collection(doc(firestore, SHARED_LISTS_COLLECTION, code), SUBSCRIBERS),
-    uid,
-  );
+  return doc(sharedListCollection(firestore, code, SUBSCRIBERS), uid);
 }
 
 function membershipOf(data: unknown): Membership | null {

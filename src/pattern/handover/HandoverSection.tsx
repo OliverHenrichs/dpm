@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Clipboard, Text, View } from "react-native";
-import QRCode from "react-native-qrcode-svg";
+import { ActivityIndicator, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { Button, IconButton } from "@/src/common/ui";
+import { Button } from "@/src/common/ui";
 import AppDialog from "@/src/common/components/AppDialog";
+import ShareableCode from "@/src/common/components/ShareableCode";
 import {
   getOpenHandover,
   HANDOVER_DAYS,
@@ -28,8 +28,6 @@ const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showQr, setShowQr] = useState(false);
 
   useEffect(() => {
     let current = true;
@@ -61,7 +59,6 @@ const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
     run(async () => {
       const code = await offerHandover(list);
       setOffer({ code, expiresAt: Date.now() + HANDOVER_DAYS * 86400000 });
-      setShowQr(false);
     });
 
   const handleWithdraw = () =>
@@ -70,13 +67,6 @@ const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
       setOffer(null);
     });
 
-  const handleCopy = () => {
-    if (!offer) return;
-    Clipboard.setString(offer.code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <View style={styles.section}>
       <Text style={styles.sectionLabel}>{t("handOverList")}</Text>
@@ -84,34 +74,11 @@ const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
         <ActivityIndicator size="small" color={theme.colors.primary} />
       ) : offer ? (
         <>
-          <View style={styles.codeRow}>
-            <Text style={styles.code} selectable>
-              {offer.code}
-            </Text>
-            <IconButton
-              icon={copied ? "check" : "content-copy"}
-              size={theme.iconSize.md}
-              color={copied ? "success" : "primary"}
-              onPress={handleCopy}
-              accessibilityLabel={t("copyHandoverCode")}
-            />
-            <IconButton
-              icon={showQr ? "qrcode-remove" : "qrcode"}
-              size={theme.iconSize.md}
-              onPress={() => setShowQr((v) => !v)}
-              accessibilityLabel={t(showQr ? "hideQrCode" : "showQrCode")}
-            />
-          </View>
-          {showQr && (
-            <View style={styles.qrContainer}>
-              <QRCode
-                value={offer.code}
-                size={160}
-                color={theme.colors.text}
-                backgroundColor={theme.colors.surface}
-              />
-            </View>
-          )}
+          <ShareableCode
+            key={offer.code}
+            code={offer.code}
+            copyLabel={t("copyHandoverCode")}
+          />
           <Text style={styles.hint}>
             {t("handOverCodeHint", { days: HANDOVER_DAYS })}
           </Text>
@@ -164,25 +131,6 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.textMuted,
     letterSpacing: 1,
     textTransform: "uppercase",
-  },
-  codeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.md,
-  },
-  code: {
-    ...theme.typography.headline,
-    flex: 1,
-    letterSpacing: 3,
-    color: theme.colors.primary,
-    fontVariant: ["tabular-nums"],
-  },
-  qrContainer: {
-    alignItems: "center",
-    paddingVertical: theme.space.lg,
   },
   hint: {
     ...theme.typography.bodySmall,

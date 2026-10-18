@@ -12,7 +12,6 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import * as Crypto from "expo-crypto";
 import {
   db,
   firebaseAvailable,
@@ -24,9 +23,13 @@ import {
 import { ensureSignedIn, restoreSignIn } from "@/src/firebase/auth";
 import { generateShareKey } from "@/src/firebase/shareKey";
 import {
-  asOwner,
   isPermissionDenied,
-} from "@/src/firebase/PatternSuggestionService";
+  randomCode,
+  requireDb,
+  requireShareCode,
+  sharedListCollection,
+} from "@/src/firebase/firestoreAccess";
+import { asOwner } from "@/src/firebase/ownership";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 
 /**
@@ -68,25 +71,11 @@ export class HandoverRefusedError extends Error {
 
 /** A 10-character code, 0-9 and A-Z, like a share code but longer: it hands over control. */
 function generateHandoverCode(): string {
-  const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const bytes = Crypto.getRandomValues(new Uint8Array(HANDOVER_CODE_LENGTH));
-  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
-}
-
-function requireDb(): Firestore {
-  if (!firebaseAvailable || !db) {
-    throw new Error("Firebase is not configured.");
-  }
-  return db;
-}
-
-function requireCode(list: IPatternList): string {
-  if (!list.shareCode) throw new Error("The list is not published.");
-  return list.shareCode;
+  return randomCode(HANDOVER_CODE_LENGTH);
 }
 
 function handovers(firestore: Firestore, code: string) {
-  return collection(doc(firestore, SHARED_LISTS_COLLECTION, code), HANDOVERS);
+  return sharedListCollection(firestore, code, HANDOVERS);
 }
 
 function expiresAt(data: HandoverDocument): number {
@@ -98,7 +87,7 @@ function expiresAt(data: HandoverDocument): number {
 /** This phone's own offers for a list, as the owner on record. */
 async function ownOffers(list: IPatternList) {
   const firestore = requireDb();
-  const code = requireCode(list);
+  const code = requireShareCode(list);
   const uid = await ensureSignedIn();
   return asOwner(list, () =>
     getDocs(query(handovers(firestore, code), where("fromUid", "==", uid))),
@@ -116,7 +105,7 @@ async function ownOffers(list: IPatternList) {
  */
 export async function offerHandover(list: IPatternList): Promise<string> {
   const firestore = requireDb();
-  const code = requireCode(list);
+  const code = requireShareCode(list);
   const uid = await ensureSignedIn();
   const previous = await ownOffers(list);
   const handoverCode = generateHandoverCode();
@@ -163,7 +152,7 @@ export async function withdrawHandover(
   handoverCode: string,
 ): Promise<void> {
   const firestore = requireDb();
-  const code = requireCode(list);
+  const code = requireShareCode(list);
   await asOwner(list, () =>
     deleteDoc(doc(handovers(firestore, code), handoverCode)),
   );
@@ -227,7 +216,7 @@ export async function acceptHandover(
   handoverCode: string,
 ): Promise<string> {
   const firestore = requireDb();
-  const code = requireCode(list);
+  const code = requireShareCode(list);
   const token = handoverCode.trim().toUpperCase();
   if (!/^[0-9A-Z]{10}$/.test(token)) throw new HandoverRefusedError();
   const uid = await ensureSignedIn();

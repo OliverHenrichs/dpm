@@ -1,24 +1,12 @@
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Clipboard,
-  Modal,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Modal, ScrollView, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import {
-  Button,
-  Chip,
-  IconButton,
-  SegmentedControl,
-  SwitchRow,
-} from "@/src/common/ui";
+import ShareableCode from "@/src/common/components/ShareableCode";
+import { Button, Chip, SegmentedControl, SwitchRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { getCommonDialogCard } from "@/src/common/utils/CommonStyles";
 import { alpha } from "@/src/common/theme/tokens";
 import { Icon } from "@/src/common/ui/Icon";
-import QRCode from "react-native-qrcode-svg";
 import { useTranslation } from "react-i18next";
 import {
   IPatternList,
@@ -63,8 +51,6 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [showQr, setShowQr] = useState(false);
   const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   // Pending unpublished list — shown in success dialog before closing the modal
   const [unpublishPending, setUnpublishPending] = useState<IPatternList | null>(
@@ -165,13 +151,6 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
     }
   };
 
-  const handleCopy = () => {
-    if (!list.shareCode) return;
-    Clipboard.setString(list.shareCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <Modal
       visible={visible}
@@ -204,32 +183,13 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
             {firebaseAvailable && isPublished && list.shareCode && (
               <>
                 <Text style={styles.sectionLabel}>{t("shareCode")}</Text>
-                <View style={styles.codeRow}>
-                  <Text style={styles.code}>{list.shareCode}</Text>
-                  <IconButton
-                    icon={copied ? "check" : "content-copy"}
-                    size={theme.iconSize.md}
-                    color={copied ? "success" : "primary"}
-                    onPress={handleCopy}
-                    accessibilityLabel={t("copyShareCode")}
-                  />
-                  <IconButton
-                    icon={showQr ? "qrcode-remove" : "qrcode"}
-                    size={theme.iconSize.md}
-                    onPress={() => setShowQr((v) => !v)}
-                    accessibilityLabel={t(showQr ? "hideQrCode" : "showQrCode")}
+                <View style={styles.codeBlock}>
+                  <ShareableCode
+                    code={list.shareCode}
+                    copyLabel={t("copyShareCode")}
+                    large
                   />
                 </View>
-                {showQr && (
-                  <View style={styles.qrContainer}>
-                    <QRCode
-                      value={list.shareCode}
-                      size={160}
-                      color={theme.colors.text}
-                      backgroundColor={theme.colors.surface}
-                    />
-                  </View>
-                )}
                 <Text style={styles.hint}>{t("shareCodeHint")}</Text>
 
                 <Text style={styles.sectionLabel}>{t("subscriberCount")}</Text>
@@ -419,10 +379,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.xl,
-    padding: theme.space.xxl,
-    width: "100%",
+    ...getCommonDialogCard(theme),
     maxWidth: 420,
     maxHeight: "100%",
   },
@@ -459,21 +416,8 @@ const styles = StyleSheet.create((theme) => ({
     textTransform: "uppercase",
     marginBottom: theme.space.sm,
   },
-  codeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.md,
+  codeBlock: {
     marginBottom: theme.space.sm,
-  },
-  code: {
-    ...theme.typography.display,
-    flex: 1,
-    letterSpacing: 4,
-    color: theme.colors.primary,
-    fontVariant: ["tabular-nums"],
   },
   countRow: {
     flexDirection: "row",
@@ -485,10 +429,6 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.title,
     color: theme.colors.text,
     fontVariant: ["tabular-nums"],
-  },
-  qrContainer: {
-    alignItems: "center",
-    paddingVertical: theme.space.lg,
   },
   hint: {
     ...theme.typography.bodySmall,

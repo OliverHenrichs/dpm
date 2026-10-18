@@ -115,7 +115,6 @@ video, retimed (`trimTranscript`).
 
 ## Testing
 
-`whisper.rn` is mocked globally (`__mocks__/whisper.rn/`: a test decides what speech is detected and
-what each call returns), and so is the legacy file system download. The pure parts
+`whisper.rn` and the legacy file system download are mocked globally (`__tests__/AGENTS.md`). The pure parts
 (`speechRegions`, `segments`, `vocabulary`, `excerpt`, `followScroll`) have unit tests. Accuracy,
 speed and memory are device checks.

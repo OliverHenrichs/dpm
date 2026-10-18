@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from "react";
-import { Text, useWindowDimensions, View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { useTranslation } from "react-i18next";
+import GraphEmptyState from "@/src/pattern/graph/components/GraphEmptyState";
 import { measureCanvas } from "@/src/pattern/graph/model/canvasMetrics";
 import NetworkGraphSvg from "./GraphSvg";
 import ZoomableCanvas from "@/src/pattern/graph/components/ZoomableCanvas";
@@ -30,7 +30,6 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   onMoveNode,
   onNodeTap,
 }) => {
-  const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
 
   // Measured from the positions actually being drawn, not from the automatic
@@ -82,15 +81,7 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   // rules-of-hooks suppression on top — the hook count changed between a
   // populated and an empty list.
   if (model.nodes.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
-          {t(
-            hasActiveFilter ? "noPatternsMatchFilter" : "noPatternsToVisualize",
-          )}
-        </Text>
-      </View>
-    );
+    return <GraphEmptyState hasActiveFilter={hasActiveFilter} />;
   }
 
   const draggedNode =
@@ -138,18 +129,6 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     backgroundColor: theme.colors.background,
     overflow: "hidden",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: theme.colors.background,
-    padding: theme.space.xxxl,
-  },
-  emptyText: {
-    ...theme.typography.body,
-    color: theme.colors.textMuted,
-    textAlign: "center",
   },
 }));
 

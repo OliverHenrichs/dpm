@@ -486,9 +486,8 @@ export function buildTheme(
 
 export type AppTheme = ReturnType<typeof buildTheme>;
 
-/** The default style's themes: what Jest renders against (its Unistyles mock uses light). */
+/** The default style's light theme: what Jest renders against (its Unistyles mock uses light). */
 export const lightTheme: AppTheme = buildTheme(DEFAULT_APP_STYLE, "light");
-export const darkTheme: AppTheme = buildTheme(DEFAULT_APP_STYLE, "dark");
 
 /** `#rrggbb` plus an alpha from 0 to 1, as `#rrggbbaa`. For tints of a role colour. */
 export function alpha(hex: string, opacity: number): string {
