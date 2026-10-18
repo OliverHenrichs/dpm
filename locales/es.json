@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "Cálido y espacioso. Pensado para practicar y para los sociales.",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "Denso y estructurado. Pensado para dar un curso.",
+  "compactList": "Lista compacta",
+  "compactListDescription": "Cada figura en una línea, su tipo como un punto de color y menos espacio entre filas.",
   "noLevel": "Sin nivel",
   "noDateSection": "Fecha desconocida",
   "noType": "Sin tipo",

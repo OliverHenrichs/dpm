@@ -1,6 +1,6 @@
 # Settings & internationalisation — `src/settings/`
 
-`SettingsScreen` hosts: language, theme and app style (persisted by `data/ThemeStorage.ts` and
+`SettingsScreen` hosts: language, theme and app style with the compact list switch (persisted by `data/ThemeStorage.ts` and
 `data/StyleStorage.ts`, applied by `ThemeProvider`; see `src/common/theme/AGENTS.md`), app icon
 colour (`appIcon.ts`, offered only where `supportsAlternateIcons`), import and export
 (`hooks/useDataTransfer.ts`, `src/pattern/data/AGENTS.md`), the on-device models

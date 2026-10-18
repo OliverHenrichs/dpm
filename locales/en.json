@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "Warm and roomy. Made for practising and socials.",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "Dense and structured. Made for running a course.",
+  "compactList": "Compact list",
+  "compactListDescription": "Each pattern on one line, its type a coloured dot, with less space between rows.",
   "noLevel": "No level",
   "noDateSection": "Date not known",
   "noType": "No type",

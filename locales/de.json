@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "Warm und luftig. Für Training und Partys.",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "Dicht und strukturiert. Für die Kursleitung.",
+  "compactList": "Kompakte Liste",
+  "compactListDescription": "Jede Figur in einer Zeile, ihr Typ als farbiger Punkt, mit weniger Abstand zwischen den Zeilen.",
   "noLevel": "Ohne Niveau",
   "noDateSection": "Datum unbekannt",
   "noType": "Ohne Typ",

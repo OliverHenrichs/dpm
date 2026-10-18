@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "উষ্ণ ও খোলামেলা। অনুশীলন ও সোশ্যাল নাচের জন্য।",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "ঘন ও সুসংগঠিত। কোর্স চালানোর জন্য।",
+  "compactList": "সংক্ষিপ্ত তালিকা",
+  "compactListDescription": "প্রতিটি প্যাটার্ন এক লাইনে, তার ধরন একটি রঙিন বিন্দু, সারিগুলোর মধ্যে কম জায়গা।",
   "noLevel": "কোনো স্তর নেই",
   "noDateSection": "তারিখ অজানা",
   "noType": "কোনো ধরন নেই",

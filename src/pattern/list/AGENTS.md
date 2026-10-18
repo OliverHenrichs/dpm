@@ -42,7 +42,10 @@ with no dates stays one list); name stays one list. `PatternList` renders the en
 among the entries, not the patterns. The `FlatList` is keyed on whether it has sections: Android
 painted blank headers when a flat list gained them.
 
-A row shows type, level (when set) and video count; the rest waits in the expanded details
+A row shows type, level (when set) and video count. In compact mode (`compact`, from
+`ThemeProvider`'s `compactList`) it is one line instead: the type as a bare dot before the name,
+no level, the video count beside the edit buttons, the name cut short with an ellipsis, and less
+space around rows and section headers; selecting and editing are unchanged. The rest waits in the expanded details
 (`PatternDetails`, shared with the graph's modal; see `src/pattern/graph/AGENTS.md`). Level is
 optional throughout: tapping the chosen level clears it by **removing the key**, as for every
 optional field that reaches a published list (`src/firebase/AGENTS.md`).

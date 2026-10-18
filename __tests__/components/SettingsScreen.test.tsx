@@ -213,6 +213,21 @@ describe("SettingsScreen", () => {
       );
       expect(screen.getByRole("radio", { name: "Clipboard" })).toBeSelected();
     });
+
+    it("turns the compact list on and remembers it", async () => {
+      await renderSettings();
+
+      const toggle = screen.getByRole("switch", { name: "Compact list" });
+      expect(toggle).not.toBeChecked();
+      fireEvent.press(toggle);
+
+      await waitFor(() =>
+        expect(peekAsyncStorage()["@compactList"]).toBe("true"),
+      );
+      expect(
+        screen.getByRole("switch", { name: "Compact list" }),
+      ).toBeChecked();
+    });
   });
 
   describe("app icon", () => {

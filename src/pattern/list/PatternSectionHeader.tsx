@@ -7,6 +7,8 @@ interface PatternSectionHeaderProps {
   count: number;
   /** The type's colour, when the section is one type. */
   color?: string;
+  /** Compact mode: less space above and below. */
+  compact?: boolean;
 }
 
 /**
@@ -17,8 +19,9 @@ const PatternSectionHeader: React.FC<PatternSectionHeaderProps> = ({
   title,
   count,
   color,
+  compact = false,
 }) => (
-  <View style={styles.header} accessible accessibilityRole="header">
+  <View style={styles.header(compact)} accessible accessibilityRole="header">
     {color ? <View style={styles.swatch(color)} /> : null}
     <Text style={styles.title} numberOfLines={1}>
       {title}
@@ -28,15 +31,15 @@ const PatternSectionHeader: React.FC<PatternSectionHeaderProps> = ({
 );
 
 const styles = StyleSheet.create((theme) => ({
-  header: {
+  header: (compact: boolean) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.space.sm,
-    paddingTop: theme.space.md,
-    paddingBottom: theme.space.xs,
+    paddingTop: compact ? theme.space.sm : theme.space.md,
+    paddingBottom: compact ? theme.space.xxs : theme.space.xs,
     paddingHorizontal: theme.space.xs,
     backgroundColor: theme.colors.background,
-  },
+  }),
   swatch: (color: string) => ({
     width: theme.space.sm,
     height: theme.space.sm,

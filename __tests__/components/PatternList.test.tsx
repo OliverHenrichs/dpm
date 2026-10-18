@@ -11,6 +11,7 @@ import {
   renderWithProviders,
   screen,
 } from "@/utils/renderWithProviders";
+import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
 
 const TYPE = createTestPatternType({ slug: "push" });
 
@@ -280,5 +281,68 @@ describe("PatternList sheets", () => {
 
     fireEvent.press(screen.getByLabelText("Close"));
     expect(screen.queryByText("Date Created")).toBeNull();
+  });
+});
+
+describe("PatternList in compact mode", () => {
+  const LONG_NAME = "Sugar Push with a very long name that will not fit";
+  const renderCompact = async (
+    overrides: Partial<React.ComponentProps<typeof PatternList>> = {},
+  ) => {
+    seedAsyncStorage({ "@compactList": "true" });
+    renderList(
+      [
+        createTestPattern(TYPE.id, {
+          id: 1,
+          name: LONG_NAME,
+          description: "The basic",
+          videoRefs: [{ type: "url", value: "https://example.com/a" }],
+        }),
+      ],
+      overrides,
+    );
+    // The setting arrives from storage after the first render.
+    await screen.findByTestId("pattern-type-dot");
+  };
+
+  it("shows the type as a dot and leaves out the level", async () => {
+    await renderCompact();
+
+    expect(screen.queryByText("push")).toBeNull();
+    expect(screen.queryByText(/Beginner/)).toBeNull();
+    // The dot names nothing, so the row says the type for screen readers.
+    expect(
+      screen.getByRole("button", { name: `${LONG_NAME}, push` }),
+    ).toBeOnTheScreen();
+  });
+
+  it("keeps the title to one line, beside the dot and the video count", async () => {
+    await renderCompact();
+
+    expect(screen.getByText(LONG_NAME)).toHaveProp("numberOfLines", 1);
+    expect(screen.getByLabelText("Videos: 1")).toBeOnTheScreen();
+  });
+
+  it("opens the same editor from the pencil", async () => {
+    const onEdit = jest.fn();
+    await renderCompact({ onEdit });
+
+    fireEvent.press(screen.getByLabelText("Edit Pattern"));
+    expect(onEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ name: LONG_NAME }),
+    );
+  });
+
+  it("opens the same details when a row is selected", async () => {
+    seedAsyncStorage({ "@compactList": "true" });
+    const pattern = createTestPattern(TYPE.id, {
+      id: 1,
+      name: "Sugar Push",
+      description: "The basic",
+    });
+    renderList([pattern], { selectedPattern: pattern });
+
+    await screen.findByTestId("pattern-type-dot");
+    expect(screen.getByText("The basic")).toBeOnTheScreen();
   });
 });

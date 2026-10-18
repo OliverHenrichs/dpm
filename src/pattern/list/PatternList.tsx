@@ -24,6 +24,7 @@ import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
 import { buildListEntries, PatternListEntry } from "./hooks/patternSections";
 import PatternSectionHeader from "./PatternSectionHeader";
+import { useThemeContext } from "@/src/common/components/ThemeContext";
 
 /** Where "a pattern from a video" takes its video from. */
 export type VideoSource = "library" | "camera";
@@ -55,6 +56,7 @@ type PatternListProps = {
 const PatternList: React.FC<PatternListProps> = (props) => {
   const { t, i18n } = useTranslation();
   const isReadonly = props.isReadonly ?? false;
+  const { compactList } = useThemeContext();
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [filter, setFilter] = useState<PatternFilter>({
@@ -147,6 +149,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           title={item.title}
           count={item.count}
           color={item.color}
+          compact={compactList}
         />
       ) : (
         <PatternListItem
@@ -156,6 +159,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           modifiers={props.modifiers}
           isReadonly={isReadonly}
           isSelected={props.selectedPattern?.id === item.pattern.id}
+          compact={compactList}
           onSelect={props.onSelect}
           onEdit={props.onEdit}
           onDelete={props.onDelete}
@@ -170,6 +174,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
       props.onEdit,
       props.onDelete,
       isReadonly,
+      compactList,
     ],
   );
 

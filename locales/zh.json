@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "温暖宽松，适合练习和社交舞会。",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "紧凑有条理，适合带课。",
+  "compactList": "紧凑列表",
+  "compactListDescription": "每个舞步占一行，类型显示为彩色圆点，行间距更小。",
   "noLevel": "未设难度",
   "noDateSection": "日期未知",
   "noType": "未设类型",

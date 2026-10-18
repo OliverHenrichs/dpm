@@ -17,6 +17,8 @@ interface PatternListItemProps {
   modifiers?: IModifier[];
   isReadonly?: boolean;
   isSelected: boolean;
+  /** Compact mode: one line, the type as a bare dot, no level. */
+  compact?: boolean;
   onSelect: (pattern: IPattern | undefined) => void;
   onEdit: (pattern: IPattern) => void;
   onDelete: (id?: number) => void;
@@ -29,6 +31,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   modifiers,
   isReadonly,
   isSelected,
+  compact = false,
   onSelect,
   onEdit,
   onDelete,
@@ -56,59 +59,87 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   // The overview names what a pattern is; counts and the rest wait in the opened row.
   const level = pattern.level ? t(pattern.level) : undefined;
 
+  const videoBadge = videoCount > 0 && (
+    <View
+      style={styles.videoCount}
+      accessible
+      accessibilityLabel={t("videosCountA11y", { n: videoCount })}
+    >
+      <Icon
+        name="play-circle-outline"
+        size={theme.iconSize.sm}
+        color={theme.colors.textMuted}
+      />
+      <Text style={styles.metaText}>{videoCount}</Text>
+    </View>
+  );
+  const actions = !isReadonly && (
+    <>
+      <IconButton
+        icon="pencil"
+        size={theme.iconSize.md}
+        onPress={() => onEdit(pattern)}
+        accessibilityLabel={t("editPattern")}
+      />
+      <IconButton
+        icon="trash-can-outline"
+        size={theme.iconSize.md}
+        color="danger"
+        onPress={() => setShowConfirmDelete(true)}
+        accessibilityLabel={t("deletePattern")}
+      />
+    </>
+  );
+
   return (
     <View
-      style={[styles.patternItem, isSelected && styles.patternItemSelected]}
+      style={[
+        styles.patternItem(compact),
+        isSelected && styles.patternItemSelected,
+      ]}
     >
       <ListRow
         title={pattern.name}
         strong
+        dense={compact}
+        // In compact mode the type is a bare dot, so the row names it for screen readers.
+        accessibilityLabel={
+          compact && type ? `${pattern.name}, ${type.slug}` : undefined
+        }
+        leading={
+          compact && type ? (
+            <View
+              testID="pattern-type-dot"
+              style={styles.leadingDot(type.color)}
+            />
+          ) : undefined
+        }
         subtitle={
-          <View style={styles.metaLine}>
-            {type && <TypeLabel slug={type.slug} color={type.color} />}
-            {!!level && (
-              <Text style={styles.metaText} numberOfLines={1}>
-                {type ? `· ${level}` : level}
-              </Text>
-            )}
-            {videoCount > 0 && (
-              <View
-                style={styles.videoCount}
-                accessible
-                accessibilityLabel={t("videosCountA11y", { n: videoCount })}
-              >
-                <Icon
-                  name="play-circle-outline"
-                  size={theme.iconSize.sm}
-                  color={theme.colors.textMuted}
-                />
-                <Text style={styles.metaText}>{videoCount}</Text>
-              </View>
-            )}
-          </View>
+          compact ? undefined : (
+            <View style={styles.metaLine}>
+              {type && <TypeLabel slug={type.slug} color={type.color} />}
+              {!!level && (
+                <Text style={styles.metaText} numberOfLines={1}>
+                  {type ? `· ${level}` : level}
+                </Text>
+              )}
+              {videoBadge}
+            </View>
+          )
+        }
+        trailing={
+          compact ? (
+            <>
+              {videoBadge}
+              {actions}
+            </>
+          ) : (
+            actions
+          )
         }
         expanded={isSelected}
         onPress={handleToggleSelect}
         accessibilityHint={t("selectPattern")}
-        trailing={
-          !isReadonly && (
-            <>
-              <IconButton
-                icon="pencil"
-                size={theme.iconSize.md}
-                onPress={() => onEdit(pattern)}
-                accessibilityLabel={t("editPattern")}
-              />
-              <IconButton
-                icon="trash-can-outline"
-                size={theme.iconSize.md}
-                color="danger"
-                onPress={() => setShowConfirmDelete(true)}
-                accessibilityLabel={t("deletePattern")}
-              />
-            </>
-          )
-        }
       />
       {isSelected && (
         <Animated.View
@@ -176,14 +207,14 @@ const TypeLabel: React.FC<{ slug: string; color: string }> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  patternItem: {
+  patternItem: (compact: boolean) => ({
     overflow: "hidden",
-    borderRadius: theme.radius.lg,
+    borderRadius: compact ? theme.radius.md : theme.radius.lg,
     borderWidth: 1,
-    marginBottom: theme.list.rowGap,
+    marginBottom: compact ? theme.space.xxs : theme.list.rowGap,
     borderColor: theme.colors.surface,
     backgroundColor: theme.colors.surface,
-  },
+  }),
   metaLine: {
     flexDirection: "row",
     alignItems: "center",
@@ -208,6 +239,12 @@ const styles = StyleSheet.create((theme) => ({
   dot: (color: string) => ({
     width: theme.space.sm,
     height: theme.space.sm,
+    borderRadius: theme.radius.pill,
+    backgroundColor: color,
+  }),
+  leadingDot: (color: string) => ({
+    width: theme.space.md,
+    height: theme.space.md,
     borderRadius: theme.radius.pill,
     backgroundColor: color,
   }),

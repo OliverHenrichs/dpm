@@ -56,6 +56,8 @@ const SettingsScreen: React.FC = () => {
     setTheme,
     appStyle,
     setAppStyle,
+    compactList,
+    setCompactList,
   } = useThemeContext();
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const selectedLanguage = findLanguage(currentLang);
@@ -168,6 +170,12 @@ const SettingsScreen: React.FC = () => {
               onPress={() => setAppStyle(opt.value)}
             />
           ))}
+          <SwitchRow
+            title={t("compactList")}
+            description={t("compactListDescription")}
+            value={compactList}
+            onValueChange={setCompactList}
+          />
         </View>
 
         {/* Theme Section */}
