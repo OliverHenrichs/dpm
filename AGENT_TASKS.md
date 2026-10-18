@@ -73,6 +73,7 @@ Phase 2  B1✅ B2✅ M1✅ M2✅                     F2✅        (defects + the
 Phase 3  L1✅ ─────────────► L2✅                           (both done)
 Phase 4  L3: in the app on Android (video editor, background jobs); iOS + remote providers open
 Phase 5  L4: spike done (go) → engine✅ → UI✅ → data✅ → iOS
+Phase 6  L5: feature requests and votes, planned (spike: App Check on Android)
 ```
 
 **Phases 0 to 3 are complete.** L3 is in the app on Android with its open items listed in its
@@ -1968,6 +1969,191 @@ kept the existing name and filled the empty description. Settings listed both mo
 path untested).
 
 **Size:** **L** overall. The spike decides whether it stays at L or grows.
+
+### L5 — Feature requests, voted on app-wide — PLANNED
+
+> *"Users can make suggestions for improvements and features and vote on them, app-wide, one
+> account one vote."*
+
+Planned 2026-10-16; nothing built yet. Decided by the owner: **anonymous sign-in plus App Check**
+as the identity, and **every suggestion approved by hand** before anyone else sees it. Choices
+marked **(decide)** are still open; everything else is a recommendation with its reason.
+
+#### What the user gets
+
+- A drawer entry **Ideas** (`/ideas`, icon `lightbulb-on-outline`), shown only when
+  `firebaseAvailable`. Like sharing, it is absent in a local-only build and under Jest.
+- A list of the approved suggestions with two orders, **Top** (votes, then newest) and **New**.
+  Each row shows the title, a status chip (*open*, *planned*, *in progress*, *done*,
+  *declined*) and the vote count, with a toggle to vote or take the vote back. Tapping a row opens
+  a sheet with the description.
+- **Suggest an idea**: a modal with a title (3–80 characters) and a description (up to 1000).
+  While the user types the title, approved suggestions with similar titles show up underneath
+  ("Is it one of these? Vote for it instead"), because duplicates are the main cost of a board
+  like this. After sending: "Thanks. It will show here once it has been reviewed." The modal says
+  that suggestions become public, so leave out personal details.
+- **My suggestions**: the user's own suggestions in every state, including *waiting for review*
+  and *not accepted*. Nobody else sees those.
+- Votes are never shown per person, only as totals.
+
+Suggestions arrive in all nine languages. MVP shows everything; each suggestion records its
+`lang`, so a "my language only" filter can come later without a migration. When approving, the
+owner may tidy up a title in the console.
+
+#### Identity: anonymous sign-in plus App Check
+
+- **One vote per uid** is enforced by the data model (below). The uid comes from the existing
+  `ensureSignedIn()` (`src/firebase/auth.ts`), called lazily on the first vote or suggestion.
+  Browsing never signs in, just as subscribing doesn't.
+- **What anonymous auth doesn't stop**: reinstalling, or clearing app data, gives a new uid and so
+  another vote. The decision accepts that. **App Check** (Play Integrity) takes away the cheap
+  attack, a script minting anonymous accounts against the API, because only genuine installs on
+  genuine devices get tokens.
+- **App Check enforcement covers all of Firestore**, not one collection, and security rules can't
+  see App Check. So it gates **list sharing too**, subscribers included. The app is not released
+  yet, so there are no old builds to wait for: **enforce from the first release that has App
+  Check**, and make sure every build we run (dev client, preview, production) gets tokens before
+  turning it on.
+  - The console's verified/unverified metrics for Firestore should show only verified requests
+    from our own builds before enforcement goes on. Anything else is a build without tokens.
+  - iOS gets App Attest when it ships. **(decide)** Web: a reCAPTCHA Enterprise provider, or
+    accept that the web build loses sharing and Ideas.
+  - With App Check enforced, the `appToken` write guard on `sharedLists` is redundant. Ideas
+    doesn't use it; dropping it from sharing is a separate cleanup.
+- **Getting a token on Android.** The JS SDK's built-in providers are web-only (reCAPTCHA needs
+  `document`). The plan is `initializeAppCheck(app, { provider: new CustomProvider({ getToken }) })`
+  from `firebase/app-check`, with `getToken` served by a **new local Expo module**,
+  `modules/app-check-token`. The module wraps Android's `firebase-appcheck-playintegrity`: it
+  initialises a native `FirebaseApp` from the same options the JS side uses (no
+  `google-services.json`), calls `FirebaseAppCheck.getAppCheckToken(false)`, and returns
+  `{ token, expireTimeMillis }`.
+  - Alternative: `@react-native-firebase/app` and `/app-check` with their config plugin. They work
+    and are documented, but bring a second Firebase SDK, a `google-services.json` in the repo and
+    EAS, and more native weight. The local module fits `modules/` (see `modules/AGENTS.md`).
+  - **[verify]** in the spike: that `CustomProvider` itself runs under React Native, and that
+    `initializeAppCheck` before the first Firestore call attaches tokens to the Firestore web
+    channel.
+  - App Check is initialised in `firebaseConfig.ts`, before `getFirestore`. The native module is
+    `require`d inside a `try`, behind an `isAppCheckAvailable()` gate (the native-import rule in
+    the root `AGENTS.md`). Without it the app runs as today.
+- **Console setup.** Register the Android app in Firebase under its production application id,
+  with the **Play app-signing and upload SHA-256s**, and link the Cloud project in Play Console.
+  The `development` and `preview` variants have their own application ids, and sideloaded builds
+  get no Play Integrity verdict **[verify]**. They use the **debug provider**, with each device's
+  debug token registered in the console, chosen by `APP_VARIANT`.
+
+#### Data model
+
+```
+featureRequests/{requestId}
+  title: string            3–80 chars
+  body: string             ≤ 1000 chars
+  lang: string             one of the nine locales
+  authorUid: string        never shown in the app
+  createdAt: timestamp     == request.time on create
+  review: "pending" | "approved" | "rejected"      set by the owner
+  status: "open" | "planned" | "inProgress" | "done" | "declined"   set by the owner
+  voteCount: int
+
+featureRequests/{requestId}/votes/{uid}
+  uid: string              == the doc id, so a collection-group query can find "my votes"
+  createdAt: timestamp
+
+featureRequestAuthors/{uid}
+  lastSubmittedAt: timestamp   rate limit, written in the same batch as a suggestion
+```
+
+- **One vote per account**: the vote's doc id is the voter's uid, so a second vote is an update
+  the rules refuse.
+- **Voting is one batch**: create (or delete) the vote doc, and `increment(±1)` on `voteCount`.
+  The rules tie the two together with `existsAfter` / `getAfter`, as they already do for owner
+  records. The count can't move without a vote appearing or disappearing, and vice versa.
+- **"Have I voted?"**: one collection-group query, `votes where uid == me`, rather than a read per
+  row. That needs a collection-group index on `votes.uid` in a new `firestore.indexes.json`,
+  deployed with the rules.
+- **Moderation is the Firebase console** (its data editor bypasses the rules): filter
+  `review == "pending"`, set `approved` or `rejected`, set `status` as work goes on. No admin
+  screen in the MVP.
+
+#### Security rules (`firestore.rules`, alongside the sharing rules)
+
+- `featureRequests/{id}`
+  - `get`/`list` if `resource.data.review == "approved"` (the app queries
+    `where review == "approved"`), or if `resource.data.authorUid == request.auth.uid`
+    (*My suggestions*, queried `where authorUid == me`).
+  - `create` if signed in, `authorUid == auth.uid`, exactly the keys above, `review == "pending"`,
+    `status == "open"`, `voteCount == 0`, the length and `lang` limits, `createdAt == request.time`,
+    and `getAfter(featureRequestAuthors/uid).lastSubmittedAt == request.time`
+    with the previous one at least an hour old (or absent).
+  - `update` only `voteCount`, only by ±1, only while approved, and only if this caller's vote doc
+    goes from absent to present (+1) or from present to absent (−1) in the same write.
+  - `delete` by the author while `pending` (withdraw); otherwise nobody.
+- `votes/{uid}`: `create`/`delete` only by that uid, only on an approved request, and only if the
+  request's `voteCount` moves by the matching ±1 (`getAfter`). Read only by that uid, including
+  through `match /{path=**}/votes/{uid}` for the collection-group query.
+- `featureRequestAuthors/{uid}`: written only by that uid, only as part of a create above; read by
+  nobody.
+- Deleting a request in the console leaves its `votes` behind. That's harmless, and the console
+  can delete the subcollection with it.
+
+#### Code
+
+| Where | What |
+|---|---|
+| `modules/app-check-token/` | The native token source (above) |
+| `src/firebase/firebaseConfig.ts` | App Check init; `FEATURE_REQUESTS_COLLECTION`, `FEATURE_REQUEST_AUTHORS_COLLECTION` |
+| `src/ideas/data/FeatureRequestService.ts` | `submitRequest`, `subscribeApproved`, `subscribeMine`, `subscribeMyVotes`, `vote`, `unvote`; throws when Firebase is absent, like `FirebaseListService` |
+| `src/ideas/data/types.ts` | `FeatureRequest`, `ReviewState`, `RequestStatus` |
+| `src/ideas/similarTitles.ts` | Pure: normalised token overlap between a draft title and the approved ones |
+| `src/ideas/hooks/useFeatureRequests.ts` | Live lists, my votes, optimistic vote toggle with rollback on failure |
+| `src/ideas/components/` | `IdeasScreen`, `FeatureRequestRow`, `FeatureRequestSheet`, `SuggestIdeaModal` (always mounted, `src/pattern/list/AGENTS.md`) |
+| `src/ideas/AGENTS.md` | This, condensed; plus a row in the root table |
+| `app/ideas.tsx` | One-line route |
+| `DrawerRoutes.ts` | The entry, with a new optional `isAvailable?: () => boolean` on `AppRoute` that `DrawerContent` filters on. Today every drawer entry is unconditional |
+| `locales/*.json` | Every string, in all nine |
+| `firestore.rules`, `firestore.indexes.json`, `firebase.json` | Rules and the index |
+| `PRIVACY_POLICY.md` | New data flow: suggestion text, anonymous uid on suggestions and votes, App Check / Play Integrity, retention, deletion on request |
+| `src/changelog/changelog.ts` | The release notes |
+
+Outside the repo: the Play Console **data safety** form (user-generated content, app interactions,
+device integrity), and a check of Google Play's UGC policy. Every item is approved before it shows,
+which covers most of that policy. A contact line on the screen ("Something wrong here? Write to …")
+covers reporting **[verify]**.
+
+#### Test plan
+
+- **Rules** (`__tests__/rules/`, emulator): a valid create passes. Each malformed create fails:
+  extra key, `review != pending`, `voteCount != 0`, another uid, too long, unknown `lang`. A second create within the hour fails. Pending and rejected requests are invisible to
+  others and visible to the author. A vote on a pending request fails. Vote and count must move
+  together: a vote without `+1` fails, `+1` without a vote fails, `+2` fails. A second vote fails.
+  Taking a vote back works only for one's own vote. Nobody reads another's votes. The author can
+  withdraw only while pending. The sharing tests stay green.
+- **Unit**: `similarTitles`; ordering (Top/New); the hook's optimistic toggle and rollback, with
+  the service mocked.
+- **Components**: the screen renders the lists and chips; the modal validates its limits and shows
+  similar titles; the drawer leaves the entry out when `firebaseAvailable` is false (always, under
+  Jest).
+- **Device**: debug-provider token on the dev client; verified requests in the App Check console;
+  the full vote round trip on two phones; a production-signed internal-testing build gets Play
+  Integrity tokens.
+
+#### Phasing
+
+1. **Spike, App Check on Android** (1–2 days): the local module plus `CustomProvider` on the Pixel,
+   debug provider first, then an internal-testing build. Go/no-go for the local module against
+   `@react-native-firebase/app-check`.
+2. **Rules, index and service** with the rules tests (2 days).
+3. **UI**: screen, modal, drawer entry, translations (2–3 days).
+4. **Release**: privacy policy, data safety, changelog; App Check enforced in the console once
+   the metrics show only verified requests (½ day).
+
+**Later**: link the anonymous account to Google (`linkWithCredential` keeps the uid, so votes
+survive) for strict one-account-one-vote; an in-app review screen for an admin uid; telling an
+author when their idea is approved or done (needs push); a language filter or on-device
+translation; linking a *done* suggestion from the what's-new hint.
+
+**Size:** **L**: a new native module, a new Firestore surface with rules, and privacy/Play policy
+surface. About 6–8 engineer-days.
 
 ---
 
