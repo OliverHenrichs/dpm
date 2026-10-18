@@ -105,7 +105,9 @@ A node marks what it has: a play triangle when the pattern (or one of its modifi
 
 ## The views
 
-- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `utils/TimelineGraphUtils.ts`); skip-level edge routing handled by `utils/CollisionAvoidanceUtils.ts`
+- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `utils/TimelineGraphUtils.ts`); skip-level edge routing handled by `utils/CollisionAvoidanceUtils.ts`. Lanes come from `orderLanes` (`utils/laneOrder.ts`): only types with a pattern shown get one (a filtered-out type left an empty band), ordered to keep linked types adjacent (every order up to seven lanes, a barycentre pass and single moves above), ties in the list's own order.
+- **Network roots** go round the ellipse grouped by type (`getFoundationalPatterns`), so unlinked patterns of one type sit together. Only the automatic layout; a stored manual one is untouched.
+- **The legend opens by itself the first time** the Map is shown (`isLegendSeen` in `data/GraphHintStorage.ts`, app-wide like the drag hint); the dots and triangle mean nothing to someone who never presses "Legend".
 - **Network** (`NetworkGraphView.tsx`) — force-free hierarchical layout (`calculateGraphLayout` in `utils/NetworkGraphUtils.ts`), driven by the `useGraphLayout` hook (`hooks/useGraphLayout.ts`)
 
 Both draw through the shared primitives in `render/GraphPrimitives.tsx` (`ArrowheadMarker`, `drawEdges`, `drawNodes`) rather than one view importing from its sibling. `GraphSvg.tsx` is now just the network view's `<Svg>` around those primitives.
