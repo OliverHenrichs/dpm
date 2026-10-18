@@ -104,9 +104,14 @@ export const ActivePatternListProvider: React.FC<{
   const setActiveList = async (list: IPatternList | null) => {
     try {
       if (list) {
-        await setActiveListId(list.id);
+        // Load the new list's patterns before swapping either piece of state:
+        // set one at a time, the old patterns render for a moment against the
+        // new list's types, and their type boxes vanish before the new list appears.
+        const [loadedPatterns] = await Promise.all([
+          loadPatterns(list.id),
+          setActiveListId(list.id),
+        ]);
         setActiveListState(list);
-        const loadedPatterns = await loadPatterns(list.id);
         setPatternsState(loadedPatterns);
       } else {
         setActiveListState(null);
