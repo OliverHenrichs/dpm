@@ -102,6 +102,19 @@ describe("suggestedPattern", () => {
     createdAt: 1_760_000_000_000,
   };
 
+  it("leaves out a rhythm longer than the rules take", () => {
+    const counts = 100;
+    const rhythm = Array.from({ length: counts }, (_, i) => i + 1).join(" ");
+
+    expect(rhythm.length).toBeGreaterThan(200);
+    expect(suggestedPattern({ ...base, counts, rhythm })).not.toHaveProperty(
+      "rhythm",
+    );
+    expect(suggestedPattern({ ...base, rhythm: "1 2 3&4 5&6" }).rhythm).toBe(
+      "1 2 3&4 5&6",
+    );
+  });
+
   it("sends what the form holds, without what stays on the phone", () => {
     const sent = suggestedPattern(base);
     expect(sent).toEqual({

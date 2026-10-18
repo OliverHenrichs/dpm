@@ -25,7 +25,11 @@ export const DEFAULT_SUGGESTION_POLICY: ISuggestionPolicy = {
 export const MAX_AUTHOR_NAME_LENGTH = 40;
 
 // The rules' bounds on a suggested pattern (`isSuggestedPattern` in firestore.rules).
-const MAX_NAME = 100;
+/** Exported so the suggest form stops typing there rather than cutting the name on send. */
+export const MAX_SUGGESTED_NAME_LENGTH = 100;
+const MAX_NAME = MAX_SUGGESTED_NAME_LENGTH;
+/** A rhythm cannot be cut and still match its counts, so a longer one is left out. */
+const MAX_RHYTHM = 200;
 const MAX_DESCRIPTION = 2000;
 const MAX_PREREQUISITES = 50;
 const MAX_TAGS = 20;
@@ -87,7 +91,7 @@ export function suggestedPattern(pattern: NewPattern): NewPattern {
     typeId: pattern.typeId,
     counts: pattern.counts,
     ...(level && { level }),
-    ...(rhythm && { rhythm }),
+    ...(rhythm && rhythm.length <= MAX_RHYTHM && { rhythm }),
     prerequisites: (pattern.prerequisites ?? []).slice(0, MAX_PREREQUISITES),
     description: (pattern.description ?? "").slice(0, MAX_DESCRIPTION),
     tags: (pattern.tags ?? []).slice(0, MAX_TAGS),
