@@ -324,6 +324,73 @@ describe("usePatternCrud", () => {
     });
   });
 
+  describe("addPatternType", () => {
+    it("adds a type with a colour no type has yet", async () => {
+      const { result, list } = await mountCrud([]);
+
+      let added: Awaited<ReturnType<typeof result.current.addPatternType>>;
+      await act(async () => {
+        added = await result.current.addPatternType("Side Pass");
+      });
+
+      expect(added!).toMatchObject({ slug: "side-pass" });
+      const stored = await storedList(list.id);
+      expect(stored.patternTypes.at(-1)).toEqual(added!);
+      const colors = list.patternTypes.map((type) => type.color);
+      expect(colors).not.toContain(added!.color);
+    });
+
+    it("refuses a name already used, and on a read-only list", async () => {
+      const { result, list } = await mountCrud([]);
+      const taken = list.patternTypes[0].slug;
+
+      let added: unknown = "unset";
+      await act(async () => {
+        added = await result.current.addPatternType(taken.toUpperCase());
+      });
+      expect(added).toBeNull();
+
+      const readonly = await mountCrud([], { readonly: true });
+      await act(async () => {
+        added = await readonly.result.current.addPatternType("new");
+      });
+      expect(added).toBeNull();
+    });
+  });
+
+  describe("saveList", () => {
+    it("saves the active list's own settings", async () => {
+      const { result, list } = await mountCrud([]);
+
+      let ok: boolean | undefined;
+      await act(async () => {
+        ok = await result.current.saveList({ ...list, name: "Renamed" });
+      });
+
+      expect(ok).toBe(true);
+      expect((await storedList(list.id)).name).toBe("Renamed");
+    });
+
+    it("refuses another list, a read-only one, and a blank type name", async () => {
+      const { result, list } = await mountCrud([]);
+      let ok: unknown;
+      await act(async () => {
+        ok = await result.current.saveList({ ...list, id: "other" });
+      });
+      expect(ok).toBe(false);
+      await act(async () => {
+        ok = await result.current.addPatternType("   ");
+      });
+      expect(ok).toBeNull();
+
+      const readonly = await mountCrud([], { readonly: true });
+      await act(async () => {
+        ok = await readonly.result.current.saveList(readonly.list);
+      });
+      expect(ok).toBe(false);
+    });
+  });
+
   describe("modifiers", () => {
     it("adds a modifier with a generated id", async () => {
       const { result, list } = await mountCrud([]);

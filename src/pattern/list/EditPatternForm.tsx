@@ -32,6 +32,7 @@ import {
   lastRhythmStep,
   nextRhythmSteps,
   normalizeRhythm,
+  basicRhythms,
   rhythmCounts,
   rhythmMatchesCounts,
   removeLastRhythmStep,
@@ -96,6 +97,14 @@ type EditPatternFormProps = {
   saveLabel?: string;
   /** Shown between the title and the fields: who suggested it, a name to sign with. */
   header?: React.ReactNode;
+  /**
+   * Adds a type to the list from the type picker, so a new kind of figure does not mean
+   * leaving the form (tester review 1). Resolves to the new type, or null when refused.
+   * Without it the picker offers no "New type".
+   */
+  onAddType?: (name: string) => Promise<PatternType | null>;
+  /** Stops the name at this length: a suggestion's bound (`MAX_SUGGESTED_NAME_LENGTH`). */
+  nameMaxLength?: number;
 };
 
 const levels = Object.values(PatternLevel);
@@ -112,6 +121,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   title,
   saveLabel,
   header,
+  onAddType,
+  nameMaxLength,
 }) => {
   const { t } = useTranslation();
 
@@ -141,6 +152,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     null,
   );
   const [showAttachPicker, setShowAttachPicker] = useState(false);
+  // The "New type" sheet: its name field, and whether the last try was refused.
+  const [newTypeName, setNewTypeName] = useState<string | null>(null);
+  const [newTypeRefused, setNewTypeRefused] = useState(false);
   const [showAnonymizePicker, setShowAnonymizePicker] = useState(false);
   const [anonymizeTarget, setAnonymizeTarget] =
     useState<AnonymizeTarget | null>(null);
@@ -513,8 +527,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
 
   const rhythmInvalid =
     rhythmDraft.trim().length > 0 && rhythmCounts(rhythmDraft) === null;
-  // The next steps to tap on. No whole rhythms are offered for an empty field: guessed from the
-  // counts, they confused more than they helped.
+  // While the field is empty, the dance's basic rhythms for the counts, one tap each; once
+  // something is written, the next steps to tap on.
+  const suggestedRhythms = rhythmDraft.trim()
+    ? []
+    : basicRhythms(activeList?.dance, newPattern.counts);
   const nextSteps = nextRhythmSteps(rhythmDraft);
   // The last step, for the undo chip beside the next steps: a mistap is fixed without the
   // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
@@ -541,6 +558,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             onChangeText={(text) =>
               setNewPattern({ ...newPattern, name: text })
             }
+            maxLength={nameMaxLength}
             style={styles.input}
             placeholderTextColor={theme.colors.textMuted}
           />
@@ -657,6 +675,16 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               onPress={() => setNewPattern({ ...newPattern, typeId: type.id })}
             />
           ))}
+          {onAddType && (
+            <Chip
+              label={t("newType")}
+              icon="plus"
+              onPress={() => {
+                setNewTypeRefused(false);
+                setNewTypeName("");
+              }}
+            />
+          )}
         </View>
         <View style={styles.input}>
           <Text style={styles.label}>{t("level")}</Text>
@@ -696,6 +724,19 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           />
           {rhythmInvalid && (
             <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
+          )}
+          {suggestedRhythms.length > 0 && (
+            <View style={styles.rhythmSuggestions}>
+              {suggestedRhythms.map((rhythm) => (
+                <Chip
+                  key={rhythm}
+                  label={rhythm}
+                  icon="music-note-outline"
+                  accessibilityHint={t("rhythmSuggestionHint")}
+                  onPress={() => changeRhythm(rhythm)}
+                />
+              ))}
+            </View>
           )}
           {(nextSteps.length > 0 || lastStep) && (
             <View style={styles.rhythmSuggestions}>
@@ -864,6 +905,47 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
         onAddUrl={handleAddUrlVideo}
       />
 
+      {/* New type, without leaving the form */}
+      <BottomSheet
+        visible={newTypeName !== null}
+        onClose={() => setNewTypeName(null)}
+        title={t("addPatternType")}
+        minHeight="20%"
+        maxHeight="50%"
+      >
+        <View style={styles.newTypeBlock}>
+          <RevealTextInput
+            placeholder={t("typeName")}
+            value={newTypeName ?? ""}
+            onChangeText={(text) => {
+              setNewTypeName(text);
+              setNewTypeRefused(false);
+            }}
+            accessibilityLabel={t("typeName")}
+            autoFocus
+            style={styles.newTypeInput}
+            placeholderTextColor={theme.colors.textMuted}
+          />
+          {newTypeRefused && (
+            <Text style={styles.rhythmError}>{t("duplicateTypeSlug")}</Text>
+          )}
+          <Button
+            title={t("addPatternType")}
+            icon="plus"
+            disabled={!newTypeName?.trim()}
+            onPress={async () => {
+              const type = await onAddType?.(newTypeName ?? "");
+              if (!type) {
+                setNewTypeRefused(true);
+                return;
+              }
+              setNewPattern((prev) => ({ ...prev, typeId: type.id }));
+              setNewTypeName(null);
+            }}
+          />
+        </View>
+      </BottomSheet>
+
       {/* Attach modifier picker */}
       <BottomSheet
         visible={showAttachPicker}
@@ -936,6 +1018,8 @@ const styles = StyleSheet.create((theme) => {
     input: { flex: 1, height: "100%", ...baseInput },
     textarea: { ...baseInput, minHeight: 48 },
     rhythmBlock: { marginBottom: theme.space.sm },
+    newTypeBlock: { gap: theme.space.sm, paddingBottom: theme.space.md },
+    newTypeInput: { ...baseInput },
     rhythmInput: { ...baseInput },
     rhythmError: {
       ...theme.typography.caption,

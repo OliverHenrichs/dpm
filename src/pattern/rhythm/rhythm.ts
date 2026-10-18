@@ -77,6 +77,17 @@ const DANCE_RHYTHMS: Record<Dance, Record<number, string[]>> = {
   zouk: ZOUK,
 };
 
+/**
+ * The dance's basic rhythms for `counts`, offered while a pattern's rhythm field is empty: one
+ * tap writes a whole rhythm. Nothing for a dance without one, or for counts it has none for.
+ */
+export function basicRhythms(
+  dance: Dance | undefined,
+  counts: number,
+): string[] {
+  return dance ? (DANCE_RHYTHMS[dance][counts] ?? []) : [];
+}
+
 /** The rhythm a template pattern starts with: the dance's own, when it has one. */
 export function defaultRhythm(
   dance: Dance | undefined,

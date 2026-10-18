@@ -7,7 +7,13 @@ import {
   NewModifier,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
-import { generateUUID, PatternType } from "@/src/pattern/types/PatternType";
+import {
+  generateUUID,
+  isSlugUnique,
+  normalizeSlug,
+  PATTERN_TYPE_COLORS,
+  PatternType,
+} from "@/src/pattern/types/PatternType";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
@@ -31,6 +37,10 @@ export interface PatternCrud {
   addModifier: (modifier: NewModifier | IModifier) => Promise<boolean>;
   editModifier: (modifier: NewModifier | IModifier) => Promise<boolean>;
   deleteModifier: (modifierId: string) => Promise<boolean>;
+  /** The new type, or null for a read-only list, a blank name or one already used. */
+  addPatternType: (name: string) => Promise<PatternType | null>;
+  /** Saves the list's own settings (name, types, dance), edited where its patterns are. */
+  saveList: (list: IPatternList) => Promise<boolean>;
 }
 
 /**
@@ -202,6 +212,37 @@ export function usePatternCrud(): PatternCrud {
     ],
   );
 
+  const addPatternType = useCallback(
+    async (name: string) => {
+      const slug = normalizeSlug(name);
+      if (!activeList || isReadonly || !slug) return null;
+      if (!isSlugUnique(slug, patternTypes)) return null;
+      // The first palette colour no type has yet, as the list editor picks it.
+      const palette = Object.values(PATTERN_TYPE_COLORS) as string[];
+      const used = new Set(patternTypes.map((type) => type.color));
+      const type: PatternType = {
+        id: generateUUID(),
+        slug,
+        color: palette.find((c) => !used.has(c)) ?? palette[0],
+      };
+      await updateActiveList({
+        ...activeList,
+        patternTypes: [...patternTypes, type],
+      });
+      return type;
+    },
+    [activeList, isReadonly, patternTypes, updateActiveList],
+  );
+
+  const saveList = useCallback(
+    async (list: IPatternList) => {
+      if (!activeList || isReadonly || list.id !== activeList.id) return false;
+      await updateActiveList(list);
+      return true;
+    },
+    [activeList, isReadonly, updateActiveList],
+  );
+
   return {
     activeList,
     patterns,
@@ -214,5 +255,7 @@ export function usePatternCrud(): PatternCrud {
     addModifier,
     editModifier,
     deleteModifier,
+    addPatternType,
+    saveList,
   };
 }
