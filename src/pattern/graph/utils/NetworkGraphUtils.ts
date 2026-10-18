@@ -257,11 +257,29 @@ function calculateFoundationalPatternPositions(
   return { positions, foundationalAngles };
 }
 
+/**
+ * The roots, in the order they go round the ellipse: grouped by type, so two
+ * patterns of one type sit side by side even when nothing links them (tester
+ * review 1). Types come in order of first appearance, and patterns keep their
+ * order within a type.
+ */
 function getFoundationalPatterns(
   patterns: IPattern[],
   depthMap: Map<number, number>,
 ) {
-  return patterns.filter((p) => (depthMap.get(p.id) || 0) === 0);
+  const roots = patterns.filter((p) => (depthMap.get(p.id) || 0) === 0);
+  const typeRank = new Map<string, number>();
+  roots.forEach((p) => {
+    if (!typeRank.has(p.typeId)) typeRank.set(p.typeId, typeRank.size);
+  });
+  return roots
+    .map((p, index) => ({ p, index }))
+    .sort(
+      (a, b) =>
+        typeRank.get(a.p.typeId)! - typeRank.get(b.p.typeId)! ||
+        a.index - b.index,
+    )
+    .map(({ p }) => p);
 }
 
 function addSizeSafeguards(positions: Map<number, LayoutPosition>) {

@@ -122,9 +122,11 @@ const styles = StyleSheet.create((theme) => ({
       ? theme.colors.primary
       : theme.colors.surfaceVariant,
   }),
+  // One weight in both states. Switching it on select made Android keep the label's old
+  // measurement, and a modifier's name vanished behind its position tag (tester review 1).
   label: (selected: boolean) => ({
     ...theme.typography.label,
-    fontWeight: selected ? "600" : "400",
+    fontWeight: "400",
     color: selected ? theme.colors.onPrimary : theme.colors.onSurfaceVariant,
   }),
   swatch: (color: string) => ({
