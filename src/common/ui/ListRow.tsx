@@ -50,6 +50,8 @@ export interface ListRowProps {
   destructive?: boolean;
   /** Sets the title as the heading of its row (`rowTitle`): a pattern's name in the list. */
   strong?: boolean;
+  /** A tighter row whose title keeps to one line, cut short with an ellipsis: compact mode. */
+  dense?: boolean;
   /** `card` for rows that stand on the page, `plain` inside a sheet or menu. */
   variant?: "plain" | "card";
   onPress?: () => void;
@@ -87,6 +89,7 @@ const ListRow: React.FC<ListRowProps> = ({
   expanded,
   destructive = false,
   strong = false,
+  dense = false,
   variant = "plain",
   onPress,
   onLongPress,
@@ -121,7 +124,7 @@ const ListRow: React.FC<ListRowProps> = ({
         <View style={styles.titleLine}>
           <Text
             style={styles.title(selected, destructive, strong)}
-            numberOfLines={2}
+            numberOfLines={dense ? 1 : 2}
           >
             {title}
           </Text>
@@ -167,7 +170,10 @@ const ListRow: React.FC<ListRowProps> = ({
 
   if (!interactive) {
     return (
-      <View style={[styles.row(variant, selected), style]} testID={testID}>
+      <View
+        style={[styles.row(variant, selected, dense), style]}
+        testID={testID}
+      >
         {content}
       </View>
     );
@@ -194,7 +200,7 @@ const ListRow: React.FC<ListRowProps> = ({
         foreground: true,
       }}
       style={({ pressed }) => [
-        styles.row(variant, selected),
+        styles.row(variant, selected, dense),
         pressed && Platform.OS !== "android" && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -206,13 +212,13 @@ const ListRow: React.FC<ListRowProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  row: (variant: "plain" | "card", selected: boolean) => ({
+  row: (variant: "plain" | "card", selected: boolean, dense: boolean) => ({
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.space.md,
-    minHeight: 48,
+    gap: dense ? theme.space.sm : theme.space.md,
+    minHeight: dense ? 40 : 48,
     overflow: "hidden",
-    paddingVertical: theme.space.sm,
+    paddingVertical: dense ? theme.space.xxs : theme.space.sm,
     paddingHorizontal: theme.space.md,
     borderRadius: variant === "card" ? theme.radius.lg : theme.radius.md,
     borderWidth: variant === "card" ? 1 : 0,

@@ -24,3 +24,23 @@ export async function saveStyle(style: AppStyle): Promise<void> {
     console.error("Error saving style:", error);
   }
 }
+
+const COMPACT_LIST_KEY = "@compactList";
+
+/** Whether the pattern list is in compact mode; off unless chosen, or when the read fails. */
+export async function loadStoredCompactList(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(COMPACT_LIST_KEY)) === "true";
+  } catch (error) {
+    console.error("Error reading compact list setting:", error);
+    return false;
+  }
+}
+
+export async function saveCompactList(compact: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(COMPACT_LIST_KEY, String(compact));
+  } catch (error) {
+    console.error("Error saving compact list setting:", error);
+  }
+}

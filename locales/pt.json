@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "Acolhedor e espaçoso. Feito para praticar e para os bailes.",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "Denso e estruturado. Feito para dar um curso.",
+  "compactList": "Lista compacta",
+  "compactListDescription": "Cada passo numa linha, o seu tipo como um ponto colorido, com menos espaço entre linhas.",
   "noLevel": "Sem nível",
   "noDateSection": "Data desconhecida",
   "noType": "Sem tipo",

@@ -9,7 +9,12 @@ import { useColorScheme as useNativeColorScheme } from "react-native";
 import { UnistylesRuntime } from "react-native-unistyles";
 import { loadStoredTheme, saveTheme } from "@/src/settings/data/ThemeStorage";
 import { ThemeType } from "@/src/settings/types/Themes";
-import { loadStoredStyle, saveStyle } from "@/src/settings/data/StyleStorage";
+import {
+  loadStoredCompactList,
+  loadStoredStyle,
+  saveCompactList,
+  saveStyle,
+} from "@/src/settings/data/StyleStorage";
 import { AppStyle, DEFAULT_APP_STYLE } from "@/src/common/theme/tokens";
 import { applyAppStyle } from "@/src/common/theme/unistyles";
 
@@ -22,6 +27,9 @@ export interface ThemeContextProps {
   /** The app's style (After Hours or Clipboard), independent of light and dark. */
   appStyle: AppStyle;
   setAppStyle: (style: AppStyle) => void;
+  /** Compact mode: pattern rows on one line, with less space around them. */
+  compactList: boolean;
+  setCompactList: (compact: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextProps>({
@@ -30,6 +38,8 @@ const ThemeContext = createContext<ThemeContextProps>({
   colorScheme: "light",
   appStyle: DEFAULT_APP_STYLE,
   setAppStyle: () => {},
+  compactList: false,
+  setCompactList: () => {},
 });
 
 export const ThemeProvider: React.FC<{
@@ -40,6 +50,8 @@ export const ThemeProvider: React.FC<{
   const [theme, setThemeState] = useState<ThemeType>("system");
   const [appStyle, setAppStyleState] = useState<AppStyle>(DEFAULT_APP_STYLE);
   const styleChosenRef = useRef(false);
+  const [compactList, setCompactListState] = useState(false);
+  const compactChosenRef = useRef(false);
   const systemColorScheme = useNativeColorScheme(); // "light" | "dark" | null
   const chosenRef = useRef(false);
   const restoreStartedRef = useRef(false);
@@ -49,14 +61,16 @@ export const ThemeProvider: React.FC<{
   useEffect(() => {
     if (restoreStartedRef.current) return;
     restoreStartedRef.current = true;
-    void Promise.all([loadStoredTheme(), loadStoredStyle()]).then(
-      ([storedTheme, storedStyle]) => {
-        if (storedTheme && !chosenRef.current) setThemeState(storedTheme);
-        if (storedStyle && !styleChosenRef.current)
-          setAppStyleState(storedStyle);
-        onRestored?.();
-      },
-    );
+    void Promise.all([
+      loadStoredTheme(),
+      loadStoredStyle(),
+      loadStoredCompactList(),
+    ]).then(([storedTheme, storedStyle, storedCompact]) => {
+      if (storedTheme && !chosenRef.current) setThemeState(storedTheme);
+      if (storedStyle && !styleChosenRef.current) setAppStyleState(storedStyle);
+      if (!compactChosenRef.current) setCompactListState(storedCompact);
+      onRestored?.();
+    });
   }, [onRestored]);
 
   const setTheme = (next: ThemeType) => {
@@ -69,6 +83,12 @@ export const ThemeProvider: React.FC<{
     styleChosenRef.current = true;
     setAppStyleState(next);
     void saveStyle(next);
+  };
+
+  const setCompactList = (next: boolean) => {
+    compactChosenRef.current = true;
+    setCompactListState(next);
+    void saveCompactList(next);
   };
 
   // The registered themes start as the default style; any other is swapped in.
@@ -97,7 +117,15 @@ export const ThemeProvider: React.FC<{
 
   return (
     <ThemeContext.Provider
-      value={{ theme, setTheme, colorScheme, appStyle, setAppStyle }}
+      value={{
+        theme,
+        setTheme,
+        colorScheme,
+        appStyle,
+        setAppStyle,
+        compactList,
+        setCompactList,
+      }}
     >
       {children}
     </ThemeContext.Provider>

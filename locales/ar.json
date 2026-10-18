@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "دافئ ورحب. مصمم للتدريب والحفلات الراقصة.",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "كثيف ومنظم. مصمم لإدارة دورة.",
+  "compactList": "قائمة مضغوطة",
+  "compactListDescription": "كل خطوة في سطر واحد، ونوعها نقطة ملوّنة، مع مسافة أقل بين الصفوف.",
   "noLevel": "بلا مستوى",
   "noDateSection": "التاريخ غير معروف",
   "noType": "بلا نوع",

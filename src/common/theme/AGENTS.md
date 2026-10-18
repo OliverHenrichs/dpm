@@ -70,6 +70,11 @@ style is on. What differs is values (`palettes`, per-style `radius`, the type sc
 `theme.list`, the few places the pattern list differs in shape (type as a dot or a filled tag,
 section header tone).
 
+**Compact mode** (Settings, under the styles) is not a third style: it works with both, in light
+and dark. `ThemeProvider` holds it (`compactList`, stored as `@compactList`), and `PatternList`
+passes it to its rows and section headers as a `compact` prop, which their style functions take
+(`ListRow`'s `dense`). Only the pattern list follows it.
+
 Unistyles knows only two themes, `light` and `dark`, so adaptive themes and web's static render
 keep working. `ThemeProvider` (`src/common/components/ThemeContext.tsx`) owns the user's choices
 (theme `@theme`, style `@appStyle`), persists them, fills both Unistyles themes with the style

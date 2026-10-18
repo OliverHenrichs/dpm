@@ -420,6 +420,8 @@
   "styleAfterHoursHint": "गर्म और खुला। अभ्यास और सोशल डांस के लिए।",
   "styleClipboard": "Clipboard",
   "styleClipboardHint": "घना और व्यवस्थित। कोर्स चलाने के लिए।",
+  "compactList": "कॉम्पैक्ट सूची",
+  "compactListDescription": "हर पैटर्न एक पंक्ति में, उसका प्रकार एक रंगीन बिंदु, पंक्तियों के बीच कम जगह।",
   "noLevel": "कोई स्तर नहीं",
   "noDateSection": "तारीख़ अज्ञात",
   "noType": "कोई प्रकार नहीं",
