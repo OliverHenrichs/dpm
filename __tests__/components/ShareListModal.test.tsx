@@ -1,4 +1,6 @@
 import React from "react";
+import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
+import { TERMS_VERSION } from "@/src/legal/TermsStorage";
 import { Clipboard } from "react-native";
 import ShareListModal from "@/src/pattern/list/ShareListModal";
 import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
@@ -53,6 +55,8 @@ const mockedUnpublish = unpublishList as jest.MockedFunction<
 >;
 
 beforeEach(() => {
+  // Publishing and suggesting ask for the terms of use once; agreed here, tested in TermsConsent.
+  seedAsyncStorage({ "@termsAccepted": TERMS_VERSION });
   mockFirebaseAvailable = true;
   mockedPublish.mockResolvedValue({
     shareCode: "ABCD1234",

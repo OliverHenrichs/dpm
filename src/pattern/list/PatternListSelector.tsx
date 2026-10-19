@@ -30,6 +30,7 @@ import { removeSubscription } from "@/src/firebase/SubscriptionService";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { createExampleList } from "@/src/pattern/data/ExampleList";
 import TakeOverListModal from "@/src/pattern/handover/TakeOverListModal";
+import ReportListModal from "@/src/legal/components/ReportListModal";
 
 const PatternListSelector: React.FC = () => {
   const { t } = useTranslation();
@@ -57,6 +58,8 @@ const PatternListSelector: React.FC = () => {
     null,
   );
   const [takenOverName, setTakenOverName] = useState<string | null>(null);
+  // A subscribed list being reported to the operator (src/legal/).
+  const [reportTarget, setReportTarget] = useState<IPatternList | null>(null);
 
   // Dialog state
   const [deleteConfirmTarget, setDeleteConfirmTarget] =
@@ -428,6 +431,18 @@ const PatternListSelector: React.FC = () => {
                   }}
                 />
               )}
+            {firebaseAvailable &&
+              listActionTarget?.readonly &&
+              listActionTarget.shareCode && (
+                <ListRow
+                  title={t("reportList")}
+                  icon="flag-outline"
+                  onPress={() => {
+                    setReportTarget(listActionTarget);
+                    setListActionTarget(null);
+                  }}
+                />
+              )}
             {listActionTarget?.readonly && listActionTarget.shareCode && (
               <ListRow
                 title={t("unsubscribeList")}
@@ -479,6 +494,12 @@ const PatternListSelector: React.FC = () => {
             list={takeOverTarget}
             onClose={() => setTakeOverTarget(null)}
             onTakenOver={handleTakenOver}
+          />
+        )}
+        {reportTarget && (
+          <ReportListModal
+            list={reportTarget}
+            onClose={() => setReportTarget(null)}
           />
         )}
         <AppDialog

@@ -1,4 +1,6 @@
 import React from "react";
+import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
+import { TERMS_VERSION } from "@/src/legal/TermsStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   publishList,
@@ -69,6 +71,8 @@ let suggestionsNow: PatternSuggestion[] = [];
 let mutedNow: MutedSubscriber[] = [];
 
 beforeEach(() => {
+  // Publishing and suggesting ask for the terms of use once; agreed here, tested in TermsConsent.
+  seedAsyncStorage({ "@termsAccepted": TERMS_VERSION });
   mockFirebaseAvailable = true;
   suggestionsNow = [];
   mutedNow = [];

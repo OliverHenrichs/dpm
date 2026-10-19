@@ -15,6 +15,7 @@ const {
   SUBSCRIBERS,
   HANDOVERS,
   BLOCKED,
+  REPORTS,
   TAKEDOWN_OWNER,
   makeDoc,
 } = require("./model");
@@ -88,6 +89,7 @@ async function loadSnapshot(db) {
     db.collectionGroup(COUNTERS).get(),
     db.collectionGroup(SUBSCRIBERS).get(),
     db.collectionGroup(HANDOVERS).get(),
+    db.collection(REPORTS).get(),
   ]);
   return snaps.flatMap((snap) =>
     snap.docs.map((d) => makeDoc(d.ref.path, plain(d.data()))),

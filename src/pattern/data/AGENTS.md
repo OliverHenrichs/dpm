@@ -18,6 +18,7 @@ Unqualified paths are relative to `src/pattern/data/`.
 | `@changelogSeenVersion`, `@whatsNewHintEnabled` | the newest changelog version seen, the hint's switch | `src/changelog/ChangelogStorage.ts`               |
 | `@suggesterName`                                | the name last used to sign a pattern suggestion      | `src/pattern/suggestions/SuggesterNameStorage.ts` |
 | `@subscriptionIds`                              | share code → this phone's random subscription id     | `SubscriptionStorage.ts`                          |
+| `@termsAccepted`                                | the version of the terms of use agreed to            | `src/legal/TermsStorage.ts`                       |
 
 Settings live under their own keys, outside any list, so they survive deleting every list.
 
