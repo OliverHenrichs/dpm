@@ -19,6 +19,48 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.0",
+    date: "2026-10-20",
+    notes: {
+      en: [
+        "The Map's pattern boxes now follow your style. After Hours draws a rounded box outlined in the type's colour; Clipboard draws a square box with the type's colour in a bar down its left edge. The higher a pattern's level, the more of its type's colour fills the box, and the legend shows the same boxes.",
+        "In the network, a mark sits in the middle of the screen. Pan, and the pattern under it shows in a card with its type, name, counts and description, and after a moment its first video, without sound. Let go and that pattern moves to the middle; tap the card to open it.",
+      ],
+      zh: [
+        "“地图”中的舞步方框现在会随你选择的风格变化。After Hours 画出圆角方框，用类型颜色描边；Clipboard 画出方角方框，左侧有一条类型颜色的竖条。舞步的难度越高，方框中填充的类型颜色越多，图例中也显示同样的方框。",
+        "在网络图中，屏幕中央有一个标记。拖动画面时，标记下方的舞步会显示在一张卡片里，包括类型、名称、拍数和说明，稍等片刻后还会无声播放它的第一个视频。松手后，这个舞步会移到中央；点按卡片即可打开它。",
+      ],
+      hi: [
+        "मानचित्र में पैटर्न के बॉक्स अब आपकी शैली के अनुसार दिखते हैं। After Hours गोल कोनों वाला बॉक्स बनाता है जिसकी रेखा प्रकार के रंग में होती है; Clipboard चौकोर बॉक्स बनाता है जिसके बाएँ किनारे पर प्रकार के रंग की एक पट्टी होती है। पैटर्न का स्तर जितना ऊँचा, बॉक्स में प्रकार का रंग उतना ज़्यादा भरा होता है, और संकेत-सूची भी यही बॉक्स दिखाती है।",
+        "नेटवर्क में स्क्रीन के बीच में एक निशान रहता है। दृश्य को खिसकाएँ, तो उसके नीचे का पैटर्न एक कार्ड में दिखता है: उसका प्रकार, नाम, काउंट और विवरण, और कुछ पल बाद उसका पहला वीडियो, बिना आवाज़ के। छोड़ने पर वह पैटर्न बीच में आ जाता है; उसे खोलने के लिए कार्ड पर टैप करें।",
+      ],
+      es: [
+        "Las cajas de las figuras en el Mapa siguen ahora tu estilo. After Hours dibuja una caja redondeada con el borde del color del tipo; Clipboard dibuja una caja cuadrada con el color del tipo en una barra a lo largo de su borde izquierdo. Cuanto más alto es el nivel de una figura, más color de su tipo rellena la caja, y la leyenda muestra las mismas cajas.",
+        "En la red, una marca está fija en el centro de la pantalla. Al desplazar la vista, la figura que queda bajo ella aparece en una tarjeta con su tipo, nombre, tiempos y descripción y, tras un momento, su primer vídeo, sin sonido. Al soltar, esa figura se mueve al centro; toca la tarjeta para abrirla.",
+      ],
+      fr: [
+        "Les cases des figures sur la Carte suivent désormais votre style. After Hours trace une case arrondie bordée de la couleur du type ; Clipboard trace une case carrée avec la couleur du type en barre le long de son bord gauche. Plus le niveau d'une figure est élevé, plus la couleur de son type remplit la case, et la légende montre les mêmes cases.",
+        "Dans le réseau, un repère reste au milieu de l'écran. Faites glisser la vue, et la figure qui se trouve dessous s'affiche dans une carte avec son type, son nom, ses temps et sa description, puis, après un instant, sa première vidéo, sans le son. Relâchez et cette figure vient au milieu ; touchez la carte pour l'ouvrir.",
+      ],
+      ar: [
+        "صارت مربعات الحركات في الخريطة تتبع النمط الذي اخترته. يرسم After Hours مربعًا بزوايا مستديرة وحدٍّ بلون النوع، ويرسم Clipboard مربعًا بزوايا قائمة مع شريط بلون النوع على طول حافته اليسرى. وكلما ارتفع مستوى الحركة امتلأ مربعها بقدر أكبر من لون نوعها، ويعرض مفتاح الرموز المربعات نفسها.",
+        "في الشبكة توجد علامة ثابتة في وسط الشاشة. اسحب العرض فتظهر الحركة التي تحتها في بطاقة فيها نوعها واسمها والعدّات والوصف، ثم بعد لحظة أول فيديو لها بلا صوت. عند الإفلات تنتقل تلك الحركة إلى الوسط؛ انقر البطاقة لفتحها.",
+      ],
+      bn: [
+        "মানচিত্রে প্যাটার্নের বাক্সগুলো এখন আপনার স্টাইল মেনে আঁকা হয়। After Hours গোল কোণের বাক্স আঁকে, যার রেখা ধরনের রঙে; Clipboard চৌকো বাক্স আঁকে, যার বাঁ কিনারা বরাবর ধরনের রঙের একটি দাগ থাকে। প্যাটার্নের স্তর যত উঁচু, বাক্সে তার ধরনের রং তত বেশি ভরা থাকে, আর নির্দেশিকাও একই বাক্স দেখায়।",
+        "নেটওয়ার্কে স্ক্রিনের মাঝখানে একটি চিহ্ন থাকে। দৃশ্যটি সরালে তার নিচের প্যাটার্নটি একটি কার্ডে দেখা যায়: তার ধরন, নাম, কাউন্ট ও বিবরণ, আর একটু পরে তার প্রথম ভিডিও, শব্দ ছাড়া। ছেড়ে দিলে সেই প্যাটার্নটি মাঝখানে চলে আসে; খুলতে কার্ডে ট্যাপ করুন।",
+      ],
+      pt: [
+        "As caixas dos passos no Mapa agora seguem o seu estilo. After Hours desenha uma caixa arredondada com o contorno na cor do tipo; Clipboard desenha uma caixa quadrada com a cor do tipo numa barra ao longo da borda esquerda. Quanto mais alto o nível de um passo, mais a cor do seu tipo preenche a caixa, e a legenda mostra as mesmas caixas.",
+        "Na rede, uma marca fica fixa no meio da tela. Ao arrastar a vista, o passo que está debaixo dela aparece num cartão com o tipo, o nome, os tempos e a descrição e, depois de um instante, o primeiro vídeo, sem som. Ao soltar, esse passo vai para o meio; toque no cartão para abri-lo.",
+      ],
+      de: [
+        "Die Kästen der Figuren auf der Karte folgen jetzt deinem Stil. After Hours zeichnet einen abgerundeten Kasten mit einem Rahmen in der Farbe des Typs; Clipboard zeichnet einen eckigen Kasten mit der Farbe des Typs als Balken am linken Rand. Je höher das Niveau einer Figur, desto mehr Farbe ihres Typs füllt den Kasten, und die Legende zeigt dieselben Kästen.",
+        "Im Netzwerk sitzt eine Markierung in der Mitte des Bildschirms. Verschiebst du die Ansicht, erscheint die Figur darunter in einer Karte mit Typ, Name, Count und Beschreibung und nach einem Moment ihrem ersten Video, ohne Ton. Lässt du los, rückt diese Figur in die Mitte; tippe auf die Karte, um sie zu öffnen.",
+      ],
+    },
+  },
+  {
     version: "1.3.0",
     date: "2026-10-18",
     notes: {
