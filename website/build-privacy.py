@@ -20,6 +20,8 @@ TEMPLATE = """<!doctype html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Alpha: keep the site out of search results until launch (website/README.md). -->
+    <meta name="robots" content="noindex" />
     <title>Privacy policy · DPM</title>
     <meta name="description" content="Privacy policy for DPM (Dance Pattern Mapper)." />
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />

@@ -57,6 +57,10 @@ These addresses are hard-coded and must change together if the domain changes:
 
 ## Before launch
 
+- **Search engines.** Every page carries `<meta name="robots" content="noindex" />` (also in
+  `build-privacy.py`'s template) so the alpha site stays out of search results. Remove those lines
+  at launch (keep the one in `404.html`). `robots.txt` must keep allowing crawling: a crawler
+  blocked there never reads the noindex and may still list the bare address.
 - **Store badges.** When the listings go live, replace the "In development" line in the
   landing page's hero, and "On Android for now" on the student page, with the official Google
   Play and App Store badges.
