@@ -33,6 +33,7 @@ import {
   MAX_AUTHOR_NAME_LENGTH,
   MAX_SUGGESTED_NAME_LENGTH,
 } from "@/src/pattern/suggestions/suggestions";
+import { useTermsConsent } from "@/src/legal/useTermsConsent";
 
 interface SuggestPatternModalProps {
   visible: boolean;
@@ -68,6 +69,9 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
+  // A suggestion is shared with the publisher: the terms of use are agreed to before the form.
+  const { withTerms, termsDialog } = useTermsConsent();
+  const [agreed, setAgreed] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const policy = list.suggestions;
@@ -80,6 +84,7 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
 
   useEffect(() => {
     let cancelled = false;
+    withTerms(() => !cancelled && setAgreed(true), onClose);
     getSuggesterName().then((stored) => {
       if (!cancelled) setName((typed) => typed || stored);
     });
@@ -146,7 +151,7 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
     }
   };
 
-  if (phase.kind === "ready") {
+  if (phase.kind === "ready" && agreed) {
     return (
       <Modal visible animationType="slide" transparent onRequestClose={onClose}>
         <ModalOverlay padding="none">
@@ -211,18 +216,19 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
       <ModalOverlay>
         <View style={styles.card}>
           <Text style={styles.title}>{t("suggestPattern")}</Text>
-          {phase.kind === "loading" ? (
+          {phase.kind === "blocked" ? (
+            <Text style={styles.message}>{phase.message}</Text>
+          ) : (
             <ActivityIndicator
               size="large"
               color={theme.colors.primary}
               style={styles.spinner}
             />
-          ) : (
-            <Text style={styles.message}>{phase.message}</Text>
           )}
           <Button title={t("close")} variant="secondary" onPress={onClose} />
         </View>
       </ModalOverlay>
+      {phase.kind !== "blocked" && termsDialog}
     </Modal>
   );
 };

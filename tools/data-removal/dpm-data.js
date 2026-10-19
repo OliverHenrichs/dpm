@@ -16,6 +16,7 @@ const {
   isTakenDown,
   planListRemoval,
   planUserRemoval,
+  reportsOf,
   looksLikeShareCode,
   looksLikeUid,
 } = require("./lib/model");
@@ -33,11 +34,15 @@ const USAGE = `Usage: npm run data -- <command> [options]
       --allow-republish         Delete without blocking: the publisher's next edit
                                 publishes the list again.
   remove-user <uid>             Delete one anonymous user's suggestions, subscriber
-                                records and counters, and their sign-in account.
+                                records, counters and reports, and their sign-in
+                                account.
       --with-lists              Also remove the lists they publish (required when
                                 they publish any).
   remove-suggestion <shareCode> <suggestionId>
                                 Delete one suggestion.
+  reports                       Every report about a list, newest first.
+  remove-report <reportId>      Delete one report once it is dealt with
+                                (<reportId> is <shareCode>_<reporter uid>).
   release <shareCode>           Undo a takedown, so the publisher can publish again.
   block-user <uid>              Stop that installation publishing, suggesting or asking
                                 to join, until the app is reinstalled. Its lists stay;
@@ -83,6 +88,10 @@ function printDoc(doc) {
       return `subscriber ${doc.id}: ${[doc.data.name && `"${doc.data.name}"`, doc.data.membership, doc.data.status].filter(Boolean).join(", ")}`;
     case "counter":
       return `daily counter ${doc.id}`;
+    case "handover":
+      return `handover offer ${doc.id}`;
+    case "report":
+      return `report ${doc.id}: ${doc.data.reason}, ${doc.data.createdAt}${doc.data.contact ? `, reply to ${doc.data.contact}` : ""}${doc.data.details ? `\n      "${oneLine(doc.data.details, 300)}"` : ""}`;
   }
 }
 
@@ -264,6 +273,37 @@ async function removeSuggestion(conn, docs, code, id, flags) {
   console.log("Removed.");
 }
 
+function reports(docs) {
+  const all = reportsOf(docs);
+  if (all.length === 0) {
+    console.log("No reports.");
+    return;
+  }
+  for (const doc of all) {
+    console.log(`\n${listTitle(docs, doc.code)}`);
+    console.log(`  ${printDoc(doc)}`);
+  }
+  console.log(
+    `\n${all.length} report(s). \`show <shareCode>\` for the list, \`remove-list\` to take it down, \`remove-report <reportId>\` once dealt with.`,
+  );
+}
+
+async function removeReport(conn, docs, id, flags) {
+  const doc = docs.find((d) => d.kind === "report" && d.id === id);
+  if (!doc) {
+    console.log(`No report ${id ?? ""}.`);
+    return;
+  }
+  console.log(`Removing ${printDoc(doc)}`);
+  if (flags.has("--dry-run")) return;
+  if (!(await confirm(flags, "this report", id))) {
+    console.log("Nothing deleted.");
+    return;
+  }
+  await store.deleteDocs(conn.db, [doc]);
+  console.log("Removed.");
+}
+
 async function release(conn, docs, code, flags) {
   if (!isTakenDown(docs, code)) {
     console.log(`${code} is not taken down.`);
@@ -332,6 +372,8 @@ async function main() {
     "remove-list",
     "remove-user",
     "remove-suggestion",
+    "reports",
+    "remove-report",
     "release",
     "block-user",
     "unblock-user",
@@ -363,6 +405,10 @@ async function main() {
         args[1],
         flags,
       );
+    case "reports":
+      return reports(docs);
+    case "remove-report":
+      return removeReport(conn, docs, args[0], flags);
     case "release":
       return release(conn, docs, requireShareCode(args[0]), flags);
     case "block-user":
