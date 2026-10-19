@@ -5,10 +5,48 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import Svg, { Circle, Path } from "react-native-svg";
+import NodeFrame from "@/src/pattern/graph/render/NodeFrame";
+import { LEVEL_TINTS } from "@/src/pattern/graph/model/nodeFrame";
 import {
   isLegendSeen,
   markLegendSeen,
 } from "@/src/pattern/graph/data/GraphHintStorage";
+
+/** A pattern box in miniature, drawn by the graph's own `NodeFrame`. */
+const SAMPLE_WIDTH = 28;
+const SAMPLE_HEIGHT = 18;
+/** Room around a sample for its outline and After Hours' halo, which reach outside the box. */
+const SAMPLE_MARGIN = 4;
+/** Every glyph column is this wide, so the explanations line up beside them. */
+const GLYPH_WIDTH = SAMPLE_WIDTH + SAMPLE_MARGIN * 2;
+
+const NodeSample: React.FC<{
+  color: string;
+  tint?: number;
+  foundational?: boolean;
+}> = ({ color, tint = LEVEL_TINTS.beginner, foundational = false }) => (
+  <Glyph>
+    <Svg width={GLYPH_WIDTH} height={SAMPLE_HEIGHT + SAMPLE_MARGIN * 2}>
+      <NodeFrame
+        x={GLYPH_WIDTH / 2}
+        y={SAMPLE_HEIGHT / 2 + SAMPLE_MARGIN}
+        width={SAMPLE_WIDTH}
+        height={SAMPLE_HEIGHT}
+        color={color}
+        tint={tint}
+        foundational={foundational}
+      />
+    </Svg>
+  </Glyph>
+);
+
+/**
+ * The glyph column. A `View` around the `Svg` carries the spacing because an
+ * `Svg` is a third-party component, and on web it drops a Unistyles style.
+ */
+const Glyph: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <View style={styles.glyph}>{children}</View>
+);
 
 interface LegendProps {
   patternTypes: PatternType[];
@@ -63,7 +101,7 @@ const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
         <Text style={styles.sectionTitle}>{t("typeColors")}:</Text>
         {patternTypes.map((type) => (
           <View style={styles.legendItem} key={type.id}>
-            <View style={[styles.colorBox, { borderColor: type.color }]} />
+            <NodeSample color={type.color} />
             <Text style={styles.legendText}>
               {t("legendTypeLane", { type: type.slug })}
             </Text>
@@ -75,57 +113,22 @@ const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
       {showLevels && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("levelShading")}:</Text>
-          <View style={styles.legendItem}>
-            <View
-              style={[
-                styles.colorBox,
-                {
-                  backgroundColor: theme.colors.surface,
-                  opacity: 0.3,
-                },
-              ]}
-            />
-            <Text style={styles.legendText}>{t("beginner")}</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[
-                styles.colorBox,
-                {
-                  backgroundColor: theme.colors.surface,
-                  opacity: 0.5,
-                },
-              ]}
-            />
-            <Text style={styles.legendText}>{t("intermediate")}</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[
-                styles.colorBox,
-                {
-                  backgroundColor: theme.colors.surface,
-                  opacity: 0.7,
-                },
-              ]}
-            />
-            <Text style={styles.legendText}>{t("advanced")}</Text>
-          </View>
+          {(["beginner", "intermediate", "advanced"] as const).map((level) => (
+            <View style={styles.legendItem} key={level}>
+              <NodeSample
+                color={theme.colors.primary}
+                tint={LEVEL_TINTS[level]}
+              />
+              <Text style={styles.legendText}>{t(level)}</Text>
+            </View>
+          ))}
         </View>
       )}
 
       {/* Special Indicators */}
       <View style={styles.section}>
         <View style={styles.legendItem}>
-          <View
-            style={[
-              styles.colorBox,
-              {
-                borderColor: theme.colors.primary,
-                borderWidth: 3,
-              },
-            ]}
-          />
+          <NodeSample color={theme.colors.primary} foundational />
           <Text style={styles.legendText}>{t("foundationalPattern")}</Text>
         </View>
         <View style={styles.legendItem}>
@@ -138,23 +141,27 @@ const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
             with the same shapes, not emoji, so the legend matches the graph
             whatever fonts the device has. */}
         <View style={styles.legendItem}>
-          <Svg width={20} height={20} style={styles.glyph}>
-            <Path d="M 6 6 L 14 10 L 6 14 Z" fill={theme.colors.primary} />
-          </Svg>
+          <Glyph>
+            <Svg width={GLYPH_WIDTH} height={20}>
+              <Path d="M 14 6 L 22 10 L 14 14 Z" fill={theme.colors.primary} />
+            </Svg>
+          </Glyph>
           <Text style={styles.legendText}>{t("legendHasVideo")}</Text>
         </View>
         <View style={styles.legendItem}>
-          <Svg width={20} height={20} style={styles.glyph}>
-            {[0, 1, 2].map((index) => (
-              <Circle
-                key={index}
-                cx={5 + index * 5}
-                cy={10}
-                r={1.6}
-                fill={theme.colors.primary}
-              />
-            ))}
-          </Svg>
+          <Glyph>
+            <Svg width={GLYPH_WIDTH} height={20}>
+              {[0, 1, 2].map((index) => (
+                <Circle
+                  key={index}
+                  cx={13 + index * 5}
+                  cy={10}
+                  r={1.6}
+                  fill={theme.colors.primary}
+                />
+              ))}
+            </Svg>
+          </Glyph>
           <Text style={styles.legendText}>{t("legendModifiers")}</Text>
         </View>
         {/* Repeated here because the hint bar above the graph is dismissible,
@@ -215,14 +222,6 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     marginVertical: theme.space.xxs,
   },
-  colorBox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderRadius: theme.radius.xs,
-    marginRight: theme.space.sm,
-    backgroundColor: theme.colors.surface,
-  },
   legendText: {
     ...theme.typography.micro,
     color: theme.colors.textMuted,
@@ -232,6 +231,8 @@ const styles = StyleSheet.create((theme) => ({
   },
   arrowText: {
     ...theme.typography.title,
+    width: GLYPH_WIDTH,
+    textAlign: "center",
     marginRight: theme.space.sm,
     color: theme.colors.text,
   },

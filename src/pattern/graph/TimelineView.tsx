@@ -4,7 +4,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import type { ColorTokens } from "@/src/common/theme/tokens";
+import type { AppTheme } from "@/src/common/theme/tokens";
 import {
   generateOrthogonalPath,
   generateSkipLevelPath,
@@ -16,8 +16,8 @@ import {
 } from "@/src/pattern/graph/render/GraphPrimitives";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import GraphEmptyState from "@/src/pattern/graph/components/GraphEmptyState";
+import { edgeStroke } from "@/src/pattern/graph/render/edgeStyle";
 import {
-  ELIDED_DASH,
   MIN_PATTERN_HEIGHT,
   MIN_PATTERNS_VISIBLE,
 } from "@/src/pattern/graph/types/Constants";
@@ -92,13 +92,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({
           {...rasterizeLargeGraph(patterns.length)}
         >
           <ArrowheadMarker />
-          {drawSwimlanes(swimlanes, svgWidth)}
-          {drawTimelineEdges(
-            model.edges,
-            positions,
-            skipLevelEdges,
-            theme.colors,
-          )}
+          {drawSwimlanes(swimlanes, svgWidth, theme)}
+          {drawTimelineEdges(model.edges, positions, skipLevelEdges, theme)}
           {drawNodes(model.nodes, positions, onNodeTap)}
         </Svg>
       </ScrollView>
@@ -114,7 +109,7 @@ function drawTimelineEdges(
   edges: GraphEdge[],
   positions: Map<number, LayoutPosition>,
   skipLevelEdges: SkipLevelEdgeInfo[],
-  colors: ColorTokens,
+  theme: AppTheme,
 ) {
   // Create a map of skip-level edges for quick lookup
   const skipLevelEdgeMap = new Map<string, SkipLevelEdgeInfo>();
@@ -158,12 +153,9 @@ function drawTimelineEdges(
           <Path
             key={`edge-${index}`}
             d={pathData}
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeDasharray={elided ? ELIDED_DASH : undefined}
+            {...edgeStroke(theme, elided)}
             fill="none"
             markerEnd="url(#arrowhead-graph)"
-            opacity={elided ? 0.4 : 0.6}
           />
         );
       })}
@@ -171,7 +163,16 @@ function drawTimelineEdges(
   );
 }
 
-function drawSwimlanes(swimlanes: SwimlaneInfo[], svgWidth: number) {
+/**
+ * Lanes, labelled like the pattern list's section headers in the app style:
+ * After Hours' italic serif, Clipboard's mono capitals.
+ */
+function drawSwimlanes(
+  swimlanes: SwimlaneInfo[],
+  svgWidth: number,
+  theme: AppTheme,
+) {
+  const { section } = theme.typography;
   return (
     <>
       {swimlanes.map((swimlane) => (
@@ -187,17 +188,25 @@ function drawSwimlanes(swimlanes: SwimlaneInfo[], svgWidth: number) {
           <SvgText
             x={20}
             y={swimlane.y + 25}
-            fontSize={16}
-            fontWeight="bold"
+            fontFamily={section.fontFamily}
+            fontSize={section.fontSize}
+            fontWeight={section.fontWeight}
+            fontStyle={section.fontStyle}
+            letterSpacing={section.letterSpacing}
             fill={swimlane.color}
             fillOpacity={0.5}
           >
-            {(swimlane.label || swimlane.typeId || "").toUpperCase()}
+            {laneLabel(swimlane, theme.list.sectionUppercase)}
           </SvgText>
         </React.Fragment>
       ))}
     </>
   );
+}
+
+function laneLabel(swimlane: SwimlaneInfo, uppercase: boolean): string {
+  const label = swimlane.label || swimlane.typeId || "";
+  return uppercase ? label.toUpperCase() : label;
 }
 
 const styles = StyleSheet.create((theme) => ({

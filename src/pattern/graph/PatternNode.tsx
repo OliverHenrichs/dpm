@@ -1,13 +1,14 @@
 import React from "react";
 import { useUnistyles } from "react-native-unistyles";
-import { Rect, Text as SvgText } from "react-native-svg";
+import { Text as SvgText } from "react-native-svg";
 import PatternNodeGroup from "@/src/pattern/graph/PatternNodeGroup";
-import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
 import { GraphNode } from "@/src/pattern/graph/model/GraphModel";
 import { nodeBadges } from "@/src/pattern/graph/model/nodeBadges";
 import NodeBadges from "@/src/pattern/graph/render/NodeBadges";
+import NodeFrame from "@/src/pattern/graph/render/NodeFrame";
+import { levelTint } from "@/src/pattern/graph/model/nodeFrame";
 
 interface PatternNodeProps {
   node: GraphNode;
@@ -24,20 +25,6 @@ interface PatternNodeProps {
  */
 const CONTEXT_OPACITY = 0.45;
 
-/** Denser fill for harder patterns, so level reads at a glance. */
-function backgroundOpacity(level: string | undefined): number {
-  switch (level) {
-    case PatternLevel.INTERMEDIATE:
-    case "intermediate":
-      return 0.5;
-    case PatternLevel.ADVANCED:
-    case "advanced":
-      return 0.7;
-    default:
-      return 0.3;
-  }
-}
-
 /**
  * One node in either graph view.
  *
@@ -49,73 +36,64 @@ function backgroundOpacity(level: string | undefined): number {
 const PatternNode: React.FC<PatternNodeProps> = ({ node, x, y, onPress }) => {
   const { theme } = useUnistyles();
   const { pattern, color, foundational, isContext } = node;
-  const borderColor = color ?? theme.colors.primary;
-  const bgOpacity = backgroundOpacity(pattern.level);
+  const typeColor = color ?? theme.colors.primary;
   const badges = nodeBadges(pattern);
+  const { nodeTitle, nodeMeta } = theme.typography;
 
+  // Clipboard's condensed face fits more of a name than After Hours' Manrope.
+  const maxChars = theme.graph.nameChars;
   const displayName =
-    pattern.name.length > 12
-      ? pattern.name.substring(0, 11) + "..."
+    pattern.name.length > maxChars
+      ? pattern.name.substring(0, maxChars - 1) + "..."
       : pattern.name;
+  // Centred on what is left beside Clipboard's type bar, not on the whole box.
+  const textX = x + theme.graph.typeBarWidth / 2;
 
   return (
     <PatternNodeGroup
       onPress={onPress ? () => onPress(pattern) : undefined}
       opacity={isContext ? CONTEXT_OPACITY : undefined}
     >
-      {/* Main background */}
-      <Rect
-        x={x - NODE_WIDTH / 2}
-        y={y - NODE_HEIGHT / 2}
+      <NodeFrame
+        x={x}
+        y={y}
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
-        fill={theme.colors.text}
-        fillOpacity={bgOpacity}
-        stroke={borderColor}
-        strokeWidth={2}
-        rx={4}
+        color={typeColor}
+        tint={levelTint(pattern.level)}
+        foundational={foundational}
       />
-
-      {/* Double border for foundational patterns */}
-      {foundational && (
-        <Rect
-          x={x - NODE_WIDTH / 2 + 3}
-          y={y - NODE_HEIGHT / 2 + 3}
-          width={NODE_WIDTH - 6}
-          height={NODE_HEIGHT - 6}
-          fill="none"
-          stroke={borderColor}
-          strokeWidth={1}
-          rx={2}
-        />
-      )}
 
       <NodeBadges
         badges={badges}
         x={x}
         y={y}
-        color={borderColor}
+        color={typeColor}
         foundational={foundational}
       />
 
       {/* Pattern name */}
       <SvgText
-        x={x}
+        x={textX}
         y={y - 5}
-        fontSize={12}
-        fontWeight="bold"
+        fontFamily={nodeTitle.fontFamily}
+        fontSize={nodeTitle.fontSize}
+        fontWeight={nodeTitle.fontWeight}
         fill={theme.colors.text}
         textAnchor="middle"
       >
         {displayName}
       </SvgText>
 
-      {/* Counts */}
+      {/* Counts. In the text colour, not the muted one: over an advanced
+          pattern's tint the muted grey fell under 4.5:1. */}
       <SvgText
-        x={x}
+        x={textX}
         y={y + 11}
-        fontSize={10}
-        fill={theme.colors.textMuted}
+        fontFamily={nodeMeta.fontFamily}
+        fontSize={nodeMeta.fontSize}
+        fontWeight={nodeMeta.fontWeight}
+        fill={theme.colors.text}
         textAnchor="middle"
       >
         {`${pattern.counts} count`}

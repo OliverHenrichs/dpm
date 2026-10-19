@@ -68,7 +68,7 @@ condensed, squared-off, mono labels, for trainers), picked in Settings beside th
 built by `buildTheme(style, scheme)` and share every token name, so a component never asks which
 style is on. What differs is values (`palettes`, per-style `radius`, the type scale) plus
 `theme.list`, the few places the pattern list differs in shape (type as a dot or a filled tag,
-section header tone).
+section header tone), and `theme.graph`, the same for the Map (`src/pattern/graph/AGENTS.md`).
 
 **Compact mode** (Settings, under the styles) is not a third style: it works with both, in light
 and dark. `ThemeProvider` holds it (`compactList`, stored as `@compactList`), and `PatternList`
