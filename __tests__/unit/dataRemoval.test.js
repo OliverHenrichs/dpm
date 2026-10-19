@@ -8,6 +8,7 @@ const {
   isTakenDown,
   planListRemoval,
   planUserRemoval,
+  reportsOf,
   looksLikeShareCode,
   looksLikeUid,
 } = require("@/tools/data-removal/lib/model");
@@ -237,5 +238,51 @@ describe("query shapes", () => {
     expect(looksLikeUid(KID)).toBe(true);
     expect(looksLikeUid("Emma Smith")).toBe(false);
     expect(looksLikeUid(CODE)).toBe(false);
+  });
+});
+
+describe("reports", () => {
+  const withReports = () => [
+    ...snapshot(),
+    makeDoc(`reports/${CODE}_${KID}`, {
+      shareCode: CODE,
+      reporterUid: KID,
+      reason: "child",
+      createdAt: "2026-10-20T08:00:00.000Z",
+    }),
+    makeDoc(`reports/${CODE}_${PUBLISHER}`, {
+      shareCode: CODE,
+      reporterUid: PUBLISHER,
+      reason: "spam",
+      details: "test",
+      createdAt: "2026-10-21T08:00:00.000Z",
+    }),
+  ];
+
+  it("reads a report's list from its id", () => {
+    expect(describePath(`reports/${CODE}_${KID}`)).toEqual({
+      kind: "report",
+      code: CODE,
+      id: `${CODE}_${KID}`,
+    });
+  });
+
+  it("lists reports newest first", () => {
+    expect(reportsOf(withReports()).map((d) => d.data.reason)).toEqual([
+      "spam",
+      "child",
+    ]);
+  });
+
+  it("keeps the reports when the list is removed", () => {
+    const plan = planListRemoval(withReports(), CODE);
+    expect(plan.deletes.some((d) => d.kind === "report")).toBe(false);
+  });
+
+  it("deletes the reports a user sent when the user is removed", () => {
+    const plan = planUserRemoval(withReports(), KID);
+    expect(
+      plan.deletes.filter((d) => d.kind === "report").map((d) => d.id),
+    ).toEqual([`${CODE}_${KID}`]);
   });
 });

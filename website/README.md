@@ -22,6 +22,7 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 | `site.js` | The style switcher, loaded in every page's `<head>` so a returning visitor's style is set before the first paint |
 | `fonts/` | DM Serif Display, Manrope, IBM Plex Sans Condensed and IBM Plex Mono as WOFF2, subset to Latin from `assets/fonts/`, with their OFL licences |
 | `privacy.html` | **Generated** from `/PRIVACY_POLICY.md` by `build-privacy.py`. Edit the Markdown, not the HTML |
+| `terms.html` | **Generated** from `/TERMS_OF_USE.md` by the same script. The app links to it (`src/legal/`) and asks for agreement before the first share |
 | `alpha.html` | Notes for the closed-test (alpha) testers: what the build does, its known limitations, where to send feedback. Hand-written; keep it in step with the release |
 | `404.html` | Not-found page, with absolute paths (see "Moving the site" below) |
 | `img/shots/` | App screenshots, 600 px wide. Each shot comes four times: `name-ah.webp`, `name-ah-dark.webp` (After Hours) and `name-cb.webp`, `name-cb-dark.webp` (Clipboard); the page shows the copy for the current style (`.for-ah`, `.for-cb`) |
@@ -34,7 +35,7 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 python3 -m http.server 8765 --directory website   # → http://localhost:8765
 ```
 
-After you edit `PRIVACY_POLICY.md`, regenerate the page with `python3 website/build-privacy.py`
+After you edit `PRIVACY_POLICY.md` or `TERMS_OF_USE.md`, regenerate the pages with `python3 website/build-privacy.py`
 (requires `pip install markdown`). The deploy workflow runs the same script, so the published copy
 can't go stale.
 
@@ -53,7 +54,8 @@ These addresses are hard-coded and must change together if the domain changes:
 - `index.html`, `yourself.html`, `sharing.html`, `teaching.html`, `students.html`: `canonical`,
   `og:url`, `og:image`
 - `404.html`: its absolute paths start at `/` (a project path such as `/dpm/` needs that prefix)
-- `PRIVACY_POLICY.md`: the website address (`privacy.html` is rendered from it)
+- `PRIVACY_POLICY.md`, `TERMS_OF_USE.md`: the website address (the pages are rendered from them)
+- `src/legal/legalLinks.ts`: the addresses the app opens for the terms and the privacy policy
 
 ## Before launch
 

@@ -8,6 +8,7 @@ on:
     paths:
       - "website/**"
       - "PRIVACY_POLICY.md"
+      - "TERMS_OF_USE.md"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -29,9 +30,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # The privacy page is rendered from PRIVACY_POLICY.md, so the published policy is
-      # always the committed one.
-      - name: Render privacy policy
+      # The privacy and terms pages are rendered from PRIVACY_POLICY.md and TERMS_OF_USE.md,
+      # so what is published is always the committed text.
+      - name: Render privacy policy and terms of use
         run: |
           pip install markdown
           python3 website/build-privacy.py
