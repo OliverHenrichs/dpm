@@ -181,9 +181,14 @@ describe("node badges", () => {
       ],
     ])("keeps %s inside the style's rounded corner", (_, overrides) => {
       renderNode(overrides);
-      const radius = lightTheme.graph.nodeRadius;
-      const arcX = CENTRE.x + NODE_WIDTH / 2 - radius;
-      const arcY = CENTRE.y + NODE_HEIGHT / 2 - radius;
+      // Measured to the outline's inner edge, with a dot's width of clear
+      // space: merely inside the curve still read as touching it on a device.
+      const radius =
+        lightTheme.graph.nodeRadius -
+        lightTheme.graph.nodeStrokeWidth / 2 -
+        DOT_RADIUS * 2;
+      const arcX = CENTRE.x + NODE_WIDTH / 2 - lightTheme.graph.nodeRadius;
+      const arcY = CENTRE.y + NODE_HEIGHT / 2 - lightTheme.graph.nodeRadius;
       const insideCorner = (px: number, py: number, reach = 0) =>
         px <= arcX ||
         py <= arcY ||

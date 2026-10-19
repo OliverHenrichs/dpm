@@ -472,7 +472,7 @@ function graphTokens(style: AppStyle, scheme: ColorScheme): GraphTokens {
         nodeStrokeWidth: 2,
         typeBarWidth: 0,
         glow: scheme === "dark",
-        badgeInset: 5,
+        badgeInset: 8,
         nameChars: 12,
         edgeColor: "primary",
         edgeWidth: 2,
