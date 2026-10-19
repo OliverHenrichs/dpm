@@ -81,6 +81,32 @@ Because the node tap is a Gesture Handler tap now, **the canvas has no double-ta
 
 **`generateOrthogonalPath` and the helpers it calls are worklets, and their position in `utils/GraphUtils.ts` is load-bearing.** The worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a factory that closes over its helpers _by value at the point the declaration appears_. Declared above its helpers, such a function captures `undefined` and throws `getConnectionPoint is not a function` the first time an edge is drawn — on device as well as under test, and function hoisting does not save it because there is no longer a declaration to hoist. If you add a helper there, mark it `"worklet"` and define it above its callers.
 
+## The focus preview
+
+A mark sits fixed in the middle of the network view (`render/FocusMark.tsx`: a ring in After
+Hours, four corner brackets in Clipboard, `theme.graph.focusMark`). Once the user has panned,
+whatever pattern box touches it is previewed in a card above the legend button
+(`components/FocusPreviewCard.tsx`); panning on passes the focus to the next box and the two cards
+cross-fade. Releasing the pan eases the focused box into the middle and firms the card up with a
+"Tap to open"; a tap on the card (or on the mark) opens `PatternDetailsModal`.
+
+- **Tracked on the UI thread.** `hooks/useFocusPreview.ts` reacts to the canvas's shared values
+  and tells React only when the focus changes hands; `model/focus.ts` is the pure part
+  (`pickFocus`, `focusAtCentre`, `translationToCentre`), unit-tested. The mark's reach,
+  `FOCUS_RADIUS`, is in screen pixels, so it is the same at every zoom.
+- **The current focus holds while it still touches.** Handing it to whichever box is a pixel nearer
+  flickered between two neighbours on a slow pan.
+- **Nothing shows until the first pan.** The view opens fitted to the whole graph, and a card
+  before the user has done anything is noise. Opening a pattern puts the preview away until the
+  next pan.
+- **The video is the pattern's first, muted, looping, without controls, and only after the focus
+  has rested on it for `PREVIEW_VIDEO_DWELL_MS`** (`components/FocusPreviewVideo.tsx`): each
+  player costs a decoder. YouTube and Vimeo links stay a still. The player unmounts when the Map
+  tab loses focus and when the details open, which bring their own. To drop the video, render
+  the still alone there.
+- The pan reports its start and end to the focus through `ZoomableCanvas`'s `onPanStart` /
+  `onPanEnd` worklets; the mark is passed as its `overlay`, fixed to the viewport and inert.
+
 ## The web split
 
 `PatternNodeGroup.tsx` is the tappable `<G>` around a graph node. On native it just sets

@@ -656,5 +656,7 @@
   "modifierDescHesitation": "La personne qui guide suspend le mouvement un temps ou plus avant de continuer.",
   "modifierDescHandChange": "La personne qui guide passe la main de celle qui suit d'une de ses mains à l'autre.",
   "newType": "Nouveau type",
-  "editTypes": "Modifier la liste et ses types"
+  "editTypes": "Modifier la liste et ses types",
+  "focusPreviewHint": "Touchez pour ouvrir",
+  "focusPreviewOpen": "Ouvrir {{name}}"
 }

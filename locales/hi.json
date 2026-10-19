@@ -656,5 +656,7 @@
   "modifierDescHesitation": "लीडर आगे बढ़ने से पहले हरकत को एक या अधिक बीट के लिए रोकता है।",
   "modifierDescHandChange": "लीडर फ़ॉलोअर का हाथ अपने एक हाथ से दूसरे हाथ में देता है।",
   "newType": "नया प्रकार",
-  "editTypes": "सूची और उसके प्रकार संपादित करें"
+  "editTypes": "सूची और उसके प्रकार संपादित करें",
+  "focusPreviewHint": "खोलने के लिए टैप करें",
+  "focusPreviewOpen": "{{name}} खोलें"
 }

@@ -63,6 +63,12 @@ export function useNodeDrag(
   onMove: (id: number, position: LayoutPosition) => void,
   onTap: (id: number) => void,
   enabled: boolean,
+  /**
+   * A worklet: the pattern a tap on empty canvas opens anyway, or null. The
+   * focus mark uses it, since it can rest on a box's edge with the box itself
+   * just outside the finger.
+   */
+  tapFallback?: (x: number, y: number) => number | null,
 ): NodeDrag {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const dragX = useSharedValue(0);
@@ -165,8 +171,8 @@ export function useNodeDrag(
   const tap = Gesture.Tap()
     .enabled(enabled)
     .onEnd((event) => {
-      const id = nodeAt(event.x, event.y);
-      if (id !== null) scheduleOnRN(tapped, id);
+      const id = nodeAt(event.x, event.y) ?? tapFallback?.(event.x, event.y);
+      if (id !== null && id !== undefined) scheduleOnRN(tapped, id);
     });
 
   return { draggingId, dragX, dragY, gesture: Gesture.Race(pan, tap) };

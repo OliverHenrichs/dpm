@@ -33,6 +33,11 @@ interface ZoomableCanvasProps {
    * every pan wait for the long press to fail first.
    */
   extraGesture?: GestureType | ReturnType<typeof Gesture.Race>;
+  /** Worklets, called on the UI thread as the canvas pan starts and ends. */
+  onPanStart?: () => void;
+  onPanEnd?: () => void;
+  /** Drawn over the moving content, fixed to the viewport (the focus mark). */
+  overlay?: ReactNode;
   children: ReactNode;
 }
 
@@ -70,6 +75,9 @@ const ZoomableCanvas: React.FC<ZoomableCanvasProps> = ({
   initialZoom,
   transform,
   extraGesture,
+  onPanStart,
+  onPanEnd,
+  overlay,
   children,
 }) => {
   const { scale, translateX, translateY, viewportWidth, viewportHeight } =
@@ -101,9 +109,15 @@ const ZoomableCanvas: React.FC<ZoomableCanvasProps> = ({
     // Two fingers pinching also drag; average them so the content does not
     // jump when the second finger lands.
     .averageTouches(true)
+    .onStart(() => {
+      onPanStart?.();
+    })
     .onChange((event) => {
       translateX.set(translateX.get() + event.changeX);
       translateY.set(translateY.get() + event.changeY);
+    })
+    .onEnd(() => {
+      onPanEnd?.();
     });
 
   const pinch = Gesture.Pinch()
@@ -154,6 +168,7 @@ const ZoomableCanvas: React.FC<ZoomableCanvasProps> = ({
             {children}
           </CanvasTransformProvider>
         </Animated.View>
+        {overlay}
       </View>
     </GestureDetector>
   );

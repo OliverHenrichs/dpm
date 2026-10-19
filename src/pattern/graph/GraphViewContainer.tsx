@@ -56,6 +56,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
           <NetworkGraphView
             key={`graph-${resetKey}`}
             model={model}
+            patternTypes={patternTypes}
             hasActiveFilter={hasActiveFilter}
             positions={positions}
             onMoveNode={onMoveNode}

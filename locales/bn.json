@@ -656,5 +656,7 @@
   "modifierDescHesitation": "এগোনোর আগে লিডার নড়াচড়া এক বা একাধিক বিটের জন্য থামিয়ে রাখে।",
   "modifierDescHandChange": "লিডার ফলোয়ারের হাত নিজের এক হাত থেকে অন্য হাতে দেয়।",
   "newType": "নতুন ধরন",
-  "editTypes": "তালিকা ও এর ধরন সম্পাদনা করুন"
+  "editTypes": "তালিকা ও এর ধরন সম্পাদনা করুন",
+  "focusPreviewHint": "খুলতে ট্যাপ করুন",
+  "focusPreviewOpen": "{{name}} খুলুন"
 }
