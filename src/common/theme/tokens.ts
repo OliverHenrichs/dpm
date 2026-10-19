@@ -277,6 +277,10 @@ export interface TypeScale<T> {
   display: T;
   /** The divider between the groups of a sorted list ("Whip", "Beginner"). */
   section: T;
+  /** A pattern's name inside its box on the Map. */
+  nodeTitle: T;
+  /** The line under that name: counts. */
+  nodeMeta: T;
 }
 
 // DM Serif Display ships one weight, so After Hours sets its headings at 400: asking Android
@@ -326,6 +330,13 @@ const typeSpecs: Record<AppStyle, TypeScale<TextStyleSpec>> = {
       fontWeight: "400",
       fontStyle: "italic",
     },
+    nodeTitle: {
+      font: "body",
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: "700",
+    },
+    nodeMeta: { font: "body", fontSize: 10, lineHeight: 12, fontWeight: "400" },
   },
   clipboard: {
     badge: { font: "mono", fontSize: 10, lineHeight: 12, fontWeight: "600" },
@@ -366,6 +377,13 @@ const typeSpecs: Record<AppStyle, TypeScale<TextStyleSpec>> = {
       fontWeight: "600",
       letterSpacing: 0.8,
     },
+    nodeTitle: {
+      font: "body",
+      fontSize: 12,
+      lineHeight: 15,
+      fontWeight: "600",
+    },
+    nodeMeta: { font: "mono", fontSize: 10, lineHeight: 12, fontWeight: "400" },
   },
 };
 
@@ -417,6 +435,62 @@ const listTokens: Record<AppStyle, ListTokens> = {
     sectionUppercase: true,
   },
 };
+
+/**
+ * How the Map draws its pattern boxes and the edges between them. As with `ListTokens`, these
+ * are the places where the styles differ in shape: After Hours outlines a rounded box in the
+ * type's colour (with a soft halo in the dark), Clipboard keeps a square box on a neutral rule
+ * and puts the type's colour in a bar down its left edge.
+ */
+export interface GraphTokens {
+  /** Corner radius of a pattern box. */
+  nodeRadius: number;
+  /** What outlines a box: its type colour, or the neutral `border` role. */
+  nodeOutline: "type" | "border";
+  nodeStrokeWidth: number;
+  /** Width of the type-colour bar down a box's left edge; 0 draws none. */
+  typeBarWidth: number;
+  /** A soft halo in the type colour around each box, for After Hours' dim-venue dark theme. */
+  glow: boolean;
+  /**
+   * How far the corner badges sit in from a box's right and bottom edges. A rounded corner
+   * needs more, or the marks hang over the curve.
+   */
+  badgeInset: number;
+  /** How many characters of a name fit on one line; condensed type fits more. */
+  nameChars: number;
+  edgeColor: "primary" | "textMuted";
+  edgeWidth: number;
+  edgeOpacity: number;
+}
+
+function graphTokens(style: AppStyle, scheme: ColorScheme): GraphTokens {
+  return style === "afterHours"
+    ? {
+        nodeRadius: radii.afterHours.lg,
+        nodeOutline: "type",
+        nodeStrokeWidth: 2,
+        typeBarWidth: 0,
+        glow: scheme === "dark",
+        badgeInset: 8,
+        nameChars: 12,
+        edgeColor: "primary",
+        edgeWidth: 2,
+        edgeOpacity: 0.6,
+      }
+    : {
+        nodeRadius: radii.clipboard.none,
+        nodeOutline: "border",
+        nodeStrokeWidth: 1,
+        typeBarWidth: space.xs,
+        glow: false,
+        badgeInset: 3,
+        nameChars: 14,
+        edgeColor: "textMuted",
+        edgeWidth: 1.5,
+        edgeOpacity: 0.8,
+      };
+}
 
 /** Icon sizes, so icon buttons line up. */
 export const iconSize = {
@@ -478,6 +552,7 @@ export function buildTheme(
     touchTarget,
     motion,
     list: listTokens[style],
+    graph: graphTokens(style, scheme),
     colors: palettes[style][scheme],
     media: mediaColors,
     elevation: shadows(shadowStrength[style][scheme]),
@@ -493,4 +568,27 @@ export const lightTheme: AppTheme = buildTheme(DEFAULT_APP_STYLE, "light");
 export function alpha(hex: string, opacity: number): string {
   const a = Math.round(Math.min(1, Math.max(0, opacity)) * 255);
   return hex + a.toString(16).padStart(2, "0");
+}
+
+/**
+ * `over` laid on `base` at an opacity from 0 to 1, as one solid `#rrggbb`. For a tint that
+ * has to stay opaque, such as a Map box drawn over edges. A colour it cannot read (a pattern
+ * type's colour is user data) leaves `base` as it is.
+ */
+export function mix(base: string, over: string, amount: number): string {
+  const hex = /^#[0-9a-f]{6}$/i;
+  if (!hex.test(base) || !hex.test(over)) return base;
+  const a = Math.min(1, Math.max(0, amount));
+  const channel = (color: string, i: number) =>
+    parseInt(color.slice(i, i + 2), 16);
+  return (
+    "#" +
+    [1, 3, 5]
+      .map((i) =>
+        Math.round(channel(base, i) * (1 - a) + channel(over, i) * a)
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")
+  );
 }

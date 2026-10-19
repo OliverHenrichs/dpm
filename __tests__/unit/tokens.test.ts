@@ -3,6 +3,7 @@ import {
   APP_STYLES,
   buildTheme,
   ColorTokens,
+  mix,
   palettes,
   webFonts,
 } from "@/src/common/theme/tokens";
@@ -75,6 +76,19 @@ describe("styles", () => {
     );
     expect(Object.keys(b.radius).sort()).toEqual(Object.keys(a.radius).sort());
     expect(Object.keys(b.list).sort()).toEqual(Object.keys(a.list).sort());
+    expect(Object.keys(b.graph).sort()).toEqual(Object.keys(a.graph).sort());
+  });
+});
+
+describe("mix", () => {
+  it("lays one colour over another as a solid hex", () => {
+    expect(mix("#000000", "#ffffff", 0.5)).toBe("#808080");
+    expect(mix("#ffffff", "#FF0000", 0)).toBe("#ffffff");
+    expect(mix("#ffffff", "#FF0000", 1)).toBe("#ff0000");
+  });
+
+  it("leaves the base alone for a colour it cannot read", () => {
+    expect(mix("#ffffff", "red", 0.5)).toBe("#ffffff");
   });
 });
 

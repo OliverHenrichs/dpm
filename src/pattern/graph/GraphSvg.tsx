@@ -28,7 +28,7 @@ const NetworkGraphSvg: React.FC<IGraphSvgProps> = ({
       {...rasterizeLargeGraph(model.nodes.length)}
     >
       <ArrowheadMarker />
-      {drawEdges(model.edges, positions, theme.colors, {
+      {drawEdges(model.edges, positions, theme, {
         draggingId,
         dragX,
         dragY,

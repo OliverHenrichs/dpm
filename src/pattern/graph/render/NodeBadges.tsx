@@ -1,20 +1,22 @@
 import React from "react";
 import { Circle, G, Path } from "react-native-svg";
+import { useUnistyles } from "react-native-unistyles";
 import { NodeBadges as Badges } from "@/src/pattern/graph/model/nodeBadges";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
+import { FOUNDATIONAL_FRAME_INSET } from "@/src/pattern/graph/model/nodeFrame";
 
-/**
- * Inset from the node's bottom-right corner. Everything here stays inside the
- * existing 100×60 box on purpose: `NODE_WIDTH`/`NODE_HEIGHT` feed the
- * timeline's swimlane sizing and its collision-avoidance pass, so node size is
- * not a free variable — growing it would move the timeline layout everywhere.
+/*
+ * The inset from the node's bottom-right corner is the style's
+ * `theme.graph.badgeInset`: After Hours' rounded corner needs more room than
+ * Clipboard's square one. Everything here stays inside the existing 100×60 box
+ * on purpose: `NODE_WIDTH`/`NODE_HEIGHT` feed the timeline's swimlane sizing
+ * and its collision-avoidance pass, so node size is not a free variable —
+ * growing it would move the timeline layout everywhere.
+ *
+ * A foundational pattern's inner frame is itself drawn at
+ * `FOUNDATIONAL_FRAME_INSET`, so its badges step in that much further; without
+ * that they rest exactly on the frame line.
  */
-const INSET = 3;
-/**
- * Extra inset on a foundational pattern, whose double border is itself drawn
- * at inset 3. Without this the badges rest exactly on that frame line.
- */
-const FOUNDATIONAL_INSET = 3;
 /** Half the play triangle's height, and half its width. */
 const PLAY_SIZE = 5.5;
 const DOT_RADIUS = 2;
@@ -49,8 +51,8 @@ interface NodeBadgesProps {
  * what the device has installed.
  *
  * Coloured with the node's own type colour rather than a text token. The
- * node's fill opacity already varies by level (0.3 / 0.5 / 0.7), so a
- * secondary-text grey would wash out on an advanced pattern.
+ * node's fill already carries more of that colour the harder the pattern, so
+ * a secondary-text grey would wash out on an advanced one.
  */
 const NodeBadges: React.FC<NodeBadgesProps> = ({
   badges,
@@ -59,10 +61,12 @@ const NodeBadges: React.FC<NodeBadgesProps> = ({
   color,
   foundational,
 }) => {
+  const { theme } = useUnistyles();
   const { hasVideo, modifierCount } = badges;
   if (!hasVideo && modifierCount === 0) return null;
 
-  const inset = INSET + (foundational ? FOUNDATIONAL_INSET : 0);
+  const inset =
+    theme.graph.badgeInset + (foundational ? FOUNDATIONAL_FRAME_INSET : 0);
 
   // Where the badges stop. Every shape below is positioned by its *bounding
   // box*, never by a centre line on one axis and an edge on the other —

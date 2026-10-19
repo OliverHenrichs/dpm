@@ -1,14 +1,14 @@
 import React from "react";
 import { Defs, Marker, Path, Polygon } from "react-native-svg";
 import { useUnistyles } from "react-native-unistyles";
-import type { ColorTokens } from "@/src/common/theme/tokens";
+import type { AppTheme } from "@/src/common/theme/tokens";
 import PatternNode from "@/src/pattern/graph/PatternNode";
 import {
   generateOrthogonalPath,
   LayoutPosition,
 } from "@/src/pattern/graph/utils/GraphUtils";
 import { GraphEdge, GraphNode } from "@/src/pattern/graph/model/GraphModel";
-import { ELIDED_DASH } from "@/src/pattern/graph/types/Constants";
+import { edgeColor, edgeStroke } from "@/src/pattern/graph/render/edgeStyle";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { SharedValue } from "react-native-reanimated";
 import DraggedEdge from "@/src/pattern/graph/render/DraggedEdge";
@@ -57,7 +57,7 @@ export const ArrowheadMarker: React.FC = () => {
         refY="3"
         orient="auto"
       >
-        <Polygon points="0 0, 10 3, 0 6" fill={theme.colors.primary} />
+        <Polygon points="0 0, 10 3, 0 6" fill={edgeColor(theme)} />
       </Marker>
     </Defs>
   );
@@ -67,7 +67,7 @@ export const ArrowheadMarker: React.FC = () => {
 export function drawEdges(
   edges: GraphEdge[],
   positions: Map<number, LayoutPosition>,
-  colors: ColorTokens,
+  theme: AppTheme,
   drag?: DragRender,
 ) {
   return (
@@ -100,12 +100,9 @@ export function drawEdges(
           <Path
             key={`edge-${index}`}
             d={generateOrthogonalPath(fromPos, toPos)}
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeDasharray={elided ? ELIDED_DASH : undefined}
+            {...edgeStroke(theme, elided)}
             fill="none"
             markerEnd="url(#arrowhead-graph)"
-            opacity={elided ? 0.4 : 0.6}
           />
         );
       })}

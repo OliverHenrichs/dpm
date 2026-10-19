@@ -9,6 +9,8 @@ import {
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
+import { FOUNDATIONAL_FRAME_INSET } from "@/src/pattern/graph/model/nodeFrame";
+import { lightTheme } from "@/src/common/theme/tokens";
 import {
   createTestPattern,
   createTestPatternType,
@@ -16,10 +18,13 @@ import {
 
 const TYPE = createTestPatternType({ slug: "push", color: "#FF0000" });
 const CENTRE = { x: 200, y: 150 };
-/** Mirrors the renderer; the point of the tests below is that it is uniform. */
-const BADGE_INSET = 3;
-/** A foundational node's inner border is itself at 3, so the badges clear it. */
-const FOUNDATIONAL_BADGE_INSET = 6;
+/**
+ * The style's inset (Jest renders the default style, After Hours); the point
+ * of the tests below is that it is uniform.
+ */
+const BADGE_INSET = lightTheme.graph.badgeInset;
+/** A foundational node's inner frame is itself inset, so the badges clear it. */
+const FOUNDATIONAL_BADGE_INSET = BADGE_INSET + FOUNDATIONAL_FRAME_INSET;
 const DOT_RADIUS = 2;
 
 const video = (): IVideoReference => ({
@@ -158,6 +163,47 @@ describe("node badges", () => {
     });
 
     /**
+     * After Hours rounds its boxes, and a mark set at Clipboard's square-corner
+     * inset would hang over the curve. Every point drawn has to be inside the
+     * rounded box, not just its bounding rectangle.
+     */
+    it.each([
+      [
+        "a video mark and dots",
+        {
+          videoRefs: [video()],
+          modifierRefs: ["a", "b", "c"].map((id) => modifierRef(id)),
+        },
+      ],
+      [
+        "a lone dot, which takes the corner",
+        { modifierRefs: [modifierRef("a")] },
+      ],
+    ])("keeps %s inside the style's rounded corner", (_, overrides) => {
+      renderNode(overrides);
+      // Measured to the outline's inner edge, with a dot's width of clear
+      // space: merely inside the curve still read as touching it on a device.
+      const radius =
+        lightTheme.graph.nodeRadius -
+        lightTheme.graph.nodeStrokeWidth / 2 -
+        DOT_RADIUS * 2;
+      const arcX = CENTRE.x + NODE_WIDTH / 2 - lightTheme.graph.nodeRadius;
+      const arcY = CENTRE.y + NODE_HEIGHT / 2 - lightTheme.graph.nodeRadius;
+      const insideCorner = (px: number, py: number, reach = 0) =>
+        px <= arcX ||
+        py <= arcY ||
+        Math.hypot(px - arcX, py - arcY) + reach <= radius;
+
+      if (videoBadge().length > 0) {
+        const { xs, ys } = trianglePoints();
+        xs.forEach((px, i) => expect(insideCorner(px, ys[i])).toBe(true));
+      }
+      for (const dot of modifierDots()) {
+        expect(insideCorner(dot.props.cx, dot.props.cy, DOT_RADIUS)).toBe(true);
+      }
+    });
+
+    /**
      * The gaps have to be measured the same way on both axes — the outside of
      * the shape, not the centre on one and the edge on the other. Getting
      * that wrong is invisible in a "is it inside the box" assertion and very
@@ -214,7 +260,7 @@ describe("node badges", () => {
     });
 
     /**
-     * A foundational node draws a second border inset 3, which the badges sat
+     * A foundational node draws a second, inset border, which the badges sat
      * exactly on. They step in far enough to clear it rather than resting on
      * the line.
      */
@@ -267,7 +313,7 @@ describe("node badges", () => {
 
   describe("how they read", () => {
     it("uses the pattern type's colour, not a grey that would wash out", () => {
-      // The node's fill opacity already varies by level (0.3 / 0.5 / 0.7).
+      // The node's fill already carries more of the type colour by level.
       renderNode({ videoRefs: [video()], level: "advanced" });
 
       expect(videoBadge()[0].props.fill).toBe("#FF0000");

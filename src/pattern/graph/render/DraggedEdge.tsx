@@ -9,7 +9,7 @@ import {
   generateOrthogonalPath,
   LayoutPosition,
 } from "@/src/pattern/graph/utils/GraphUtils";
-import { ELIDED_DASH } from "@/src/pattern/graph/types/Constants";
+import { edgeStroke } from "@/src/pattern/graph/render/edgeStyle";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -51,12 +51,9 @@ const DraggedEdge: React.FC<DraggedEdgeProps> = ({
   return (
     <AnimatedPath
       animatedProps={animatedProps}
-      stroke={theme.colors.primary}
-      strokeWidth={2}
-      strokeDasharray={elided ? ELIDED_DASH : undefined}
+      {...edgeStroke(theme, elided)}
       fill="none"
       markerEnd="url(#arrowhead-graph)"
-      opacity={elided ? 0.4 : 0.6}
     />
   );
 };

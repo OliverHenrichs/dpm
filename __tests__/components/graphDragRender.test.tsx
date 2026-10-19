@@ -84,7 +84,7 @@ describe("drawing during a drag", () => {
     it("animates both edges touching the dragged node", () => {
       // 2 is the middle of 1 → 2 → 3, so both edges move with it.
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, drag(2)),
+        drawEdges(MODEL.edges, POSITIONS, lightTheme, drag(2)),
       );
 
       expect(rendered.filter((t) => t === DraggedEdge)).toHaveLength(2);
@@ -93,7 +93,7 @@ describe("drawing during a drag", () => {
     it("leaves an edge that does not touch it alone", () => {
       // Dragging 1 moves only 1 → 2; 2 → 3 is untouched.
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, drag(1)),
+        drawEdges(MODEL.edges, POSITIONS, lightTheme, drag(1)),
       );
 
       expect(rendered.filter((t) => t === DraggedEdge)).toHaveLength(1);
@@ -101,7 +101,7 @@ describe("drawing during a drag", () => {
 
     it("animates nothing when no drag is in flight", () => {
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, {
+        drawEdges(MODEL.edges, POSITIONS, lightTheme, {
           draggingId: null,
         }),
       );
@@ -111,7 +111,7 @@ describe("drawing during a drag", () => {
 
     it("still draws every edge", () => {
       const rendered = typesOf(
-        drawEdges(MODEL.edges, POSITIONS, lightTheme.colors, drag(2)),
+        drawEdges(MODEL.edges, POSITIONS, lightTheme, drag(2)),
       );
 
       expect(rendered).toHaveLength(MODEL.edges.length);
