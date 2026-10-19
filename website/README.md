@@ -42,15 +42,18 @@ can't go stale.
 
 `.github/workflows/pages.yml` publishes this folder to GitHub Pages on every push to `master` that
 touches it (repository Settings → Pages → Source is set to **GitHub Actions**). The site is
-served at `https://oliverhenrichs.github.io/dpm/`.
+served at `https://dancepatternmapper.com/`, set as the custom domain in Settings → Pages, with
+HTTPS enforced. No `CNAME` file is needed: an Actions deploy takes the domain from that setting.
+The old `https://oliverhenrichs.github.io/dpm/` addresses redirect there.
 
 ### Moving the site
 
-These addresses are hard-coded and must change together when the site gets its own domain:
+These addresses are hard-coded and must change together if the domain changes:
 
 - `index.html`, `yourself.html`, `sharing.html`, `teaching.html`, `students.html`: `canonical`,
   `og:url`, `og:image`
-- `404.html`: the `/dpm/` prefix (becomes `/` on a root domain)
+- `404.html`: its absolute paths start at `/` (a project path such as `/dpm/` needs that prefix)
+- `PRIVACY_POLICY.md`: the website address (`privacy.html` is rendered from it)
 
 ## Before launch
 
