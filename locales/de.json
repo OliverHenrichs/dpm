@@ -656,5 +656,7 @@
   "modifierDescHesitation": "Der Führende hält die Bewegung einen Schlag oder länger an, bevor es weitergeht.",
   "modifierDescHandChange": "Der Führende gibt die Hand der Folgenden von einer seiner Hände an die andere weiter.",
   "newType": "Neuer Typ",
-  "editTypes": "Liste und Typen bearbeiten"
+  "editTypes": "Liste und Typen bearbeiten",
+  "focusPreviewHint": "Tippen zum Öffnen",
+  "focusPreviewOpen": "{{name}} öffnen"
 }

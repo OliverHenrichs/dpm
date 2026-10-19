@@ -11,9 +11,15 @@ import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { useCanvasTransformValues } from "@/src/pattern/graph/components/CanvasTransformContext";
 import { useNodeDrag } from "@/src/pattern/graph/hooks/useNodeDrag";
 import DragOverlay from "@/src/pattern/graph/render/DragOverlay";
+import { PatternType } from "@/src/pattern/types/PatternType";
+import { useFocusPreview } from "@/src/pattern/graph/hooks/useFocusPreview";
+import FocusMark from "@/src/pattern/graph/render/FocusMark";
+import FocusPreviewCard from "@/src/pattern/graph/components/FocusPreviewCard";
 
 interface NetworkGraphViewProps {
   model: GraphModel;
+  /** For the focus preview's type name. */
+  patternTypes: PatternType[];
   /** Distinguishes "nothing matched" from "this list is empty". */
   hasActiveFilter: boolean;
   /** The positions to draw: the manual layout where one exists. */
@@ -25,6 +31,7 @@ interface NetworkGraphViewProps {
 
 const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   model,
+  patternTypes,
   hasActiveFilter,
   positions,
   onMoveNode,
@@ -58,12 +65,20 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
     () => new Map(model.nodes.map((node) => [node.pattern.id, node.pattern])),
     [model.nodes],
   );
+  // The pattern under the mark in the middle, previewed while panning.
+  const focus = useFocusPreview(transform, positions, svgWidth, svgHeight);
+  const { dismiss: dismissFocus } = focus;
+
   const handleTap = useCallback(
     (id: number) => {
       const pattern = patternById.get(id);
-      if (pattern) onNodeTap(pattern);
+      if (!pattern) return;
+      // Opening a pattern in full puts the preview away: the details have a
+      // player of their own, and two at once is more than a phone decodes.
+      dismissFocus();
+      onNodeTap(pattern);
     },
-    [patternById, onNodeTap],
+    [patternById, onNodeTap, dismissFocus],
   );
 
   const { draggingId, dragX, dragY, gesture } = useNodeDrag(
@@ -74,6 +89,7 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
     onMoveNode,
     handleTap,
     model.nodes.length > 0,
+    focus.focusedAtMark,
   );
 
   // Hooks first, then the empty case. This used to be a plain function that
@@ -88,6 +104,10 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
     draggingId === null
       ? undefined
       : model.nodes.find((node) => node.pattern.id === draggingId);
+  const focusedNode =
+    focus.focusedId === null
+      ? undefined
+      : model.nodes.find((node) => node.pattern.id === focus.focusedId);
 
   return (
     <View style={styles.container}>
@@ -99,6 +119,9 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
         initialOffsetY={initialOffsetY}
         transform={transform}
         extraGesture={gesture}
+        onPanStart={focus.onPanStart}
+        onPanEnd={focus.onPanEnd}
+        overlay={<FocusMark engaged={!!focusedNode} panning={focus.panning} />}
       >
         <NetworkGraphSvg
           svgWidth={svgWidth}
@@ -120,6 +143,29 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
           />
         )}
       </ZoomableCanvas>
+
+      <View style={styles.previewSlot} pointerEvents="box-none">
+        {focusedNode && (
+          <FocusPreviewCard
+            key={focusedNode.pattern.id}
+            node={focusedNode}
+            typeName={
+              patternTypes.find(
+                (type) => type.id === focusedNode.pattern.typeId,
+              )?.slug ?? ""
+            }
+            before={
+              model.adjacency.prereqsOf.get(focusedNode.pattern.id)?.length ?? 0
+            }
+            after={
+              model.adjacency.dependentsOf.get(focusedNode.pattern.id)
+                ?.length ?? 0
+            }
+            panning={focus.panning}
+            onOpen={() => handleTap(focusedNode.pattern.id)}
+          />
+        )}
+      </View>
     </View>
   );
 };
@@ -129,6 +175,14 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     backgroundColor: theme.colors.background,
     overflow: "hidden",
+  },
+  // Above the legend's button in the bottom corner, and well clear of the
+  // focus mark in the middle.
+  previewSlot: {
+    position: "absolute",
+    left: theme.space.md,
+    right: theme.space.md,
+    bottom: theme.touchTarget + theme.space.xl,
   },
 }));
 

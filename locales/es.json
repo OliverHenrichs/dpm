@@ -656,5 +656,7 @@
   "modifierDescHesitation": "Quien lleva detiene el movimiento un tiempo o más antes de continuar.",
   "modifierDescHandChange": "Quien lleva pasa la mano de quien sigue de una de sus manos a la otra.",
   "newType": "Nuevo tipo",
-  "editTypes": "Editar la lista y sus tipos"
+  "editTypes": "Editar la lista y sus tipos",
+  "focusPreviewHint": "Toca para abrir",
+  "focusPreviewOpen": "Abrir {{name}}"
 }

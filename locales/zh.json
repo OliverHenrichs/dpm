@@ -656,5 +656,7 @@
   "modifierDescHesitation": "引领者让动作停顿一拍或更久，然后继续。",
   "modifierDescHandChange": "引领者把跟随者的手从自己的一只手换到另一只手。",
   "newType": "新类型",
-  "editTypes": "编辑列表及其类型"
+  "editTypes": "编辑列表及其类型",
+  "focusPreviewHint": "点按打开",
+  "focusPreviewOpen": "打开{{name}}"
 }

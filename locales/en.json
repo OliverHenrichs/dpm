@@ -656,5 +656,7 @@
   "modifierDescHesitation": "The leader holds the movement for a beat or more before going on.",
   "modifierDescHandChange": "The leader passes the follower's hand from one of their hands to the other.",
   "newType": "New type",
-  "editTypes": "Edit the list and its types"
+  "editTypes": "Edit the list and its types",
+  "focusPreviewHint": "Tap to open",
+  "focusPreviewOpen": "Open {{name}}"
 }

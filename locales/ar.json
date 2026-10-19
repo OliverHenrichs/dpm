@@ -656,5 +656,7 @@
   "modifierDescHesitation": "يوقف القائد الحركة لعدّة أو أكثر قبل المتابعة.",
   "modifierDescHandChange": "ينقل القائد يد التابع من إحدى يديه إلى الأخرى.",
   "newType": "نوع جديد",
-  "editTypes": "تعديل القائمة وأنواعها"
+  "editTypes": "تعديل القائمة وأنواعها",
+  "focusPreviewHint": "انقر للفتح",
+  "focusPreviewOpen": "فتح {{name}}"
 }

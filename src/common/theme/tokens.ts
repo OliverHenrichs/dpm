@@ -462,6 +462,11 @@ export interface GraphTokens {
   edgeColor: "primary" | "textMuted";
   edgeWidth: number;
   edgeOpacity: number;
+  /**
+   * The focus mark in the middle of the network view: a soft ring in After Hours, a
+   * viewfinder's four corner brackets in Clipboard.
+   */
+  focusMark: "ring" | "brackets";
 }
 
 function graphTokens(style: AppStyle, scheme: ColorScheme): GraphTokens {
@@ -477,6 +482,7 @@ function graphTokens(style: AppStyle, scheme: ColorScheme): GraphTokens {
         edgeColor: "primary",
         edgeWidth: 2,
         edgeOpacity: 0.6,
+        focusMark: "ring",
       }
     : {
         nodeRadius: radii.clipboard.none,
@@ -489,6 +495,7 @@ function graphTokens(style: AppStyle, scheme: ColorScheme): GraphTokens {
         edgeColor: "textMuted",
         edgeWidth: 1.5,
         edgeOpacity: 0.8,
+        focusMark: "brackets",
       };
 }
 
