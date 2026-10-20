@@ -207,8 +207,9 @@ variables. Copy `.env.example` to `.env` (gitignored); without the Firebase vari
   `assets/images/icon-colors/`, entries in the plugin list, `APP_ICON_COLORS` (tokens.ts) and
   `appIcon.ts`, and a rebuilt dev client. The splash stays indigo.
 - **EAS uploads by `.easignore`, not `.gitignore`.** It exists so the gitignored model weights
-  reach Android builds, and the `eas-build-pre-install` hook fails a build without them
-  (`modules/AGENTS.md`). A new `.gitignore` entry belongs in `.easignore` too.
+  reach Android builds; the `eas-build-pre-install` hook downloads them from the `models-v1` GitHub
+  Release when they are missing (a run of `.eas/workflows/release-android.yml`) and fails a build
+  that still lacks them (`modules/AGENTS.md`). A new `.gitignore` entry belongs in `.easignore` too.
 - `expo prebuild` rewrites the `android` / `ios` npm scripts to `expo run:*`; revert that, the
   project uses the `--dev-client` workflow.
 

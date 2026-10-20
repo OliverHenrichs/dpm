@@ -1,0 +1,27 @@
+# Builds the production AAB on EAS and submits it to Play's alpha track, with no local checkout.
+# Starts when a version tag (v1.4.0, …) is pushed, e.g. by publishing a GitHub Release on master
+# after the release PR is merged, or by hand: `eas workflow:run .eas/workflows/release-android.yml`.
+# The model weights come from the models-v1 GitHub Release (scripts/check-model-assets.js); the
+# Firebase settings from the EAS "production" environment; the version code is auto-incremented.
+name: Release Android
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+jobs:
+  build_android:
+    name: Build Android
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  submit_android:
+    name: Submit to Play (alpha)
+    type: submit
+    needs: [build_android]
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+      profile: production

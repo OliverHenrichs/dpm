@@ -39,13 +39,19 @@ and `pose_landmarker_full.task`, about 130 MB. They come from the scripts in `sc
 
 A build without them still reports the module as available and still shortens, but anonymizing
 fails when it opens the assets (`Silhouette render failed: edgetam/encode.tflite`); a production
-build shipped that way once. Two things keep them in builds:
+build shipped that way once. Three things keep them in builds:
 
+- **The `models-v1` GitHub Release** holds them as one archive (`dpm-model-assets-v1.tar.gz`, paths
+  relative to `assets/`). `npm run assets:fetch` downloads it into a fresh checkout, and an EAS
+  build that lacks the weights (a workflow run from GitHub) downloads it in the pre-install hook.
+  The archive's SHA-256 is in `scripts/check-model-assets.js`. A changed or new model is a new
+  release (`models-v2`, …) and a new URL and hash there; never replace the file behind a tag.
 - **`.easignore`** at the root: with it present EAS ignores every `.gitignore`, so the weights on the
   machine running `eas build` are uploaded. It mirrors `.gitignore` otherwise; keep the two in step.
 - **`npm run assets:check`** (`scripts/check-model-assets.js`) lists every file the native code
-  opens and fails when one is missing. It runs as the `eas-build-pre-install` hook, so an Android
-  EAS build without the weights fails instead of shipping. A new asset goes in its list. When a graph changes, bump `MODEL_VERSION` in the class that loads
+  opens and fails when one is missing. It runs as the `eas-build-pre-install` hook (fetching first),
+  so an Android EAS build without the weights fails instead of shipping. A new asset goes in its
+  list. When a graph changes, bump `MODEL_VERSION` in the class that loads
 it (`EdgeTamTracker`, `PersonDetector`): models are copied out of the APK once, and a stale copy is
 otherwise reused. Keep the third-party licences (`LICENSE`, the scripts' headers) with the code.
 

@@ -198,12 +198,13 @@ native module is added or changed. Note that `expo prebuild` / `expo run:*` rewr
 
 ### On-device model weights
 
-The Anonymize models (about 130 MB) are **not in git**. Fetch or export them into
-`modules/video-anonymize/android/src/main/assets/` with the scripts in `scripts/` (see
+The Anonymize models (about 130 MB) are **not in git**. `npm run assets:fetch` downloads them into
+`modules/video-anonymize/android/src/main/assets/` from the `models-v1` GitHub Release; the
+scripts in `modules/video-anonymize/scripts/` export them from scratch (see
 [modules/AGENTS.md](modules/AGENTS.md)). `.easignore` lets EAS upload them although `.gitignore`
-excludes them, and `npm run assets:check` runs as the `eas-build-pre-install` hook, so an Android
-EAS build started from a checkout without them fails instead of shipping a build whose Anonymize
-cannot work. Keep `.easignore` in step with `.gitignore`.
+excludes them, and `npm run assets:check` runs as the `eas-build-pre-install` hook: an Android EAS
+build without them downloads them, and fails instead of shipping a build whose Anonymize cannot
+work when that fails. Keep `.easignore` in step with `.gitignore`.
 
 ### Build variants and signing
 
@@ -248,8 +249,15 @@ Submitting needs a Google service account key, held by EAS and never committed:
    upload the JSON key, and assign it under *Manage your Google Service Account Key for Play Store
    Submissions*. An uploaded key that is not assigned makes every submit ask which key to use.
 
-Build from a checkout that has the anonymize model weights (see `modules/AGENTS.md`), as for any
-production build. To publish to another track later, change `track` (`internal`, `alpha`, `beta`,
+**Releasing without a local checkout.** `.eas/workflows/release-android.yml` runs the same build and
+submission on EAS: it starts when a version tag (`v1.4.0`, …) is pushed, for example by publishing
+a GitHub Release from the merged release commit on master (github.com or the GitHub app), or by
+hand with `eas workflow:run .eas/workflows/release-android.yml` or from the project's _Workflows_
+page on expo.dev. It needs the Expo project linked to the GitHub repository (expo.dev → project
+settings → GitHub). The build fetches the model weights itself.
+
+A local build uses the weights in the checkout (see `modules/AGENTS.md`), as for any production
+build. To publish to another track later, change `track` (`internal`, `alpha`, `beta`,
 `production`, or a custom closed track's name).
 
 ### Running Tests
