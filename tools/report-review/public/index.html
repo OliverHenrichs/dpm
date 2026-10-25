@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPM reports</title>
+    <style>
+      :root {
+        --bg: #f6f5f2;
+        --panel: #ffffff;
+        --text: #1d1c1a;
+        --muted: #6b6862;
+        --line: #e2dfd8;
+        --accent: #4f46e5;
+        --accent-text: #ffffff;
+        --uphold: #b42318;
+        --uphold-bg: #fde8e6;
+        --reject: #1d6b3a;
+        --reject-bg: #e3f4e8;
+        --unclear: #8a5a00;
+        --unclear-bg: #fdf0d5;
+        --danger: #b42318;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #141413;
+          --panel: #1e1d1b;
+          --text: #ecebe7;
+          --muted: #a29f97;
+          --line: #34322e;
+          --accent: #8b85ff;
+          --accent-text: #141413;
+          --uphold: #ff9b8f;
+          --uphold-bg: #3a1d1a;
+          --reject: #7fd69c;
+          --reject-bg: #17301f;
+          --unclear: #f5c76b;
+          --unclear-bg: #33290f;
+          --danger: #ff9b8f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.45 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+        align-items: center;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      header h1 {
+        font-size: 17px;
+        margin: 0;
+      }
+      header .grow {
+        flex: 1;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .small {
+        font-size: 13px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(260px, 340px) 1fr;
+        gap: 20px;
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      @media (max-width: 800px) {
+        main {
+          grid-template-columns: 1fr;
+          padding: 16px;
+        }
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      .panel + .panel {
+        margin-top: 16px;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 0 0 10px;
+      }
+      h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin: 18px 0 8px;
+      }
+      h3:first-child {
+        margin-top: 0;
+      }
+      button,
+      select,
+      input,
+      textarea {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 7px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--muted);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-text);
+      }
+      button.danger {
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      button.on {
+        outline: 2px solid var(--accent);
+      }
+      input[type="text"],
+      textarea,
+      select {
+        border: 1px solid var(--line);
+        background: var(--bg);
+        border-radius: 7px;
+        padding: 6px 8px;
+        width: 100%;
+      }
+      select {
+        width: auto;
+      }
+      textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 8px;
+      }
+      .group-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        margin: 14px 4px 6px;
+      }
+      .group-title:first-child {
+        margin-top: 0;
+      }
+      .item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 10px 12px;
+        margin-bottom: 6px;
+        border-radius: 8px;
+      }
+      .item.selected {
+        border-color: var(--accent);
+        outline: 1px solid var(--accent);
+      }
+      .item .title {
+        font-weight: 600;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 1px 8px;
+        border-radius: 99px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+      }
+      .badge.uphold {
+        color: var(--uphold);
+        background: var(--uphold-bg);
+        border-color: transparent;
+      }
+      .badge.reject {
+        color: var(--reject);
+        background: var(--reject-bg);
+        border-color: transparent;
+      }
+      .badge.unclear,
+      .badge.child {
+        color: var(--unclear);
+        background: var(--unclear-bg);
+        border-color: transparent;
+      }
+      .quote {
+        white-space: pre-wrap;
+        border-left: 3px solid var(--line);
+        padding-left: 10px;
+        margin: 6px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      td,
+      th {
+        text-align: left;
+        vertical-align: top;
+        padding: 6px 8px 6px 0;
+        border-top: 1px solid var(--line);
+      }
+      th {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+        border-top: 0;
+      }
+      ul {
+        margin: 4px 0;
+        padding-left: 20px;
+      }
+      .pattern {
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+      }
+      .pattern:first-child {
+        border-top: 0;
+      }
+      a {
+        color: var(--accent);
+        word-break: break-all;
+      }
+      .banner {
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: var(--uphold-bg);
+        color: var(--uphold);
+        margin: 0 20px;
+      }
+      .note {
+        background: var(--unclear-bg);
+        color: var(--unclear);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+      }
+      .empty {
+        padding: 40px;
+        text-align: center;
+      }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 1100px) {
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      main > *,
+      .detail-grid > * {
+        min-width: 0;
+      }
+      .detail-grid .panel + .panel {
+        margin-top: 0;
+      }
+      .stack > * + * {
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>DPM reports</h1>
+      <span id="project" class="badge"></span>
+      <span class="grow"></span>
+      <span id="refreshed" class="muted small"></span>
+      <label class="small"
+        >Fetch every
+        <select id="every">
+          <option value="1">1 min</option>
+          <option value="2">2 min</option>
+          <option value="5">5 min</option>
+          <option value="10">10 min</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </label>
+      <button id="refresh">Fetch now</button>
+      <label
+        class="small row"
+        title="Every new report gets an agent review and draft reply, waiting for your verdict."
+      >
+        <input type="checkbox" id="auto" /> Auto review
+      </label>
+      <span id="queue" class="muted small"></span>
+    </header>
+    <div id="banner"></div>
+    <main>
+      <nav id="list"></nav>
+      <section id="detail"></section>
+    </main>
+
+    <script>
+      const token = location.hash.slice(1);
+      let state = null;
+      let selected = null;
+      let detailKey = "";
+
+      async function call(method, url, body) {
+        const res = await fetch(url, {
+          method,
+          headers: { "X-Dpm-Token": token, "Content-Type": "application/json" },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || res.statusText);
+        return json;
+      }
+
+      /** Builds an element; strings become text, never HTML. */
+      function h(tag, attrs, ...children) {
+        const el = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs || {})) {
+          if (v === undefined || v === null || v === false) continue;
+          if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+          else if (k === "className") el.className = v;
+          else el.setAttribute(k, v === true ? "" : v);
+        }
+        for (const c of children.flat()) {
+          if (c === null || c === undefined || c === false) continue;
+          el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+        }
+        return el;
+      }
+
+      const REASONS = {
+        consent: "Shows or names someone without consent",
+        child: "Endangers or shows a child",
+        copyright: "Copyright",
+        illegal: "Illegal content",
+        spam: "Spam or misleading link",
+        other: "Something else",
+      };
+      const STAGES = [
+        ["ready", "Waiting for your verdict"],
+        ["new", "Not reviewed yet"],
+        ["reviewing", "Agent reviewing"],
+        ["decided", "Decided, to finish"],
+      ];
+
+      function when(iso) {
+        if (!iso) return "?";
+        const d = new Date(iso);
+        return d.toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      }
+
+      function ago(iso) {
+        if (!iso) return "";
+        const s = Math.round((Date.now() - new Date(iso)) / 1000);
+        if (s < 60) return "just now";
+        if (s < 3600) return `${Math.round(s / 60)} min ago`;
+        if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+        return `${Math.round(s / 86400)} days ago`;
+      }
+
+      function act(fn) {
+        return async (e) => {
+          const btn = e?.currentTarget;
+          if (btn) btn.disabled = true;
+          try {
+            const next = await fn();
+            if (next) apply(next, true);
+          } catch (err) {
+            alert(err.message);
+          } finally {
+            if (btn) btn.disabled = false;
+          }
+        };
+      }
+
+      function apply(next, force) {
+        state = next;
+        renderHeader();
+        renderList();
+        if (!state.reports.some((r) => r.id === selected)) {
+          selected = state.reports[0]?.id ?? null;
+        }
+        const r = state.reports.find((x) => x.id === selected);
+        const key = JSON.stringify([
+          r?.id,
+          r?.stage,
+          r?.saved,
+          r?.failed,
+          r?.listStatus,
+          r?.publisherBlockedSince,
+          state.queue,
+        ]);
+        const editing = document.activeElement?.matches?.(
+          "textarea, input[type=text]",
+        );
+        if (force || (key !== detailKey && !editing)) {
+          detailKey = key;
+          renderDetail();
+        }
+      }
+
+      function renderHeader() {
+        const p = document.getElementById("project");
+        p.textContent = state.demo
+          ? "demo data"
+          : `${state.project}${state.emulated ? " (emulator)" : ""}`;
+        document.getElementById("refreshed").textContent = state.refreshedAt
+          ? `Fetched ${ago(state.refreshedAt)}, next ${new Date(state.nextRefreshAt).toLocaleTimeString(undefined, { timeStyle: "short" })}`
+          : "";
+        document.getElementById("every").value = String(state.refreshMinutes);
+        document.getElementById("auto").checked = state.autoReview;
+        const q = state.queue;
+        document.getElementById("queue").textContent = q.running
+          ? `Agent busy, ${q.waiting.length} queued`
+          : "";
+        const banner = document.getElementById("banner");
+        banner.replaceChildren();
+        if (state.error)
+          banner.append(
+            h(
+              "div",
+              { className: "banner" },
+              `Fetching failed: ${state.error}`,
+            ),
+          );
+      }
+
+      function renderList() {
+        const nav = document.getElementById("list");
+        nav.replaceChildren();
+        if (state.reports.length === 0) {
+          nav.append(
+            h("div", { className: "panel empty muted" }, "No reports."),
+          );
+          return;
+        }
+        for (const [stage, title] of STAGES) {
+          const items = state.reports.filter((r) => r.stage === stage);
+          if (items.length === 0) continue;
+          nav.append(
+            h(
+              "div",
+              { className: "group-title" },
+              `${title} (${items.length})`,
+            ),
+          );
+          for (const r of items) {
+            const rec = r.saved?.decision?.verdict ?? r.saved?.review?.verdict;
+            nav.append(
+              h(
+                "button",
+                {
+                  className: `item${r.id === selected ? " selected" : ""}`,
+                  onclick: () => {
+                    selected = r.id;
+                    apply(state, true);
+                  },
+                },
+                h("div", { className: "title" }, r.list?.name || r.shareCode),
+                h(
+                  "div",
+                  { className: "row small" },
+                  h(
+                    "span",
+                    {
+                      className: `badge${r.reason === "child" ? " child" : ""}`,
+                    },
+                    r.reason,
+                  ),
+                  rec &&
+                    h(
+                      "span",
+                      { className: `badge ${rec}` },
+                      r.saved?.decision ? `you: ${rec}` : `agent: ${rec}`,
+                    ),
+                  r.failed &&
+                    h("span", { className: "badge uphold" }, "review failed"),
+                  h("span", { className: "muted" }, ago(r.createdAt)),
+                ),
+              ),
+            );
+          }
+        }
+      }
+
+      function renderDetail() {
+        const box = document.getElementById("detail");
+        box.replaceChildren();
+        const r = state.reports.find((x) => x.id === selected);
+        if (!r) return;
+        box.append(
+          h(
+            "div",
+            { className: "detail-grid" },
+            h("div", { className: "stack" }, reportPanel(r), listPanel(r)),
+            h(
+              "div",
+              { className: "stack" },
+              reviewPanel(r),
+              decisionPanel(r),
+              emailPanel(r),
+              actionsPanel(r),
+            ),
+          ),
+        );
+      }
+
+      function reportPanel(r) {
+        const others = state.reports.filter(
+          (x) => x.shareCode === r.shareCode && x.id !== r.id,
+        );
+        return h(
+          "div",
+          { className: "panel" },
+          h("h2", {}, REASONS[r.reason] ?? r.reason),
+          h(
+            "div",
+            { className: "muted small" },
+            `Sent ${when(r.createdAt)} · list ${r.shareCode}`,
+          ),
+          r.details
+            ? h("div", { className: "quote" }, r.details)
+            : h("p", { className: "muted" }, "No details given."),
+          h(
+            "div",
+            { className: "small" },
+            r.contact ? `Reply to: ${r.contact}` : "No email for a reply.",
+          ),
+          others.length > 0 &&
+            h(
+              "div",
+              { className: "small muted" },
+              `${others.length} other report(s) about this list.`,
+            ),
+        );
+      }
+
+      function videoLinks(urls) {
+        if (!urls?.length) return null;
+        return h(
+          "ul",
+          {},
+          urls.map((u) =>
+            h(
+              "li",
+              {},
+              /^https?:\/\//i.test(u)
+                ? h(
+                    "a",
+                    { href: u, target: "_blank", rel: "noopener noreferrer" },
+                    u,
+                  )
+                : u,
+            ),
+          ),
+        );
+      }
+
+      function listPanel(r) {
+        const l = r.list;
+        const status = {
+          live: "Published",
+          "taken-down": "Taken down",
+          gone: "No longer shared",
+        }[r.listStatus];
+        const panel = h(
+          "div",
+          { className: "panel" },
+          h("h2", {}, l ? `"${l.name}"` : "The list"),
+          h(
+            "div",
+            { className: "row small" },
+            h(
+              "span",
+              { className: `badge${r.listStatus === "live" ? "" : " reject"}` },
+              status,
+            ),
+            l?.membersOnly && h("span", { className: "badge" }, "members only"),
+            l?.dance && h("span", { className: "badge" }, l.dance),
+            l?.publishedAt &&
+              h(
+                "span",
+                { className: "muted" },
+                `last published ${when(l.publishedAt)}`,
+              ),
+          ),
+          r.publisherUid &&
+            h(
+              "div",
+              { className: "small muted", style: "margin-top:6px" },
+              `Publisher ${r.publisherUid}${r.publisherBlockedSince ? ` · blocked since ${when(r.publisherBlockedSince)}` : ""}`,
+            ),
+        );
+        if (!l) return panel;
+        if (l.description)
+          panel.append(h("div", { className: "quote" }, l.description));
+        if (l.modifiers?.length) {
+          panel.append(h("h3", {}, "Modifiers"));
+          panel.append(
+            h(
+              "ul",
+              {},
+              l.modifiers.map((m) =>
+                h(
+                  "li",
+                  {},
+                  m.name,
+                  m.description ? ` – ${m.description}` : "",
+                  videoLinks(m.videos),
+                ),
+              ),
+            ),
+          );
+        }
+        panel.append(h("h3", {}, `Patterns (${l.patterns.length})`));
+        panel.append(
+          h(
+            "div",
+            { className: "note" },
+            "Links come from the publisher. Open them only to check the claim.",
+          ),
+        );
+        for (const p of l.patterns) {
+          panel.append(
+            h(
+              "div",
+              { className: "pattern" },
+              h(
+                "div",
+                {},
+                h("strong", {}, `#${p.id} ${p.name}`),
+                p.tags
+                  ? h(
+                      "span",
+                      { className: "muted small" },
+                      `  ${p.tags.join(", ")}`,
+                    )
+                  : null,
+              ),
+              p.description &&
+                h("div", { className: "quote small" }, p.description),
+              videoLinks(p.videos),
+              (p.withModifiers ?? []).map((w) =>
+                h(
+                  "div",
+                  { className: "small" },
+                  `+ ${w.modifier}`,
+                  videoLinks(w.videos),
+                ),
+              ),
+            ),
+          );
+        }
+        return panel;
+      }
+
+      function reviewPanel(r) {
+        const s = r.saved;
+        const v = s?.review;
+        const busy = r.stage === "reviewing";
+        const running = state.queue.running === r.id;
+        const panel = h(
+          "div",
+          { className: "panel" },
+          h(
+            "div",
+            { className: "row" },
+            h("h2", { style: "margin:0" }, "Agent review"),
+            h("span", { className: "grow", style: "flex:1" }),
+            h(
+              "button",
+              {
+                className: v ? "" : "primary",
+                disabled: busy,
+                onclick: act(() => call("POST", "/api/review", { id: r.id })),
+              },
+              busy
+                ? running
+                  ? "Reviewing…"
+                  : "Queued"
+                : v
+                  ? "Review again"
+                  : "Review with agent",
+            ),
+          ),
+        );
+        if (r.failed)
+          panel.append(
+            h("p", { className: "banner", style: "margin:10px 0" }, r.failed),
+          );
+        if (!v) {
+          panel.append(
+            h(
+              "p",
+              { className: "muted small" },
+              "The agent checks the claims against the list and the terms of use and drafts a reply. It decides nothing and sends nothing.",
+            ),
+          );
+          return panel;
+        }
+        panel.append(
+          h(
+            "div",
+            { className: "row", style: "margin-top:10px" },
+            h(
+              "span",
+              { className: `badge ${v.verdict}` },
+              `recommends ${v.verdict}`,
+            ),
+            h("span", { className: "badge" }, `${v.confidence} confidence`),
+            v.termsSections.length > 0 &&
+              h(
+                "span",
+                { className: "small muted" },
+                v.termsSections.join(", "),
+              ),
+          ),
+          h("p", {}, v.summary),
+        );
+        for (const f of v.findings) {
+          const holds = { yes: "uphold", no: "reject", unknown: "unclear" }[
+            f.holds
+          ];
+          panel.append(
+            h(
+              "div",
+              { className: "pattern" },
+              h(
+                "div",
+                { className: "row" },
+                h("span", { className: `badge ${holds}` }, `holds: ${f.holds}`),
+                h("strong", {}, f.claim),
+              ),
+              h("div", { className: "small muted" }, f.where),
+              h("div", { className: "small" }, f.evidence),
+            ),
+          );
+        }
+        if (v.checkByHand.length) {
+          panel.append(
+            h("h3", {}, "Check by hand"),
+            h(
+              "ul",
+              {},
+              v.checkByHand.map((c) => h("li", {}, c)),
+            ),
+          );
+        }
+        panel.append(
+          h(
+            "div",
+            { className: "small muted", style: "margin-top:10px" },
+            `Recommended actions: ${v.actions.length ? v.actions.join(", ") : "none"} · reviewed ${ago(s.reviewedAt)}${s.costUsd != null ? ` · $${s.costUsd.toFixed(2)}` : ""}`,
+          ),
+        );
+        return panel;
+      }
+
+      function decisionPanel(r) {
+        const d = r.saved?.decision;
+        const note = h("textarea", {
+          placeholder: "Your reasoning (optional; the redraft uses it)",
+          style: "min-height:60px",
+        });
+        note.value = d?.note ?? "";
+        const decide = (verdict) =>
+          act(() =>
+            call("POST", "/api/decision", {
+              id: r.id,
+              verdict,
+              note: note.value,
+            }),
+          );
+        const agentSays = r.saved?.review?.verdict;
+        const emailFits =
+          !d || !r.saved?.review || r.saved.review.verdict === d.verdict;
+        return h(
+          "div",
+          { className: "panel" },
+          h("h2", {}, "Your verdict"),
+          note,
+          h(
+            "div",
+            { className: "row", style: "margin-top:8px" },
+            h(
+              "button",
+              {
+                className: d?.verdict === "uphold" ? "on" : "",
+                onclick: decide("uphold"),
+              },
+              "Uphold: the report is right",
+            ),
+            h(
+              "button",
+              {
+                className: d?.verdict === "reject" ? "on" : "",
+                onclick: decide("reject"),
+              },
+              "Reject: the list stays",
+            ),
+            d && h("button", { onclick: decide(null) }, "Undo"),
+          ),
+          d &&
+            h(
+              "div",
+              { className: "row" },
+              h(
+                "span",
+                { className: "small muted" },
+                `Decided ${when(d.decidedAt)}.`,
+              ),
+              !emailFits &&
+                h(
+                  "span",
+                  { className: "note" },
+                  `The draft below argues "${agentSays}".`,
+                ),
+              h(
+                "button",
+                {
+                  disabled: r.stage === "reviewing",
+                  title:
+                    "Runs the agent again with your verdict and note; replaces the email draft.",
+                  onclick: act(() =>
+                    call("POST", "/api/review", { id: r.id, redraft: true }),
+                  ),
+                },
+                "Redraft email for my verdict",
+              ),
+            ),
+        );
+      }
+
+      function emailPanel(r) {
+        const e = r.saved?.email;
+        if (!e) return h("div");
+        const subject = h("input", { type: "text" });
+        subject.value = e.subject;
+        const body = h("textarea", { style: "min-height:260px" });
+        body.value = e.body;
+        const save = () =>
+          call("POST", "/api/email", {
+            id: r.id,
+            subject: subject.value,
+            body: body.value,
+          });
+        const sent = r.saved.done?.find((d) => d.action === "email-sent");
+        return h(
+          "div",
+          { className: "panel" },
+          h("h2", {}, "Reply email (draft, not sent)"),
+          h(
+            "div",
+            { className: "small muted", style: "margin-bottom:8px" },
+            r.contact ? `To ${r.contact}` : "The reporter left no email.",
+            r.saved.review?.email?.language
+              ? ` · ${r.saved.review.email.language}`
+              : "",
+          ),
+          subject,
+          h("div", { style: "height:8px" }),
+          body,
+          h(
+            "div",
+            { className: "row", style: "margin-top:8px" },
+            h("button", { onclick: act(save) }, "Save edits"),
+            h(
+              "button",
+              {
+                onclick: act(async () => {
+                  await navigator.clipboard.writeText(
+                    `${subject.value}\n\n${body.value}`,
+                  );
+                  return save();
+                }),
+              },
+              "Copy",
+            ),
+            r.contact &&
+              h(
+                "button",
+                {
+                  onclick: act(async () => {
+                    const next = await save();
+                    location.href = `mailto:${encodeURIComponent(r.contact)}?subject=${encodeURIComponent(subject.value)}&body=${encodeURIComponent(body.value)}`;
+                    return next;
+                  }),
+                },
+                "Open in mail app",
+              ),
+            sent
+              ? h(
+                  "span",
+                  { className: "small muted" },
+                  `Marked sent ${when(sent.at)}`,
+                )
+              : h(
+                  "button",
+                  {
+                    onclick: act(() =>
+                      call("POST", "/api/mark", {
+                        id: r.id,
+                        action: "email-sent",
+                      }),
+                    ),
+                  },
+                  "Mark as sent",
+                ),
+          ),
+        );
+      }
+
+      function actionsPanel(r) {
+        const done = (a) => r.saved?.done?.find((d) => d.action === a);
+        const confirmTyped = (what, expected) => {
+          const typed = prompt(`${what}\n\nType ${expected} to go ahead:`);
+          if (typed === null) return null;
+          return typed.trim();
+        };
+        const run = (action, what, expected) =>
+          act(async () => {
+            const confirm = confirmTyped(what, expected);
+            if (confirm === null) return null;
+            return call("POST", "/api/action", { id: r.id, action, confirm });
+          });
+        const v = r.saved?.review;
+        return h(
+          "div",
+          { className: "panel" },
+          h("h2", {}, "Actions"),
+          h(
+            "p",
+            { className: "small muted", style: "margin-top:0" },
+            "These change Firestore at once, like npm run data -- remove-list / block-user / remove-report.",
+          ),
+          h(
+            "div",
+            { className: "row" },
+            h(
+              "button",
+              {
+                className: "danger",
+                disabled: r.listStatus !== "live",
+                onclick: run(
+                  "remove-list",
+                  `Take "${r.list?.name}" down? Subscribers keep their copy; the publisher cannot publish under ${r.shareCode} again.`,
+                  r.shareCode,
+                ),
+              },
+              r.listStatus === "taken-down"
+                ? "List taken down"
+                : "Take list down",
+            ),
+            h(
+              "button",
+              {
+                className: "danger",
+                disabled: !r.publisherUid || !!r.publisherBlockedSince,
+                onclick: run(
+                  "block-publisher",
+                  "Block the publisher's installation from publishing, suggesting and asking to join?",
+                  r.publisherUid,
+                ),
+              },
+              r.publisherBlockedSince ? "Publisher blocked" : "Block publisher",
+            ),
+            h(
+              "button",
+              {
+                onclick: run(
+                  "delete-report",
+                  "Delete this report and its review? Do this once the reply is sent and the actions are done.",
+                  r.shareCode,
+                ),
+              },
+              "Delete report (done)",
+            ),
+          ),
+          v?.actions?.length > 0 &&
+            h(
+              "div",
+              { className: "small muted", style: "margin-top:8px" },
+              `The agent recommends: ${v.actions.join(", ")}.`,
+            ),
+        );
+      }
+
+      document.getElementById("refresh").addEventListener(
+        "click",
+        act(() => call("POST", "/api/refresh")),
+      );
+      document.getElementById("every").addEventListener(
+        "change",
+        act(() =>
+          call("POST", "/api/settings", {
+            refreshMinutes: Number(document.getElementById("every").value),
+          }),
+        ),
+      );
+      document.getElementById("auto").addEventListener(
+        "change",
+        act(() =>
+          call("POST", "/api/settings", {
+            autoReview: document.getElementById("auto").checked,
+          }),
+        ),
+      );
+
+      async function poll() {
+        try {
+          apply(await call("GET", "/api/state"), false);
+        } catch (e) {
+          document
+            .getElementById("banner")
+            .replaceChildren(h("div", { className: "banner" }, e.message));
+        }
+      }
+      poll();
+      setInterval(poll, 5000);
+    </script>
+  </body>
+</html>

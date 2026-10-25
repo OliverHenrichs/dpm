@@ -16,6 +16,8 @@ module.exports = defineConfig([
       "jest.config.js",
       // Node-run config files at the root.
       "*.config.js",
+      // Operator tools, run by Node on the laptop.
+      "tools/**/*.js",
     ],
     languageOptions: {
       globals: { ...globals.node, ...globals.jest },
