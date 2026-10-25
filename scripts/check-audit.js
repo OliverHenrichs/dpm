@@ -10,10 +10,6 @@
 const fs = require("fs");
 
 const ACCEPTED = {
-  // jest-expo -> babel-jest -> babel-plugin-istanbul -> js-yaml@3 -> argparse@1 -> sprintf-js.
-  // Test coverage tooling only, never in the app bundle, and fed only our own config.
-  // No patched release exists (1.1.3 is the latest and is affected).
-  "GHSA-hp3w-g68c-fv3c": { name: "sprintf-js", until: "2026-12-01" },
   // expo-router -> query-string@7 -> decode-uri-component. The fix is ESM-only
   // and cannot be forced under a CJS parent; waits for expo-router upstream.
   "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2026-11-01" },
@@ -21,10 +17,10 @@ const ACCEPTED = {
   // Dev tooling only (EAS update code signing), never in the app bundle.
   // No patched release exists (1.4.0 is the latest and is affected).
   "GHSA-86w9-cpqp-85rv": { name: "node-forge", until: "2026-11-01" },
-  // micromatch -> braces, under metro, jest and @expo/cli. Dev tooling only;
-  // the glob patterns come from our own config, not from untrusted input.
-  // No patched release exists (3.0.3 is the latest and is affected).
-  "GHSA-vfj7-8cjw-p6xm": { name: "braces", until: "2026-11-01" },
+  // expo -> @expo/cli -> zod@3. Dev tooling only (validates our own app config),
+  // never in the app bundle. No patched 3.x exists; the fix is a major Expo upgrade.
+  // The root zod@4 (eslint-plugin-react-hooks) is overridden to a patched release.
+  "GHSA-mrhx-c7xc-m3w5": { name: "zod", until: "2026-12-01" },
 };
 
 const WARN_DAYS = 7;
