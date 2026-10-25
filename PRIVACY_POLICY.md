@@ -82,7 +82,7 @@ Only the publisher of the list can read suggestions. If the publisher **mutes** 
 
 **Subscriber count.** When you subscribe to a list, your app stores a **subscription record** in Firestore under that list: a random ID your app creates for that one list, and when your app last synced the list (at most once each time you start the app). The ID is different for every list you subscribe to, it is not your anonymous user ID, and subscribing to an open list still does not sign in. The publisher sees only how many records were synced in the last 90 days, never the records themselves; nobody else can read them. Your record is deleted when you unsubscribe in the app (Lists → the list's "more" button → Unsubscribe from List) or when the publisher stops sharing the list. If you uninstall the app without unsubscribing, the record stops counting after 90 days and is deleted when the publisher stops sharing the list.
 
-**Reporting a list.** When you **report** a list you follow (Lists → the list's "more" button → Report list), the app signs in anonymously and stores in Firestore: the list's share code, your anonymous user ID, the reason you chose, the details you typed if any, the email address you gave if any, and when you sent it. Only we can read reports, through our operator tools; the publisher of the list is not told about the report or who sent it. We use it to check the list, and the email address only to reply to you. To check a report we may have an AI assistant (Claude, by Anthropic) read the reason, the details you typed and the reported list, and draft our reply; it never gets your email address or your anonymous ID, and a person makes every decision. Our notes on a report are kept on our own computer and deleted with the report.
+**Reporting a list.** When you **report** a list you follow (Lists → the list's "more" button → Report list), the app signs in anonymously and stores in Firestore: the list's share code, your anonymous user ID, the reason you chose, the details you typed if any, the email address you gave if any, and when you sent it. Only we can read reports, through our operator tools; the publisher of the list is not told about the report or who sent it. We use it to check the list, and the email address only to reply to you. For some reports we have an AI assistant (Claude, by Anthropic; see section 5) read the reason, the details you typed and the reported list, to help us check them and draft our reply. This is not done by default. The assistant never gets your email address or your anonymous ID, and a person makes every decision. We do this in our legitimate interest in handling reports carefully and promptly (GDPR Art. 6(1)(f)). Our notes on a report are kept on our own computer and deleted with the report.
 
 **We do not collect:** your name, email address (unless you give one in a report), phone number, location, or any account credentials. The app has no user accounts you can see or sign in to; the anonymous ID and the per-list subscription IDs above are the only identifiers, and none of them is linked to you as a person.
 
@@ -140,7 +140,7 @@ You can refuse or withdraw any of these permissions in your device settings; onl
 
 ## 5. Who we share your data with
 
-We use the following third-party data processors:
+We use the following third-party data processor:
 
 **Google LLC** (Firebase / Firestore, Firebase Authentication)  
 Role: Data Processor  
@@ -149,11 +149,11 @@ Privacy policy: https://policies.google.com/privacy
 Data Processing Terms: https://firebase.google.com/terms/data-processing-terms  
 Data location: **Europe (europe-west, Belgium)** for Firestore. Published lists, owner records, suggestions, subscription records and reports are stored on Google servers within the European Union. Firebase Authentication, which holds the anonymous user ID of publishers and of subscribers who suggest patterns, join lists or report them, is a global Google service and may process that ID and the related IP address outside the EU/EEA, including in the United States; such transfers are covered by Google's Data Processing Terms and the EU Standard Contractual Clauses.
 
+We also send some data to:
+
 **Anthropic PBC** (Claude)  
-Role: Data Processor  
-Purpose: Helping us check reports about a list (section 3.3): it reads the report's reason and details and the reported list, never the reporter's email address or anonymous ID  
-Privacy policy: https://www.anthropic.com/legal/privacy  
-Data location: United States; such transfers are covered by Anthropic's Data Processing Addendum and the EU Standard Contractual Clauses.
+For some reports about a list (section 3.3) we use Claude, Anthropic's AI assistant, to help check the report and draft our reply. It receives the report's reason and details and the content of the reported list, never the reporter's email address or anonymous ID. We use Claude under Anthropic's own terms, with the use of our conversations for training Anthropic's models switched off; Anthropic is not bound to us by a data processing agreement, and may process this data in the United States.  
+Privacy policy: https://www.anthropic.com/legal/privacy
 
 When you use the features in sections 3.4 and 3.5, your device connects directly to these services. They process your IP address as **independent controllers** under their own policies, and may do so outside the EU/EEA, including in the United States:
 

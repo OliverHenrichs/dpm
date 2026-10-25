@@ -31,18 +31,28 @@ const PAGE = path.join(__dirname, "public", "index.html");
 const USAGE = `Usage: npm run reports:review -- [options]
 
   --every <minutes>   Fetch reports this often (default 5; change it on the page too).
-  --auto-review       Start with auto review on: every new report gets an agent review.
+  --agent             Turn agent reviews on (off by default: a review sends the
+                      report's text and the list to Anthropic).
+  --auto-review       Also start with auto review on: every new report gets an
+                      agent review. Implies --agent.
   --port <port>       Default 4777.
   --demo              Made-up reports in memory instead of Firestore
                       (npm run reports:demo). Agent reviews still run for real.`;
 
 function parseArgs(argv) {
-  const opts = { every: 5, port: 4777, autoReview: false, demo: false };
+  const opts = {
+    every: 5,
+    port: 4777,
+    agent: false,
+    autoReview: false,
+    demo: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--every") opts.every = Number(argv[++i]);
     else if (a === "--port") opts.port = Number(argv[++i]);
-    else if (a === "--auto-review") opts.autoReview = true;
+    else if (a === "--agent") opts.agent = true;
+    else if (a === "--auto-review") opts.agent = opts.autoReview = true;
     else if (a === "--demo") opts.demo = true;
     else if (a === "--help" || a === "-h") opts.help = true;
     else throw new Error(`Unknown option ${a}\n\n${USAGE}`);
@@ -55,7 +65,10 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
   const saved = readJson(settingsFile) ?? {};
   const state = {
     refreshMinutes: saved.refreshMinutes ?? opts.every,
-    autoReview: opts.autoReview || !!saved.autoReview,
+    // Agent reviews send report text to Anthropic, so they are off until the
+    // operator turns them on, on the page or with --agent.
+    agent: !!opts.agent || !!saved.agent,
+    autoReview: !!opts.autoReview || (!!saved.agent && !!saved.autoReview),
     views: [],
     refreshedAt: null,
     nextRefreshAt: null,
@@ -101,6 +114,7 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
       settingsFile,
       JSON.stringify({
         refreshMinutes: state.refreshMinutes,
+        agent: state.agent,
         autoReview: state.autoReview,
       }),
       { mode: 0o600 },
@@ -131,7 +145,7 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
       state.error = null;
       const busy = queue.busy();
       reviews.prune([...state.views.map((v) => v.id), ...busy]);
-      if (state.autoReview) {
+      if (state.agent && state.autoReview) {
         needsAutoReview(state.views, reviews.all(), busy).forEach((v) =>
           queue.add(v.id),
         );
@@ -150,6 +164,7 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
       emulated: !!store.emulated,
       demo: !!store.demo,
       refreshMinutes: state.refreshMinutes,
+      agent: state.agent,
       autoReview: state.autoReview,
       refreshedAt: state.refreshedAt,
       nextRefreshAt: state.nextRefreshAt,
@@ -181,7 +196,7 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
       return snapshot();
     },
 
-    "POST /api/settings": async ({ refreshMinutes, autoReview }) => {
+    "POST /api/settings": async ({ refreshMinutes, agent, autoReview }) => {
       if (refreshMinutes !== undefined) {
         const m = Number(refreshMinutes);
         if (!(m >= 1 && m <= 24 * 60))
@@ -189,9 +204,12 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
         state.refreshMinutes = m;
         schedule();
       }
+      if (agent !== undefined) state.agent = !!agent;
       if (autoReview !== undefined) state.autoReview = !!autoReview;
+      // Auto review needs agent reviews; turning those off turns it off.
+      if (!state.agent) state.autoReview = false;
       saveSettings();
-      if (state.autoReview) {
+      if (state.agent && state.autoReview) {
         needsAutoReview(state.views, reviews.all(), queue.busy()).forEach((v) =>
           queue.add(v.id),
         );
@@ -202,6 +220,9 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
     /** Runs the skill; `redraft` passes the operator's verdict and note to it. */
     "POST /api/review": ({ id, redraft }) => {
       const view = viewOf(id);
+      if (!state.agent) {
+        throw httpError(400, "Agent reviews are off (header).");
+      }
       if (redraft && !reviews.get(id)?.decision) {
         throw httpError(400, "Decide first, then redraft.");
       }

@@ -322,7 +322,7 @@ describe("dashboard", () => {
       store: demoStore(),
       reviews: reviewStore(dir),
       settingsFile: path.join(dir, "settings.json"),
-      opts: { every: 5, autoReview: false },
+      opts: { every: 5, agent: true, autoReview: false },
       review: agent,
     });
     await dashboard.refresh();
@@ -335,6 +335,28 @@ describe("dashboard", () => {
   const idle = () => new Promise((r) => setTimeout(r, 10));
   const state = () => dashboard.api["GET /api/state"]();
   const childReport = () => state().reports.find((r) => r.reason === "child");
+
+  it("keeps agent reviews off unless turned on", async () => {
+    const off = createDashboard({
+      store: demoStore(),
+      reviews: reviewStore(dir),
+      settingsFile: path.join(dir, "off.json"),
+      opts: { every: 5 },
+      review: agent,
+    });
+    await off.refresh();
+    const s = await off.api["POST /api/settings"]({ autoReview: true });
+    expect(s).toMatchObject({ agent: false, autoReview: false });
+    const { id } = s.reports[0];
+    expect(() => off.api["POST /api/review"]({ id })).toThrow(/off/);
+    await idle();
+    expect(agent).not.toHaveBeenCalled();
+    // Turning agent reviews off turns auto review off with them.
+    await off.api["POST /api/settings"]({ agent: true, autoReview: true });
+    const after = await off.api["POST /api/settings"]({ agent: false });
+    expect(after).toMatchObject({ agent: false, autoReview: false });
+    off.stop();
+  });
 
   it("lists the demo reports, children's safety first", () => {
     const s = state();

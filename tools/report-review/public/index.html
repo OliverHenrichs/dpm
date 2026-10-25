@@ -321,6 +321,12 @@
       <button id="refresh">Fetch now</button>
       <label
         class="small row"
+        title="Lets an agent check reports and draft replies. A review sends the report's text and the list (no email, no ids) to Anthropic."
+      >
+        <input type="checkbox" id="agent" /> Agent reviews
+      </label>
+      <label
+        class="small row"
         title="Every new report gets an agent review and draft reply, waiting for your verdict."
       >
         <input type="checkbox" id="auto" /> Auto review
@@ -449,7 +455,9 @@
           ? `Fetched ${ago(state.refreshedAt)}, next ${new Date(state.nextRefreshAt).toLocaleTimeString(undefined, { timeStyle: "short" })}`
           : "";
         document.getElementById("every").value = String(state.refreshMinutes);
+        document.getElementById("agent").checked = state.agent;
         document.getElementById("auto").checked = state.autoReview;
+        document.getElementById("auto").disabled = !state.agent;
         const q = state.queue;
         document.getElementById("queue").textContent = q.running
           ? `Agent busy, ${q.waiting.length} queued`
@@ -712,8 +720,17 @@
               "button",
               {
                 className: v ? "" : "primary",
-                disabled: busy,
-                onclick: act(() => call("POST", "/api/review", { id: r.id })),
+                disabled: busy || !state.agent,
+                title: state.agent
+                  ? undefined
+                  : "Turn on Agent reviews in the header first.",
+                onclick: act(() =>
+                  confirm(
+                    "This sends the report's reason and details and the list to Anthropic (no email, no ids). Go ahead?",
+                  )
+                    ? call("POST", "/api/review", { id: r.id })
+                    : null,
+                ),
               },
               busy
                 ? running
@@ -734,7 +751,9 @@
             h(
               "p",
               { className: "muted small" },
-              "The agent checks the claims against the list and the terms of use and drafts a reply. It decides nothing and sends nothing.",
+              state.agent
+                ? "The agent checks the claims against the list and the terms of use and drafts a reply. It decides nothing and sends nothing."
+                : "Agent reviews are off. Decide from the report and the list, and write the reply yourself, or turn them on in the header for a report without personal details.",
             ),
           );
           return panel;
@@ -859,7 +878,7 @@
               h(
                 "button",
                 {
-                  disabled: r.stage === "reviewing",
+                  disabled: r.stage === "reviewing" || !state.agent,
                   title:
                     "Runs the agent again with your verdict and note; replaces the email draft.",
                   onclick: act(() =>
@@ -873,7 +892,13 @@
       }
 
       function emailPanel(r) {
-        const e = r.saved?.email;
+        // Without an agent draft, an empty one to write by hand.
+        const e =
+          r.saved?.email ??
+          (r.contact && {
+            subject: `Your report about the list "${r.list?.name ?? r.shareCode}"`,
+            body: "",
+          });
         if (!e) return h("div");
         const subject = h("input", { type: "text" });
         subject.value = e.subject;
@@ -885,16 +910,16 @@
             subject: subject.value,
             body: body.value,
           });
-        const sent = r.saved.done?.find((d) => d.action === "email-sent");
+        const sent = r.saved?.done?.find((d) => d.action === "email-sent");
         return h(
           "div",
           { className: "panel" },
-          h("h2", {}, "Reply email (draft, not sent)"),
+          h("h2", {}, "Reply email (not sent from here)"),
           h(
             "div",
             { className: "small muted", style: "margin-bottom:8px" },
             r.contact ? `To ${r.contact}` : "The reporter left no email.",
-            r.saved.review?.email?.language
+            r.saved?.review?.email?.language
               ? ` · ${r.saved.review.email.language}`
               : "",
           ),
@@ -1035,6 +1060,14 @@
         act(() =>
           call("POST", "/api/settings", {
             refreshMinutes: Number(document.getElementById("every").value),
+          }),
+        ),
+      );
+      document.getElementById("agent").addEventListener(
+        "change",
+        act(() =>
+          call("POST", "/api/settings", {
+            agent: document.getElementById("agent").checked,
           }),
         ),
       );

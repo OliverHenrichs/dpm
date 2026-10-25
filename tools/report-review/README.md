@@ -20,7 +20,8 @@ laptop for the agent reviews (`claude` on the PATH, or `DPM_CLAUDE_BIN=/path/to/
 ```bash
 npm run reports:review                      # production, from .env
 npm run reports:review -- --every 10        # fetch every 10 minutes (default 5)
-npm run reports:review -- --auto-review     # start with auto review on
+npm run reports:review -- --agent           # start with agent reviews on
+npm run reports:review -- --auto-review     # and auto review too
 npm run reports:demo                        # made-up reports in memory, no Firestore
 ```
 
@@ -33,11 +34,17 @@ cannot drive it.
 Reports are grouped as _Waiting for your verdict_, _Not reviewed yet_, _Agent reviewing_ and
 _Decided, to finish_; children's safety comes first, then the oldest.
 
-1. **Review with agent** runs the `review-report` skill (`.claude/skills/review-report/`). It splits
+**Agent reviews are off by default** (header: _Agent reviews_), because a review sends the
+report's text and the list to Anthropic. With them off, you decide from the report and the list
+and write the reply yourself in the empty draft. Turn them on for a report without personal
+details, and off again; the setting is remembered.
+
+1. **Review with agent** (asks before it sends anything) runs the `review-report` skill (`.claude/skills/review-report/`). It splits
    the report into claims, finds each in the list, checks video links on YouTube, Vimeo and Dropbox,
    and recommends _uphold_, _reject_ or _unclear_ with the terms sections, what to check by hand,
    and actions in proportion (§5). It drafts the reply in the reporter's language. A review takes
-   a minute or two and costs a few cents to a few dimes (shown on the review).
+   a minute or two. The dollar figure on a review is what Claude Code reports at API prices: real
+   money with an API key, while a Claude subscription counts it against the plan's usage instead.
 2. **Your verdict**: _Uphold_ or _Reject_, with an optional note. If you decide differently from
    the agent, or want your reasoning in the email, **Redraft email for my verdict** runs the skill
    again with both; the new draft replaces the old one, edits included.
@@ -48,7 +55,7 @@ _Decided, to finish_; children's safety comes first, then the oldest.
 5. **Delete report (done)** deletes the report in Firestore (`remove-report`) and the dashboard's
    notes on it.
 
-**Auto review** (header) gives every new report on a live list an agent review as soon as it is
+**Auto review** (header, only with agent reviews on) gives every new report on a live list an agent review as soon as it is
 fetched, one at a time, so they wait for your verdict already reviewed. A review that fails is not
 retried automatically; _Review again_ retries it. It stays on across restarts.
 
@@ -70,9 +77,12 @@ The agent session reads text strangers wrote, so it gets little:
 - `DPM_REVIEW_MODEL` picks the model (default: Claude Code's). `DPM_REVIEW_TIMEOUT_MS` (default 10
   minutes) stops a stuck run.
 
-The report and list text go to Anthropic for the review. The privacy policy (§3.3, §5) says so.
-Run Claude Code under commercial terms (an Anthropic API key, or a Team/Enterprise plan), whose
-data processing addendum makes Anthropic a processor; consumer plans are not covered by one.
+The report and list text go to Anthropic for the review. The privacy policy (§3.3, §5) says so,
+and says how: Claude used under Anthropic's own terms with training on our conversations off, and
+no data processing agreement. That matches a Claude subscription with _Help improve Claude_
+switched off in its privacy settings; keep it off. Moving to an API key or a Team plan (which come
+with Anthropic's data processing addendum) would let the policy name Anthropic as a processor
+instead; update §5 then.
 
 ## Where its notes live
 
