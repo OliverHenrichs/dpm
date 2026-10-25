@@ -169,6 +169,14 @@
         gap: 8px;
         align-items: center;
       }
+      .check {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .check input {
+        margin: 0;
+      }
       .row + .row {
         margin-top: 8px;
       }
@@ -324,14 +332,14 @@
         <select id="model"></select>
       </label>
       <label
-        class="small row"
+        class="small check"
         title="Lets an agent check reports and draft replies. A review sends the report's text and the list (no email, no ids) to Anthropic."
       >
         <input type="checkbox" id="agent" /> Agent reviews
       </label>
       <label
-        class="small row"
-        title="Every new report gets an agent review and draft reply, waiting for your verdict."
+        class="small check"
+        title="Every new report gets an agent review and draft reply, waiting for your verdict. Needs Agent reviews on."
       >
         <input type="checkbox" id="auto" /> Auto review
       </label>
@@ -474,7 +482,6 @@
           );
         }
         model.value = state.model;
-        model.disabled = !state.agent;
         document.getElementById("auto").checked = state.autoReview;
         document.getElementById("auto").disabled = !state.agent;
         const q = state.queue;
