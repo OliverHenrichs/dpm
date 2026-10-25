@@ -72,7 +72,7 @@ nothing selected.
   with loop-closing prerequisites last. The search narrows the rest with `fuzzyFilter`
   (`src/common/utils/fuzzyMatch.ts`) and never hides what is chosen. A typed tag no pattern has
   is offered as _Create "…"_. Nothing picks tags in a separate sheet any more.
-- The pattern list's **+** offers _New pattern_, _From a video_ (gallery) and _Record a video_
+- The pattern list's **+** offers _New figure_, _From a video_ (gallery) and _Record a video_
   (system camera). The video seeds the new pattern's form; after saving, the app offers to edit it
   (`src/anonymize/AGENTS.md`).
 - A local video's tile also offers _Put online_, and a video shared to DPM can open the add form

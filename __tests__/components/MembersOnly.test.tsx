@@ -148,7 +148,7 @@ describe("asking to join", () => {
     renderSubscribe();
     await lookUp();
 
-    await screen.findByText("The publisher hasn't let you in to this list.");
+    await screen.findByText("The list owner hasn't let you in to this list.");
     expect(screen.queryByText("Ask to join")).toBeNull();
   });
 
@@ -339,7 +339,9 @@ describe("a subscribed copy that is no longer let in", () => {
 
     onError!(new NoAccessError());
 
-    await screen.findByText(/is now only for members its publisher has let in/);
+    await screen.findByText(
+      /is now only for members the list owner has let in/,
+    );
     const stored = await getPatternListById(list.id);
     expect(stored?.shareCode).toBeUndefined();
     expect(stored?.readonly).toBeUndefined();

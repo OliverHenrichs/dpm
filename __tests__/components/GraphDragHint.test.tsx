@@ -7,7 +7,7 @@ import {
   screen,
 } from "@/utils/renderWithProviders";
 
-const HINT = "Hold a pattern for a moment, then drag to move it.";
+const HINT = "Hold a figure for a moment, then drag to move it.";
 
 const renderHint = (visible = true) =>
   renderWithProviders(<GraphDragHint visible={visible} />);

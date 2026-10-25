@@ -148,7 +148,7 @@ describe("SubscribeListModal", () => {
       await waitFor(() =>
         expect(screen.getByText("Shared Salsa")).toBeOnTheScreen(),
       );
-      expect(screen.getByText("1 patterns")).toBeOnTheScreen();
+      expect(screen.getByText("1 figures")).toBeOnTheScreen();
     });
 
     it("hands the fetched list over on confirmation", async () => {
@@ -200,7 +200,7 @@ describe("SubscribeListModal", () => {
       await waitFor(() =>
         expect(
           screen.getByText(
-            "You are the publisher of this list — it is already in your library.",
+            "You own this list — it is already in your library.",
           ),
         ).toBeOnTheScreen(),
       );
@@ -373,7 +373,7 @@ describe("SubscribeListModal", () => {
       await waitFor(() =>
         expect(
           screen.getByText(
-            "You are the publisher of this list — it is already in your library.",
+            "You own this list — it is already in your library.",
           ),
         ).toBeOnTheScreen(),
       );

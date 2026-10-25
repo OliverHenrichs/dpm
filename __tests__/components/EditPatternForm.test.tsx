@@ -137,7 +137,7 @@ describe("EditPatternForm prerequisite picker", () => {
     renderForm(patterns, patterns[0]);
 
     expect(
-      screen.getByText("Greyed-out patterns would create a prerequisite loop."),
+      screen.getByText("Greyed-out figures would create a prerequisite loop."),
     ).toBeOnTheScreen();
   });
 
@@ -220,7 +220,7 @@ describe("EditPatternForm prerequisite picker", () => {
 
     expect(
       screen.queryByText(
-        "Greyed-out patterns would create a prerequisite loop.",
+        "Greyed-out figures would create a prerequisite loop.",
       ),
     ).toBeNull();
   });
@@ -239,7 +239,7 @@ describe("EditPatternForm save", () => {
       />,
     );
     const save = () => screen.getByRole("button", { name: "Save" });
-    const hint = "Give the pattern a name to save it.";
+    const hint = "Give the figure a name to save it.";
 
     expect(save().props.accessibilityState?.disabled).toBe(true);
     expect(screen.queryByText(hint)).toBeNull();
@@ -249,10 +249,10 @@ describe("EditPatternForm save", () => {
     expect(onAccepted).not.toHaveBeenCalled();
 
     // Blank space is not a name.
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "  ");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "  ");
     expect(save().props.accessibilityState?.disabled).toBe(true);
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "Whip");
     expect(save().props.accessibilityState?.disabled).toBe(false);
     expect(screen.queryByText(hint)).toBeNull();
     fireEvent.press(save());
@@ -279,7 +279,7 @@ describe("EditPatternForm level", () => {
     fireEvent.press(chipFor("Beginner"));
     expect(isSelected("Beginner")).toBe(false);
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "Whip");
     fireEvent.press(screen.getByText("Save"));
 
     await waitFor(() => expect(onAccepted).toHaveBeenCalled());
@@ -301,7 +301,7 @@ describe("EditPatternForm rhythm", () => {
       />,
       lists,
     );
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "Whip");
     openSection("Rhythm");
     return onAccepted;
   }
@@ -384,7 +384,7 @@ describe("EditPatternForm new type", () => {
         onAddType={onAddType}
       />,
     );
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "Whip");
 
     fireEvent.press(screen.getByText("New type"));
     fireEvent.changeText(screen.getByLabelText("Type name"), "pass");
@@ -435,7 +435,7 @@ describe("EditPatternForm composing a rhythm", () => {
         onCancel={noop}
       />,
     );
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "Whip");
     openSection("Rhythm");
 
     for (const step of ["1", "2", "3&4", "5", "6", "7a8"]) {

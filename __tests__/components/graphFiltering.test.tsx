@@ -35,12 +35,12 @@ async function renderGraph(patterns: IPattern[] = PATTERNS) {
     lists: [list],
     patterns: { [list.id]: patterns },
   });
-  await screen.findByLabelText("Filter Patterns");
+  await screen.findByLabelText("Filter Figures");
   return { list };
 }
 
 const applyNameFilter = async (name: string) => {
-  fireEvent.press(screen.getByLabelText("Filter Patterns"));
+  fireEvent.press(screen.getByLabelText("Filter Figures"));
   const input = await screen.findByPlaceholderText("Search by name...");
   fireEvent.changeText(input, name);
   fireEvent.press(screen.getByText("Apply"));
@@ -51,13 +51,13 @@ describe("filtering the graph", () => {
     it("is offered in the graph header", async () => {
       await renderGraph();
 
-      expect(screen.getByLabelText("Filter Patterns")).toBeOnTheScreen();
+      expect(screen.getByLabelText("Filter Figures")).toBeOnTheScreen();
     });
 
     it("opens the shared filter sheet", async () => {
       await renderGraph();
 
-      fireEvent.press(screen.getByLabelText("Filter Patterns"));
+      fireEvent.press(screen.getByLabelText("Filter Figures"));
 
       expect(
         await screen.findByPlaceholderText("Search by name..."),
@@ -67,7 +67,7 @@ describe("filtering the graph", () => {
     it("offers the chain modes, and no fourth one", async () => {
       await renderGraph();
 
-      fireEvent.press(screen.getByLabelText("Filter Patterns"));
+      fireEvent.press(screen.getByLabelText("Filter Figures"));
 
       expect(await screen.findByText("Matches only")).toBeOnTheScreen();
       expect(screen.getByText("Path to")).toBeOnTheScreen();
@@ -77,7 +77,7 @@ describe("filtering the graph", () => {
     it("starts on the path-to mode", async () => {
       await renderGraph();
 
-      fireEvent.press(screen.getByLabelText("Filter Patterns"));
+      fireEvent.press(screen.getByLabelText("Filter Figures"));
 
       expect(
         await screen.findByRole("button", { name: "Path to", selected: true }),
@@ -106,7 +106,7 @@ describe("filtering the graph", () => {
     it("follows the chain mode", async () => {
       await renderGraph();
 
-      fireEvent.press(screen.getByLabelText("Filter Patterns"));
+      fireEvent.press(screen.getByLabelText("Filter Figures"));
       fireEvent.press(await screen.findByLabelText("Matches only"));
       fireEvent.changeText(
         screen.getByPlaceholderText("Search by name..."),
@@ -145,7 +145,7 @@ describe("filtering the graph", () => {
       await applyNameFilter("Tuck Turn");
 
       expect(
-        await screen.findByText("No patterns match this filter"),
+        await screen.findByText("No figures match this filter"),
       ).toBeOnTheScreen();
     });
 
@@ -154,7 +154,7 @@ describe("filtering the graph", () => {
 
       expect(
         screen.getByText(
-          "The map shows which patterns build on which. Add patterns in the List tab and pick their prerequisites.",
+          "The map shows which figures build on which. Add figures in the List tab and pick their prerequisites.",
         ),
       ).toBeOnTheScreen();
     });

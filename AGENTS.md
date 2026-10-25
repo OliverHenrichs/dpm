@@ -114,6 +114,10 @@ inherit a stranger's position.
   key/value), `en` first. `__tests__/unit/i18n.test.ts` fails on a missing key, an empty value, a
   mismatched `{{placeholder}}` set, or a `t("…")` with no key behind it. The dev-only gallery is
   the one untranslated screen.
+- **"Figure" on screen, `pattern` in code.** User-facing text calls a pattern a _figure_ (de
+  _Figur_, es/pt _figura_, fr _figure_, ar حركة; zh, hi and bn keep their own word), matching the
+  website. Keys, types, ids and storage keep `pattern`, as does the app's name, Dance Pattern Mapper.
+  The person who publishes a list is its _list owner_.
 - **UI primitives.** Touchables and text come from `@/src/common/ui` (`Button`, `IconButton`,
   `Chip`, `Card`, `ListRow`, `AppText`, …), not raw `TouchableOpacity`/`Text`.
 - **Styles.** Unistyles sheets at module level, `StyleSheet.create((theme) => …)` from
@@ -141,7 +145,7 @@ inherit a stranger's position.
 
 ## On-device video tools (Android only for now)
 
-Edit Pattern → Videos → **Edit video** (`src/anonymize/components/VideoEditPanel.tsx`) offers
+Edit Figure → Videos → **Edit video** (`src/anonymize/components/VideoEditPanel.tsx`) offers
 _Shorten_, _Anonymize_ (a silhouette) and _Transcribe speech_; the transcript sheet offers _Suggest
 name and description_. Settings → _On-device models_ downloads and deletes the models. Everything
 heavy runs through one queue, `jobStore`, one job at a time, because the phone cannot hold two

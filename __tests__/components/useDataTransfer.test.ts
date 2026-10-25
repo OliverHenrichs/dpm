@@ -93,7 +93,7 @@ describe("useDataTransfer", () => {
       act(() => result.current.handleExportButtonPress());
 
       expect(result.current.showExportModal).toBe(false);
-      expect(result.current.dialog?.message).toBe("No pattern lists to export");
+      expect(result.current.dialog?.message).toBe("No figure lists to export");
     });
 
     it("opens the picker when there is something to export", async () => {
@@ -197,7 +197,7 @@ describe("useDataTransfer", () => {
 
       expect(result.current.showImportModal).toBe(false);
       expect(result.current.dialog?.message).toBe(
-        "The file is not a pattern list export.",
+        "The file is not a figure list export.",
       );
     });
   });

@@ -85,7 +85,7 @@ describe("PatternVideos", () => {
       thumbnails: ["", ""],
     });
 
-    fireEvent.press(screen.getAllByLabelText("Remove video from pattern")[1]);
+    fireEvent.press(screen.getAllByLabelText("Remove video from figure")[1]);
     expect(onRemoveVideo).toHaveBeenCalledWith(1);
   });
 
@@ -98,7 +98,7 @@ describe("PatternVideos", () => {
     });
 
     expect(screen.queryByLabelText("Edit video 1")).toBeNull();
-    expect(screen.getAllByLabelText("Remove video from pattern")).toHaveLength(
+    expect(screen.getAllByLabelText("Remove video from figure")).toHaveLength(
       2,
     );
     fireEvent.press(screen.getByLabelText("Edit video 2"));

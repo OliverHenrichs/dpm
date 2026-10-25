@@ -100,10 +100,10 @@ async function renderManager(
   );
   // The provider loads storage on mount; wait for the screen to reflect it.
   // Anchor on the sort button: it is present whether or not the list is
-  // read-only, and unlike "Pattern List" it appears exactly once (that string
+  // read-only, and unlike "Figure List" it appears exactly once (that string
   // is both the tab label and the section heading).
   await waitFor(() =>
-    expect(screen.getByLabelText("Sort Patterns")).toBeOnTheScreen(),
+    expect(screen.getByLabelText("Sort Figures")).toBeOnTheScreen(),
   );
   // The list and its patterns load from separate keys, so the sort button can
   // be up while the rows are not. Anchor on a row too when one is expected.
@@ -118,10 +118,10 @@ const mockedPicker = ImagePicker.launchImageLibraryAsync as jest.MockedFunction<
   typeof ImagePicker.launchImageLibraryAsync
 >;
 
-/** '+' opens a menu; "New pattern" is the plain add form. */
+/** '+' opens a menu; "New figure" is the plain add form. */
 const openAddForm = () => {
-  fireEvent.press(screen.getByLabelText("Add Pattern"));
-  fireEvent.press(screen.getByText("New pattern"));
+  fireEvent.press(screen.getByLabelText("Add Figure"));
+  fireEvent.press(screen.getByText("New figure"));
 };
 
 const storedList = async (listId: string): Promise<IPatternList> => {
@@ -141,7 +141,7 @@ describe("PatternListManager", () => {
       renderWithProviders(<PatternListManager />);
 
       await waitFor(() =>
-        expect(screen.getByText("No pattern lists yet")).toBeOnTheScreen(),
+        expect(screen.getByText("No figure lists yet")).toBeOnTheScreen(),
       );
     });
   });
@@ -161,7 +161,7 @@ describe("PatternListManager", () => {
       expect(screen.queryByText("Sugar Push")).toBeNull();
       expect(screen.getByText("with a spin")).toBeOnTheScreen();
 
-      fireEvent.press(screen.getAllByText("Pattern List")[0]);
+      fireEvent.press(screen.getAllByText("Figure List")[0]);
       expect(screen.getByText("Sugar Push")).toBeOnTheScreen();
     });
 
@@ -185,7 +185,7 @@ describe("PatternListManager", () => {
         pattern(2, "Whip", { prerequisites: [1] }),
       ]);
 
-      fireEvent.press(screen.getAllByLabelText("Delete Pattern")[0]);
+      fireEvent.press(screen.getAllByLabelText("Delete Figure")[0]);
       fireEvent.press(screen.getByText("Delete"));
 
       await waitFor(async () => {
@@ -198,7 +198,7 @@ describe("PatternListManager", () => {
     it("leaves the list alone when the dialog is cancelled", async () => {
       const { list } = await renderManager([pattern(1, "Sugar Push")]);
 
-      fireEvent.press(screen.getByLabelText("Delete Pattern"));
+      fireEvent.press(screen.getByLabelText("Delete Figure"));
       fireEvent.press(screen.getByText("Cancel"));
 
       expect(await storedPatterns(list.id)).toHaveLength(1);
@@ -212,7 +212,7 @@ describe("PatternListManager", () => {
 
       openAddForm();
       fireEvent.changeText(
-        screen.getByPlaceholderText("Pattern Name"),
+        screen.getByPlaceholderText("Figure Name"),
         "Sugar Push",
       );
       fireEvent.press(screen.getByText("Save"));
@@ -231,7 +231,7 @@ describe("PatternListManager", () => {
       // Save is greyed out without a name; a tap only explains why.
       fireEvent.press(screen.getByText("Save"));
       expect(
-        screen.getByText("Give the pattern a name to save it."),
+        screen.getByText("Give the figure a name to save it."),
       ).toBeOnTheScreen();
       // Should a blank name reach the screen anyway, it refuses it.
       const form = screen.UNSAFE_getByType(EditPatternForm);
@@ -241,7 +241,7 @@ describe("PatternListManager", () => {
 
       expect(await storedPatterns(list.id)).toEqual([]);
       // Still showing the form rather than silently discarding the attempt.
-      expect(screen.getByPlaceholderText("Pattern Name")).toBeOnTheScreen();
+      expect(screen.getByPlaceholderText("Figure Name")).toBeOnTheScreen();
     });
   });
 
@@ -353,9 +353,9 @@ describe("PatternListManager", () => {
     it("offers both ways to add behind '+'", async () => {
       await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByLabelText("Add Figure"));
 
-      expect(screen.getByText("New pattern")).toBeOnTheScreen();
+      expect(screen.getByText("New figure")).toBeOnTheScreen();
       expect(screen.getByText("From a video")).toBeOnTheScreen();
     });
 
@@ -367,9 +367,9 @@ describe("PatternListManager", () => {
       } as never);
       const { list } = await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByLabelText("Add Figure"));
       fireEvent.press(screen.getByText("From a video"));
-      const name = await screen.findByPlaceholderText("Pattern Name");
+      const name = await screen.findByPlaceholderText("Figure Name");
       fireEvent.changeText(name, "Sugar Push");
       fireEvent.press(screen.getByText("Save"));
 
@@ -390,10 +390,10 @@ describe("PatternListManager", () => {
         assets: [{ uri: "file:///cache/ImagePicker/clip.mp4" }],
       } as never);
       const rendered = await renderManager([]);
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByLabelText("Add Figure"));
       fireEvent.press(screen.getByText("From a video"));
       fireEvent.changeText(
-        await screen.findByPlaceholderText("Pattern Name"),
+        await screen.findByPlaceholderText("Figure Name"),
         "Sugar Push",
       );
       return rendered;
@@ -455,10 +455,10 @@ describe("PatternListManager", () => {
       });
       const { list } = await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByLabelText("Add Figure"));
       fireEvent.press(screen.getByText("Record a video"));
       fireEvent.changeText(
-        await screen.findByPlaceholderText("Pattern Name"),
+        await screen.findByPlaceholderText("Figure Name"),
         "Sugar Push",
       );
       fireEvent.press(screen.getByText("Save"));
@@ -477,14 +477,14 @@ describe("PatternListManager", () => {
       ).mockResolvedValueOnce({ granted: false });
       await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByLabelText("Add Figure"));
       fireEvent.press(screen.getByText("Record a video"));
 
       expect(
         await screen.findByText("Camera permission denied"),
       ).toBeOnTheScreen();
       expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
-      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+      expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
 
       fireEvent.press(screen.getByText("OK"));
       expect(screen.queryByText("Camera permission denied")).toBeNull();
@@ -494,11 +494,11 @@ describe("PatternListManager", () => {
       mockedPicker.mockResolvedValue({ canceled: true } as never);
       await renderManager([]);
 
-      fireEvent.press(screen.getByLabelText("Add Pattern"));
+      fireEvent.press(screen.getByLabelText("Add Figure"));
       fireEvent.press(screen.getByText("From a video"));
 
       await waitFor(() => expect(mockedPicker).toHaveBeenCalled());
-      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+      expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
     });
   });
 
@@ -516,7 +516,7 @@ describe("PatternListManager", () => {
       const { list } = await renderManager([]);
 
       fireEvent.changeText(
-        await screen.findByPlaceholderText("Pattern Name"),
+        await screen.findByPlaceholderText("Figure Name"),
         "Whip",
       );
       fireEvent.press(screen.getByText("Save"));
@@ -536,7 +536,7 @@ describe("PatternListManager", () => {
     it("opens nothing in a read-only list", async () => {
       await renderManager([], { readonly: true });
 
-      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+      expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
       expect(router.setParams).toHaveBeenCalled();
     });
   });
@@ -545,10 +545,10 @@ describe("PatternListManager", () => {
     it("opens the form pre-filled from the row", async () => {
       await renderManager([pattern(1, "Sugar Push", { counts: 6 })]);
 
-      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      fireEvent.press(screen.getByLabelText("Edit Figure"));
 
-      expect(screen.getByText("Edit Pattern")).toBeOnTheScreen();
-      expect(screen.getByPlaceholderText("Pattern Name").props.value).toBe(
+      expect(screen.getByText("Edit Figure")).toBeOnTheScreen();
+      expect(screen.getByPlaceholderText("Figure Name").props.value).toBe(
         "Sugar Push",
       );
     });
@@ -556,9 +556,9 @@ describe("PatternListManager", () => {
     it("persists the change", async () => {
       const { list } = await renderManager([pattern(1, "Sugar Push")]);
 
-      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      fireEvent.press(screen.getByLabelText("Edit Figure"));
       fireEvent.changeText(
-        screen.getByPlaceholderText("Pattern Name"),
+        screen.getByPlaceholderText("Figure Name"),
         "Sugar Tuck",
       );
       fireEvent.press(screen.getByText("Save"));
@@ -575,8 +575,8 @@ describe("PatternListManager", () => {
         pattern(1, "Sugar Push", { counts: 6 }),
       ]);
 
-      fireEvent.press(screen.getByLabelText("Edit Pattern"));
-      fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "");
+      fireEvent.press(screen.getByLabelText("Edit Figure"));
+      fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "");
       fireEvent.press(screen.getByText("Save"));
       // Should a blank name reach the screen anyway, it refuses it.
       const form = screen.UNSAFE_getByType(EditPatternForm);
@@ -596,9 +596,9 @@ describe("PatternListManager", () => {
     it("closes without saving when cancelled", async () => {
       const { list } = await renderManager([pattern(1, "Sugar Push")]);
 
-      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      fireEvent.press(screen.getByLabelText("Edit Figure"));
       fireEvent.changeText(
-        screen.getByPlaceholderText("Pattern Name"),
+        screen.getByPlaceholderText("Figure Name"),
         "Discarded",
       );
       fireEvent.press(screen.getByText("Cancel"));
@@ -614,10 +614,10 @@ describe("PatternListManager", () => {
       ]);
 
       // Selecting expands the row into its details.
-      fireEvent.press(screen.getByHintText("Select Pattern"));
+      fireEvent.press(screen.getByHintText("Select Figure"));
       expect(screen.getByText("The basic")).toBeOnTheScreen();
 
-      fireEvent.press(screen.getByLabelText("Delete Pattern"));
+      fireEvent.press(screen.getByLabelText("Delete Figure"));
       fireEvent.press(screen.getByText("Delete"));
 
       // Wait on the authoritative outcome — the write — then assert the UI
@@ -718,10 +718,10 @@ describe("PatternListManager", () => {
       await renderManager([]);
 
       openAddForm();
-      expect(screen.getByPlaceholderText("Pattern Name")).toBeOnTheScreen();
+      expect(screen.getByPlaceholderText("Figure Name")).toBeOnTheScreen();
       fireEvent.press(screen.getByText("Cancel"));
 
-      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+      expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
     });
 
     it("closes the add-pattern form on the system back button", async () => {
@@ -730,16 +730,16 @@ describe("PatternListManager", () => {
       openAddForm();
       pressSystemBack();
 
-      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+      expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
     });
 
     it("closes the edit-pattern form on the system back button", async () => {
       await renderManager([pattern(1, "Sugar Push")]);
 
-      fireEvent.press(screen.getByLabelText("Edit Pattern"));
+      fireEvent.press(screen.getByLabelText("Edit Figure"));
       pressSystemBack();
 
-      expect(screen.queryByPlaceholderText("Pattern Name")).toBeNull();
+      expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
     });
 
     it("closes the add-modifier form on cancel", async () => {
@@ -787,9 +787,9 @@ describe("PatternListManager", () => {
     it("hides every mutating affordance", async () => {
       await renderManager([pattern(1, "Sugar Push")], { readonly: true });
 
-      expect(screen.queryByLabelText("Add Pattern")).toBeNull();
-      expect(screen.queryByLabelText("Edit Pattern")).toBeNull();
-      expect(screen.queryByLabelText("Delete Pattern")).toBeNull();
+      expect(screen.queryByLabelText("Add Figure")).toBeNull();
+      expect(screen.queryByLabelText("Edit Figure")).toBeNull();
+      expect(screen.queryByLabelText("Delete Figure")).toBeNull();
     });
 
     it("still shows the patterns", async () => {

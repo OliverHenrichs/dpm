@@ -94,7 +94,7 @@ describe("Put online", () => {
   it("is not offered in a read-only list", async () => {
     renderForm(whip(), true);
     await waitFor(() =>
-      expect(screen.getByText("Edit Pattern")).toBeOnTheScreen(),
+      expect(screen.getByText("Edit Figure")).toBeOnTheScreen(),
     );
     expect(screen.queryByLabelText("Put video 1 online")).toBeNull();
   });
@@ -243,7 +243,7 @@ describe("a video shared to DPM", () => {
 
   it("opens the add form for a new pattern with it", async () => {
     renderSheet({ kind: "link", url: LINK });
-    fireEvent.press(await screen.findByText("New pattern"));
+    fireEvent.press(await screen.findByText("New figure"));
 
     await waitFor(() =>
       expect(router.navigate).toHaveBeenCalledWith({

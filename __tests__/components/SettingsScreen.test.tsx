@@ -285,9 +285,7 @@ describe("SettingsScreen", () => {
       fireEvent.press(screen.getByText("Export / Share"));
 
       await waitFor(() =>
-        expect(
-          screen.getByText("No pattern lists to export"),
-        ).toBeOnTheScreen(),
+        expect(screen.getByText("No figure lists to export")).toBeOnTheScreen(),
       );
     });
   });
@@ -325,7 +323,7 @@ describe("SettingsScreen", () => {
       fireEvent.press(screen.getByText("Import"));
 
       await waitFor(() =>
-        expect(screen.getByText("Import Pattern Lists")).toBeOnTheScreen(),
+        expect(screen.getByText("Import Figure Lists")).toBeOnTheScreen(),
       );
       // The conflicting row offers Skip as the chosen action.
       const isSelected = (label: string) =>
@@ -346,7 +344,7 @@ describe("SettingsScreen", () => {
       fireEvent.press(screen.getByText("Import"));
 
       await waitFor(() => expect(mockedImport).toHaveBeenCalled());
-      expect(screen.queryByText("Import Pattern Lists")).toBeNull();
+      expect(screen.queryByText("Import Figure Lists")).toBeNull();
     });
 
     it("reports an unreadable file", async () => {
@@ -361,7 +359,7 @@ describe("SettingsScreen", () => {
 
       await waitFor(() =>
         expect(
-          screen.getByText("The file is not a pattern list export."),
+          screen.getByText("The file is not a figure list export."),
         ).toBeOnTheScreen(),
       );
     });
