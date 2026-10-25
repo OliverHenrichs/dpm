@@ -84,6 +84,11 @@ export interface ISuggestionPolicy {
   dailyLimit: number;
   /** `list`: one limit shared by every subscriber; `subscriber`: each gets the limit. */
   per: "list" | "subscriber";
+  /**
+   * Whether subscribers may also suggest changes to existing figures (`figureEdits.ts`). They
+   * count against the same daily limit. Absent means new figures only.
+   */
+  edits?: true;
 }
 
 /**

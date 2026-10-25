@@ -49,6 +49,8 @@ type PatternListProps = {
   /** Scrolls this pattern into view whenever the value changes. */
   reveal?: { id: number; at: number };
   onEdit: (pattern: IPattern) => void;
+  /** Suggesting a change to a figure of a subscribed list (`PatternListItem`). */
+  onSuggestEdit?: (pattern: IPattern) => void;
   /** More actions in the header, before the lock or '+' (pattern suggestions). */
   headerActions?: React.ReactNode;
 };
@@ -162,6 +164,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           compact={compactList}
           onSelect={props.onSelect}
           onEdit={props.onEdit}
+          onSuggestEdit={props.onSuggestEdit}
           onDelete={props.onDelete}
         />
       ),
@@ -172,6 +175,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
       props.selectedPattern?.id,
       props.onSelect,
       props.onEdit,
+      props.onSuggestEdit,
       props.onDelete,
       isReadonly,
       compactList,

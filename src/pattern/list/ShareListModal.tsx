@@ -285,6 +285,17 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                         changePolicy({ ...policy, per })
                       }
                     />
+                    <SwitchRow
+                      title={t("allowEditSuggestions")}
+                      description={t("allowEditSuggestionsHint")}
+                      value={!!policy.edits}
+                      disabled={isLoading}
+                      onValueChange={(on) => {
+                        // Off removes the key: Firestore refuses undefined.
+                        const { edits: _edits, ...rest } = policy;
+                        changePolicy(on ? { ...rest, edits: true } : rest);
+                      }}
+                    />
                   </>
                 )}
               </View>

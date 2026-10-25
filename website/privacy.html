@@ -35,7 +35,7 @@
     </header>
     <main class="wrap prose">
 <h1>Privacy Policy — DancePatternMapper (DPM)</h1>
-<p><strong>Last updated: October 17, 2026</strong></p>
+<p><strong>Last updated: October 25, 2026</strong></p>
 <hr>
 <h2>1. Who we are</h2>
 <p><strong>App name:</strong> DancePatternMapper (DPM)<br>
@@ -139,7 +139,7 @@
 </tbody>
 </table>
 <p><strong>Anonymous sign-in.</strong> The first time you publish, suggest a pattern to a list you subscribe to, or ask to join a members-only list, the app signs in to <strong>Google Firebase Authentication</strong> anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists, or a member of the lists you joined. Subscribing to an open list on its own never signs in.</p>
-<p><strong>Pattern suggestions.</strong> A publisher can let the subscribers of a list suggest new patterns. When you <strong>send a suggestion</strong>, the following is stored in Firestore under the list:</p>
+<p><strong>Pattern suggestions.</strong> A publisher can let the subscribers of a list suggest new patterns, and changes to the patterns already in it. When you <strong>send a suggestion</strong>, the following is stored in Firestore under the list:</p>
 <table>
 <thead>
 <tr>
@@ -149,8 +149,8 @@
 </thead>
 <tbody>
 <tr>
-<td>The suggested pattern (name, type, counts, rhythm, level, description, tags, prerequisites, modifiers, and video URLs; never local video files or transcripts)</td>
-<td>Letting the publisher review it and add it to the list</td>
+<td>The suggested pattern (name, type, counts, rhythm, level, description, tags, prerequisites, modifiers, and video URLs, with a mark on a video the app anonymized; never local video files or transcripts). For a change, also the pattern as your copy had it</td>
+<td>Letting the publisher review it and add it to the list, or apply some or all of a change</td>
 </tr>
 <tr>
 <td>Your anonymous user ID, and the name you sign it with if you enter one</td>

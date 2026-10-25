@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 17, 2026**
+**Last updated: October 25, 2026**
 
 ---
 
@@ -65,13 +65,13 @@ When you choose to **publish a pattern list**, the following is sent to and stor
 
 **Anonymous sign-in.** The first time you publish, suggest a pattern to a list you subscribe to, or ask to join a members-only list, the app signs in to **Google Firebase Authentication** anonymously. This creates a random user ID for your installation of the app, with no name, email address, phone number or password attached, and Firebase records when it was created and last used. The ID is kept on your phone so you stay the owner of your lists, or a member of the lists you joined. Subscribing to an open list on its own never signs in.
 
-**Pattern suggestions.** A publisher can let the subscribers of a list suggest new patterns. When you **send a suggestion**, the following is stored in Firestore under the list:
+**Pattern suggestions.** A publisher can let the subscribers of a list suggest new patterns, and changes to the patterns already in it. When you **send a suggestion**, the following is stored in Firestore under the list:
 
-| Data                                                                                                                                                           | Purpose                                                                                                     |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| The suggested pattern (name, type, counts, rhythm, level, description, tags, prerequisites, modifiers, and video URLs; never local video files or transcripts) | Letting the publisher review it and add it to the list                                                      |
-| Your anonymous user ID, and the name you sign it with if you enter one                                                                                         | Showing the publisher who sent it, counting the publisher's daily limit, and letting the publisher mute you |
-| When it was sent, and a count of suggestions sent that day                                                                                                     | Enforcing the publisher's daily limit                                                                       |
+| Data                                                                                                                                                                                                                                                          | Purpose                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| The suggested pattern (name, type, counts, rhythm, level, description, tags, prerequisites, modifiers, and video URLs, with a mark on a video the app anonymized; never local video files or transcripts). For a change, also the pattern as your copy had it | Letting the publisher review it and add it to the list, or apply some or all of a change                    |
+| Your anonymous user ID, and the name you sign it with if you enter one                                                                                                                                                                                        | Showing the publisher who sent it, counting the publisher's daily limit, and letting the publisher mute you |
+| When it was sent, and a count of suggestions sent that day                                                                                                                                                                                                    | Enforcing the publisher's daily limit                                                                       |
 
 Only the publisher of the list can read suggestions. If the publisher **mutes** a subscriber, a record of that subscriber's anonymous user ID and the name they signed with is kept under the list, readable by the publisher and by that subscriber's app.
 

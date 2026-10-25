@@ -24,7 +24,19 @@ import {
   PatternSuggestion,
   unmuteSubscriber,
 } from "@/src/firebase/PatternSuggestionService";
-import { patternFromSuggestion } from "@/src/pattern/suggestions/suggestions";
+import {
+  isObject,
+  patternFromSuggestion,
+} from "@/src/pattern/suggestions/suggestions";
+import {
+  ChangeLine,
+  figureChanges,
+} from "@/src/pattern/suggestions/figureEdits";
+import SuggestedEditReview from "@/src/pattern/suggestions/SuggestedEditReview";
+
+/** A figure's name from another phone's snapshot, for a figure no longer in the list. */
+const nameOf = (raw: unknown) =>
+  isObject(raw) && typeof raw.name === "string" ? raw.name : "?";
 import { useMutedSubscribers } from "@/src/pattern/suggestions/useListSuggestions";
 
 interface SuggestionsModalProps {
@@ -38,12 +50,15 @@ interface SuggestionsModalProps {
   onClose: () => void;
   /** Adds the reviewed pattern to the list (`usePatternCrud.addPattern`); false keeps the form. */
   onAccept: (pattern: NewPattern) => Promise<boolean>;
+  /** Saves a figure with a suggested change applied (`usePatternCrud.editPattern`). */
+  onApplyEdit: (figure: IPattern) => Promise<boolean>;
 }
 
 /**
- * The publisher's review of what subscribers suggested: add one (through the pattern form,
- * seeded with the suggestion, so it can be corrected first), dismiss it, or mute whoever sent
- * it. Muted subscribers are listed below, each with a way back.
+ * The list owner's review of what subscribers suggested: add a new figure (through the figure
+ * form, seeded with the suggestion, so it can be corrected first), apply some or all of a
+ * change to a figure (`SuggestedEditReview`), dismiss either, or mute whoever sent it. Muted
+ * subscribers are listed below, each with a way back.
  */
 const SuggestionsModal: React.FC<SuggestionsModalProps> = (props) =>
   props.visible ? <SuggestionsBody {...props} /> : null;
@@ -56,6 +71,7 @@ const SuggestionsBody: React.FC<SuggestionsModalProps> = ({
   suggestions,
   onClose,
   onAccept,
+  onApplyEdit,
 }) => {
   const { t, i18n } = useTranslation();
   const muted = useMutedSubscribers(list);
@@ -63,6 +79,11 @@ const SuggestionsBody: React.FC<SuggestionsModalProps> = ({
   const [reviewing, setReviewing] = useState<{
     suggestion: PatternSuggestion;
     pattern: NewPattern;
+  } | null>(null);
+  const [reviewingEdit, setReviewingEdit] = useState<{
+    suggestion: PatternSuggestion;
+    figure: IPattern;
+    lines: ChangeLine[];
   } | null>(null);
   const [muteTarget, setMuteTarget] = useState<PatternSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +111,33 @@ const SuggestionsBody: React.FC<SuggestionsModalProps> = ({
     await run(() => deleteSuggestion(list, suggestion.id));
     return true;
   };
+
+  if (reviewingEdit) {
+    const { suggestion, figure, lines } = reviewingEdit;
+    return (
+      <SuggestedEditReview
+        figure={figure}
+        lines={lines}
+        author={authorOf(suggestion)}
+        patterns={patterns}
+        patternTypes={patternTypes}
+        modifiers={modifiers}
+        onApply={async (edited) => {
+          const applied = await onApplyEdit(edited);
+          if (!applied) return false;
+          setReviewingEdit(null);
+          // What was not applied is rejected with it: a suggestion is answered once.
+          await run(() => deleteSuggestion(list, suggestion.id));
+          return true;
+        }}
+        onReject={() => {
+          setReviewingEdit(null);
+          run(() => deleteSuggestion(list, suggestion.id));
+        }}
+        onClose={() => setReviewingEdit(null)}
+      />
+    );
+  }
 
   if (reviewing) {
     return (
@@ -143,28 +191,96 @@ const SuggestionsBody: React.FC<SuggestionsModalProps> = ({
               <Text style={styles.hint}>{t("suggestionsEmpty")}</Text>
             )}
             {suggestions.map((suggestion) => {
-              const pattern = patternFromSuggestion(
-                suggestion.pattern,
-                list,
-                patterns,
-              );
-              const type = patternTypes.find((pt) => pt.id === pattern?.typeId);
               const when = suggestion.createdAt
                 ? new Date(suggestion.createdAt).toLocaleDateString(
                     i18n.language,
                     { day: "numeric", month: "short" },
                   )
                 : "";
+              const actions = (review?: () => void) => (
+                <View style={styles.actions}>
+                  {review && (
+                    <Button
+                      title={t("suggestionReview")}
+                      size="sm"
+                      onPress={review}
+                    />
+                  )}
+                  <Button
+                    title={t("suggestionDismiss")}
+                    size="sm"
+                    variant="ghost"
+                    onPress={() =>
+                      run(() => deleteSuggestion(list, suggestion.id))
+                    }
+                  />
+                  {suggestion.authorUid &&
+                    !mutedIds.has(suggestion.authorUid) && (
+                      <Button
+                        title={t("suggestionMute")}
+                        size="sm"
+                        variant="dangerGhost"
+                        onPress={() => setMuteTarget(suggestion)}
+                      />
+                    )}
+                </View>
+              );
+              const from = (
+                <Text style={styles.meta}>
+                  {[t("suggestionFrom", { name: authorOf(suggestion) }), when]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+              );
+
+              if (suggestion.edit) {
+                const figure = patterns.find(
+                  (p) => p.id === suggestion.edit?.patternId,
+                );
+                const lines = figure
+                  ? figureChanges(
+                      suggestion.edit.base,
+                      suggestion.pattern,
+                      figure,
+                      list,
+                      patterns,
+                    )
+                  : [];
+                const status = !figure
+                  ? t("suggestionEditGone")
+                  : lines.length === 0
+                    ? t("suggestionEditDone")
+                    : t("suggestionEditCount", { count: lines.length });
+                return (
+                  <Card key={suggestion.id} style={styles.suggestion}>
+                    <Text style={styles.name}>
+                      {t("suggestionEditTitle", {
+                        name: figure?.name ?? nameOf(suggestion.edit.base),
+                      })}
+                    </Text>
+                    {from}
+                    <Text style={styles.meta}>{status}</Text>
+                    {actions(
+                      figure && lines.length > 0
+                        ? () => setReviewingEdit({ suggestion, figure, lines })
+                        : undefined,
+                    )}
+                  </Card>
+                );
+              }
+
+              const pattern = patternFromSuggestion(
+                suggestion.pattern,
+                list,
+                patterns,
+              );
+              const type = patternTypes.find((pt) => pt.id === pattern?.typeId);
               return (
                 <Card key={suggestion.id} style={styles.suggestion}>
                   <Text style={styles.name}>
                     {pattern?.name ?? t("suggestionUnreadable")}
                   </Text>
-                  <Text style={styles.meta}>
-                    {[t("suggestionFrom", { name: authorOf(suggestion) }), when]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </Text>
+                  {from}
                   {pattern && (
                     <Text style={styles.meta}>
                       {[type?.slug, t("countsSection", { n: pattern.counts })]
@@ -177,32 +293,11 @@ const SuggestionsBody: React.FC<SuggestionsModalProps> = ({
                       {pattern.description.trim()}
                     </Text>
                   )}
-                  <View style={styles.actions}>
-                    {pattern && (
-                      <Button
-                        title={t("suggestionReview")}
-                        size="sm"
-                        onPress={() => setReviewing({ suggestion, pattern })}
-                      />
-                    )}
-                    <Button
-                      title={t("suggestionDismiss")}
-                      size="sm"
-                      variant="ghost"
-                      onPress={() =>
-                        run(() => deleteSuggestion(list, suggestion.id))
-                      }
-                    />
-                    {suggestion.authorUid &&
-                      !mutedIds.has(suggestion.authorUid) && (
-                        <Button
-                          title={t("suggestionMute")}
-                          size="sm"
-                          variant="dangerGhost"
-                          onPress={() => setMuteTarget(suggestion)}
-                        />
-                      )}
-                  </View>
+                  {actions(
+                    pattern
+                      ? () => setReviewing({ suggestion, pattern })
+                      : undefined,
+                  )}
                 </Card>
               );
             })}

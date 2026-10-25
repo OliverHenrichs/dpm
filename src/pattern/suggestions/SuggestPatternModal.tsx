@@ -32,7 +32,16 @@ import {
 import {
   MAX_AUTHOR_NAME_LENGTH,
   MAX_SUGGESTED_NAME_LENGTH,
+  suggestedPattern,
 } from "@/src/pattern/suggestions/suggestions";
+
+/** Whether the form changed anything that a suggestion carries (local videos never go). */
+function changesFigure(figure: IPattern, edited: NewPattern | IPattern) {
+  return (
+    JSON.stringify(suggestedPattern(figure)) !==
+    JSON.stringify(suggestedPattern(edited))
+  );
+}
 
 interface SuggestPatternModalProps {
   visible: boolean;
@@ -41,12 +50,17 @@ interface SuggestPatternModalProps {
   patterns: IPattern[];
   patternTypes: PatternType[];
   modifiers: IModifier[];
+  /**
+   * The figure to suggest a change to (`canSuggestEditsTo`); without it, a new figure is
+   * suggested.
+   */
+  editing?: IPattern;
   onClose: () => void;
 }
 
 /**
- * A subscriber suggests a new pattern to the list's publisher: the pattern form, signed with a
- * name of their choosing. The limit and a mute are checked when it opens, so the form is not
+ * A subscriber suggests a new figure, or a change to one (`editing`), to the list owner: the
+ * figure form, signed with a name of their choosing. The limit and a mute are checked when it opens, so the form is not
  * offered when it could not be sent; the security rules decide in the end.
  */
 const SuggestPatternModal: React.FC<SuggestPatternModalProps> = (props) =>
@@ -64,9 +78,11 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
   patterns,
   patternTypes,
   modifiers,
+  editing,
   onClose,
 }) => {
   const { t } = useTranslation();
+  const title = editing ? t("suggestEdit") : t("suggestPattern");
   const { theme } = useUnistyles();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -115,14 +131,19 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
   const handleSubmit = async (pattern: NewPattern | IPattern) => {
     if (!policy || !shareCode) return false;
     setError(null);
+    if (editing && !changesFigure(editing, pattern)) {
+      setError(t("suggestEditNothing"));
+      return false;
+    }
     await setSuggesterName(name);
     try {
-      const result = await submitSuggestion(
-        shareCode,
-        policy,
-        pattern,
-        name || undefined,
-      );
+      const author = name || undefined;
+      const result = editing
+        ? await submitSuggestion(shareCode, policy, pattern, author, {
+            patternId: editing.id,
+            base: editing,
+          })
+        : await submitSuggestion(shareCode, policy, pattern, author);
       if (result === "sent") {
         setPhase({ kind: "sent" });
         return true;
@@ -159,15 +180,18 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
                 patterns={patterns}
                 patternTypes={patternTypes}
                 modifiers={modifiers}
+                existing={editing}
                 onAccepted={handleSubmit}
                 onCancel={onClose}
-                title={t("suggestPattern")}
+                title={title}
                 saveLabel={t("suggestSend")}
                 nameMaxLength={MAX_SUGGESTED_NAME_LENGTH}
                 header={
                   <View style={styles.header}>
                     <Text style={styles.hint}>
-                      {t("suggestIntro", { list: list.name })}
+                      {t(editing ? "suggestEditIntro" : "suggestIntro", {
+                        list: list.name,
+                      })}
                     </Text>
                     <Text style={styles.label}>{t("suggestYourName")}</Text>
                     <RevealTextInput
@@ -200,7 +224,7 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
       <AppDialog
         visible
         title={t("suggestSentTitle")}
-        message={t("suggestSentMessage")}
+        message={t(editing ? "suggestEditSentMessage" : "suggestSentMessage")}
         onClose={onClose}
       />
     );
@@ -210,7 +234,7 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
     <Modal visible animationType="fade" transparent onRequestClose={onClose}>
       <ModalOverlay>
         <View style={styles.card}>
-          <Text style={styles.title}>{t("suggestPattern")}</Text>
+          <Text style={styles.title}>{title}</Text>
           {phase.kind === "loading" ? (
             <ActivityIndicator
               size="large"
