@@ -7,6 +7,12 @@
 
 const { TAKEDOWN_OWNER } = require("../../data-removal/lib/model");
 
+/**
+ * The models a review can run on, as Claude Code's aliases (each the latest of
+ * its family); "" leaves the choice to Claude Code's own default.
+ */
+const REVIEW_MODELS = ["", "fable", "opus", "sonnet", "haiku"];
+
 /** What an agent review may recommend, and what the operator may decide. */
 const VERDICTS = ["uphold", "reject", "unclear"];
 const DECISIONS = ["uphold", "reject"];
@@ -217,6 +223,8 @@ function parseAgentOutput(stdout) {
   return {
     review: validateReview(review),
     costUsd: out.total_cost_usd ?? null,
+    // The full model names the session used, e.g. "claude-opus-5-5".
+    models: Object.keys(out.modelUsage ?? {}),
   };
 }
 
@@ -267,6 +275,7 @@ function looksLikeReportId(id) {
 }
 
 module.exports = {
+  REVIEW_MODELS,
   VERDICTS,
   DECISIONS,
   REVIEW_SCHEMA,

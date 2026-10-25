@@ -319,6 +319,10 @@
         </select>
       </label>
       <button id="refresh">Fetch now</button>
+      <label class="small"
+        >Model
+        <select id="model"></select>
+      </label>
       <label
         class="small row"
         title="Lets an agent check reports and draft replies. A review sends the report's text and the list (no email, no ids) to Anthropic."
@@ -456,6 +460,21 @@
           : "";
         document.getElementById("every").value = String(state.refreshMinutes);
         document.getElementById("agent").checked = state.agent;
+        const model = document.getElementById("model");
+        if (model.options.length !== state.models.length) {
+          model.replaceChildren(
+            ...state.models.map((m) =>
+              h(
+                "option",
+                { value: m },
+                m ||
+                  `default${state.defaultModel ? ` (${state.defaultModel})` : ""}`,
+              ),
+            ),
+          );
+        }
+        model.value = state.model;
+        model.disabled = !state.agent;
         document.getElementById("auto").checked = state.autoReview;
         document.getElementById("auto").disabled = !state.agent;
         const q = state.queue;
@@ -810,7 +829,7 @@
           h(
             "div",
             { className: "small muted", style: "margin-top:10px" },
-            `Recommended actions: ${v.actions.length ? v.actions.join(", ") : "none"} · reviewed ${ago(s.reviewedAt)}${s.costUsd != null ? ` · $${s.costUsd.toFixed(2)}` : ""}`,
+            `Recommended actions: ${v.actions.length ? v.actions.join(", ") : "none"} · reviewed ${ago(s.reviewedAt)}${s.models?.length ? ` by ${s.models.join(", ")}` : ""}${s.costUsd != null ? ` · $${s.costUsd.toFixed(2)}` : ""}`,
           ),
         );
         return panel;
@@ -1060,6 +1079,14 @@
         act(() =>
           call("POST", "/api/settings", {
             refreshMinutes: Number(document.getElementById("every").value),
+          }),
+        ),
+      );
+      document.getElementById("model").addEventListener(
+        "change",
+        act(() =>
+          call("POST", "/api/settings", {
+            model: document.getElementById("model").value,
           }),
         ),
       );

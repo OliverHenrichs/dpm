@@ -173,8 +173,13 @@ describe("parseAgentOutput", () => {
     const out = JSON.stringify({
       structured_output: review,
       total_cost_usd: 0.4,
+      modelUsage: { "claude-opus-5-5": {} },
     });
-    expect(parseAgentOutput(out)).toEqual({ review, costUsd: 0.4 });
+    expect(parseAgentOutput(out)).toEqual({
+      review,
+      costUsd: 0.4,
+      models: ["claude-opus-5-5"],
+    });
   });
 
   it("falls back to the last json block of the result", () => {
@@ -262,6 +267,13 @@ describe("claudeArgs", () => {
       /youtube\.com.*vimeo\.com.*dropbox\.com/,
     );
     expect(args).not.toContain("Bash");
+    expect(args).not.toContain("--model");
+    const withModel = claudeArgs(
+      "/tmp/x/report.json",
+      { DPM_REVIEW_MODEL: "sonnet" },
+      "opus",
+    );
+    expect(withModel[withModel.indexOf("--model") + 1]).toBe("opus");
   });
 });
 
@@ -356,6 +368,26 @@ describe("dashboard", () => {
     const after = await off.api["POST /api/settings"]({ agent: false });
     expect(after).toMatchObject({ agent: false, autoReview: false });
     off.stop();
+  });
+
+  it("runs reviews on the chosen model and records which one ran", async () => {
+    agent.mockResolvedValue({
+      review,
+      costUsd: 0.1,
+      models: ["claude-haiku-5-5"],
+    });
+    await expect(
+      dashboard.api["POST /api/settings"]({ model: "gpt" }),
+    ).rejects.toThrow(/model/);
+    await dashboard.api["POST /api/settings"]({ model: "haiku" });
+    const { id } = childReport();
+    dashboard.api["POST /api/review"]({ id });
+    await idle();
+    expect(agent.mock.calls[0][1]).toEqual({ model: "haiku" });
+    expect(childReport().saved.models).toEqual(["claude-haiku-5-5"]);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(dir, "settings.json"))),
+    ).toMatchObject({ model: "haiku" });
   });
 
   it("lists the demo reports, children's safety first", () => {

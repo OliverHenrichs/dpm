@@ -15,6 +15,7 @@ const http = require("http");
 const path = require("path");
 const {
   DECISIONS,
+  REVIEW_MODELS,
   agentInput,
   stage,
   needsAutoReview,
@@ -69,6 +70,8 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
     // operator turns them on, on the page or with --agent.
     agent: !!opts.agent || !!saved.agent,
     autoReview: !!opts.autoReview || (!!saved.agent && !!saved.autoReview),
+    // "" is Claude Code's default (or DPM_REVIEW_MODEL); see REVIEW_MODELS.
+    model: REVIEW_MODELS.includes(saved.model) ? saved.model : "",
     views: [],
     refreshedAt: null,
     nextRefreshAt: null,
@@ -83,15 +86,20 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
     const before = reviews.get(id);
     const decision = redraft ? before?.decision : undefined;
     try {
-      const { review: result, costUsd } = await review(
-        agentInput(view, state.views, decision),
-      );
+      const {
+        review: result,
+        costUsd,
+        models,
+      } = await review(agentInput(view, state.views, decision), {
+        model: state.model,
+      });
       if (!state.views.some((v) => v.id === id)) return; // deleted meanwhile
       reviews.update(id, {
         reportCreatedAt: view.createdAt,
         review: result,
         reviewedAt: new Date().toISOString(),
         costUsd,
+        models: models ?? [],
         email: { subject: result.email.subject, body: result.email.body },
         error: null,
         failedFor: null,
@@ -115,6 +123,7 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
       JSON.stringify({
         refreshMinutes: state.refreshMinutes,
         agent: state.agent,
+        model: state.model,
         autoReview: state.autoReview,
       }),
       { mode: 0o600 },
@@ -165,6 +174,9 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
       demo: !!store.demo,
       refreshMinutes: state.refreshMinutes,
       agent: state.agent,
+      model: state.model,
+      models: REVIEW_MODELS,
+      defaultModel: process.env.DPM_REVIEW_MODEL || null,
       autoReview: state.autoReview,
       refreshedAt: state.refreshedAt,
       nextRefreshAt: state.nextRefreshAt,
@@ -196,7 +208,18 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
       return snapshot();
     },
 
-    "POST /api/settings": async ({ refreshMinutes, agent, autoReview }) => {
+    "POST /api/settings": async ({
+      refreshMinutes,
+      agent,
+      autoReview,
+      model,
+    }) => {
+      if (model !== undefined) {
+        if (!REVIEW_MODELS.includes(model)) {
+          throw httpError(400, "Unknown model.");
+        }
+        state.model = model;
+      }
       if (refreshMinutes !== undefined) {
         const m = Number(refreshMinutes);
         if (!(m >= 1 && m <= 24 * 60))
@@ -414,7 +437,8 @@ async function main() {
     reviews,
     settingsFile: path.join(dir, "settings.json"),
     opts,
-    review: (input) => runReview(input, { repoRoot: REPO_ROOT }),
+    review: (input, { model }) =>
+      runReview(input, { repoRoot: REPO_ROOT, model }),
   });
   await dashboard.refresh();
   const token = crypto.randomBytes(24).toString("hex");

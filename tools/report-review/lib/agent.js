@@ -26,8 +26,12 @@ const VIDEO_HOSTS = [
   "dropbox.com",
 ];
 
-/** The `claude` command line for one review. */
-function claudeArgs(inputFile, env = process.env) {
+/**
+ * The `claude` command line for one review. `model` (an alias from
+ * REVIEW_MODELS) wins over DPM_REVIEW_MODEL; neither means Claude Code's
+ * default.
+ */
+function claudeArgs(inputFile, env = process.env, model = "") {
   const args = [
     "-p",
     `/review-report ${inputFile}`,
@@ -54,7 +58,8 @@ function claudeArgs(inputFile, env = process.env) {
     "--max-budget-usd",
     env.DPM_REVIEW_BUDGET_USD || "2",
   ];
-  if (env.DPM_REVIEW_MODEL) args.push("--model", env.DPM_REVIEW_MODEL);
+  const chosen = model || env.DPM_REVIEW_MODEL;
+  if (chosen) args.push("--model", chosen);
   return args;
 }
 
@@ -62,16 +67,16 @@ function claudeArgs(inputFile, env = process.env) {
  * Reviews one report. `input` is `agentInput(...)`; it goes to a private
  * temporary folder the session may read, deleted afterwards.
  *
- * @returns {Promise<{ review: object, costUsd: number | null }>}
+ * @returns {Promise<{ review: object, costUsd: number | null, models: string[] }>}
  */
-async function runReview(input, { repoRoot, env = process.env } = {}) {
+async function runReview(input, { repoRoot, env = process.env, model } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dpm-report-"));
   const inputFile = path.join(dir, "report.json");
   fs.writeFileSync(inputFile, JSON.stringify(input, null, 2), { mode: 0o600 });
   try {
     const stdout = await run(
       env.DPM_CLAUDE_BIN || "claude",
-      claudeArgs(inputFile, env),
+      claudeArgs(inputFile, env, model),
       repoRoot,
       Number(env.DPM_REVIEW_TIMEOUT_MS) || 10 * 60 * 1000,
     );

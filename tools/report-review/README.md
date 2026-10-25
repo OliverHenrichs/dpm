@@ -74,7 +74,7 @@ The agent session reads text strangers wrote, so it gets little:
   `WebFetch` for youtube.com, youtu.be, vimeo.com and dropbox.com only. No shell, no edits, no
   other sites; anything else is refused without asking (`--permission-mode dontAsk`). Spending is
   capped per review (`DPM_REVIEW_BUDGET_USD`, default 2).
-- `DPM_REVIEW_MODEL` picks the model (default: Claude Code's). `DPM_REVIEW_TIMEOUT_MS` (default 10
+- **Model**: the header's _Model_ picker (remembered) chooses fable, opus, sonnet or haiku, Claude Code's aliases for the latest of each; _default_ leaves it to Claude Code, or to `DPM_REVIEW_MODEL` when set. Each review shows the model that wrote it. `DPM_REVIEW_TIMEOUT_MS` (default 10
   minutes) stops a stuck run.
 
 The report and list text go to Anthropic for the review. The privacy policy (§3.3, §5) says so,
