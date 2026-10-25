@@ -2,7 +2,8 @@
 # .gitignore, so it mirrors them, with one deliberate difference: the silhouette pipeline's
 # model weights (modules/video-anonymize/android/src/main/assets/) are gitignored for their
 # size but must reach the build, or Anonymize fails at run time. The eas-build-pre-install
-# hook (scripts/check-model-assets.js) fails an Android build that lacks them.
+# hook (scripts/check-model-assets.js) downloads them when missing and fails an Android build
+# that still lacks them.
 # Keep the rest in step with .gitignore.
 
 # dependencies

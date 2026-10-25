@@ -19,6 +19,7 @@
     "data": "node --env-file=.env tools/data-removal/dpm-data.js",
     "audit:check": "npm audit --json > audit.json; node scripts/check-audit.js audit.json",
     "assets:check": "node scripts/check-model-assets.js",
+    "assets:fetch": "node scripts/check-model-assets.js --fetch",
     "eas-build-pre-install": "node scripts/check-model-assets.js",
     "typecheck": "tsc --noEmit",
     "release:android": "eas build --platform android --profile production --auto-submit",
