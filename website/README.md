@@ -12,12 +12,12 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 
 | File | What it is |
 |---|---|
-| `index.html` | The landing page: what DPM is, and a card for each of the four pages below |
-| `yourself.html` | **On your own**: keeping track of your own progress. List, Map and Reels, filtering, modifiers, the video tools |
-| `sharing.html` | **With classmates**: classmates or friends following one list that one of them keeps. Publishing, suggestions, _Put online_, passing a file round |
+| `index.html` | The landing page: what DPM does for dancers, a card for each of the four pages below, how figures connect, and the video tools |
+| `yourself.html` | **On your own**: keeping track of your own progress. The video tools, Reels, List and Map, filtering, variations |
+| `sharing.html` | **With classmates**: classmates or friends following one list that one of them keeps. Sharing, suggestions, _Put online_, handing the list over |
 | `teaching.html` | **As a teacher**: a course list under the teacher's control. Members only, suggestion limits, video hosts with limited public access |
 | `students.html` | **As a student**: what a subscriber gets, and how to subscribe |
-| (all pages) | The screenshots are real app screenshots (`img/shots/`) and follow the style and light or dark. Every page carries the same header (the four pages, `aria-current` on the one shown, and the style switcher) and footer, written out in each file: a change to either goes in all of them, and in `build-privacy.py` |
+| (all pages) | Copy speaks dancer, not app: "figure" (not pattern), "list owner" (the one who shares a list), "follow" (except when naming the Subscribe button). Export files are for backups and moving phones only, never pitched as a way to share. The screenshots are real app screenshots (`img/shots/`) and follow the style and light or dark. Every page carries the same header (the four pages, `aria-current` on the one shown, and the style switcher) and footer, written out in each file: a change to either goes in all of them, and in `build-privacy.py` |
 | `styles.css` | All styling. Both styles' colours, fonts and radii mirror `src/common/theme/tokens.ts` (`palettes`, `nativeFonts`, `radii`); the pattern-type colours are from `PatternType.ts`. A token changed in the app should change here too |
 | `site.js` | The style switcher, loaded in every page's `<head>` so a returning visitor's style is set before the first paint |
 | `fonts/` | DM Serif Display, Manrope, IBM Plex Sans Condensed and IBM Plex Mono as WOFF2, subset to Latin from `assets/fonts/`, with their OFL licences |

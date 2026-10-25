@@ -757,6 +757,10 @@ section {
   gap: 18px;
 }
 
+.cards + .muted {
+  margin-top: 24px;
+}
+
 .card {
   background: var(--surface);
   border-radius: var(--radius);
