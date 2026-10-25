@@ -9,7 +9,7 @@ counted for the whole list or per subscriber, and can mute a subscriber. Not to 
 `IPatternList.suggestions?: { dailyLimit, per: "list" | "subscriber" }`. Absent means suggestions
 are off; switching off **removes the key** (`src/firebase/AGENTS.md`). It lives on the list,
 so `publishList` publishes it and every subscriber's copy carries it through `useSharedList`: that
-is how a subscriber's app knows whether to offer _Suggest a pattern_. It is set in
+is how a subscriber's app knows whether to offer _Suggest a figure_. It is set in
 `ShareListModal` (a published list publishes the change at once; an unpublished one waits for
 Publish) and travels in exports since format 3.6.
 
@@ -54,7 +54,7 @@ Under `sharedLists/{code}`:
   wrote it. `patternFromSuggestion` drops types, prerequisites and modifiers the list does not have
   (any more), keeps URL videos only and a rhythm only if it matches the counts, the same spirit as
   import validation.
-- The List tab's header shows a lightbulb (`SuggestionsButton`): _Suggest a pattern_ on a
+- The List tab's header shows a lightbulb (`SuggestionsButton`): _Suggest a figure_ on a
   subscribed list (`SuggestPatternModal`), or the review with a count on the publisher's own
   (`SuggestionsModal`, shown while suggestions are on or any are left). `useListSuggestions`
   listens while the publisher's list is published, whether or not suggestions are on now.

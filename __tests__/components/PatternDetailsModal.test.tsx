@@ -116,7 +116,7 @@ describe("PatternDetailsModal", () => {
       // view to ask, so it stays even when empty.
       renderModal({ prerequisites: [] });
 
-      expect(screen.getByText("None (foundational pattern)")).toBeOnTheScreen();
+      expect(screen.getByText("None (foundational figure)")).toBeOnTheScreen();
     });
 
     it("draws one rule under the title, not two", () => {
@@ -206,7 +206,7 @@ describe("PatternDetailsModal variants", () => {
   it("says what a variant is before one is picked", () => {
     renderWithDuck();
 
-    expect(screen.getByText(/A variant is this pattern/)).toBeOnTheScreen();
+    expect(screen.getByText(/A variant is this figure/)).toBeOnTheScreen();
   });
 
   it("shows the picked modifier's description, under its dancer's position", () => {
@@ -216,6 +216,6 @@ describe("PatternDetailsModal variants", () => {
     fireEvent.press(screen.getByLabelText("with Duck"));
 
     expect(screen.getByText(duck.description)).toBeOnTheScreen();
-    expect(screen.queryByText(/A variant is this pattern/)).toBeNull();
+    expect(screen.queryByText(/A variant is this figure/)).toBeNull();
   });
 });

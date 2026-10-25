@@ -49,7 +49,7 @@ const storedLists = async (): Promise<IPatternList[]> =>
 async function renderSelector(lists: IPatternList[] = []) {
   renderWithProviders(<PatternListSelector />, { lists, activeListId: null });
   await screen.findByText(
-    lists.length > 0 ? lists[0].name : "No pattern lists yet",
+    lists.length > 0 ? lists[0].name : "No figure lists yet",
   );
 }
 
@@ -58,7 +58,7 @@ describe("PatternListSelector", () => {
     it("invites the user to create their first list", async () => {
       await renderSelector([]);
 
-      expect(screen.getByText("No pattern lists yet")).toBeOnTheScreen();
+      expect(screen.getByText("No figure lists yet")).toBeOnTheScreen();
       expect(
         screen.getByText(/what each one builds on, its variations/),
       ).toBeOnTheScreen();
@@ -92,7 +92,7 @@ describe("PatternListSelector", () => {
     it("still offers the create button", async () => {
       await renderSelector([]);
 
-      expect(screen.getByLabelText("Create Pattern List")).toBeOnTheScreen();
+      expect(screen.getByLabelText("Create Figure List")).toBeOnTheScreen();
     });
   });
 
@@ -167,8 +167,8 @@ describe("PatternListSelector", () => {
 
       fireEvent(screen.getByText("Salsa"), "longPress");
 
-      expect(screen.getByText("Edit Pattern List")).toBeOnTheScreen();
-      expect(screen.getByText("Delete Pattern List")).toBeOnTheScreen();
+      expect(screen.getByText("Edit Figure List")).toBeOnTheScreen();
+      expect(screen.getByText("Delete Figure List")).toBeOnTheScreen();
     });
 
     it("offers none of them for a read-only list", async () => {
@@ -178,8 +178,8 @@ describe("PatternListSelector", () => {
 
       fireEvent(screen.getByText("Subscribed"), "longPress");
 
-      expect(screen.queryByText("Edit Pattern List")).toBeNull();
-      expect(screen.queryByText("Delete Pattern List")).toBeNull();
+      expect(screen.queryByText("Edit Figure List")).toBeNull();
+      expect(screen.queryByText("Delete Figure List")).toBeNull();
       expect(
         screen.getByText(
           "This list is read-only and cannot be edited or deleted.",
@@ -202,10 +202,10 @@ describe("PatternListSelector", () => {
       fireEvent(screen.getByText("Thursday Group"), "longPress");
 
       expect(screen.getByText("Unsubscribe from List")).toBeOnTheScreen();
-      expect(screen.queryByText("Delete Pattern List")).toBeNull();
+      expect(screen.queryByText("Delete Figure List")).toBeNull();
       expect(
         screen.getByText(
-          "You follow this list. Only its publisher can change it.",
+          "You follow this list. Only the list owner can change it.",
         ),
       ).toBeOnTheScreen();
     });
@@ -256,11 +256,9 @@ describe("PatternListSelector", () => {
       await renderSelector([createTestPatternList({ name: "Salsa" })]);
 
       fireEvent(screen.getByText("Salsa"), "longPress");
-      fireEvent.press(screen.getByText("Delete Pattern List"));
+      fireEvent.press(screen.getByText("Delete Figure List"));
 
-      expect(
-        screen.getByText("Delete pattern list 'Salsa'?"),
-      ).toBeOnTheScreen();
+      expect(screen.getByText("Delete figure list 'Salsa'?")).toBeOnTheScreen();
     });
 
     it("removes it once confirmed", async () => {
@@ -268,7 +266,7 @@ describe("PatternListSelector", () => {
       await renderSelector([list]);
 
       fireEvent(screen.getByText("Salsa"), "longPress");
-      fireEvent.press(screen.getByText("Delete Pattern List"));
+      fireEvent.press(screen.getByText("Delete Figure List"));
       fireEvent.press(screen.getByText("Delete"));
 
       await waitFor(async () => expect(await storedLists()).toEqual([]));
@@ -278,7 +276,7 @@ describe("PatternListSelector", () => {
       await renderSelector([createTestPatternList({ name: "Salsa" })]);
 
       fireEvent(screen.getByText("Salsa"), "longPress");
-      fireEvent.press(screen.getByText("Delete Pattern List"));
+      fireEvent.press(screen.getByText("Delete Figure List"));
       fireEvent.press(screen.getByText("Cancel"));
 
       expect(await storedLists()).toHaveLength(1);
@@ -295,7 +293,7 @@ describe("PatternListSelector", () => {
       await renderSelector([list]);
 
       fireEvent(screen.getByText("Salsa"), "longPress");
-      fireEvent.press(screen.getByText("Delete Pattern List"));
+      fireEvent.press(screen.getByText("Delete Figure List"));
       fireEvent.press(screen.getByText("Delete"));
 
       await waitFor(async () =>

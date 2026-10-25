@@ -44,7 +44,7 @@ Modifiers are affixes that change how a pattern is danced ("with a spin", "slow"
 - A modifier's detail view lists every pattern it is attached to; deleting a modifier detaches it from all patterns
 
 ### Video Tools (Android)
-**Edit Pattern → Videos → Edit video** opens a sheet with the clip and a trim bar. Everything below runs **on the device**. No video, audio or transcript is uploaded, and each tool runs as a background job reported in a banner on the pattern list, with a phone notification when it finishes while the app is in the background.
+**Edit Figure → Videos → Edit video** opens a sheet with the clip and a trim bar. Everything below runs **on the device**. No video, audio or transcript is uploaded, and each tool runs as a background job reported in a banner on the pattern list, with a phone notification when it finishes while the app is in the background.
 
 - **Shorten** cuts the selection out at the source's size, audio kept
 - **Anonymize** turns a 1–30 s selection into a **silhouette** video: tap each dancer (one, or a couple) on a frame and they are tracked through the clip. The result replaces the video in the pattern, with a *Silhouette* badge; the original stays in the gallery

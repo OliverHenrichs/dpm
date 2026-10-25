@@ -812,7 +812,7 @@ describe("export → import round trip", () => {
 
       expect(result.success).toBe(false);
       expect(importText(result.errors)).toBe(
-        "The file is not a pattern list export.",
+        "The file is not a figure list export.",
       );
     });
 
@@ -830,7 +830,7 @@ describe("export → import round trip", () => {
 
       expect(result.success).toBe(false);
       expect(importText(result.errors)).toBe(
-        "The file is not a pattern list export.",
+        "The file is not a figure list export.",
       );
     });
 

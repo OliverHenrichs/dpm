@@ -176,7 +176,7 @@ describe("EditPatternForm — editing a video", () => {
     expect(
       await screen.findByText(/^trim file:\/\/\/document\//),
     ).toBeOnTheScreen();
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "Whip");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "Whip");
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() =>
       expect(saved().videoRefs[0].value).toMatch(/^file:\/\/\/document\//),

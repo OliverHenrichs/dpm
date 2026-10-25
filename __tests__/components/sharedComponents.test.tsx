@@ -42,7 +42,7 @@ describe("AppDialog", () => {
     renderWithProviders(
       <AppDialog
         visible
-        title="Delete Pattern"
+        title="Delete Figure"
         message="Are you sure?"
         onClose={onClose}
         {...props}
@@ -55,14 +55,14 @@ describe("AppDialog", () => {
   it("shows its title and message", () => {
     renderDialog();
 
-    expect(screen.getByText("Delete Pattern")).toBeOnTheScreen();
+    expect(screen.getByText("Delete Figure")).toBeOnTheScreen();
     expect(screen.getByText("Are you sure?")).toBeOnTheScreen();
   });
 
   it("renders nothing while hidden", () => {
     renderDialog({ visible: false });
 
-    expect(screen.queryByText("Delete Pattern")).toBeNull();
+    expect(screen.queryByText("Delete Figure")).toBeNull();
   });
 
   describe("as a single-button notice", () => {
@@ -135,7 +135,7 @@ describe("BottomSheet", () => {
   const renderSheet = (visible = true) => {
     const onClose = jest.fn();
     renderWithProviders(
-      <BottomSheet visible={visible} onClose={onClose} title="Filter Patterns">
+      <BottomSheet visible={visible} onClose={onClose} title="Filter Figures">
         <Text>sheet body</Text>
       </BottomSheet>,
       { activeListId: null },
@@ -146,7 +146,7 @@ describe("BottomSheet", () => {
   it("shows its title and children", () => {
     renderSheet();
 
-    expect(screen.getByText("Filter Patterns")).toBeOnTheScreen();
+    expect(screen.getByText("Filter Figures")).toBeOnTheScreen();
     expect(screen.getByText("sheet body")).toBeOnTheScreen();
   });
 
@@ -444,7 +444,7 @@ describe("PatternDetails", () => {
     it("says so when there are none", () => {
       renderDetails();
 
-      expect(screen.getByText("None (foundational pattern)")).toBeOnTheScreen();
+      expect(screen.getByText("None (foundational figure)")).toBeOnTheScreen();
     });
 
     it("renders nothing for a prerequisite whose pattern is gone", () => {
@@ -461,7 +461,7 @@ describe("PatternDetails", () => {
       expect(screen.getByText(/^Counts/)).toBeOnTheScreen();
       // …and the unresolvable id yields no pill, but is not reported as
       // "foundational" either, since the pattern does claim a prerequisite.
-      expect(screen.queryByText("None (foundational pattern)")).toBeNull();
+      expect(screen.queryByText("None (foundational figure)")).toBeNull();
     });
   });
 
@@ -481,7 +481,7 @@ describe("PatternDetails", () => {
     it("says so when nothing does", () => {
       renderDetails();
 
-      expect(screen.getByText("No dependent patterns yet")).toBeOnTheScreen();
+      expect(screen.getByText("No dependent figures yet")).toBeOnTheScreen();
     });
   });
 

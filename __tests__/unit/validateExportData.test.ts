@@ -358,7 +358,7 @@ describe("validateExportData", () => {
       expect(result.valid).toBe(true);
       expect(result.data!.patternLists[0].patterns[0].typeId).toBe(TYPE.id);
       expect(importText(result.warnings)).toMatch(
-        /pattern type is not in the list/,
+        /figure type is not in the list/,
       );
     });
 

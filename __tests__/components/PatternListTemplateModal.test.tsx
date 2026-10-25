@@ -176,7 +176,7 @@ describe("PatternListTemplateModal", () => {
 
       pickTemplate("West Coast Swing");
 
-      expect(screen.getByText("Starting Patterns")).toBeOnTheScreen();
+      expect(screen.getByText("Starting Figures")).toBeOnTheScreen();
       expect(ticked().length).toBeGreaterThan(0);
     });
 
@@ -185,7 +185,7 @@ describe("PatternListTemplateModal", () => {
 
       pickTemplate("Blank");
 
-      expect(screen.queryByText("Starting Patterns")).toBeNull();
+      expect(screen.queryByText("Starting Figures")).toBeNull();
     });
   });
 
@@ -543,7 +543,7 @@ describe("PatternListTemplateModal", () => {
     it("offers no starter patterns", () => {
       renderModal({ editList: editable() });
 
-      expect(screen.queryByText("Starting Patterns")).toBeNull();
+      expect(screen.queryByText("Starting Figures")).toBeNull();
     });
 
     it("cancels instead of stepping back to the picker", () => {

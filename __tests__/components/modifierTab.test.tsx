@@ -176,7 +176,7 @@ describe("ModifierList", () => {
       fireEvent.press(screen.getByLabelText("with a spin"));
 
       expect(
-        screen.getByText("Not applied to any pattern yet"),
+        screen.getByText("Not applied to any figure yet"),
       ).toBeOnTheScreen();
     });
 
@@ -194,11 +194,11 @@ describe("ModifierList", () => {
 
       fireEvent.press(screen.getByLabelText("with a spin"));
       expect(
-        screen.getByText("Not applied to any pattern yet"),
+        screen.getByText("Not applied to any figure yet"),
       ).toBeOnTheScreen();
 
       fireEvent.press(screen.getByLabelText("with a spin"));
-      expect(screen.queryByText("Not applied to any pattern yet")).toBeNull();
+      expect(screen.queryByText("Not applied to any figure yet")).toBeNull();
     });
   });
 });
@@ -351,7 +351,7 @@ describe("EditModifierForm", () => {
         }),
       );
 
-      fireEvent.press(screen.getAllByLabelText("Remove video from pattern")[0]);
+      fireEvent.press(screen.getAllByLabelText("Remove video from figure")[0]);
       saveModifier();
 
       expect(saved().videoRefs).toEqual([localVideo("file:///b.mp4")]);

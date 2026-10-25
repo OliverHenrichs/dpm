@@ -53,7 +53,7 @@ describe("PatternList", () => {
 
     // Each row is named after its pattern; the hint is what they share.
     const renderedOrder = screen
-      .getAllByHintText("Select Pattern")
+      .getAllByHintText("Select Figure")
       .map((row) => row.props.accessibilityLabel);
 
     expect(renderedOrder).toEqual(["Left Side Pass", "Sugar Push", "Whip"]);
@@ -62,21 +62,21 @@ describe("PatternList", () => {
   it("shows the empty state when the list has no patterns", () => {
     renderList([]);
 
-    expect(screen.getByText("No patterns yet.")).toBeOnTheScreen();
+    expect(screen.getByText("No figures yet.")).toBeOnTheScreen();
     expect(screen.getByText(/Tap \+ to add one/)).toBeOnTheScreen();
   });
 
   it("leaves out the add hint on a read-only list", () => {
     renderList([], { isReadonly: true });
 
-    expect(screen.getByText("No patterns yet.")).toBeOnTheScreen();
+    expect(screen.getByText("No figures yet.")).toBeOnTheScreen();
     expect(screen.queryByText(/Tap \+ to add one/)).toBeNull();
   });
 
   it("shows the filtered empty state when a filter excludes everything", () => {
     renderList();
 
-    fireEvent.press(screen.getByLabelText("Filter Patterns"));
+    fireEvent.press(screen.getByLabelText("Filter Figures"));
     fireEvent.changeText(
       screen.getByPlaceholderText("Search by name..."),
       "zzzzz",
@@ -84,7 +84,7 @@ describe("PatternList", () => {
     fireEvent.press(screen.getByText("Apply"));
 
     expect(
-      screen.getByText("No patterns match the current filters."),
+      screen.getByText("No figures match the current filters."),
     ).toBeOnTheScreen();
   });
 
@@ -104,15 +104,15 @@ describe("PatternList", () => {
   it("hides edit and delete affordances on a read-only list", () => {
     renderList(undefined, { isReadonly: true });
 
-    expect(screen.queryByLabelText("Edit Pattern")).toBeNull();
-    expect(screen.queryByLabelText("Delete Pattern")).toBeNull();
+    expect(screen.queryByLabelText("Edit Figure")).toBeNull();
+    expect(screen.queryByLabelText("Delete Figure")).toBeNull();
   });
 
   it("names the pattern in the delete confirmation", () => {
     renderList();
 
     // Rows are sorted by name, so the first delete button is "Left Side Pass".
-    fireEvent.press(screen.getAllByLabelText("Delete Pattern")[0]);
+    fireEvent.press(screen.getAllByLabelText("Delete Figure")[0]);
 
     // Regression guard: the confirmation string takes a {{name}} placeholder,
     // and the caller has always passed one. Before this was wired up the copy
@@ -128,7 +128,7 @@ describe("PatternList", () => {
       onDelete,
     });
 
-    fireEvent.press(screen.getByLabelText("Delete Pattern"));
+    fireEvent.press(screen.getByLabelText("Delete Figure"));
     fireEvent.press(screen.getByText("Delete"));
 
     expect(onDelete).toHaveBeenCalledWith(7);
@@ -154,7 +154,7 @@ describe("PatternList rows and sections", () => {
     );
 
   const sortBy = (label: string) => {
-    fireEvent.press(screen.getByLabelText("Sort Patterns"));
+    fireEvent.press(screen.getByLabelText("Sort Figures"));
     fireEvent.press(screen.getByText(label));
   };
 
@@ -267,7 +267,7 @@ describe("PatternList revealing a pattern", () => {
 describe("PatternList sheets", () => {
   it("closes the add menu from its close button", () => {
     renderList(undefined, { onAddFromVideo: jest.fn() });
-    fireEvent.press(screen.getByLabelText("Add Pattern"));
+    fireEvent.press(screen.getByLabelText("Add Figure"));
     expect(screen.getByText("From a video")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("Close"));
@@ -276,7 +276,7 @@ describe("PatternList sheets", () => {
 
   it("closes the sort sheet from its close button", () => {
     renderList();
-    fireEvent.press(screen.getByLabelText("Sort Patterns"));
+    fireEvent.press(screen.getByLabelText("Sort Figures"));
     expect(screen.getByText("Date Created")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("Close"));
@@ -327,7 +327,7 @@ describe("PatternList in compact mode", () => {
     const onEdit = jest.fn();
     await renderCompact({ onEdit });
 
-    fireEvent.press(screen.getByLabelText("Edit Pattern"));
+    fireEvent.press(screen.getByLabelText("Edit Figure"));
     expect(onEdit).toHaveBeenCalledWith(
       expect.objectContaining({ name: LONG_NAME }),
     );

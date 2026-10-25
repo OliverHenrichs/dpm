@@ -34,7 +34,7 @@ describe("importer messages", () => {
     };
 
     expect(formatImportMessage(translatorFor("en"), message)).toBe(
-      'List "Thursday", pattern "Whip": Dropped 3 malformed transcript line(s).',
+      'List "Thursday", figure "Whip": Dropped 3 malformed transcript line(s).',
     );
     expect(formatImportMessage(translatorFor("de"), message)).toBe(
       'Liste "Thursday", Figur "Whip": 3 fehlerhafte Transkriptzeile(n) verworfen.',

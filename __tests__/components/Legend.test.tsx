@@ -92,7 +92,7 @@ describe("Legend", () => {
       renderLegend();
       expand();
 
-      expect(screen.getByText("Foundational Pattern")).toBeOnTheScreen();
+      expect(screen.getByText("Foundational Figure")).toBeOnTheScreen();
     });
 
     /**

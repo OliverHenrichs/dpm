@@ -18,7 +18,7 @@ describe("CycleWarning", () => {
     expect(screen.getByRole("alert")).toBeOnTheScreen();
     expect(
       screen.getByText(
-        "2 patterns are in a prerequisite loop, so their order cannot be shown.",
+        "2 figures are in a prerequisite loop, so their order cannot be shown.",
       ),
     ).toBeOnTheScreen();
   });
@@ -31,6 +31,6 @@ describe("CycleWarning", () => {
       [7, 8, 9],
     ]);
 
-    expect(screen.getByText(/^5 patterns/)).toBeOnTheScreen();
+    expect(screen.getByText(/^5 figures/)).toBeOnTheScreen();
   });
 });

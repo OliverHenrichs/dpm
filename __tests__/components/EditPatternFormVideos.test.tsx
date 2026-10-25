@@ -70,7 +70,7 @@ function renderForm(
 const save = () => fireEvent.press(screen.getByText("Save"));
 const addVideoButton = () => screen.getByLabelText("Add");
 const removeButtons = () =>
-  screen.queryAllByLabelText("Remove video from pattern");
+  screen.queryAllByLabelText("Remove video from figure");
 
 /** Open the add-video sheet and enter a URL. */
 async function addUrlVideo(url: string, startTime?: string) {
@@ -388,11 +388,11 @@ describe("EditPatternForm — a refused save", () => {
       { activeListId: null },
     );
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "New");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "New");
     save();
 
     await waitFor(() =>
-      expect(screen.getByPlaceholderText("Pattern Name").props.value).toBe(""),
+      expect(screen.getByPlaceholderText("Figure Name").props.value).toBe(""),
     );
   });
 
@@ -411,11 +411,11 @@ describe("EditPatternForm — a refused save", () => {
       { activeListId: null },
     );
 
-    fireEvent.changeText(screen.getByPlaceholderText("Pattern Name"), "New");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "New");
     save();
 
     await waitFor(() =>
-      expect(screen.getByPlaceholderText("Pattern Name").props.value).toBe(""),
+      expect(screen.getByPlaceholderText("Figure Name").props.value).toBe(""),
     );
   });
 });

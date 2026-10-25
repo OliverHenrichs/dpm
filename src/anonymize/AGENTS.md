@@ -8,7 +8,7 @@ Unqualified paths are relative to `src/anonymize/`.
 
 ## Where the user meets it
 
-- Edit Pattern → Videos → **Edit video** (`components/VideoEditPanel.tsx`, in `AnonymizeModal`):
+- Edit Figure → Videos → **Edit video** (`components/VideoEditPanel.tsx`, in `AnonymizeModal`):
   one tab per job, _Shorten_, _Anonymize_ and _Speech_ (`TranscribeSection`). The cut tabs pick
   the part to keep on a trim bar (`TrimWindowBar`, `model/trimWindow.ts`); _Anonymize_ then has the
   user tap each dancer on the first frame (`model/promptPoints.ts`). Each tab says what it does and
