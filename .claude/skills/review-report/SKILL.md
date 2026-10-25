@@ -6,9 +6,9 @@ description: Check a report about a published DPM list against the list and the 
 # Review a report about a published list
 
 Someone who follows a published DPM list reported it from the app (`src/legal/`). Your job is to
-check whether the report's claims hold, recommend what the operator (Oliver) should decide, and
+check whether the report's claims hold, recommend what the operator should decide, and
 draft the email that tells the reporter the outcome. **You decide nothing and send nothing.**
-Oliver reads your review, makes the call, edits the email and sends it himself.
+The operator reads your review, makes the call, edits the email and sends it.
 
 ## Input
 
@@ -22,8 +22,8 @@ The argument is the path of a JSON file. Read it. It holds:
   stopped sharing it).
 - `publisherBlocked`: whether the publisher's installation is already blocked.
 - `otherReportsAboutThisList`: other people's reports about the same list.
-- `operatorDecision` (only sometimes): Oliver has already decided (`uphold` or `reject`, maybe
-  with a `note`). Then your verdict must be his, and the email must explain **his** decision and
+- `operatorDecision` (only sometimes): the operator has already decided (`uphold` or `reject`, maybe
+  with a `note`). Then your verdict must be theirs, and the email must explain **their** decision and
   reasoning; use your findings to support it, and put any doubt you have in `checkByHand`, not
   in the email.
 
@@ -99,23 +99,23 @@ are informed.
 
 `confidence`: `high` only when the list itself settles it; otherwise `medium` or `low`.
 
-`summary`: two or three sentences Oliver reads first: what was claimed, what you found, what you
+`summary`: two or three sentences the operator reads first: what was claimed, what you found, what you
 recommend.
 
 ## The reply email
 
-Draft it even when `reporterWantsReply` is false (Oliver may have the address from elsewhere),
+Draft it even when `reporterWantsReply` is false (the operator may have the address from elsewhere),
 but keep it short then.
 
 - **Language**: the language of `details`; English when there are none. Put the language's name
   in `email.language`.
-- **To the reporter**, from Oliver for DancePatternMapper. Plain, kind, specific, under 200 words.
+- **To the reporter**, from DancePatternMapper. Plain, kind, specific, under 200 words.
   Subject names the list ("Your report about the list "WCS Thursday course"").
 - Say what we decided and why, in words a dancer understands, pointing to the rule (e.g. "our
   terms of use do not allow videos of children without a parent's consent (§2)"). Say what we
   did: took the list down, or left it up. For `unclear`, thank them, say what we are checking,
   and that we will write again.
-- Write it as Oliver sends it: after he has done what the verdict calls for. With `uphold` and
+- Write it as the operator sends it: after what the verdict calls for is done. With `uphold` and
   `remove-list`, the list is down by then.
 - Say in one sentence that an AI assistant helped check the report and a person made the decision
   (the DSA asks us to say when automated means were used).
@@ -123,7 +123,7 @@ but keep it short then.
 - Never reveal anything about the publisher (no ids, no share key, nothing that could identify
   them, and not whether they were blocked), nor other reporters. Do not quote personal data from
   the list beyond what the reporter already wrote. No legal advice, no promises beyond §5.
-- Sign off with "Oliver Henrichs, DancePatternMapper" and dance-pattern-mapper@pm.me.
+- Sign off with "DancePatternMapper" and the contact address in `TERMS_OF_USE.md` §10.
 
 ## Answer
 
