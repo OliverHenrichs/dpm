@@ -12,6 +12,8 @@ const { TAKEDOWN_OWNER } = require("../../data-removal/lib/model");
  * its family); "" leaves the choice to Claude Code's own default.
  */
 const REVIEW_MODELS = ["", "fable", "opus", "sonnet", "haiku"];
+/** Cheap and quick, and enough for checking a report against a list. */
+const DEFAULT_MODEL = "haiku";
 
 /** What an agent review may recommend, and what the operator may decide. */
 const VERDICTS = ["uphold", "reject", "unclear"];
@@ -276,6 +278,7 @@ function looksLikeReportId(id) {
 
 module.exports = {
   REVIEW_MODELS,
+  DEFAULT_MODEL,
   VERDICTS,
   DECISIONS,
   REVIEW_SCHEMA,

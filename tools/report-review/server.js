@@ -16,6 +16,7 @@ const path = require("path");
 const {
   DECISIONS,
   REVIEW_MODELS,
+  DEFAULT_MODEL,
   agentInput,
   stage,
   needsAutoReview,
@@ -70,8 +71,9 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
     // operator turns them on, on the page or with --agent.
     agent: !!opts.agent || !!saved.agent,
     autoReview: !!opts.autoReview || (!!saved.agent && !!saved.autoReview),
-    // "" is Claude Code's default (or DPM_REVIEW_MODEL); see REVIEW_MODELS.
-    model: REVIEW_MODELS.includes(saved.model) ? saved.model : "",
+    // Haiku unless changed on the page; "" is Claude Code's default (or
+    // DPM_REVIEW_MODEL). See REVIEW_MODELS.
+    model: REVIEW_MODELS.includes(saved.model) ? saved.model : DEFAULT_MODEL,
     views: [],
     refreshedAt: null,
     nextRefreshAt: null,

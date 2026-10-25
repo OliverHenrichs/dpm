@@ -379,6 +379,8 @@ describe("dashboard", () => {
     await expect(
       dashboard.api["POST /api/settings"]({ model: "gpt" }),
     ).rejects.toThrow(/model/);
+    expect(state().model).toBe("haiku");
+    await dashboard.api["POST /api/settings"]({ model: "opus" });
     await dashboard.api["POST /api/settings"]({ model: "haiku" });
     const { id } = childReport();
     dashboard.api["POST /api/review"]({ id });
