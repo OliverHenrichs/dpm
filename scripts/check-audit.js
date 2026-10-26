@@ -12,11 +12,11 @@ const fs = require("fs");
 const ACCEPTED = {
   // expo-router -> query-string@7 -> decode-uri-component. The fix is ESM-only
   // and cannot be forced under a CJS parent; waits for expo-router upstream.
-  "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2026-11-01" },
+  "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2026-12-01" },
   // expo -> @expo/cli (and @expo/code-signing-certificates) -> node-forge.
   // Dev tooling only (EAS update code signing), never in the app bundle.
   // No patched release exists (1.4.0 is the latest and is affected).
-  "GHSA-86w9-cpqp-85rv": { name: "node-forge", until: "2026-11-01" },
+  "GHSA-86w9-cpqp-85rv": { name: "node-forge", until: "2026-12-01" },
   // expo -> @expo/cli -> zod@3. Dev tooling only (validates our own app config),
   // never in the app bundle. No patched 3.x exists; the fix is a major Expo upgrade.
   // The root zod@4 (eslint-plugin-react-hooks) is overridden to a patched release.
