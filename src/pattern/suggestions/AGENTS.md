@@ -10,8 +10,8 @@ counted for the whole list or per subscriber, and can mute a subscriber. Not to 
 are off; switching off **removes the key** (`src/firebase/AGENTS.md`). It lives on the list,
 so `publishList` publishes it and every subscriber's copy carries it through `useSharedList`: that
 is how a subscriber's app knows whether to offer _Suggest a figure_. It is set in
-`ShareListModal` (a published list publishes the change at once; an unpublished one waits for
-Publish) and travels in exports since format 3.6.
+`ShareListModal` once the list is published (the change is published at once; the details sit
+behind a summary row) and travels in exports since format 3.6.
 
 ## Firestore (`src/firebase/PatternSuggestionService.ts`, `firestore.rules`)
 

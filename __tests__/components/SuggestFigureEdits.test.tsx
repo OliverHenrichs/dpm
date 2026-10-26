@@ -253,7 +253,6 @@ describe("the share sheet", () => {
         patterns={[]}
         onClose={jest.fn()}
         onPublished={onPublished}
-        onUnpublished={jest.fn()}
       />,
       { activeListId: null },
     );
@@ -265,6 +264,7 @@ describe("the share sheet", () => {
       createTestPatternList({ shareCode: "AB12CD34", suggestions: POLICY }),
     );
 
+    fireEvent.press(screen.getByText(/a day per subscriber · new figures$/));
     fireEvent.press(screen.getByLabelText("Also changes to existing figures"));
     await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(1));
     expect(onPublished.mock.calls[0][0].suggestions).toEqual(EDITS);

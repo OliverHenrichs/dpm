@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 25, 2026**
+**Last updated: October 26, 2026**
 
 ---
 
@@ -172,7 +172,7 @@ We do **not** sell your data to third parties and do not use your data for adver
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Local device data                                 | Until you uninstall the app or delete it in the app (a list, a pattern, a video)                                                                                                          |
 | Downloaded models                                 | Until you delete them under Settings → On-device models, or uninstall the app                                                                                                             |
-| Published Firestore document                      | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.                                       |
+| Published Firestore document                      | Until you stop sharing the list in the app (Lists → your list's "more" button → Stop Sharing). There is no automatic expiry.                                       |
 | Owner record of a published list                  | Removed together with the list when you stop sharing it                                                                                                                                   |
 | A handover offer                                  | Until the previous publisher's app has followed the handover, the publisher withdraws it, or the list stops being shared. An offer nobody accepts stops working after 7 days.             |
 | A pattern suggestion                              | Until the publisher adds or dismisses it, or stops sharing the list                                                                                                                       |
@@ -196,7 +196,7 @@ You have the right to:
 - **Objection** — object to processing based on legitimate interest
 - **Lodge a complaint** — with your national data protection authority (e.g. the [BfDI](https://www.bfdi.bund.de/) in Germany, the [ICO](https://ico.org.uk/) in the UK)
 
-**How to delete your published data:** Open the app → Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts, mute records and handover offers. For anything else, contact us at dance-pattern-mapper@pm.me.
+**How to delete your published data:** Open the app → Lists → your list's "more" button → Stop Sharing. This immediately removes the Firestore document, its owner record, and its suggestions, daily counts, mute records and handover offers. For anything else, contact us at dance-pattern-mapper@pm.me.
 
 Because the app has no user accounts, we cannot identify which data belongs to you without you providing the share code. Please include it in any erasure request; from it we can also find and delete your anonymous user ID.
 

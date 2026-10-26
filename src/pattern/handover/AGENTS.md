@@ -6,7 +6,7 @@ following it and nobody republishes a copy; that duplication is what this replac
 
 ## How it works (`src/firebase/HandoverService.ts`, `firestore.rules`)
 
-1. **Offer.** In `ShareListModal` (`HandoverSection`), the owner confirms and gets a 10-character
+1. **Offer.** From the list's ⋮ sheet on the Lists screen (_Hand over_, `HandOverModal`), the owner confirms and gets a 10-character
    **handover code** (QR too). It is the id of `sharedLists/{code}/handovers/{handoverCode}`:
    `{ fromUid, offeredAt }`. One offer per phone at a time (a new one deletes the old); _Withdraw_
    deletes it. On a members-only list the owner first writes their own subscriber record as
