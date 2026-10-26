@@ -1448,3 +1448,88 @@ describe("subscriber count", () => {
     await assertSucceeds(deleteDoc(record(as(PUBLISHER), OTHER_ID)));
   });
 });
+
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+
+describe("reports", () => {
+  const reportRef = (db: Firestore, uid = SUBSCRIBER, code = CODE) =>
+    doc(db, "reports", `${code}_${uid}`);
+  /** A report as ReportService.reportList writes it. */
+  const report = (overrides: object = {}, uid = SUBSCRIBER) => ({
+    shareCode: CODE,
+    reporterUid: uid,
+    reason: "consent",
+    details: "Pattern 2 shows a child",
+    contact: "me@example.com",
+    createdAt: serverTimestamp(),
+    appToken: TEST_TOKEN,
+    ...overrides,
+  });
+
+  it("lets a signed-in subscriber report a published list, and report it again", async () => {
+    await seed(sharedListDoc());
+    await assertSucceeds(setDoc(reportRef(as(SUBSCRIBER)), report()));
+    await assertSucceeds(
+      setDoc(reportRef(as(SUBSCRIBER)), report({ reason: "copyright" })),
+    );
+  });
+
+  it("takes a report without details or contact", async () => {
+    await seed(sharedListDoc());
+    const {
+      details: _d,
+      contact: _c,
+      ...bare
+    } = report() as Record<string, unknown>;
+    await assertSucceeds(setDoc(reportRef(as(SUBSCRIBER)), bare));
+  });
+
+  it("refuses a report without signing in, or not under the reporter's own id", async () => {
+    await seed(sharedListDoc());
+    await assertFails(setDoc(reportRef(anonymous()), report()));
+    await assertFails(setDoc(reportRef(as(OTHER)), report()));
+    await assertFails(
+      setDoc(reportRef(as(OTHER), OTHER), report({}, SUBSCRIBER)),
+    );
+  });
+
+  it("refuses a report about a list that does not exist", async () => {
+    await assertFails(setDoc(reportRef(as(SUBSCRIBER)), report()));
+  });
+
+  it("refuses malformed reports", async () => {
+    await seed(sharedListDoc());
+    const db = as(SUBSCRIBER);
+    await assertFails(setDoc(reportRef(db), report({ reason: "boring" })));
+    await assertFails(setDoc(reportRef(db), report({ details: "" })));
+    await assertFails(
+      setDoc(reportRef(db), report({ details: "x".repeat(2001) })),
+    );
+    await assertFails(
+      setDoc(reportRef(db), report({ contact: "x".repeat(255) })),
+    );
+    await assertFails(setDoc(reportRef(db), report({ appToken: "wrong" })));
+    await assertFails(
+      setDoc(reportRef(db), report({ createdAt: Timestamp.now() })),
+    );
+    await assertFails(setDoc(reportRef(db), report({ extra: true })));
+  });
+
+  it("refuses a blocked id's report", async () => {
+    await seed(sharedListDoc());
+    await seedDoc(["blockedUsers", SUBSCRIBER], { blockedAt: Timestamp.now() });
+    await assertFails(setDoc(reportRef(as(SUBSCRIBER)), report()));
+  });
+
+  it("lets nobody read or delete a report, the reporter and the publisher included", async () => {
+    await seed(sharedListDoc());
+    await assertSucceeds(setDoc(reportRef(as(SUBSCRIBER)), report()));
+    await assertFails(getDoc(reportRef(as(SUBSCRIBER))));
+    await assertFails(getDoc(reportRef(as(PUBLISHER))));
+    await assertFails(getDocs(collection(as(PUBLISHER), "reports")));
+    await assertFails(deleteDoc(reportRef(as(SUBSCRIBER))));
+    await assertFails(deleteDoc(reportRef(as(PUBLISHER))));
+  });
+});

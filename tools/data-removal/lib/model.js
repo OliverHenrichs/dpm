@@ -5,8 +5,8 @@
  * loads the snapshot and carries out the plans.
  *
  * A snapshot is every document the app writes to Firestore, as plain values:
- * the shared lists, their owner records, and the four subcollections under a
- * list (`src/firebase/AGENTS.md`).
+ * the shared lists, their owner records, the subcollections under a list, and
+ * reports about lists (`src/firebase/AGENTS.md`).
  */
 
 const LISTS = "sharedLists";
@@ -18,6 +18,11 @@ const SUBSCRIBERS = "subscribers";
 const HANDOVERS = "handovers";
 /** Ids the operator has blocked: the rules refuse their writes (`notBlocked`). */
 const BLOCKED = "blockedUsers";
+/**
+ * Reports about a list, named `{shareCode}_{reporter uid}` (`src/legal/`). They
+ * sit outside the list, so removing the list keeps them as the record of why.
+ */
+const REPORTS = "reports";
 
 /**
  * What an owner record names as owner after a takedown. Firebase user ids are
@@ -30,7 +35,7 @@ const TAKEDOWN_OWNER = "removed-by-operator";
 const SECRET_FIELDS = new Set(["key", "appToken"]);
 
 /**
- * @typedef {"list" | "owner" | "suggestion" | "counter" | "subscriber" | "handover"} DocKind
+ * @typedef {"list" | "owner" | "suggestion" | "counter" | "subscriber" | "handover" | "report"} DocKind
  * @typedef {{ kind: DocKind, path: string, code: string, id: string, data: Record<string, unknown> }} Doc
  * @typedef {{ doc: Doc, field: string, value: string }} Hit
  */
@@ -43,6 +48,9 @@ function describePath(path) {
   }
   if (parts[0] === OWNERS && parts.length === 2) {
     return { kind: "owner", code: parts[1], id: parts[1] };
+  }
+  if (parts[0] === REPORTS && parts.length === 2) {
+    return { kind: "report", code: parts[1].split("_")[0], id: parts[1] };
   }
   if (parts[0] === LISTS && parts.length === 4) {
     const kind = {
@@ -153,7 +161,8 @@ function isTakenDown(docs, code) {
  * Removing a shared list: the list, everything under it, and its owner record,
  * which is replaced by a takedown record unless `allowRepublish`. Without the
  * takedown the publisher's phone would put the list back with its next edit,
- * since every edit re-publishes the whole list.
+ * since every edit re-publishes the whole list. Reports about it stay: they
+ * are why it was removed (`remove-report` once dealt with).
  *
  * @returns {{ code: string, deletes: Doc[], takedown: boolean, ownerUid: string | null, exists: boolean }}
  */
@@ -167,7 +176,9 @@ function planListRemoval(docs, code, { allowRepublish = false } = {}) {
   return {
     code,
     exists: ofList.some((d) => d.kind === "list"),
-    deletes: ofList.filter((d) => d.kind !== "owner" || allowRepublish),
+    deletes: ofList.filter(
+      (d) => d.kind !== "report" && (d.kind !== "owner" || allowRepublish),
+    ),
     takedown: !allowRepublish,
     ownerUid,
   };
@@ -176,8 +187,8 @@ function planListRemoval(docs, code, { allowRepublish = false } = {}) {
 /**
  * Removing what one anonymous user id left: their suggestions, their
  * subscriber records (join requests, mutes, the name they gave), their own
- * daily counters, the handover offers they made or accepted, and their
- * Firebase Authentication account. Lists they
+ * daily counters, the handover offers they made or accepted, the reports they
+ * sent, and their Firebase Authentication account. Lists they
  * publish are named in `ownedLists`; their owner records hold the id, so the
  * tool removes those lists too, or nothing, never just the account.
  */
@@ -188,7 +199,8 @@ function planUserRemoval(docs, uid) {
       (d.kind === "subscriber" && d.id === uid) ||
       (d.kind === "counter" && d.id.endsWith(`_${uid}`)) ||
       (d.kind === "handover" &&
-        (d.data.fromUid === uid || d.data.acceptedBy === uid)),
+        (d.data.fromUid === uid || d.data.acceptedBy === uid)) ||
+      (d.kind === "report" && d.data.reporterUid === uid),
   );
   const ownedLists = docs
     .filter((d) => d.kind === "owner" && d.data.ownerUid === uid)
@@ -211,6 +223,17 @@ function describeSuggestion(data) {
   return `change to pattern ${data.patternId} "${base.name ?? name}": ${fields.join(", ") || "nothing"}`;
 }
 
+/** Every report, newest first. */
+function reportsOf(docs) {
+  return docs
+    .filter((d) => d.kind === "report")
+    .sort((a, b) =>
+      String(b.data.createdAt ?? "").localeCompare(
+        String(a.data.createdAt ?? ""),
+      ),
+    );
+}
+
 /** Whether a query could be a share code: 8 characters, 0-9 and A-Z. */
 function looksLikeShareCode(query) {
   return /^[0-9A-Z]{8}$/.test(query);
@@ -229,6 +252,7 @@ module.exports = {
   SUBSCRIBERS,
   HANDOVERS,
   BLOCKED,
+  REPORTS,
   TAKEDOWN_OWNER,
   describePath,
   describeSuggestion,
@@ -240,6 +264,7 @@ module.exports = {
   isTakenDown,
   planListRemoval,
   planUserRemoval,
+  reportsOf,
   looksLikeShareCode,
   looksLikeUid,
 };

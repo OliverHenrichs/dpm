@@ -32,6 +32,8 @@ npm run data -- show AB12CD34                  # every pattern, video link, sugg
 npm run data -- remove-list AB12CD34           # delete the list and everything under it
 npm run data -- remove-user <user id>          # delete one person's suggestions, records and account
 npm run data -- remove-suggestion AB12CD34 <suggestion id>
+npm run data -- reports                        # every report about a list, newest first
+npm run data -- remove-report AB12CD34_<user id>   # delete a report once dealt with
 npm run data -- release AB12CD34               # undo a takedown
 npm run data -- block-user <user id>           # stop that installation publishing again
 npm run data -- unblock-user <user id>
@@ -54,7 +56,7 @@ never searched or printed.
   the phone's _Stop Sharing_ fails too). `--allow-republish` deletes the owner record instead,
   for when the publisher should be able to share again. `release` lifts a takedown later.
 - **`remove-user`** deletes one anonymous user's suggestions, subscriber records (join requests,
-  mutes, the name they gave) and their own daily counters, then their Firebase Authentication
+  mutes, the name they gave), their own daily counters, the reports they sent, then their Firebase Authentication
   account. If they publish lists, the owner records hold their id, so it refuses unless you add
   `--with-lists`, which removes and takes down those lists too.
 - **`block-user`** stops one installation: the rules refuse every publish, sync, suggestion
@@ -66,6 +68,23 @@ never searched or printed.
   sign-in there is no identity to ban.
 - **`remove-suggestion`** deletes one suggestion, for when the rest of that person's records
   should stay.
+
+## Reports
+
+People who follow a list can report it from the app (Lists → the list's "more" button → _Report
+list_, `src/legal/`). A report is `reports/{shareCode}_{reporter uid}`: the reason, optional
+details and an optional email for a reply. Nobody but this tool can read it. Nothing notifies
+you, so run `reports` regularly; the terms of use promise to look at every report promptly
+(children's safety first), which the Digital Services Act requires of a host.
+
+The report review dashboard (`npm run reports:review`, `tools/report-review/README.md`) does all
+of this on one page, fetching every few minutes, with an agent that checks each report and drafts
+the reply. On the command line:
+
+For each report: `show` the list, decide, and if it breaks the law or the terms, `remove-list`
+it (and `block-user` its publisher when needed). If the reporter left an email, tell them what you
+did. Then `remove-report`. `remove-list` keeps reports about the list; `remove-user` deletes the
+reports that user sent.
 
 There is no command to edit one pattern of a list: the publisher's phone would put it back with
 its next edit. Remove the whole list, or ask the publisher to change it.

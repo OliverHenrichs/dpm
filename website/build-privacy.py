@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Render PRIVACY_POLICY.md (the single source) into website/privacy.html.
+"""Render PRIVACY_POLICY.md and TERMS_OF_USE.md (the single sources) into
+website/privacy.html and website/terms.html.
 
-Run after editing the policy:  python3 website/build-privacy.py
+Run after editing either:  python3 website/build-privacy.py
 Needs the `markdown` package (pip install markdown). The Pages workflow runs this before
-deploying, so the published page cannot drift from the Markdown.
+deploying, so the published pages cannot drift from the Markdown.
 """
 
 from pathlib import Path
@@ -11,19 +12,32 @@ from pathlib import Path
 import markdown
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = ROOT / "PRIVACY_POLICY.md"
-TARGET = ROOT / "website" / "privacy.html"
+# Source, page, title, description.
+PAGES = [
+    (
+        "PRIVACY_POLICY.md",
+        "privacy.html",
+        "Privacy policy",
+        "Privacy policy for DPM (Dance Pattern Mapper).",
+    ),
+    (
+        "TERMS_OF_USE.md",
+        "terms.html",
+        "Terms of use",
+        "Terms of use for sharing with DPM (Dance Pattern Mapper).",
+    ),
+]
 
 TEMPLATE = """<!doctype html>
-<!-- Generated from PRIVACY_POLICY.md by website/build-privacy.py. Do not edit by hand. -->
+<!-- Generated from {source} by website/build-privacy.py. Do not edit by hand. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Alpha: keep the site out of search results until launch (website/README.md). -->
     <meta name="robots" content="noindex" />
-    <title>Privacy policy · DPM</title>
-    <meta name="description" content="Privacy policy for DPM (Dance Pattern Mapper)." />
+    <title>{title} · DPM</title>
+    <meta name="description" content="{description}" />
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />
     <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
@@ -57,6 +71,9 @@ TEMPLATE = """<!doctype html>
         <span>© 2026 Oliver Henrichs</span>
         <nav aria-label="Footer">
           <a href="./">Home</a>
+          <a href="privacy.html">Privacy policy</a>
+          <a href="terms.html">Terms of use</a>
+          <a href="impressum.html">Impressum</a>
           <a href="mailto:dance-pattern-mapper@pm.me">Contact</a>
         </nav>
       </div>
@@ -67,13 +84,20 @@ TEMPLATE = """<!doctype html>
 
 
 def main() -> None:
-    body = markdown.markdown(
-        SOURCE.read_text(encoding="utf-8"),
-        extensions=["tables", "sane_lists"],
-        output_format="html",
-    )
-    TARGET.write_text(TEMPLATE.format(body=body), encoding="utf-8")
-    print(f"wrote {TARGET.relative_to(ROOT)}")
+    for source, page, title, description in PAGES:
+        body = markdown.markdown(
+            (ROOT / source).read_text(encoding="utf-8"),
+            extensions=["tables", "sane_lists"],
+            output_format="html",
+        )
+        target = ROOT / "website" / page
+        target.write_text(
+            TEMPLATE.format(
+                body=body, source=source, title=title, description=description
+            ),
+            encoding="utf-8",
+        )
+        print(f"wrote {target.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

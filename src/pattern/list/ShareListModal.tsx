@@ -26,6 +26,7 @@ import {
 import AppDialog from "@/src/common/components/AppDialog";
 import { withMembersOnly } from "@/src/pattern/members/members";
 import HandoverSection from "@/src/pattern/handover/HandoverSection";
+import { useTermsConsent } from "@/src/legal/useTermsConsent";
 
 interface ShareListModalProps {
   visible: boolean;
@@ -48,6 +49,8 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
+  // Publishing shares the list with others: agreed to the terms of use first (src/legal/).
+  const { withTerms, termsDialog } = useTermsConsent();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -319,7 +322,7 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
                   <Button
                     title={isPublished ? t("syncToCloud") : t("publishToCloud")}
                     icon="cloud-upload-outline"
-                    onPress={() => handlePublish()}
+                    onPress={() => withTerms(() => void handlePublish())}
                   />
                 )}
                 {firebaseAvailable && isPublished && (
@@ -340,6 +343,8 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
           </ScrollView>
         </View>
       </ModalOverlay>
+
+      {termsDialog}
 
       {/* ── Members-only confirmation, on a published list ─────────────── */}
       <AppDialog

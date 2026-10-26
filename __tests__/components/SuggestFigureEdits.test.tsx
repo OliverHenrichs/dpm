@@ -1,5 +1,7 @@
 import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
+import { TERMS_VERSION } from "@/src/legal/TermsStorage";
 import {
   publishList,
   subscribeToSharedList,
@@ -63,6 +65,8 @@ const mocked = <T extends (...args: never[]) => unknown>(fn: T) =>
 let suggestionsNow: PatternSuggestion[] = [];
 
 beforeEach(() => {
+  // Suggesting asks for the terms of use once; agreed here, tested in TermsConsent.
+  seedAsyncStorage({ "@termsAccepted": TERMS_VERSION });
   suggestionsNow = [];
   mocked(subscribeToSharedList).mockReturnValue(() => {});
   mocked(syncPublishedList).mockResolvedValue(undefined);

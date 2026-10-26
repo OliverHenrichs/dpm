@@ -1,4 +1,6 @@
 import React from "react";
+import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
+import { TERMS_VERSION } from "@/src/legal/TermsStorage";
 import {
   fetchSharedList,
   MembersOnlyError,
@@ -70,6 +72,8 @@ const mocked = <T extends (...args: never[]) => unknown>(fn: T) =>
 let membersNow: ListMember[] = [];
 
 beforeEach(() => {
+  // Publishing and suggesting ask for the terms of use once; agreed here, tested in TermsConsent.
+  seedAsyncStorage({ "@termsAccepted": TERMS_VERSION });
   membersNow = [];
   mocked(subscribeToSharedList).mockReturnValue(() => {});
   mocked(publishList).mockResolvedValue({

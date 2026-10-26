@@ -33,15 +33,15 @@ import {
   figureChanges,
 } from "@/src/pattern/suggestions/figureEdits";
 import SuggestedEditReview from "@/src/pattern/suggestions/SuggestedEditReview";
+import { useMutedSubscribers } from "@/src/pattern/suggestions/useListSuggestions";
 
 /** A figure's name from another phone's snapshot, for a figure no longer in the list. */
 const nameOf = (raw: unknown) =>
   isObject(raw) && typeof raw.name === "string" ? raw.name : "?";
-import { useMutedSubscribers } from "@/src/pattern/suggestions/useListSuggestions";
 
 interface SuggestionsModalProps {
   visible: boolean;
-  /** The publisher's own published list. */
+  /** The list owner's own published list. */
   list: IPatternList;
   patterns: IPattern[];
   patternTypes: PatternType[];

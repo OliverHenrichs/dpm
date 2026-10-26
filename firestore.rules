@@ -53,6 +53,13 @@ rules_version = '2';
 // how the publisher counts them; nobody can read a single one. The id is the
 // phone's secret, so whoever holds it may refresh or delete that record.
 //
+// Reports: anyone who follows a list can report it to the operator
+// (TERMS_OF_USE.md §4), signed in anonymously. A report lives outside the
+// list, `reports/{shareCode}_{uid}`, so it outlives the list's removal and
+// the publisher cannot see or delete it; one per list and reporter, which
+// sending again replaces. Nobody reads reports but the Admin SDK
+// (tools/data-removal).
+//
 // The app token is compared by its SHA-256, so the repository (public) holds
 // only the hash. Rotating it means a new FIREBASE_APP_TOKEN in .env and in
 // every EAS environment, a rebuild, and a new hash below; old builds stop
@@ -502,6 +509,38 @@ service cloud.firestore {
         && mayRead();
       allow delete: if isShareCode(shareCode)
         && (isSubscriptionId() || isOwner(shareCode));
+    }
+
+    // A report about a published list (ReportService.reportList).
+    match /reports/{reportId} {
+      function isReport(data) {
+        return data.keys().hasOnly(['shareCode', 'reporterUid', 'reason',
+            'details', 'contact', 'createdAt', 'appToken'])
+          && data.keys().hasAll(['shareCode', 'reporterUid', 'reason',
+            'createdAt', 'appToken'])
+          && data.shareCode is string
+          && isShareCode(data.shareCode)
+          && reportId == data.shareCode + '_' + request.auth.uid
+          && data.reporterUid == request.auth.uid
+          && data.reason in ['consent', 'child', 'copyright', 'illegal',
+            'spam', 'other']
+          && (!('details' in data)
+            || (data.details is string
+              && data.details.size() > 0
+              && data.details.size() <= 2000))
+          && (!('contact' in data)
+            || (data.contact is string
+              && data.contact.size() > 0
+              && data.contact.size() <= 254))
+          && data.createdAt == request.time
+          && hasAppToken(data);
+      }
+
+      allow read, delete: if false;
+      allow create, update: if signedIn()
+        && notBlocked()
+        && isReport(request.resource.data)
+        && exists(listPath(request.resource.data.shareCode));
     }
 
     match /{document=**} {

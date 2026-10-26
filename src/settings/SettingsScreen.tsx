@@ -41,6 +41,7 @@ import {
   currentAppIconColor,
   setAppIconColor,
 } from "@/src/settings/appIcon";
+import { openLegalPage, PRIVACY_URL, TERMS_URL } from "@/src/legal/legalLinks";
 
 const ICON_COLOR_LABEL_KEYS: Record<AppIconColor, string> = {
   indigo: "iconColorIndigo",
@@ -245,6 +246,34 @@ const SettingsScreen: React.FC = () => {
             value={whatsNewEnabled}
             onValueChange={toggleWhatsNew}
           />
+        </View>
+
+        {/* Legal: the terms of use and the privacy policy, on the website. */}
+        <View style={commonStyles.sectionHeaderRow}>
+          <Text style={commonStyles.sectionTitle}>{t("legal")}</Text>
+        </View>
+        <View style={styles.styleList}>
+          {(
+            [
+              ["termsOfUse", "file-document-outline", TERMS_URL],
+              ["privacyPolicy", "shield-account-outline", PRIVACY_URL],
+            ] as const
+          ).map(([titleKey, icon, url]) => (
+            <ListRow
+              key={titleKey}
+              variant="card"
+              title={t(titleKey)}
+              icon={icon}
+              trailing={
+                <Icon
+                  name="open-in-new"
+                  size={theme.iconSize.md}
+                  color={theme.colors.textMuted}
+                />
+              }
+              onPress={() => openLegalPage(url)}
+            />
+          ))}
         </View>
 
         {/* App Icon Section: last, since switching closes the app. A colour of its own,
