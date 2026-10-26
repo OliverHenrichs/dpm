@@ -68,3 +68,11 @@ export const HANDOVERS = "handovers";
  * may list it.
  */
 export const SUBSCRIPTIONS = "subscriptions";
+
+/**
+ * Reports about published lists (`ReportService.ts`), outside any list so they outlive its
+ * removal: `{ shareCode, reporterUid, reason, details?, contact?, createdAt, appToken }`, one per
+ * list and reporter (`{shareCode}_{uid}`). Nobody reads them but the operator's Admin SDK
+ * (tools/data-removal, `reports`).
+ */
+export const REPORTS = "reports";
