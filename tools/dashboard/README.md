@@ -21,7 +21,7 @@ It runs in one of two ways:
 
 Everything `tools/data-removal/README.md` → _Setup_ says (its `firebase-admin`, the Admin
 credentials in `.env`), plus [Claude Code](https://claude.com/claude-code) signed in for the agent
-reviews (`claude` on the PATH, or `DPM_CLAUDE_BIN=/path/to/claude`).
+reviews (`claude` on the PATH, or `DPM_CLAUDE_BIN=/path/to/claude`; on Windows it finds the `claude.exe` behind npm's `claude.cmd` itself).
 
 ## Running it on the laptop
 

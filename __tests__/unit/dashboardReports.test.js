@@ -14,7 +14,11 @@ const {
   REVIEW_SCHEMA,
 } = require("@/tools/dashboard/lib/review");
 const { reviewStore } = require("@/tools/dashboard/lib/reviews");
-const { reviewQueue, claudeArgs } = require("@/tools/dashboard/lib/agent");
+const {
+  reviewQueue,
+  claudeArgs,
+  claudeBin,
+} = require("@/tools/dashboard/lib/agent");
 const { demoStore } = require("@/tools/dashboard/lib/store");
 const { createDashboard, createServer } = require("@/tools/dashboard/server");
 const { caseStore } = require("@/tools/dashboard/lib/cases");
@@ -273,6 +277,30 @@ describe("claudeArgs", () => {
       "opus",
     );
     expect(withModel[withModel.indexOf("--model") + 1]).toBe("opus");
+  });
+});
+
+describe("claudeBin", () => {
+  it("finds claude.exe behind npm's claude.cmd on Windows", () => {
+    const npm = fs.mkdtempSync(path.join(os.tmpdir(), "dpm-npm-"));
+    const bin = path.join(
+      npm,
+      "node_modules",
+      "@anthropic-ai",
+      "claude-code",
+      "bin",
+    );
+    fs.mkdirSync(bin, { recursive: true });
+    fs.writeFileSync(path.join(bin, "claude.exe"), "");
+    expect(claudeBin({ PATH: `C:\\nowhere;${npm}` }, "win32")).toBe(
+      path.join(bin, "claude.exe"),
+    );
+    expect(claudeBin({ PATH: "C:\\nowhere" }, "win32")).toBe("claude");
+    expect(claudeBin({ PATH: npm }, "linux")).toBe("claude");
+    expect(claudeBin({ DPM_CLAUDE_BIN: "x.exe", PATH: npm }, "win32")).toBe(
+      "x.exe",
+    );
+    fs.rmSync(npm, { recursive: true, force: true });
   });
 });
 

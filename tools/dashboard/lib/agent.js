@@ -64,6 +64,33 @@ function claudeArgs(inputFile, env = process.env, model = "") {
 }
 
 /**
+ * The program to start. On Windows, npm installs `claude` as a `claude.cmd`
+ * wrapper, which Node can't start without a shell (and a shell would mangle
+ * the JSON schema argument), so this looks for the `claude.exe` behind it.
+ */
+function claudeBin(env = process.env, platform = process.platform) {
+  if (env.DPM_CLAUDE_BIN) return env.DPM_CLAUDE_BIN;
+  if (platform !== "win32") return "claude";
+  const dirs = (env.PATH ?? env.Path ?? "").split(";").filter(Boolean);
+  for (const dir of dirs) {
+    for (const file of [
+      path.join(dir, "claude.exe"),
+      path.join(
+        dir,
+        "node_modules",
+        "@anthropic-ai",
+        "claude-code",
+        "bin",
+        "claude.exe",
+      ),
+    ]) {
+      if (fs.existsSync(file)) return file;
+    }
+  }
+  return "claude";
+}
+
+/**
  * Reviews one report. `input` is `agentInput(...)`; it goes to a private
  * temporary folder the session may read, deleted afterwards.
  *
@@ -75,7 +102,7 @@ async function runReview(input, { repoRoot, env = process.env, model } = {}) {
   fs.writeFileSync(inputFile, JSON.stringify(input, null, 2), { mode: 0o600 });
   try {
     const stdout = await run(
-      env.DPM_CLAUDE_BIN || "claude",
+      claudeBin(env),
       claudeArgs(inputFile, env, model),
       repoRoot,
       Number(env.DPM_REVIEW_TIMEOUT_MS) || 10 * 60 * 1000,
@@ -162,4 +189,4 @@ function reviewQueue(work) {
   };
 }
 
-module.exports = { claudeArgs, runReview, reviewQueue, VIDEO_HOSTS };
+module.exports = { claudeArgs, claudeBin, runReview, reviewQueue, VIDEO_HOSTS };
