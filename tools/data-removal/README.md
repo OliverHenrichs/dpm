@@ -77,7 +77,7 @@ details and an optional email for a reply. Nobody but this tool can read it. Not
 you, so run `reports` regularly; the terms of use promise to look at every report promptly
 (children's safety first), which the Digital Services Act requires of a host.
 
-The report review dashboard (`npm run reports:review`, `tools/report-review/README.md`) does all
+The operations dashboard (`npm run ops`, `tools/dashboard/README.md`) does all
 of this on one page, fetching every few minutes, with an agent that checks each report and drafts
 the reply. On the command line:
 

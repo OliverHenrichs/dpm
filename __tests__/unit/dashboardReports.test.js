@@ -12,14 +12,13 @@ const {
   byPriority,
   looksLikeReportId,
   REVIEW_SCHEMA,
-} = require("@/tools/report-review/lib/review");
-const { reviewStore } = require("@/tools/report-review/lib/reviews");
-const { reviewQueue, claudeArgs } = require("@/tools/report-review/lib/agent");
-const { demoStore } = require("@/tools/report-review/lib/store");
-const {
-  createDashboard,
-  createServer,
-} = require("@/tools/report-review/server");
+} = require("@/tools/dashboard/lib/review");
+const { reviewStore } = require("@/tools/dashboard/lib/reviews");
+const { reviewQueue, claudeArgs } = require("@/tools/dashboard/lib/agent");
+const { demoStore } = require("@/tools/dashboard/lib/store");
+const { createDashboard, createServer } = require("@/tools/dashboard/server");
+const { caseStore } = require("@/tools/dashboard/lib/cases");
+const { actionLog } = require("@/tools/dashboard/lib/actionLog");
 const { makeDoc, TAKEDOWN_OWNER } = require("@/tools/data-removal/lib/model");
 
 const CODE = "AB12CD34";
@@ -336,6 +335,8 @@ describe("dashboard", () => {
       settingsFile: path.join(dir, "settings.json"),
       opts: { every: 5, agent: true, autoReview: false },
       review: agent,
+      cases: caseStore(path.join(dir, "cases")),
+      log: actionLog(path.join(dir, "actions.jsonl")),
     });
     await dashboard.refresh();
   });
@@ -355,6 +356,8 @@ describe("dashboard", () => {
       settingsFile: path.join(dir, "off.json"),
       opts: { every: 5 },
       review: agent,
+      cases: caseStore(path.join(dir, "cases")),
+      log: actionLog(path.join(dir, "actions.jsonl")),
     });
     await off.refresh();
     const s = await off.api["POST /api/settings"]({ autoReview: true });

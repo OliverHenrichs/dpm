@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 25, 2026**
+**Last updated: October 26, 2026**
 
 ---
 
@@ -168,21 +168,23 @@ We do **not** sell your data to third parties and do not use your data for adver
 
 ## 6. Data retention
 
-| Data                                              | Retention                                                                                                                                                                                 |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local device data                                 | Until you uninstall the app or delete it in the app (a list, a pattern, a video)                                                                                                          |
-| Downloaded models                                 | Until you delete them under Settings → On-device models, or uninstall the app                                                                                                             |
-| Published Firestore document                      | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.                                       |
-| Owner record of a published list                  | Removed together with the list when you stop sharing it                                                                                                                                   |
-| A handover offer                                  | Until the previous publisher's app has followed the handover, the publisher withdraws it, or the list stops being shared. An offer nobody accepts stops working after 7 days.             |
-| A pattern suggestion                              | Until the publisher adds or dismisses it, or stops sharing the list                                                                                                                       |
-| Daily suggestion counts and mute records          | Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time)                                                                                         |
-| Subscription record of a list you subscribe to    | Until you unsubscribe or the publisher stops sharing the list; it stops counting 90 days after your app last synced the list                                                              |
-| Anonymous user ID (Firebase Authentication)       | Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
-| A report about a list                             | Until we have dealt with it, and at most one year after you sent it; deleted earlier if you ask us                                                                                        |
-| Block record (anonymous user ID, date)            | Kept only if we block an installation from publishing, for example after removing content that must not be published; deleted when we lift the block or delete that anonymous ID          |
-| Firebase infrastructure logs (IP, timestamps)     | Governed by Google's own retention policy (typically 30–180 days)                                                                                                                         |
-| Logs kept by video hosts, Hugging Face and GitHub | Governed by each service's own policy                                                                                                                                                     |
+| Data                                                                             | Retention                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local device data                                                                | Until you uninstall the app or delete it in the app (a list, a pattern, a video)                                                                                                          |
+| Downloaded models                                                                | Until you delete them under Settings → On-device models, or uninstall the app                                                                                                             |
+| Published Firestore document                                                     | Until you stop sharing the list in the app (Lists → your list's "more" button → Manage Cloud Sharing → Stop Sharing). There is no automatic expiry.                                       |
+| Owner record of a published list                                                 | Removed together with the list when you stop sharing it                                                                                                                                   |
+| A handover offer                                                                 | Until the previous publisher's app has followed the handover, the publisher withdraws it, or the list stops being shared. An offer nobody accepts stops working after 7 days.             |
+| A pattern suggestion                                                             | Until the publisher adds or dismisses it, or stops sharing the list                                                                                                                       |
+| Daily suggestion counts and mute records                                         | Until the publisher stops sharing the list (a publisher can also unmute a subscriber at any time)                                                                                         |
+| Subscription record of a list you subscribe to                                   | Until you unsubscribe or the publisher stops sharing the list; it stops counting 90 days after your app last synced the list                                                              |
+| Anonymous user ID (Firebase Authentication)                                      | Kept while you might still publish or suggest from this installation; it stays on Google's servers after you uninstall the app until we delete it, which you can ask us to do at any time |
+| A report about a list                                                            | Until we have dealt with it, and at most one year after you sent it; deleted earlier if you ask us                                                                                        |
+| Block record (anonymous user ID, date)                                           | Kept only if we block an installation from publishing, for example after removing content that must not be published; deleted when we lift the block or delete that anonymous ID          |
+| An email asking us to delete your data, with our notes and reply                 | On our own computer until we have dealt with it and replied, then deleted                                                                                                                 |
+| Our record of a removal or block (share code or anonymous user ID, date, reason) | Two years, so we can answer questions about it later; it holds no list content, email address or report text                                                                              |
+| Firebase infrastructure logs (IP, timestamps)                                    | Governed by Google's own retention policy (typically 30–180 days)                                                                                                                         |
+| Logs kept by video hosts, Hugging Face and GitHub                                | Governed by each service's own policy                                                                                                                                                     |
 
 ---
 

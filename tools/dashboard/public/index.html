@@ -1,0 +1,3461 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <!--dpm-token-->
+    <title>DPM Operations</title>
+    <style>
+      /* Command: StarCraft II glass and glow, LCARS-coloured tab blocks. Dark only. */
+      @font-face {
+        font-family: "Rajdhani";
+        font-weight: 500;
+        src: url("/fonts/rajdhani-500.woff2") format("woff2");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Rajdhani";
+        font-weight: 600;
+        src: url("/fonts/rajdhani-600.woff2") format("woff2");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Rajdhani";
+        font-weight: 700;
+        src: url("/fonts/rajdhani-700.woff2") format("woff2");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Share Tech Mono";
+        font-weight: 400;
+        src: url("/fonts/share-tech-mono-400.woff2") format("woff2");
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --bg: #050a14;
+        --bg-glow: #0f2a4a;
+        --text: #dff4ff;
+        --muted: #7fa3bd;
+        --accent: #3fd0ff;
+        --accent-dim: rgba(63, 208, 255, 0.14);
+        --line: rgba(63, 208, 255, 0.45);
+        --line-soft: rgba(63, 208, 255, 0.2);
+        --panel: linear-gradient(
+          180deg,
+          rgba(30, 80, 130, 0.4),
+          rgba(10, 30, 60, 0.35)
+        );
+        --field: rgba(2, 8, 18, 0.75);
+        --glow: 0 0 16px rgba(63, 208, 255, 0.55);
+        --orange: #ff9c00;
+        --lilac: #cc99cc;
+        --blue: #6a7dff;
+        --danger: #ff3b3b;
+        --danger-glow: 0 0 16px rgba(255, 59, 59, 0.6);
+        --good: #5fe08a;
+        --warn: #ffc23d;
+        --ui: "Rajdhani", "Segoe UI", system-ui, sans-serif;
+        --mono: "Share Tech Mono", ui-monospace, "Cascadia Mono", monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+      body {
+        background:
+          radial-gradient(
+              1200px 600px at 70% -10%,
+              var(--bg-glow) 0%,
+              var(--bg) 60%
+            )
+            fixed,
+          var(--bg);
+        color: var(--text);
+        font: 500 16px/1.4 var(--ui);
+        padding: 16px max(16px, env(safe-area-inset-right)) 24px
+          max(16px, env(safe-area-inset-left));
+      }
+      button,
+      select,
+      input,
+      textarea {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      a {
+        color: var(--accent);
+        word-break: break-all;
+      }
+
+      /* header */
+      .top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 20px;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .deco {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .cursor {
+        display: inline-block;
+        width: 0.6em;
+        height: 1em;
+        background: var(--accent);
+        vertical-align: -2px;
+        animation: blink 1.1s steps(1) infinite;
+      }
+      h1 {
+        margin: 2px 0 0;
+        font-weight: 700;
+        font-size: clamp(26px, 4.5vw, 40px);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .chip {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid var(--line-soft);
+        padding: 4px 8px;
+        border-radius: 3px;
+        color: var(--muted);
+      }
+      .chip.armed {
+        color: var(--warn);
+        border-color: var(--warn);
+      }
+      .chip.demo {
+        color: var(--orange);
+        border-color: var(--orange);
+      }
+
+      /* frame */
+      .frame {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 16px;
+      }
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-self: start;
+        position: sticky;
+        top: 16px;
+      }
+      .nav-btn {
+        position: relative;
+        text-align: left;
+        border: 1px solid var(--line);
+        background: rgba(10, 30, 60, 0.55);
+        color: var(--text);
+        padding: 11px 14px 11px 24px;
+        border-radius: 4px;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: box-shadow 0.2s;
+      }
+      .nav-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 8px;
+        background: var(--orange);
+      }
+      .nav-btn[data-tab="data"]::before,
+      .nav-btn[data-tab="play"]::before {
+        background: var(--lilac);
+      }
+      .nav-btn[data-tab="usage"]::before,
+      .nav-btn[data-tab="access"]::before {
+        background: var(--blue);
+      }
+      .nav-btn:hover {
+        box-shadow: var(--glow);
+      }
+      .nav-btn[aria-current="page"] {
+        background: rgba(63, 208, 255, 0.22);
+        box-shadow: var(--glow);
+      }
+      .nav-btn .count {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: var(--mono);
+        font-size: 12px;
+        background: var(--danger);
+        color: #fff;
+        padding: 1px 6px;
+        border-radius: 10px;
+      }
+      .side .deco {
+        margin-top: 10px;
+        line-height: 1.7;
+      }
+      main {
+        min-width: 0;
+        display: grid;
+        gap: 16px;
+        align-content: start;
+      }
+
+      /* panels */
+      .panel {
+        position: relative;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 16px;
+        box-shadow: inset 0 0 24px rgba(63, 208, 255, 0.06);
+        min-width: 0;
+      }
+      .panel::before,
+      .panel::after {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--accent);
+        pointer-events: none;
+      }
+      .panel::before {
+        top: -2px;
+        left: -2px;
+        border-right: 0;
+        border-bottom: 0;
+      }
+      .panel::after {
+        bottom: -2px;
+        right: -2px;
+        border-left: 0;
+        border-top: 0;
+      }
+      .panel-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      h2 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        text-wrap: balance;
+      }
+      h3 {
+        margin: 16px 0 8px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h3:first-child {
+        margin-top: 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .small {
+        font-size: 14px;
+      }
+      .mono {
+        font-family: var(--mono);
+        letter-spacing: 0.04em;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 8px;
+      }
+      .grow {
+        flex: 1;
+      }
+      .stack {
+        display: grid;
+        gap: 16px;
+        align-content: start;
+        min-width: 0;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: minmax(240px, 330px) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      /* controls */
+      .btn {
+        border: 1px solid var(--line);
+        background: var(--accent-dim);
+        color: var(--text);
+        padding: 7px 12px;
+        border-radius: 4px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: box-shadow 0.2s;
+      }
+      .btn:hover:not(:disabled) {
+        box-shadow: var(--glow);
+      }
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #021018;
+      }
+      .btn.danger {
+        background: transparent;
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      .btn.danger:hover:not(:disabled) {
+        box-shadow: var(--danger-glow);
+      }
+      .btn.on {
+        background: rgba(63, 208, 255, 0.3);
+        box-shadow: var(--glow);
+      }
+      .btn.quiet {
+        background: transparent;
+        border-color: var(--line-soft);
+      }
+      input[type="text"],
+      input[type="search"],
+      input[type="email"],
+      textarea,
+      select {
+        background: var(--field);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 7px 10px;
+        width: 100%;
+      }
+      select {
+        width: auto;
+      }
+      textarea {
+        min-height: 80px;
+        resize: vertical;
+        font-family: var(--ui);
+      }
+      label.check {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 15px;
+      }
+      label.check input {
+        margin: 0;
+        accent-color: var(--accent);
+      }
+
+      /* badges */
+      .badge {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 1px 7px;
+        border-radius: 3px;
+        border: 1px solid var(--line-soft);
+        color: var(--muted);
+      }
+      .badge.bad,
+      .badge.uphold,
+      .badge.child {
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      .badge.good,
+      .badge.reject {
+        color: var(--good);
+        border-color: var(--good);
+      }
+      .badge.unclear,
+      .badge.warn {
+        color: var(--warn);
+        border-color: var(--warn);
+      }
+
+      /* overview */
+      .waiting {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        display: grid;
+        gap: 4px;
+        text-align: left;
+        border: 1px solid var(--line);
+        border-left: 6px solid var(--accent);
+        border-radius: 4px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.25);
+        color: var(--text);
+      }
+      .card:hover {
+        box-shadow: var(--glow);
+      }
+      .card.urgent {
+        border-left-color: var(--danger);
+      }
+      .card.warn {
+        border-left-color: var(--warn);
+      }
+      .card.calm {
+        border-left-color: var(--good);
+      }
+      .card .num {
+        font-family: var(--mono);
+        font-size: 30px;
+        line-height: 1;
+        color: #8fe9ff;
+      }
+      .card.urgent .num {
+        color: var(--danger);
+      }
+      .card.calm .num {
+        color: var(--good);
+      }
+
+      /* lists of things */
+      .group-title {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 14px 2px 6px;
+      }
+      .group-title:first-child {
+        margin-top: 0;
+      }
+      .item {
+        display: grid;
+        grid-template-columns: 6px minmax(0, 1fr);
+        gap: 10px;
+        width: 100%;
+        text-align: left;
+        padding: 8px 10px 8px 0;
+        margin-bottom: 6px;
+        border: 1px solid var(--line-soft);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.22);
+        overflow: hidden;
+      }
+      .item .stripe {
+        align-self: stretch;
+        background: var(--lilac);
+      }
+      .item.urgent .stripe {
+        background: var(--danger);
+      }
+      .item.selected {
+        border-color: var(--accent);
+        box-shadow: var(--glow);
+      }
+      .item .title {
+        font-weight: 700;
+        font-size: 17px;
+      }
+      .quote {
+        white-space: pre-wrap;
+        border-left: 3px solid var(--line);
+        padding-left: 10px;
+        margin: 6px 0;
+      }
+      .entry {
+        padding: 8px 0;
+        border-top: 1px solid var(--line-soft);
+      }
+      .entry:first-child {
+        border-top: 0;
+      }
+      ul {
+        margin: 4px 0;
+        padding-left: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 6px 8px 6px 0;
+        border-top: 1px solid var(--line-soft);
+      }
+      th {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 400;
+        border-top: 0;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      .note {
+        border: 1px dashed var(--warn);
+        color: var(--warn);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .banner {
+        border: 1px solid var(--danger);
+        color: #ffb3b3;
+        background: rgba(255, 59, 59, 0.12);
+        padding: 10px 14px;
+        border-radius: 4px;
+      }
+      .empty {
+        padding: 28px 12px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .subtabs {
+        display: inline-flex;
+        flex-wrap: wrap;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .subtabs button {
+        background: transparent;
+        border: 0;
+        padding: 7px 12px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .subtabs button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #021018;
+      }
+
+      /* red alert */
+      body.red-alert {
+        box-shadow:
+          inset 0 0 0 6px var(--danger),
+          inset 0 0 60px rgba(255, 59, 59, 0.35);
+        animation: redpulse 1.2s ease-in-out infinite;
+      }
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        background: rgba(2, 6, 14, 0.75);
+        padding: 16px max(16px, env(safe-area-inset-right)) 16px
+          max(16px, env(safe-area-inset-left));
+      }
+      .overlay.danger {
+        background: rgba(20, 0, 0, 0.72);
+      }
+      .dialog {
+        width: min(540px, 100%);
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        background: #07111f;
+        border: 2px solid var(--accent);
+        border-radius: 4px;
+        padding: 20px;
+        box-shadow: var(--glow);
+      }
+      .overlay.danger .dialog {
+        background: #120406;
+        color: #ffe9e9;
+        border-color: var(--danger);
+        box-shadow: 0 0 40px rgba(255, 59, 59, 0.45);
+      }
+      .overlay.danger .deco {
+        color: #ff8a8a;
+      }
+      .dialog h2 {
+        margin: 6px 0 10px;
+        font-size: 24px;
+      }
+      .dialog label.field {
+        display: block;
+        font-size: 14px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin: 12px 0 6px;
+      }
+      .overlay.danger #dlg-confirm {
+        border-color: var(--danger);
+        font-family: var(--mono);
+        font-size: 18px;
+        letter-spacing: 0.1em;
+      }
+      .overlay.danger .btn.primary {
+        background: var(--danger);
+        border-color: var(--danger);
+        color: #fff;
+      }
+      .dialog .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: end;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        z-index: 30;
+        max-width: calc(100% - 32px);
+        background: #02060e;
+        border: 1px solid var(--accent);
+        box-shadow: var(--glow);
+        padding: 10px 16px;
+        border-radius: 4px;
+        font-family: var(--mono);
+        font-size: 14px;
+      }
+      .toast.bad {
+        border-color: var(--danger);
+        box-shadow: var(--danger-glow);
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+      @keyframes redpulse {
+        50% {
+          box-shadow:
+            inset 0 0 0 6px #7a0000,
+            inset 0 0 30px rgba(255, 59, 59, 0.15);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .cursor,
+        body.red-alert {
+          animation: none;
+        }
+        .btn,
+        .nav-btn {
+          transition: none;
+        }
+      }
+      @media (max-width: 1100px) {
+        .two {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      /* Phone: bottom tab bar, no side decoration, one column. */
+      @media (max-width: 760px) {
+        body {
+          padding-bottom: calc(84px + env(safe-area-inset-bottom));
+        }
+        .frame,
+        .split {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .side {
+          position: fixed;
+          inset: auto 0 0 0;
+          top: auto;
+          z-index: 10;
+          flex-direction: row;
+          gap: 0;
+          background: #02060e;
+          border-top: 2px solid var(--accent);
+          padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom)
+            env(safe-area-inset-left);
+        }
+        .side .deco,
+        .top .deco,
+        .hide-phone {
+          display: none !important;
+        }
+        .nav-btn {
+          flex: 1;
+          min-width: 0;
+          border-radius: 0;
+          text-align: center;
+          padding: 14px 2px;
+          font-size: 12px;
+        }
+        .nav-btn::before {
+          display: none;
+        }
+        .nav-btn .count {
+          top: 4px;
+          right: 2px;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <div class="deco">
+          Ops console // <span id="stardate"></span> //
+          <span id="sysline">systems online</span> <span class="cursor"></span>
+        </div>
+        <h1>DPM Operations</h1>
+      </div>
+      <div class="controls">
+        <span id="project" class="chip"></span>
+        <span id="device" class="chip"></span>
+        <button type="button" class="btn quiet" id="mute" aria-pressed="false">
+          Sound on
+        </button>
+      </div>
+    </header>
+
+    <div class="frame">
+      <nav class="side" aria-label="Sections">
+        <button type="button" class="nav-btn" data-tab="overview">
+          Overview
+        </button>
+        <button type="button" class="nav-btn" data-tab="reports">
+          Reports<span class="count" id="reports-count" hidden></span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="data">
+          Data<span class="count" id="cases-count" hidden></span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="usage">Usage</button>
+        <button type="button" class="nav-btn" data-tab="play">Play</button>
+        <button type="button" class="nav-btn" data-tab="access">Access</button>
+        <div class="deco" id="side-deco" aria-hidden="true"></div>
+      </nav>
+      <main>
+        <div id="banner"></div>
+        <section id="tab-overview" hidden></section>
+        <section id="tab-reports" hidden>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="deco">Incident log // children's safety first</div>
+                <h2>Reports</h2>
+              </div>
+              <div class="row small">
+                <span id="refreshed" class="muted"></span>
+                <button type="button" class="btn" id="refresh">
+                  Fetch now
+                </button>
+              </div>
+            </div>
+            <div class="row small">
+              <label
+                >Fetch every
+                <select id="every">
+                  <option value="1">1 min</option>
+                  <option value="2">2 min</option>
+                  <option value="5">5 min</option>
+                  <option value="10">10 min</option>
+                  <option value="15">15 min</option>
+                  <option value="30">30 min</option>
+                  <option value="60">60 min</option>
+                </select>
+              </label>
+              <label
+                >Model
+                <select id="model"></select
+              ></label>
+              <label
+                class="check"
+                title="Lets an agent check reports and draft replies. A review sends the report's text and the list (no email, no ids) to Anthropic."
+              >
+                <input type="checkbox" id="agent" /> Agent reviews
+              </label>
+              <label
+                class="check"
+                title="Every new report gets an agent review and draft reply, waiting for your verdict. Needs Agent reviews on."
+              >
+                <input type="checkbox" id="auto" /> Auto review
+              </label>
+              <span id="queue" class="muted"></span>
+            </div>
+          </div>
+          <div class="split" style="margin-top: 16px">
+            <nav id="report-list"></nav>
+            <section id="report-detail"></section>
+          </div>
+        </section>
+        <section id="tab-data" hidden></section>
+        <section id="tab-usage" hidden></section>
+        <section id="tab-play" hidden></section>
+        <section id="tab-access" hidden></section>
+      </main>
+    </div>
+
+    <div class="overlay" id="overlay" hidden>
+      <div
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dlg-title"
+      >
+        <div class="deco" id="dlg-deco"></div>
+        <h2 id="dlg-title"></h2>
+        <div id="dlg-body"></div>
+        <div class="actions">
+          <button type="button" class="btn" id="dlg-cancel">Cancel</button>
+          <button type="button" class="btn primary" id="dlg-go"></button>
+        </div>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status" hidden></div>
+
+    <script>
+      const token =
+        document.querySelector('meta[name="dpm-token"]')?.content ||
+        location.hash.slice(1);
+      const store = {
+        get(k) {
+          try {
+            return localStorage.getItem(k);
+          } catch {
+            return null;
+          }
+        },
+        set(k, v) {
+          try {
+            localStorage.setItem(k, v);
+          } catch {}
+        },
+      };
+
+      let state = null; // reports, from /api/state
+      let access = { mode: "local", device: "local" };
+      let cases = [];
+      let tab = store.get("dpm-tab") || "overview";
+      let selected = null;
+      let detailKey = "";
+      const data = {
+        sub: "search",
+        search: null,
+        query: "",
+        view: null,
+        registry: null,
+        log: null,
+        caseId: null,
+      };
+
+      /* ---------- sound ---------- */
+      let audio = null;
+      let muted = store.get("dpm-muted") === "1";
+      function tone(freq, start, dur, type = "sine", vol = 0.05, to) {
+        if (muted) return;
+        try {
+          audio ??= new (window.AudioContext || window.webkitAudioContext)();
+          const t = audio.currentTime + start;
+          const o = audio.createOscillator();
+          const g = audio.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(freq, t);
+          if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+          g.gain.setValueAtTime(vol, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.connect(g).connect(audio.destination);
+          o.start(t);
+          o.stop(t + dur + 0.02);
+        } catch {}
+      }
+      const sound = {
+        click: () => tone(1320, 0, 0.05, "square", 0.025),
+        nav: () => {
+          tone(660, 0, 0.06, "triangle", 0.045);
+          tone(990, 0.06, 0.08, "triangle", 0.045);
+        },
+        alert: () => {
+          tone(392, 0, 0.18, "sine", 0.06);
+          tone(311, 0.2, 0.3, "sine", 0.06);
+        },
+        confirm: () =>
+          [523, 659, 784].forEach((f, i) =>
+            tone(f, i * 0.09, 0.14, "triangle", 0.05),
+          ),
+        report: () => {
+          tone(880, 0, 0.12, "sine", 0.07);
+          tone(1175, 0.14, 0.2, "sine", 0.07);
+        },
+        error: () => tone(220, 0, 0.2, "square", 0.03),
+      };
+      const muteBtn = document.getElementById("mute");
+      function showMute() {
+        muteBtn.setAttribute("aria-pressed", String(muted));
+        muteBtn.textContent = muted ? "Muted" : "Sound on";
+      }
+      muteBtn.addEventListener("click", () => {
+        muted = !muted;
+        store.set("dpm-muted", muted ? "1" : "0");
+        showMute();
+        sound.click();
+      });
+      showMute();
+
+      /* ---------- helpers ---------- */
+      async function call(method, url, body) {
+        const res = await fetch(url, {
+          method,
+          headers: { "X-Dpm-Token": token, "Content-Type": "application/json" },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok)
+          throw Object.assign(new Error(json.error || res.statusText), {
+            status: res.status,
+          });
+        return json;
+      }
+
+      /** Builds an element; strings become text, never HTML. */
+      function h(tag, attrs, ...children) {
+        const el = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs || {})) {
+          if (v === undefined || v === null || v === false) continue;
+          if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+          else if (k === "className") el.className = v;
+          else if (k === "value") el.value = v;
+          else el.setAttribute(k, v === true ? "" : v);
+        }
+        for (const c of children.flat()) {
+          if (c === null || c === undefined || c === false) continue;
+          el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+        }
+        return el;
+      }
+
+      function panel(deco, title, ...children) {
+        return h(
+          "div",
+          { className: "panel" },
+          h(
+            "div",
+            { className: "panel-head" },
+            h(
+              "div",
+              {},
+              deco && h("div", { className: "deco" }, deco),
+              h("h2", {}, title),
+            ),
+          ),
+          ...children,
+        );
+      }
+
+      function when(iso) {
+        if (!iso) return "?";
+        return new Date(iso).toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      }
+      function ago(iso) {
+        if (!iso) return "";
+        const s = Math.round((Date.now() - new Date(iso)) / 1000);
+        if (s < 60) return "just now";
+        if (s < 3600) return `${Math.round(s / 60)} min ago`;
+        if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+        return `${Math.round(s / 86400)} days ago`;
+      }
+
+      const toastEl = document.getElementById("toast");
+      let toastTimer;
+      function say(msg, bad = false) {
+        toastEl.textContent = msg;
+        toastEl.className = `toast${bad ? " bad" : ""}`;
+        toastEl.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(
+          () => (toastEl.hidden = true),
+          bad ? 6000 : 3500,
+        );
+        if (bad) sound.error();
+      }
+
+      /** Runs a button's work, keeping it disabled meanwhile, and shows errors. */
+      function act(fn) {
+        return async (e) => {
+          const btn = e?.currentTarget;
+          if (btn) btn.disabled = true;
+          try {
+            await fn();
+          } catch (err) {
+            say(err.message, true);
+          } finally {
+            if (btn) btn.disabled = false;
+          }
+        };
+      }
+
+      /* ---------- dialogs ---------- */
+      const overlay = document.getElementById("overlay");
+      let dialogDone = null;
+      function closeDialog(result) {
+        overlay.hidden = true;
+        document.body.classList.remove("red-alert");
+        const done = dialogDone;
+        dialogDone = null;
+        done?.(result);
+      }
+      document.getElementById("dlg-cancel").addEventListener("click", () => {
+        sound.click();
+        closeDialog(null);
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !overlay.hidden) closeDialog(null);
+      });
+
+      /** A plain question, for things that send data out. Resolves true or null. */
+      function ask({ deco, title, text, go }) {
+        return new Promise((resolve) => {
+          dialogDone = resolve;
+          overlay.className = "overlay";
+          document.getElementById("dlg-deco").textContent = deco;
+          document.getElementById("dlg-title").textContent = title;
+          document.getElementById("dlg-body").replaceChildren(h("p", {}, text));
+          const goBtn = document.getElementById("dlg-go");
+          goBtn.textContent = go;
+          goBtn.disabled = false;
+          goBtn.onclick = () => closeDialog(true);
+          overlay.hidden = false;
+          goBtn.focus();
+        });
+      }
+
+      /**
+       * Red alert for what deletes or blocks: the plan in words, the code typed
+       * back, then (on the Pi) the passkey. Resolves with the typed text, or null.
+       */
+      function redAlert({ title, effects, expect, extra }) {
+        return new Promise((resolve) => {
+          dialogDone = resolve;
+          overlay.className = "overlay danger";
+          document.getElementById("dlg-deco").textContent =
+            "Red alert // authorization required";
+          document.getElementById("dlg-title").textContent = title;
+          const input = h("input", {
+            type: "text",
+            id: "dlg-confirm",
+            autocomplete: "off",
+            spellcheck: "false",
+          });
+          const goBtn = document.getElementById("dlg-go");
+          document.getElementById("dlg-body").replaceChildren(
+            h(
+              "ul",
+              {},
+              effects.map((e) => h("li", {}, e)),
+            ),
+            extra ?? null,
+            h(
+              "label",
+              { className: "field", for: "dlg-confirm" },
+              `Type ${expect} to confirm`,
+            ),
+            input,
+          );
+          goBtn.textContent =
+            access.mode === "lan" ? "Confirm with passkey" : "Confirm";
+          goBtn.disabled = true;
+          input.addEventListener(
+            "input",
+            () => (goBtn.disabled = input.value.trim() !== expect),
+          );
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !goBtn.disabled) goBtn.click();
+          });
+          goBtn.onclick = async () => {
+            goBtn.disabled = true;
+            try {
+              if (access.mode === "lan" && !access.armedUntil) await passkey();
+              sound.confirm();
+              closeDialog(input.value.trim());
+            } catch (err) {
+              say(err.message, true);
+              goBtn.disabled = false;
+            }
+          };
+          document.body.classList.add("red-alert");
+          overlay.hidden = false;
+          sound.alert();
+          setTimeout(() => input.focus(), 30);
+        });
+      }
+
+      /** Calls a destructive route; on the Pi, a stale passkey is asked for again once. */
+      async function destructive(method, url, body) {
+        try {
+          return await call(method, url, body);
+        } catch (e) {
+          if (e.status !== 428) throw e;
+          await passkey();
+          return call(method, url, body);
+        }
+      }
+
+      /* ---------- passkeys ---------- */
+      const toBuf = (s) =>
+        Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) =>
+          c.charCodeAt(0),
+        );
+      const toB64u = (buf) =>
+        btoa(String.fromCharCode(...new Uint8Array(buf)))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+
+      async function passkey() {
+        const o = await call("POST", "/api/access/assert-options");
+        const cred = await navigator.credentials.get({
+          publicKey: {
+            challenge: toBuf(o.challenge),
+            rpId: o.rpId,
+            allowCredentials: o.allowCredentials.map((c) => ({
+              ...c,
+              id: toBuf(c.id),
+            })),
+            userVerification: "required",
+            timeout: 60000,
+          },
+        });
+        access = await call("POST", "/api/access/assert", {
+          id: cred.id,
+          clientDataJSON: toB64u(cred.response.clientDataJSON),
+          authenticatorData: toB64u(cred.response.authenticatorData),
+          signature: toB64u(cred.response.signature),
+        });
+        renderChrome();
+      }
+
+      async function registerPasskey(code) {
+        const o = await call("POST", "/api/access/register-options", { code });
+        const cred = await navigator.credentials.create({
+          publicKey: {
+            challenge: toBuf(o.challenge),
+            rp: o.rp,
+            user: { ...o.user, id: toBuf(o.user.id) },
+            pubKeyCredParams: o.pubKeyCredParams,
+            excludeCredentials: o.excludeCredentials.map((c) => ({
+              ...c,
+              id: toBuf(c.id),
+            })),
+            authenticatorSelection: {
+              residentKey: "preferred",
+              userVerification: "required",
+            },
+            attestation: "none",
+            timeout: 60000,
+          },
+        });
+        access = await call("POST", "/api/access/register", {
+          id: cred.id,
+          publicKey: toB64u(cred.response.getPublicKey()),
+          alg: cred.response.getPublicKeyAlgorithm(),
+          clientDataJSON: toB64u(cred.response.clientDataJSON),
+        });
+      }
+
+      /* ---------- chrome ---------- */
+      function stardate() {
+        const d = new Date();
+        const start = Date.UTC(d.getUTCFullYear(), 0, 0);
+        const day = Math.floor((d - start) / 86400000);
+        return `stardate ${d.getUTCFullYear()}.${String(day).padStart(3, "0")}`;
+      }
+
+      function renderChrome() {
+        document.getElementById("stardate").textContent = stardate();
+        const p = document.getElementById("project");
+        if (state) {
+          p.textContent = state.demo
+            ? "Demo data"
+            : `${state.project}${state.emulated ? " (emulator)" : ""}`;
+          p.className = `chip${state.demo ? " demo" : ""}`;
+        }
+        const d = document.getElementById("device");
+        d.textContent =
+          access.mode === "lan"
+            ? `${access.device}${access.armedUntil ? " · armed" : ""}`
+            : "Laptop · local only";
+        d.className = `chip${access.armedUntil ? " armed" : ""}`;
+        document
+          .getElementById("side-deco")
+          .replaceChildren(
+            "Node ",
+            access.mode === "lan" ? "rpi" : "local",
+            h("br"),
+            "Uplink ",
+            access.mode === "lan" ? "lan-only" : "loopback",
+            h("br"),
+            "Cert ",
+            access.mode === "lan" ? access.device : "none",
+          );
+        const open = state
+          ? state.reports.filter((r) => r.stage !== "decided").length
+          : 0;
+        const rc = document.getElementById("reports-count");
+        rc.hidden = open === 0;
+        rc.textContent = open;
+        const cc = document.getElementById("cases-count");
+        cc.hidden = cases.length === 0;
+        cc.textContent = cases.length;
+        for (const b of document.querySelectorAll(".nav-btn")) {
+          if (b.dataset.tab === tab) b.setAttribute("aria-current", "page");
+          else b.removeAttribute("aria-current");
+        }
+        for (const t of [
+          "overview",
+          "reports",
+          "data",
+          "usage",
+          "play",
+          "access",
+        ]) {
+          document.getElementById(`tab-${t}`).hidden = t !== tab;
+        }
+        const banner = document.getElementById("banner");
+        banner.replaceChildren();
+        if (state?.error)
+          banner.append(
+            h(
+              "div",
+              { className: "banner" },
+              `Fetching reports failed: ${state.error}`,
+            ),
+          );
+      }
+
+      for (const b of document.querySelectorAll(".nav-btn")) {
+        b.addEventListener("click", () => {
+          tab = b.dataset.tab;
+          store.set("dpm-tab", tab);
+          sound.nav();
+          render(true);
+        });
+      }
+
+      function render(force) {
+        renderChrome();
+        if (tab === "overview") renderOverview();
+        if (tab === "reports") renderReports(force);
+        if (tab === "data" && force) renderData();
+        if (tab === "usage") renderUsage();
+        if (tab === "play") renderPlay();
+        if (tab === "access" && force) renderAccess();
+      }
+
+      function go(t) {
+        tab = t;
+        store.set("dpm-tab", t);
+        sound.nav();
+        render(true);
+        window.scrollTo(0, 0);
+      }
+
+      /* ---------- overview ---------- */
+      function renderOverview() {
+        const box = document.getElementById("tab-overview");
+        const r = state?.reports ?? [];
+        const child = r.filter(
+          (x) => x.reason === "child" && x.stage !== "decided",
+        ).length;
+        const verdict = r.filter(
+          (x) => x.stage === "ready" || x.stage === "new",
+        ).length;
+        const replies =
+          r.filter(
+            (x) =>
+              x.stage === "decided" &&
+              x.contact &&
+              !x.saved?.done?.some((d) => d.action === "email-sent"),
+          ).length + cases.filter((c) => c.stage === "acted").length;
+        const card = (cls, num, text, deco, target) =>
+          h(
+            "button",
+            {
+              type: "button",
+              className: `card ${cls}`,
+              onclick: () => go(target),
+            },
+            h("span", { className: "num" }, num),
+            h("span", {}, text),
+            h("span", { className: "deco" }, deco),
+          );
+        const cards = [
+          child &&
+            card(
+              "urgent",
+              child,
+              child === 1
+                ? "Report about a child's safety"
+                : "Reports about a child's safety",
+              "Incident log",
+              "reports",
+            ),
+          verdict &&
+            card(
+              "",
+              verdict,
+              verdict === 1
+                ? "Report waiting for your verdict"
+                : "Reports waiting for your verdict",
+              "Incident log",
+              "reports",
+            ),
+          replies &&
+            card(
+              "warn",
+              replies,
+              replies === 1
+                ? "Reply not marked sent"
+                : "Replies not marked sent",
+              "Comms",
+              replies && cases.some((c) => c.stage === "acted")
+                ? "data"
+                : "reports",
+            ),
+          cases.length &&
+            card(
+              "",
+              cases.length,
+              cases.length === 1
+                ? "Open erasure request"
+                : "Open erasure requests",
+              "Case files",
+              "data",
+            ),
+        ].filter(Boolean);
+        box.replaceChildren(
+          panel(
+            "Priority queue",
+            "Waiting on you",
+            cards.length
+              ? h("div", { className: "waiting" }, cards)
+              : h(
+                  "div",
+                  { className: "waiting" },
+                  card(
+                    "calm",
+                    "0",
+                    "Nothing waiting. All quiet.",
+                    "All systems nominal",
+                    "reports",
+                  ),
+                ),
+            state?.refreshedAt &&
+              h(
+                "p",
+                { className: "small muted", style: "margin:10px 0 0" },
+                `Reports fetched ${ago(state.refreshedAt)}.`,
+              ),
+          ),
+          h(
+            "div",
+            { className: "two", style: "margin-top:16px" },
+            panel(
+              "Subspace load // free tier",
+              "Firestore usage",
+              h(
+                "p",
+                { className: "muted" },
+                "Reads, writes and deletes against Spark's daily quota arrive in phase 2.",
+              ),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn quiet",
+                  onclick: () => go("usage"),
+                },
+                "What's planned",
+              ),
+            ),
+            panel(
+              "Hull integrity",
+              "App vitals",
+              h(
+                "p",
+                { className: "muted" },
+                "Crash and ANR rates from Google Play arrive in phase 3.",
+              ),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn quiet",
+                  onclick: () => go("play"),
+                },
+                "What's planned",
+              ),
+            ),
+          ),
+        );
+      }
+
+      function renderUsage() {
+        document
+          .getElementById("tab-usage")
+          .replaceChildren(
+            panel(
+              "Subspace load // not connected",
+              "Usage",
+              h("p", {}, "Phase 2 brings this tab:"),
+              h(
+                "ul",
+                {},
+                h(
+                  "li",
+                  {},
+                  "Firestore reads, writes and deletes per hour and day against Spark's free quota, with a warning at 80%",
+                ),
+                h(
+                  "li",
+                  {},
+                  "Live listeners and refused requests (Cloud Monitoring)",
+                ),
+                h(
+                  "li",
+                  {},
+                  "Lists published, subscribers and suggestions per day, from our own data",
+                ),
+                h(
+                  "li",
+                  {},
+                  "Anonymous accounts: total, new, unused for a year",
+                ),
+                h("li", {}, "Whether master's Firestore rules are deployed"),
+              ),
+              h(
+                "p",
+                { className: "small muted" },
+                "It needs a read-only service account (dpm-ops) with monitoring and rules viewer roles.",
+              ),
+            ),
+          );
+      }
+
+      function renderPlay() {
+        document
+          .getElementById("tab-play")
+          .replaceChildren(
+            panel(
+              "Comms // not connected",
+              "Play",
+              h("p", {}, "Phase 3 brings this tab:"),
+              h(
+                "ul",
+                {},
+                h(
+                  "li",
+                  {},
+                  "Crash and ANR rates per version, with the top crashes",
+                ),
+                h("li", {}, "Slow starts and frozen frames"),
+                h(
+                  "li",
+                  {},
+                  "Reviews and ratings, fetched daily, with a reply box",
+                ),
+                h("li", {}, "Which build is on which track"),
+                h("li", {}, "Installs per day from Play's monthly reports"),
+              ),
+              h(
+                "p",
+                { className: "small muted" },
+                "It needs the dpm-ops account added in Play Console with View app information.",
+              ),
+            ),
+          );
+      }
+
+      /* ---------- reports ---------- */
+      const REASONS = {
+        consent: "Shows or names someone without consent",
+        child: "Endangers or shows a child",
+        copyright: "Copyright",
+        illegal: "Illegal content",
+        spam: "Spam or misleading link",
+        other: "Something else",
+      };
+      const STAGES = [
+        ["ready", "Waiting for your verdict"],
+        ["new", "Not reviewed yet"],
+        ["reviewing", "Agent reviewing"],
+        ["decided", "Decided, to finish"],
+      ];
+
+      async function reportCall(method, url, body) {
+        state = await call(method, url, body);
+        render(true);
+      }
+
+      function renderReports(force) {
+        if (!state) return;
+        document.getElementById("refreshed").textContent = state.refreshedAt
+          ? `Fetched ${ago(state.refreshedAt)}, next ${new Date(state.nextRefreshAt).toLocaleTimeString(undefined, { timeStyle: "short" })}`
+          : "";
+        document.getElementById("every").value = String(state.refreshMinutes);
+        document.getElementById("agent").checked = state.agent;
+        const model = document.getElementById("model");
+        if (model.options.length !== state.models.length) {
+          model.replaceChildren(
+            ...state.models.map((m) =>
+              h(
+                "option",
+                { value: m },
+                m ||
+                  `Claude Code default${state.defaultModel ? ` (${state.defaultModel})` : ""}`,
+              ),
+            ),
+          );
+        }
+        model.value = state.model;
+        document.getElementById("auto").checked = state.autoReview;
+        document.getElementById("auto").disabled = !state.agent;
+        const q = state.queue;
+        document.getElementById("queue").textContent = q.running
+          ? `Agent busy, ${q.waiting.length} queued`
+          : "";
+        renderReportList();
+        if (!state.reports.some((r) => r.id === selected))
+          selected = state.reports[0]?.id ?? null;
+        const r = state.reports.find((x) => x.id === selected);
+        const key = JSON.stringify([
+          r?.id,
+          r?.stage,
+          r?.saved,
+          r?.failed,
+          r?.listStatus,
+          r?.publisherBlockedSince,
+          state.queue,
+        ]);
+        const editing = document.activeElement?.matches?.(
+          "#report-detail textarea, #report-detail input[type=text]",
+        );
+        if (force || (key !== detailKey && !editing)) {
+          detailKey = key;
+          renderReportDetail();
+        }
+      }
+
+      function renderReportList() {
+        const nav = document.getElementById("report-list");
+        nav.replaceChildren();
+        if (state.reports.length === 0) {
+          nav.append(
+            h("div", { className: "panel empty" }, "No reports. All quiet."),
+          );
+          return;
+        }
+        for (const [stage, title] of STAGES) {
+          const items = state.reports.filter((r) => r.stage === stage);
+          if (items.length === 0) continue;
+          nav.append(
+            h(
+              "div",
+              { className: "group-title" },
+              `${title} (${items.length})`,
+            ),
+          );
+          for (const r of items) {
+            const rec = r.saved?.decision?.verdict ?? r.saved?.review?.verdict;
+            nav.append(
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: `item${r.reason === "child" ? " urgent" : ""}${r.id === selected ? " selected" : ""}`,
+                  onclick: () => {
+                    selected = r.id;
+                    sound.click();
+                    renderReports(true);
+                  },
+                },
+                h("span", { className: "stripe" }),
+                h(
+                  "div",
+                  {},
+                  h("div", { className: "title" }, r.list?.name || r.shareCode),
+                  h(
+                    "div",
+                    { className: "row small" },
+                    h(
+                      "span",
+                      {
+                        className: `badge${r.reason === "child" ? " child" : ""}`,
+                      },
+                      r.reason,
+                    ),
+                    rec &&
+                      h(
+                        "span",
+                        { className: `badge ${rec}` },
+                        r.saved?.decision ? `you: ${rec}` : `agent: ${rec}`,
+                      ),
+                    r.failed &&
+                      h("span", { className: "badge bad" }, "review failed"),
+                    h("span", { className: "muted mono" }, ago(r.createdAt)),
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+      }
+
+      function renderReportDetail() {
+        const box = document.getElementById("report-detail");
+        box.replaceChildren();
+        const r = state.reports.find((x) => x.id === selected);
+        if (!r) return;
+        box.append(
+          h(
+            "div",
+            { className: "two" },
+            h("div", { className: "stack" }, reportPanel(r), listPanel(r)),
+            h(
+              "div",
+              { className: "stack" },
+              reviewPanel(r),
+              decisionPanel(r),
+              emailPanel(r),
+              actionsPanel(r),
+            ),
+          ),
+        );
+      }
+
+      function reportPanel(r) {
+        const others = state.reports.filter(
+          (x) => x.shareCode === r.shareCode && x.id !== r.id,
+        );
+        return panel(
+          `Report // ${r.reason}`,
+          REASONS[r.reason] ?? r.reason,
+          h(
+            "div",
+            { className: "muted small mono" },
+            `Sent ${when(r.createdAt)} · list ${r.shareCode}`,
+          ),
+          r.details
+            ? h("div", { className: "quote" }, r.details)
+            : h("p", { className: "muted" }, "No details given."),
+          h(
+            "div",
+            { className: "small" },
+            r.contact ? `Reply to: ${r.contact}` : "No email for a reply.",
+          ),
+          others.length > 0 &&
+            h(
+              "div",
+              { className: "small muted" },
+              `${others.length} other report(s) about this list.`,
+            ),
+          h(
+            "div",
+            { className: "row", style: "margin-top:10px" },
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn quiet",
+                onclick: () => openList(r.shareCode),
+              },
+              "Open list in Data",
+            ),
+            r.publisherUid &&
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn quiet",
+                  onclick: () => openUser(r.publisherUid),
+                },
+                "Open publisher in Data",
+              ),
+          ),
+        );
+      }
+
+      function videoLinks(urls) {
+        if (!urls?.length) return null;
+        return h(
+          "ul",
+          {},
+          urls.map((u) =>
+            h(
+              "li",
+              {},
+              /^https?:\/\//i.test(u)
+                ? h(
+                    "a",
+                    { href: u, target: "_blank", rel: "noopener noreferrer" },
+                    u,
+                  )
+                : u,
+            ),
+          ),
+        );
+      }
+
+      /** A published list as subscribers see it. */
+      function listBody(l) {
+        const out = [];
+        if (l.description)
+          out.push(h("div", { className: "quote" }, l.description));
+        if (l.modifiers?.length) {
+          out.push(h("h3", {}, "Modifiers"));
+          out.push(
+            h(
+              "ul",
+              {},
+              l.modifiers.map((m) =>
+                h(
+                  "li",
+                  {},
+                  m.name,
+                  m.description ? ` – ${m.description}` : "",
+                  videoLinks(m.videos),
+                ),
+              ),
+            ),
+          );
+        }
+        out.push(h("h3", {}, `Figures (${l.patterns.length})`));
+        out.push(
+          h(
+            "div",
+            { className: "note" },
+            "Links come from the list owner. Open them only to check a claim.",
+          ),
+        );
+        for (const p of l.patterns) {
+          out.push(
+            h(
+              "div",
+              { className: "entry" },
+              h(
+                "div",
+                {},
+                h("strong", {}, `#${p.id} ${p.name}`),
+                p.tags
+                  ? h(
+                      "span",
+                      { className: "muted small" },
+                      `  ${p.tags.join(", ")}`,
+                    )
+                  : null,
+              ),
+              p.description &&
+                h("div", { className: "quote small" }, p.description),
+              videoLinks(p.videos),
+              (p.withModifiers ?? []).map((w) =>
+                h(
+                  "div",
+                  { className: "small" },
+                  `+ ${w.modifier}`,
+                  videoLinks(w.videos),
+                ),
+              ),
+            ),
+          );
+        }
+        return out;
+      }
+
+      function listPanel(r) {
+        const l = r.list;
+        const status = {
+          live: "Published",
+          "taken-down": "Taken down",
+          gone: "No longer shared",
+        }[r.listStatus];
+        return panel(
+          `List // ${r.shareCode}`,
+          l ? `"${l.name}"` : "The list",
+          h(
+            "div",
+            { className: "row small" },
+            h(
+              "span",
+              { className: `badge${r.listStatus === "live" ? "" : " good"}` },
+              status,
+            ),
+            l?.membersOnly && h("span", { className: "badge" }, "members only"),
+            l?.dance && h("span", { className: "badge" }, l.dance),
+            l?.publishedAt &&
+              h(
+                "span",
+                { className: "muted" },
+                `last published ${when(l.publishedAt)}`,
+              ),
+          ),
+          r.publisherUid &&
+            h(
+              "div",
+              { className: "small muted mono", style: "margin-top:6px" },
+              `Owner ${r.publisherUid}${r.publisherBlockedSince ? ` · blocked since ${when(r.publisherBlockedSince)}` : ""}`,
+            ),
+          l ? listBody(l) : null,
+        );
+      }
+
+      function reviewPanel(r) {
+        const s = r.saved;
+        const v = s?.review;
+        const busy = r.stage === "reviewing";
+        const running = state.queue.running === r.id;
+        const box = panel(
+          "Tactical analysis",
+          "Agent review",
+          h(
+            "button",
+            {
+              type: "button",
+              className: `btn${v ? "" : " primary"}`,
+              disabled: busy || !state.agent,
+              title: state.agent
+                ? undefined
+                : "Turn on Agent reviews above first.",
+              onclick: act(async () => {
+                const ok = await ask({
+                  deco: "Outbound transmission",
+                  title: "Send this report to Anthropic?",
+                  text: "The agent gets the report's reason and details and the list, never the email address or any id.",
+                  go: "Send for review",
+                });
+                if (ok) await reportCall("POST", "/api/review", { id: r.id });
+              }),
+            },
+            busy
+              ? running
+                ? "Reviewing…"
+                : "Queued"
+              : v
+                ? "Review again"
+                : "Review with agent",
+          ),
+        );
+        if (r.failed)
+          box.append(
+            h("p", { className: "banner", style: "margin:10px 0" }, r.failed),
+          );
+        if (!v) {
+          box.append(
+            h(
+              "p",
+              { className: "muted small" },
+              state.agent
+                ? "The agent checks the claims against the list and the terms of use and drafts a reply. It decides nothing and sends nothing."
+                : "Agent reviews are off. Decide from the report and the list, and write the reply yourself, or turn them on above for a report without personal details.",
+            ),
+          );
+          return box;
+        }
+        box.append(
+          h(
+            "div",
+            { className: "row", style: "margin-top:10px" },
+            h(
+              "span",
+              { className: `badge ${v.verdict}` },
+              `recommends ${v.verdict}`,
+            ),
+            h("span", { className: "badge" }, `${v.confidence} confidence`),
+            v.termsSections.length > 0 &&
+              h(
+                "span",
+                { className: "small muted" },
+                v.termsSections.join(", "),
+              ),
+          ),
+          h("p", {}, v.summary),
+        );
+        for (const f of v.findings) {
+          const holds = { yes: "uphold", no: "reject", unknown: "unclear" }[
+            f.holds
+          ];
+          box.append(
+            h(
+              "div",
+              { className: "entry" },
+              h(
+                "div",
+                { className: "row" },
+                h("span", { className: `badge ${holds}` }, `holds: ${f.holds}`),
+                h("strong", {}, f.claim),
+              ),
+              h("div", { className: "small muted" }, f.where),
+              h("div", { className: "small" }, f.evidence),
+            ),
+          );
+        }
+        if (v.checkByHand.length)
+          box.append(
+            h("h3", {}, "Check by hand"),
+            h(
+              "ul",
+              {},
+              v.checkByHand.map((c) => h("li", {}, c)),
+            ),
+          );
+        box.append(
+          h(
+            "div",
+            { className: "small muted", style: "margin-top:10px" },
+            `Recommended actions: ${v.actions.length ? v.actions.join(", ") : "none"} · reviewed ${ago(s.reviewedAt)}${s.models?.length ? ` by ${s.models.join(", ")}` : ""}${s.costUsd != null ? ` · $${s.costUsd.toFixed(2)}` : ""}`,
+          ),
+        );
+        return box;
+      }
+
+      function decisionPanel(r) {
+        const d = r.saved?.decision;
+        const note = h("textarea", {
+          placeholder: "Your reasoning (optional; the redraft uses it)",
+          style: "min-height:60px",
+          value: d?.note ?? "",
+        });
+        const decide = (verdict) =>
+          act(async () => {
+            sound.click();
+            await reportCall("POST", "/api/decision", {
+              id: r.id,
+              verdict,
+              note: note.value,
+            });
+          });
+        const agentSays = r.saved?.review?.verdict;
+        const emailFits =
+          !d || !r.saved?.review || r.saved.review.verdict === d.verdict;
+        return panel(
+          "Command decision",
+          "Your verdict",
+          note,
+          h(
+            "div",
+            { className: "row", style: "margin-top:8px" },
+            h(
+              "button",
+              {
+                type: "button",
+                className: `btn${d?.verdict === "uphold" ? " on" : ""}`,
+                onclick: decide("uphold"),
+              },
+              "Uphold: the report is right",
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: `btn${d?.verdict === "reject" ? " on" : ""}`,
+                onclick: decide("reject"),
+              },
+              "Reject: the list stays",
+            ),
+            d &&
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn quiet",
+                  onclick: decide(null),
+                },
+                "Undo",
+              ),
+          ),
+          d &&
+            h(
+              "div",
+              { className: "row" },
+              h(
+                "span",
+                { className: "small muted" },
+                `Decided ${when(d.decidedAt)}.`,
+              ),
+              !emailFits &&
+                h(
+                  "span",
+                  { className: "note" },
+                  `The draft below argues "${agentSays}".`,
+                ),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn",
+                  disabled: r.stage === "reviewing" || !state.agent,
+                  title:
+                    "Runs the agent again with your verdict and note; replaces the email draft.",
+                  onclick: act(() =>
+                    reportCall("POST", "/api/review", {
+                      id: r.id,
+                      redraft: true,
+                    }),
+                  ),
+                },
+                "Redraft email for my verdict",
+              ),
+            ),
+        );
+      }
+
+      function replyEditor({
+        to,
+        subject: s0,
+        body: b0,
+        save,
+        sent,
+        markSent,
+        deco,
+      }) {
+        const subject = h("input", { type: "text", value: s0 });
+        const body = h("textarea", { style: "min-height:240px", value: b0 });
+        const doSave = () => save(subject.value, body.value);
+        return panel(
+          deco,
+          "Reply email (not sent from here)",
+          h(
+            "div",
+            { className: "small muted", style: "margin-bottom:8px" },
+            to ? `To ${to}` : "No email address to reply to.",
+          ),
+          subject,
+          h("div", { style: "height:8px" }),
+          body,
+          h(
+            "div",
+            { className: "row", style: "margin-top:8px" },
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn",
+                onclick: act(async () => {
+                  await doSave();
+                  say("Saved.");
+                }),
+              },
+              "Save edits",
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn",
+                onclick: act(async () => {
+                  try {
+                    await navigator.clipboard.writeText(
+                      `${subject.value}\n\n${body.value}`,
+                    );
+                    say("Copied.");
+                  } catch {
+                    body.select();
+                    say("Copy didn't work; the text is selected.", true);
+                  }
+                  await doSave();
+                }),
+              },
+              "Copy",
+            ),
+            to &&
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn",
+                  onclick: act(async () => {
+                    await doSave();
+                    location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject.value)}&body=${encodeURIComponent(body.value)}`;
+                  }),
+                },
+                "Open in mail app",
+              ),
+            sent
+              ? h(
+                  "span",
+                  { className: "small muted" },
+                  `Marked sent ${when(sent)}`,
+                )
+              : h(
+                  "button",
+                  { type: "button", className: "btn", onclick: act(markSent) },
+                  "Mark as sent",
+                ),
+          ),
+        );
+      }
+
+      function emailPanel(r) {
+        // Without an agent draft, an empty one to write by hand.
+        const e =
+          r.saved?.email ??
+          (r.contact && {
+            subject: `Your report about the list "${r.list?.name ?? r.shareCode}"`,
+            body: "",
+          });
+        if (!e) return h("div");
+        return replyEditor({
+          deco: `Comms${r.saved?.review?.email?.language ? ` // ${r.saved.review.email.language}` : ""}`,
+          to: r.contact,
+          subject: e.subject,
+          body: e.body,
+          save: (subject, body) =>
+            reportCall("POST", "/api/email", { id: r.id, subject, body }),
+          sent: r.saved?.done?.find((d) => d.action === "email-sent")?.at,
+          markSent: () =>
+            reportCall("POST", "/api/mark", { id: r.id, action: "email-sent" }),
+        });
+      }
+
+      function actionsPanel(r) {
+        const run = (action, title, effects, expect) =>
+          act(async () => {
+            const confirm = await redAlert({ title, effects, expect });
+            if (confirm === null) return;
+            state = await destructive("POST", "/api/action", {
+              id: r.id,
+              action,
+              confirm,
+            });
+            say("Done.");
+            render(true);
+          });
+        const v = r.saved?.review;
+        return panel(
+          "Weapons free",
+          "Actions",
+          h(
+            "p",
+            { className: "small muted", style: "margin-top:0" },
+            "These change Firestore at once, like npm run data -- remove-list / block-user / remove-report.",
+          ),
+          h(
+            "div",
+            { className: "row" },
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn danger",
+                disabled: r.listStatus !== "live",
+                onclick: run(
+                  "remove-list",
+                  `Take "${r.list?.name}" (${r.shareCode}) down?`,
+                  [
+                    "Deletes the list, its suggestions, counters and subscriber records",
+                    "Leaves a takedown record, so the owner's phone can't publish it again",
+                    "Keeps the reports; subscribers keep their own copy",
+                  ],
+                  r.shareCode,
+                ),
+              },
+              r.listStatus === "taken-down"
+                ? "List taken down"
+                : "Take list down",
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn danger",
+                disabled: !r.publisherUid || !!r.publisherBlockedSince,
+                onclick: run(
+                  "block-publisher",
+                  "Block the list owner?",
+                  [
+                    "The rules refuse their publishing, suggesting and asking to join",
+                    "A reinstall gets a new id, which this does not cover",
+                  ],
+                  r.publisherUid,
+                ),
+              },
+              r.publisherBlockedSince ? "Owner blocked" : "Block list owner",
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn danger",
+                onclick: run(
+                  "delete-report",
+                  "Delete this report and its notes?",
+                  [
+                    "Do this once the reply is sent and the actions are done",
+                    "The action log keeps what was done, without the report's words",
+                  ],
+                  r.shareCode,
+                ),
+              },
+              "Delete report (done)",
+            ),
+          ),
+          v?.actions?.length > 0 &&
+            h(
+              "div",
+              { className: "small muted", style: "margin-top:8px" },
+              `The agent recommends: ${v.actions.join(", ")}.`,
+            ),
+        );
+      }
+
+      document.getElementById("refresh").addEventListener(
+        "click",
+        act(() => reportCall("POST", "/api/refresh")),
+      );
+      document.getElementById("every").addEventListener(
+        "change",
+        act(() =>
+          reportCall("POST", "/api/settings", {
+            refreshMinutes: Number(document.getElementById("every").value),
+          }),
+        ),
+      );
+      document.getElementById("model").addEventListener(
+        "change",
+        act(() =>
+          reportCall("POST", "/api/settings", {
+            model: document.getElementById("model").value,
+          }),
+        ),
+      );
+      document.getElementById("agent").addEventListener(
+        "change",
+        act(() =>
+          reportCall("POST", "/api/settings", {
+            agent: document.getElementById("agent").checked,
+          }),
+        ),
+      );
+      document.getElementById("auto").addEventListener(
+        "change",
+        act(() =>
+          reportCall("POST", "/api/settings", {
+            autoReview: document.getElementById("auto").checked,
+          }),
+        ),
+      );
+
+      /* ---------- data ---------- */
+      const SUBS = [
+        ["search", "Search"],
+        ["cases", "Erasure requests"],
+        ["registry", "Blocks and takedowns"],
+        ["log", "Action log"],
+      ];
+
+      function openList(code) {
+        data.sub = "search";
+        data.view = { type: "list", id: code, body: null };
+        go("data");
+        loadView();
+      }
+      function openUser(uid) {
+        data.sub = "search";
+        data.view = { type: "user", id: uid, body: null };
+        go("data");
+        loadView();
+      }
+      async function loadView() {
+        const v = data.view;
+        try {
+          v.body = await call(
+            "POST",
+            v.type === "list" ? "/api/data/list" : "/api/data/user",
+            v.type === "list" ? { code: v.id } : { uid: v.id },
+          );
+        } catch (e) {
+          v.error = e.message;
+        }
+        if (data.view === v) renderData();
+      }
+
+      function renderData() {
+        const box = document.getElementById("tab-data");
+        const subtabs = h(
+          "div",
+          {
+            className: "subtabs",
+            role: "group",
+            "aria-label": "Data sections",
+          },
+          SUBS.map(([key, label]) =>
+            h(
+              "button",
+              {
+                type: "button",
+                "aria-pressed": String(data.sub === key),
+                onclick: () => {
+                  data.sub = key;
+                  sound.nav();
+                  if (key === "registry") data.registry = null;
+                  if (key === "log") data.log = null;
+                  renderData();
+                },
+              },
+              label,
+              key === "cases" && cases.length ? ` (${cases.length})` : "",
+            ),
+          ),
+        );
+        const body =
+          data.sub === "search"
+            ? dataSearch()
+            : data.sub === "cases"
+              ? dataCases()
+              : data.sub === "registry"
+                ? dataRegistry()
+                : dataLog();
+        box.replaceChildren(
+          h("div", { className: "row", style: "margin-bottom:16px" }, subtabs),
+          body,
+        );
+      }
+
+      /** Runs a Data tab action: plan in words, red alert, then the action. */
+      async function dataAction(req) {
+        const plan = await call("POST", "/api/data/plan", req);
+        const caseSelect = cases.length
+          ? h(
+              "select",
+              { id: "dlg-case" },
+              h("option", { value: "" }, "No erasure request"),
+              cases.map((c) =>
+                h(
+                  "option",
+                  { value: c.id, selected: c.id === data.caseId },
+                  `Request from ${c.from || "(no sender)"} · ${when(c.openedAt)}`,
+                ),
+              ),
+            )
+          : null;
+        const reason = h("input", {
+          type: "text",
+          id: "dlg-reason",
+          placeholder: "Why (kept in the action log; no personal details)",
+        });
+        const extra = h(
+          "div",
+          {},
+          h("label", { className: "field", for: "dlg-reason" }, "Reason"),
+          reason,
+          caseSelect &&
+            h("label", { className: "field", for: "dlg-case" }, "For request"),
+          caseSelect,
+        );
+        const confirm = await redAlert({ ...plan, extra });
+        if (confirm === null) return null;
+        const result = await destructive("POST", "/api/data/action", {
+          ...req,
+          confirm,
+          reason: reason.value,
+          caseId: caseSelect?.value || undefined,
+        });
+        say(`${result.done}: done.`);
+        cases = (await call("GET", "/api/cases")).cases;
+        renderChrome();
+        return result;
+      }
+
+      function dataSearch() {
+        const input = h("input", {
+          type: "search",
+          id: "data-q",
+          placeholder: "Any text, a share code or a user id",
+          value: data.query,
+        });
+        const run = act(async () => {
+          data.query = input.value.trim();
+          data.view = null;
+          sound.click();
+          data.search = await call("POST", "/api/data/search", {
+            query: data.query,
+          });
+          if (data.search.shareCode) {
+            data.view = { type: "list", id: data.search.shareCode, body: null };
+            await loadView();
+            return;
+          }
+          renderData();
+        });
+        input.addEventListener("keydown", (e) => e.key === "Enter" && run(e));
+        const left = panel(
+          "Sector scan // whole project",
+          "Search",
+          h(
+            "div",
+            { className: "row" },
+            h("div", { className: "grow" }, input),
+            h(
+              "button",
+              { type: "button", className: "btn primary", onclick: run },
+              "Search",
+            ),
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            "Searches every shared list, figure, video link, modifier, suggestion and subscriber name, ignoring case. Share keys and app tokens are never searched or shown.",
+          ),
+          data.search ? searchResults(data.search) : null,
+        );
+        return h(
+          "div",
+          { className: "two" },
+          left,
+          data.view
+            ? viewPanel()
+            : h(
+                "div",
+                { className: "panel empty" },
+                "Pick a list or user id from the results.",
+              ),
+        );
+      }
+
+      function searchResults(s) {
+        const out = [];
+        if (s.uid)
+          out.push(
+            h(
+              "div",
+              { className: "row", style: "margin:8px 0" },
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn",
+                  onclick: () => openUser(s.uid),
+                },
+                `Open user ${s.uid.slice(0, 10)}…`,
+              ),
+            ),
+          );
+        if (s.lists.length === 0)
+          out.push(
+            h("p", { className: "muted" }, `Nothing contains "${s.query}".`),
+          );
+        for (const l of s.lists) {
+          out.push(
+            h(
+              "div",
+              { className: "entry" },
+              h(
+                "div",
+                { className: "row" },
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn quiet mono",
+                    onclick: () => openList(l.code),
+                  },
+                  l.code,
+                ),
+                h("strong", {}, l.name || ""),
+                h(
+                  "span",
+                  { className: `badge${l.status === "live" ? "" : " warn"}` },
+                  l.status,
+                ),
+              ),
+              h(
+                "ul",
+                { className: "small" },
+                l.hits.map((x) =>
+                  h(
+                    "li",
+                    {},
+                    h(
+                      "span",
+                      { className: "muted" },
+                      `${x.kind === "list" ? "" : `${x.kind} ${x.id} › `}${x.field}: `,
+                    ),
+                    x.value,
+                  ),
+                ),
+                l.more
+                  ? h("li", { className: "muted" }, `… and ${l.more} more`)
+                  : null,
+              ),
+            ),
+          );
+        }
+        if (s.lists.length)
+          out.push(
+            h("p", { className: "small muted" }, `${s.lists.length} list(s).`),
+          );
+        return out;
+      }
+
+      function viewPanel() {
+        const v = data.view;
+        if (v.error)
+          return panel(
+            "Scan failed",
+            v.id,
+            h("p", { className: "banner" }, v.error),
+          );
+        if (!v.body) return h("div", { className: "panel empty" }, "Scanning…");
+        return v.type === "list" ? listView(v.body) : userView(v.body);
+      }
+
+      async function after(promise) {
+        if ((await promise) !== null) await loadView();
+      }
+
+      function listView(b) {
+        const status = {
+          live: "Published",
+          "taken-down": "Taken down",
+          leftovers: "Leftovers only",
+        }[b.status];
+        return panel(
+          `List // ${b.code}`,
+          b.list ? `"${b.list.name}"` : b.code,
+          h(
+            "div",
+            { className: "row small" },
+            h(
+              "span",
+              { className: `badge${b.status === "live" ? "" : " warn"}` },
+              status,
+            ),
+            b.list?.membersOnly &&
+              h("span", { className: "badge" }, "members only"),
+            b.removedAt &&
+              h(
+                "span",
+                { className: "muted" },
+                `taken down ${when(b.removedAt)}`,
+              ),
+            b.list?.publishedAt &&
+              h(
+                "span",
+                { className: "muted" },
+                `last published ${when(b.list.publishedAt)}`,
+              ),
+          ),
+          b.ownerUid &&
+            h(
+              "div",
+              { className: "row small", style: "margin-top:6px" },
+              h("span", { className: "muted mono" }, `Owner ${b.ownerUid}`),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn quiet",
+                  onclick: () => openUser(b.ownerUid),
+                },
+                "Open owner",
+              ),
+            ),
+          h(
+            "div",
+            { className: "row", style: "margin-top:12px" },
+            b.status === "live" &&
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn danger",
+                  onclick: act(() =>
+                    after(dataAction({ action: "remove-list", code: b.code })),
+                  ),
+                },
+                "Take list down",
+              ),
+            b.status !== "taken-down" &&
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn danger",
+                  onclick: act(() =>
+                    after(
+                      dataAction({
+                        action: "remove-list",
+                        code: b.code,
+                        allowRepublish: true,
+                      }),
+                    ),
+                  ),
+                },
+                "Delete, allow republish",
+              ),
+            b.status === "taken-down" &&
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn danger",
+                  onclick: act(() =>
+                    after(dataAction({ action: "release", code: b.code })),
+                  ),
+                },
+                "Release takedown",
+              ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn quiet",
+                onclick: () => caseTarget("list", b.code),
+              },
+              "Add to request",
+            ),
+          ),
+          b.reports.length > 0 &&
+            h(
+              "p",
+              { className: "small" },
+              `${b.reports.length} report(s) about it: ${b.reports.map((r) => r.reason).join(", ")}.`,
+            ),
+          b.suggestions.length > 0 &&
+            h("h3", {}, `Suggestions (${b.suggestions.length})`),
+          b.suggestions.map((s) =>
+            h(
+              "div",
+              { className: "entry row small" },
+              h(
+                "span",
+                { className: "grow" },
+                `"${s.name}" (${s.kind}) by ${s.authorName || "(no name)"} · ${when(s.createdAt)}`,
+              ),
+              s.authorUid &&
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn quiet",
+                    onclick: () => openUser(s.authorUid),
+                  },
+                  "Author",
+                ),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn danger",
+                  onclick: act(() =>
+                    after(
+                      dataAction({
+                        action: "remove-suggestion",
+                        code: b.code,
+                        suggestionId: s.id,
+                      }),
+                    ),
+                  ),
+                },
+                "Delete",
+              ),
+            ),
+          ),
+          b.subscribers.length > 0 &&
+            h("h3", {}, `Subscriber records (${b.subscribers.length})`),
+          b.subscribers.map((s) =>
+            h(
+              "div",
+              { className: "entry row small" },
+              h(
+                "span",
+                { className: "grow" },
+                [s.name && `"${s.name}"`, s.membership, s.status]
+                  .filter(Boolean)
+                  .join(", ") || "(no name)",
+              ),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn quiet",
+                  onclick: () => openUser(s.uid),
+                },
+                "User",
+              ),
+            ),
+          ),
+          (b.counters || b.handovers) > 0 &&
+            h(
+              "p",
+              { className: "small muted" },
+              `${b.counters} daily counter(s), ${b.handovers} handover offer(s).`,
+            ),
+          b.list ? listBody(b.list) : null,
+        );
+      }
+
+      function userView(u) {
+        const withLists = h("input", { type: "checkbox", id: "with-lists" });
+        return panel(
+          "Personnel file",
+          `User ${u.uid.slice(0, 12)}…`,
+          h(
+            "div",
+            { className: "mono small", style: "word-break:break-all" },
+            u.uid,
+          ),
+          h(
+            "div",
+            { className: "row small", style: "margin-top:6px" },
+            u.account
+              ? h(
+                  "span",
+                  { className: "muted" },
+                  `Account created ${when(u.account.created)}, last sign-in ${when(u.account.lastSignIn)}`,
+                )
+              : h("span", { className: "badge warn" }, "no sign-in account"),
+            u.blockedSince &&
+              h(
+                "span",
+                { className: "badge bad" },
+                `blocked since ${when(u.blockedSince)}`,
+              ),
+          ),
+          u.ownedLists.length > 0 &&
+            h("h3", {}, `Owns (${u.ownedLists.length})`),
+          u.ownedLists.map((l) =>
+            h(
+              "div",
+              { className: "entry row small" },
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn quiet mono",
+                  onclick: () => openList(l.code),
+                },
+                l.code,
+              ),
+              h("span", {}, l.name || ""),
+              h("span", { className: "badge" }, l.status),
+            ),
+          ),
+          u.suggestions.length > 0 &&
+            h("h3", {}, `Suggestions (${u.suggestions.length})`),
+          u.suggestions.map((s) =>
+            h(
+              "div",
+              { className: "entry small" },
+              `"${s.name}" on ${s.listName || s.code} (${s.code})`,
+            ),
+          ),
+          u.memberships.length > 0 &&
+            h("h3", {}, `On lists as subscriber (${u.memberships.length})`),
+          u.memberships.map((m) =>
+            h(
+              "div",
+              { className: "entry small" },
+              `${m.listName || m.code} (${m.code})${m.name ? `, as "${m.name}"` : ""}${m.membership ? `, ${m.membership}` : ""}${m.status ? `, ${m.status}` : ""}`,
+            ),
+          ),
+          u.reportsSent > 0 &&
+            h("p", { className: "small" }, `Sent ${u.reportsSent} report(s).`),
+          h(
+            "div",
+            { className: "row", style: "margin-top:12px" },
+            u.blockedSince
+              ? h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn danger",
+                    onclick: act(() =>
+                      after(dataAction({ action: "unblock-user", uid: u.uid })),
+                    ),
+                  },
+                  "Unblock",
+                )
+              : h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn danger",
+                    onclick: act(() =>
+                      after(dataAction({ action: "block-user", uid: u.uid })),
+                    ),
+                  },
+                  "Block",
+                ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn quiet",
+                onclick: () => caseTarget("user", u.uid),
+              },
+              "Add to request",
+            ),
+          ),
+          h(
+            "div",
+            { className: "row", style: "margin-top:8px" },
+            u.ownedLists.length > 0 &&
+              h("label", { className: "check" }, withLists, "with their lists"),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn danger",
+                onclick: act(() =>
+                  after(
+                    dataAction({
+                      action: "remove-user",
+                      uid: u.uid,
+                      withLists: withLists.checked,
+                    }),
+                  ),
+                ),
+              },
+              "Remove everything of this user",
+            ),
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            "Removing a user doesn't stop them: the app signs in again with a new id. Block keeps the id and stops it.",
+          ),
+        );
+      }
+
+      /* erasure requests */
+      async function caseTarget(type, id) {
+        if (cases.length === 0) {
+          say("Open an erasure request first (Data → Erasure requests).", true);
+          return;
+        }
+        const target = cases.find((c) => c.id === data.caseId) ?? cases[0];
+        try {
+          await call("POST", "/api/cases/update", {
+            id: target.id,
+            addTarget: { type, id },
+          });
+          cases = (await call("GET", "/api/cases")).cases;
+          say(`Added to the request from ${target.from || "(no sender)"}.`);
+        } catch (e) {
+          say(e.message, true);
+        }
+      }
+
+      function dataCases() {
+        const from = h("input", {
+          type: "email",
+          id: "case-from",
+          placeholder: "Sender's email address",
+        });
+        const message = h("textarea", {
+          id: "case-message",
+          placeholder: "Paste their request",
+        });
+        const open = panel(
+          "Case files // GDPR Art. 17",
+          "New erasure request",
+          h("label", { className: "small muted", for: "case-from" }, "From"),
+          from,
+          h(
+            "label",
+            {
+              className: "small muted",
+              for: "case-message",
+              style: "display:block;margin-top:8px",
+            },
+            "Request",
+          ),
+          message,
+          h(
+            "div",
+            { className: "row", style: "margin-top:8px" },
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn primary",
+                onclick: act(async () => {
+                  const c = await call("POST", "/api/cases/open", {
+                    from: from.value,
+                    message: message.value,
+                  });
+                  data.caseId = c.id;
+                  cases = (await call("GET", "/api/cases")).cases;
+                  sound.confirm();
+                  render(true);
+                }),
+              },
+              "Open request",
+            ),
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            "The request and your notes stay on this machine and are deleted when you close it. The action log keeps what was removed, without the email or words.",
+          ),
+        );
+        if (cases.length === 0)
+          return h(
+            "div",
+            { className: "two" },
+            open,
+            h("div", { className: "panel empty" }, "No open requests."),
+          );
+        if (!cases.some((c) => c.id === data.caseId)) data.caseId = cases[0].id;
+        const list = h(
+          "div",
+          {},
+          cases.map((c) =>
+            h(
+              "button",
+              {
+                type: "button",
+                className: `item${c.id === data.caseId ? " selected" : ""}`,
+                onclick: () => {
+                  data.caseId = c.id;
+                  sound.click();
+                  renderData();
+                },
+              },
+              h("span", { className: "stripe" }),
+              h(
+                "div",
+                {},
+                h("div", { className: "title" }, c.from || "(no sender)"),
+                h(
+                  "div",
+                  { className: "row small" },
+                  h("span", { className: "badge" }, c.stage),
+                  h("span", { className: "muted mono" }, ago(c.openedAt)),
+                ),
+              ),
+            ),
+          ),
+        );
+        return h(
+          "div",
+          { className: "two" },
+          h(
+            "div",
+            { className: "stack" },
+            panel("Open requests", `Requests (${cases.length})`, list),
+            open,
+          ),
+          caseDetail(cases.find((c) => c.id === data.caseId)),
+        );
+      }
+
+      function caseDetail(c) {
+        const note = h("textarea", {
+          style: "min-height:60px",
+          placeholder: "Your notes",
+          value: c.note,
+        });
+        const save = (changes) =>
+          call("POST", "/api/cases/update", { id: c.id, ...changes }).then(
+            async () => {
+              cases = (await call("GET", "/api/cases")).cases;
+            },
+          );
+        return h(
+          "div",
+          { className: "stack" },
+          panel(
+            `Case ${c.id}`,
+            `Request from ${c.from || "(no sender)"}`,
+            h(
+              "div",
+              { className: "muted small mono" },
+              `Opened ${when(c.openedAt)} · ${c.stage}`,
+            ),
+            c.message ? h("div", { className: "quote" }, c.message) : null,
+            h("h3", {}, "Notes"),
+            note,
+            h(
+              "div",
+              { className: "row", style: "margin-top:8px" },
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn",
+                  onclick: act(async () => {
+                    await save({ note: note.value });
+                    say("Saved.");
+                  }),
+                },
+                "Save notes",
+              ),
+            ),
+            h("h3", {}, "Found for this request"),
+            c.targets.length === 0 &&
+              h(
+                "p",
+                { className: "small muted" },
+                "Search, open a list or user, and press Add to request.",
+              ),
+            c.targets.map((t) =>
+              h(
+                "div",
+                { className: "entry row small" },
+                h("span", { className: "badge" }, t.type),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn quiet mono",
+                    onclick: () =>
+                      t.type === "list" ? openList(t.id) : openUser(t.id),
+                  },
+                  t.id.length > 14 ? `${t.id.slice(0, 14)}…` : t.id,
+                ),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn quiet",
+                    onclick: act(async () => {
+                      await save({ removeTarget: t });
+                      renderData();
+                    }),
+                  },
+                  "Drop",
+                ),
+              ),
+            ),
+            c.done.length > 0 && h("h3", {}, "Done"),
+            c.done.map((d) =>
+              h(
+                "div",
+                { className: "entry small mono" },
+                `${when(d.at)} · ${d.action} ${d.target ?? ""}`,
+              ),
+            ),
+          ),
+          replyEditor({
+            deco: "Comms",
+            to: c.from,
+            subject: c.reply.subject,
+            body: c.reply.body,
+            save: (subject, body) => save({ reply: { subject, body } }),
+            sent: c.replySentAt,
+            markSent: async () => {
+              await call("POST", "/api/cases/mark-sent", { id: c.id });
+              cases = (await call("GET", "/api/cases")).cases;
+              renderData();
+            },
+          }),
+          panel(
+            "Close out",
+            "Close request",
+            h(
+              "p",
+              { className: "small muted" },
+              "Deletes the request, your notes and the reply draft. Close it once the reply is sent.",
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn danger",
+                onclick: act(async () => {
+                  const confirm = await redAlert({
+                    title: `Close the request from ${c.from || "(no sender)"}?`,
+                    effects: [
+                      "Deletes the request, the notes and the reply draft",
+                      "The action log keeps what was removed",
+                    ],
+                    expect: c.id,
+                  });
+                  if (confirm === null) return;
+                  cases = (
+                    await destructive("POST", "/api/cases/close", {
+                      id: c.id,
+                      confirm,
+                    })
+                  ).cases;
+                  say("Request closed.");
+                  render(true);
+                }),
+              },
+              "Close request",
+            ),
+          ),
+        );
+      }
+
+      function dataRegistry() {
+        if (!data.registry) {
+          call("POST", "/api/data/registry")
+            .then((r) => {
+              data.registry = r;
+              if (data.sub === "registry") renderData();
+            })
+            .catch((e) => say(e.message, true));
+          return h("div", { className: "panel empty" }, "Scanning…");
+        }
+        const { blocks, takedowns } = data.registry;
+        const refresh = () => {
+          data.registry = null;
+          renderData();
+        };
+        return h(
+          "div",
+          { className: "two" },
+          panel(
+            "Quarantine",
+            `Blocked ids (${blocks.length})`,
+            blocks.length === 0 && h("p", { className: "muted" }, "No blocks."),
+            blocks.map((b) =>
+              h(
+                "div",
+                { className: "entry row small" },
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn quiet mono",
+                    onclick: () => openUser(b.uid),
+                  },
+                  `${b.uid.slice(0, 14)}…`,
+                ),
+                h(
+                  "span",
+                  { className: "grow muted" },
+                  `since ${when(b.blockedAt)}`,
+                ),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn danger",
+                    onclick: act(async () => {
+                      if (
+                        (await dataAction({
+                          action: "unblock-user",
+                          uid: b.uid,
+                        })) !== null
+                      )
+                        refresh();
+                    }),
+                  },
+                  "Unblock",
+                ),
+              ),
+            ),
+          ),
+          panel(
+            "Impounded",
+            `Takedowns (${takedowns.length})`,
+            takedowns.length === 0 &&
+              h("p", { className: "muted" }, "No takedowns."),
+            takedowns.map((t) =>
+              h(
+                "div",
+                { className: "entry row small" },
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn quiet mono",
+                    onclick: () => openList(t.code),
+                  },
+                  t.code,
+                ),
+                h(
+                  "span",
+                  { className: "grow muted" },
+                  `since ${when(t.removedAt)}`,
+                ),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn danger",
+                    onclick: act(async () => {
+                      if (
+                        (await dataAction({
+                          action: "release",
+                          code: t.code,
+                        })) !== null
+                      )
+                        refresh();
+                    }),
+                  },
+                  "Release",
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      function dataLog() {
+        if (!data.log) {
+          call("GET", "/api/log")
+            .then((r) => {
+              data.log = r.entries;
+              if (data.sub === "log") renderData();
+            })
+            .catch((e) => say(e.message, true));
+          return h("div", { className: "panel empty" }, "Reading the log…");
+        }
+        return panel(
+          "Ship's log // kept two years",
+          "Action log",
+          data.log.length === 0
+            ? h("p", { className: "muted" }, "Nothing removed or blocked yet.")
+            : h(
+                "div",
+                { className: "scroll" },
+                h(
+                  "table",
+                  {},
+                  h(
+                    "thead",
+                    {},
+                    h(
+                      "tr",
+                      {},
+                      ["When", "Action", "On", "Reason", "From"].map((t) =>
+                        h("th", {}, t),
+                      ),
+                    ),
+                  ),
+                  h(
+                    "tbody",
+                    {},
+                    data.log.map((e) =>
+                      h(
+                        "tr",
+                        {},
+                        h("td", { className: "mono small" }, when(e.at)),
+                        h("td", {}, e.action),
+                        h(
+                          "td",
+                          { className: "mono small" },
+                          [e.shareCode, e.uid, e.suggestionId]
+                            .filter(Boolean)
+                            .join(" ") || (e.caseId ? `case ${e.caseId}` : ""),
+                        ),
+                        h(
+                          "td",
+                          { className: "small" },
+                          e.reason ?? (e.reportId ? "report" : ""),
+                        ),
+                        h("td", { className: "small muted" }, e.device ?? ""),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        );
+      }
+
+      /* ---------- access ---------- */
+      function renderAccess() {
+        const box = document.getElementById("tab-access");
+        if (access.mode !== "lan") {
+          box.replaceChildren(
+            panel(
+              "Shields // loopback",
+              "Access",
+              h(
+                "p",
+                {},
+                "Running on this machine only (127.0.0.1), opened with the link it printed. Nothing else can reach it.",
+              ),
+              h(
+                "p",
+                { className: "muted small" },
+                "On the Raspberry Pi (npm run ops -- --lan) only your devices with a dashboard certificate get in, and every removal or block needs that device's passkey. See tools/dashboard/README.md.",
+              ),
+            ),
+          );
+          return;
+        }
+        const code = h("input", {
+          type: "text",
+          id: "enroll-code",
+          placeholder: "Code from npm run ops:pki -- enroll-code",
+          autocomplete: "off",
+        });
+        box.replaceChildren(
+          panel(
+            "Shields // lan-only",
+            "Access",
+            h(
+              "p",
+              {},
+              `This device: ${access.device}, ${access.passkeys} passkey(s).`,
+            ),
+            h(
+              "p",
+              { className: access.armedUntil ? "note" : "muted" },
+              access.armedUntil
+                ? `Armed until ${new Date(access.armedUntil).toLocaleTimeString(undefined, { timeStyle: "short" })}: removals and blocks go through without asking again.`
+                : "Not armed: the next removal or block asks for your passkey.",
+            ),
+            h(
+              "div",
+              { className: "row" },
+              access.passkeys > 0 &&
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn",
+                    onclick: act(async () => {
+                      await passkey();
+                      sound.confirm();
+                      say("Armed for ten minutes.");
+                      renderAccess();
+                    }),
+                  },
+                  "Arm now",
+                ),
+              access.armedUntil &&
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "btn quiet",
+                    onclick: act(async () => {
+                      access = await call("POST", "/api/access/disarm");
+                      renderChrome();
+                      renderAccess();
+                    }),
+                  },
+                  "Disarm",
+                ),
+            ),
+            h("h3", {}, "Register a passkey for this device"),
+            h(
+              "p",
+              { className: "small muted" },
+              "Run npm run ops:pki -- enroll-code on the Pi, type the code here, then confirm with your fingerprint or screen lock.",
+            ),
+            h(
+              "div",
+              { className: "row" },
+              h("div", { className: "grow" }, code),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "btn primary",
+                  onclick: act(async () => {
+                    await registerPasskey(code.value.trim());
+                    sound.confirm();
+                    say("Passkey registered.");
+                    renderChrome();
+                    renderAccess();
+                  }),
+                },
+                "Register passkey",
+              ),
+            ),
+          ),
+        );
+      }
+
+      /* ---------- polling ---------- */
+      let lastReportIds = null;
+      async function poll(first = false) {
+        try {
+          const [s, c] = await Promise.all([
+            call("GET", "/api/state"),
+            call("GET", "/api/cases"),
+          ]);
+          const ids = new Set(s.reports.map((r) => r.id));
+          if (lastReportIds && [...ids].some((id) => !lastReportIds.has(id))) {
+            sound.report();
+            say("New report received.");
+          }
+          lastReportIds = ids;
+          state = s;
+          cases = c.cases;
+          if (first) access = await call("GET", "/api/access");
+          render(first);
+        } catch (e) {
+          document
+            .getElementById("banner")
+            .replaceChildren(h("div", { className: "banner" }, e.message));
+        }
+      }
+      async function pollAccess() {
+        if (access.mode !== "lan") return;
+        try {
+          access = await call("GET", "/api/access");
+          renderChrome();
+        } catch {}
+      }
+      renderChrome();
+      poll(true);
+      setInterval(poll, 5000);
+      setInterval(pollAccess, 30000);
+    </script>
+  </body>
+</html>

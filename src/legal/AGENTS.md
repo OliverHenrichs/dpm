@@ -10,7 +10,7 @@ Published lists and suggestions are content people make available to others, so 
 service under the Digital Services Act, and Google Play's user-generated content policy applies:
 terms accepted before anything is shared, and an in-app way to report content. The operator handles
 reports with `tools/data-removal` (`reports`, `remove-list`, `block-user`, `remove-report`), or
-on the report review dashboard (`tools/report-review`, `npm run reports:review`), where the
+on the report review dashboard (`tools/dashboard`, `npm run ops`), where the
 `review-report` skill (`.claude/skills/review-report/`) checks each report and drafts the reply.
 
 ## The terms of use
@@ -39,8 +39,8 @@ on the report review dashboard (`tools/report-review`, `npm run reports:review`)
   so a reporter who abuses it can be blocked (`notBlocked()` in the rules). Nobody can read a report
   through the rules, the reporter and the publisher included; the publisher is never told.
 - A new reason goes in `REPORT_REASONS`, its label in all nine locales, the rules' list, the
-  dashboard's labels (`tools/report-review/public/index.html`) and the skill's list of reasons.
-- A new field on a report: `reportView` in `tools/report-review/lib/review.js` decides whether the
+  dashboard's labels (`tools/dashboard/public/index.html`) and the skill's list of reasons.
+- A new field on a report: `reportView` in `tools/dashboard/lib/review.js` decides whether the
   dashboard shows it, and `agentInput` whether the agent gets it (never contact data or ids).
 - Not reportable yet: a single suggestion (the publisher can mute its author) and a publisher's
   own view of a subscriber. Add those here when needed.
