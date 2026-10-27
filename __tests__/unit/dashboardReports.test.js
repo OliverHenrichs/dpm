@@ -18,9 +18,14 @@ const {
   reviewQueue,
   claudeArgs,
   claudeBin,
+  prepareFolder,
 } = require("@/tools/dashboard/lib/agent");
 const { demoStore } = require("@/tools/dashboard/lib/store");
-const { createDashboard, createServer } = require("@/tools/dashboard/server");
+const {
+  createDashboard,
+  createServer,
+  parseArgs,
+} = require("@/tools/dashboard/server");
 const { caseStore } = require("@/tools/dashboard/lib/cases");
 const { actionLog } = require("@/tools/dashboard/lib/actionLog");
 const { makeDoc, TAKEDOWN_OWNER } = require("@/tools/data-removal/lib/model");
@@ -280,6 +285,28 @@ describe("claudeArgs", () => {
   });
 });
 
+describe("prepareFolder", () => {
+  it("gives the agent only the skill and the terms", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dpm-agent-"));
+    prepareFolder(dir, path.resolve(__dirname, "..", ".."));
+    expect(fs.readdirSync(dir).sort()).toEqual([".claude", "TERMS_OF_USE.md"]);
+    expect(
+      fs.existsSync(
+        path.join(dir, ".claude", "skills", "review-report", "SKILL.md"),
+      ),
+    ).toBe(true);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe("parseArgs", () => {
+  it("keeps plain HTTP on this machine", () => {
+    expect(parseArgs([]).listen).toBe("127.0.0.1");
+    expect(() => parseArgs(["--listen", "0.0.0.0"])).toThrow(/--lan/);
+    expect(parseArgs(["--lan"]).listen).toBe("0.0.0.0");
+  });
+});
+
 describe("claudeBin", () => {
   it("finds claude.exe behind npm's claude.cmd on Windows", () => {
     const npm = fs.mkdtempSync(path.join(os.tmpdir(), "dpm-npm-"));
@@ -352,13 +379,15 @@ describe("reviewStore", () => {
 describe("dashboard", () => {
   let dir;
   let dashboard;
+  let store;
   const agent = jest.fn();
 
   beforeEach(async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), "dpm-dash-"));
     agent.mockResolvedValue({ review, costUsd: 0.1 });
+    store = demoStore();
     dashboard = createDashboard({
-      store: demoStore(),
+      store,
       reviews: reviewStore(dir),
       settingsFile: path.join(dir, "settings.json"),
       opts: { every: 5, agent: true, autoReview: false },
@@ -494,12 +523,33 @@ describe("dashboard", () => {
       confirm: r.publisherUid,
     });
     expect(childReport().publisherBlockedSince).toBeTruthy();
+    // Every report on the list has its share code; this one wants its own id.
+    await expect(
+      dashboard.api["POST /api/action"]({
+        id: r.id,
+        action: "delete-report",
+        confirm: r.shareCode,
+      }),
+    ).rejects.toThrow(/reporter's id/);
     await dashboard.api["POST /api/action"]({
       id: r.id,
       action: "delete-report",
-      confirm: r.shareCode,
+      confirm: r.reporterUid,
     });
     expect(state().reports.find((x) => x.id === r.id)).toBeUndefined();
+  });
+
+  it("checks the owner again before blocking", async () => {
+    const r = childReport();
+    store.owner = async () => ({ ownerUid: "DemoNewOwner0000000000000001" });
+    await expect(
+      dashboard.api["POST /api/action"]({
+        id: r.id,
+        action: "block-publisher",
+        confirm: r.publisherUid,
+      }),
+    ).rejects.toThrow(/new owner/);
+    expect(await store.blockedSince(r.publisherUid)).toBeNull();
   });
 
   it("serves the API only with the token, and only on its own host", async () => {

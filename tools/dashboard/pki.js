@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * The dashboard's own small certificate authority, for running it on the
- * Raspberry Pi (`npm run ops -- --lan`): a server certificate for the Pi's
- * name, and one client certificate per device (laptop, PC, phone) that the
- * browser shows to get in. Also hands out the one-time codes that let a
+ * The dashboard's own small certificate authority, for running it on a home
+ * server (`npm run ops -- --lan`): a server certificate for the server's
+ * name, and one client certificate per device (each computer, the phone)
+ * that the browser shows to get in. Also hands out the one-time codes that let a
  * device register its passkey. Uses the `openssl` command line.
  *
- * Run on the Pi with `npm run ops:pki -- <command>`; see README.md.
+ * Run on the server with `npm run ops:pki -- <command>`; see README.md.
  */
 
 const crypto = require("crypto");
@@ -20,9 +20,9 @@ const { now, writeJson } = require("./lib/http");
 const USAGE = `Usage: npm run ops:pki -- <command>
 
   init --name <host> [--ip <address>]
-                      Make the CA and the Pi's server certificate. <host> is the
-                      name the devices open (for example dpm-ops.fritz.box);
-                      --ip adds the Pi's address too.
+                      Make the CA and the server certificate. <host> is the
+                      name the devices open (for example ops-host.local);
+                      --ip adds the server's address too.
   add-device <name>   A client certificate for one device, as <name>.p12 (with a
                       printed password) to import into its browser.
   revoke-device <name>
@@ -150,7 +150,7 @@ function init(root, { name, ip }) {
 function addDevice(root, name) {
   if (!DEVICE_NAME.test(name ?? "")) {
     throw new Error(
-      "A device name is lowercase letters, digits and dashes, like laptop or pixel.",
+      "A device name is lowercase letters, digits and dashes, like computer or phone.",
     );
   }
   const { tls, access, devices } = dirs(root);
@@ -246,7 +246,7 @@ function addDevice(root, name) {
   ]);
   console.log(`Made ${f("p12")}, password ${password}`);
   console.log(
-    "Copy it to the device, import it into the browser (Android: Settings → Security → Install a certificate → VPN & app user certificate), then delete the copies.",
+    `Copy it to the device, import it into the browser (Android: Settings → Security → Install a certificate → VPN & app user certificate), then delete the copies and ${f("p12")}.`,
   );
 }
 

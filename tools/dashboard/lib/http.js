@@ -30,7 +30,10 @@ function readBody(req) {
     let body = "";
     req.on("data", (d) => {
       body += d;
-      if (body.length > 1e6) reject(httpError(413, "Too large."));
+      if (body.length > 1e6) {
+        reject(httpError(413, "Too large."));
+        req.destroy();
+      }
     });
     req.on("end", () => {
       try {

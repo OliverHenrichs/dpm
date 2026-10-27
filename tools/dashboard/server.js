@@ -6,10 +6,10 @@
  *
  * Two ways to run it:
  *
- * - On the laptop (default): plain HTTP on 127.0.0.1, every API call needs
+ * - On your computer (default): plain HTTP on 127.0.0.1, every API call needs
  *   the token from the printed link, so no other page in the browser can
  *   drive it.
- * - On the Raspberry Pi (`--lan`): HTTPS for the home network. Only browsers
+ * - On a home server (`--lan`): HTTPS for the home network. Only browsers
  *   with one of the operator's device certificates get in (`pki.js`), and
  *   whatever deletes or blocks needs a passkey from that device
  *   (`lib/access.js`).
@@ -25,7 +25,7 @@ const { firebaseStore, demoStore } = require("./lib/store");
 const { reviewStore, defaultDir } = require("./lib/reviews");
 const { runReview } = require("./lib/agent");
 const { createReports } = require("./lib/reports");
-const { createData, DESTRUCTIVE } = require("./lib/data");
+const { createData, NEEDS_PASSKEY } = require("./lib/data");
 const { caseStore } = require("./lib/cases");
 const { actionLog } = require("./lib/actionLog");
 const { createAccess } = require("./lib/access");
@@ -47,10 +47,10 @@ const USAGE = `Usage: npm run ops -- [options]
   --demo              Made-up lists and reports in memory instead of Firestore
                       (npm run ops:demo). Agent reviews still run for real.
 
-  --lan               Serve the home network over HTTPS (on the Raspberry Pi):
+  --lan               Serve the home network over HTTPS (on a home server):
                       device certificates and passkeys instead of the token
                       link. Needs \`npm run ops:pki -- init\` first.
-  --name <host>       The Pi's name on the network, as in the server
+  --name <host>       The server's name on the network, as in its
                       certificate (default: the name pki.js init was given).
   --listen <address>  Default 0.0.0.0 with --lan, 127.0.0.1 without.`;
 
@@ -80,6 +80,12 @@ function parseArgs(argv) {
   }
   if (!(opts.every >= 1)) throw new Error("--every needs at least 1 minute.");
   opts.listen ??= opts.lan ? "0.0.0.0" : "127.0.0.1";
+  // Without --lan there is only the token: plain HTTP stays on this machine.
+  if (!opts.lan && !["127.0.0.1", "::1", "localhost"].includes(opts.listen)) {
+    throw new Error(
+      "--listen beyond this machine needs --lan (HTTPS with device certificates).",
+    );
+  }
   return opts;
 }
 
@@ -131,8 +137,8 @@ const PAGE_CSP =
 
 /**
  * The HTTP side. Refuses any Host but its own (DNS rebinding) and any API call
- * without the token. On the laptop only the printed link carries the token;
- * on the Pi the page carries it, and only a device with a valid certificate
+ * without the token. On a computer only the printed link carries the token;
+ * on a home server the page carries it, and only a device with a valid certificate
  * gets the page. A custom header can't be sent cross-site without CORS, which
  * this server never allows, so another site can't drive the API even through
  * a browser holding a device certificate.
@@ -185,8 +191,8 @@ function createServer(dashboard, { port, token, hosts, tls, access }) {
     }
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === "GET" && url.pathname === "/") {
-      // On the Pi the page itself carries the token (only certificate
-      // holders get the page); on the laptop the printed link does.
+      // On a home server the page itself carries the token (only
+      // certificate holders get the page); otherwise the printed link does.
       return send(
         200,
         access
@@ -223,9 +229,10 @@ function createServer(dashboard, { port, token, hosts, tls, access }) {
       return send(401, { error: "Open the link the dashboard printed." });
     }
     try {
-      if (access && DESTRUCTIVE.has(key)) access.requireArmed(device);
+      if (access && NEEDS_PASSKEY.has(key)) access.requireArmed(device);
       const body = req.method === "POST" ? await readBody(req) : {};
-      send(200, await handler(body, { device }));
+      const armed = access ? access.isArmed(device) : true;
+      send(200, await handler(body, { device, armed }));
     } catch (e) {
       send(e.status ?? 500, { error: e.message });
     }

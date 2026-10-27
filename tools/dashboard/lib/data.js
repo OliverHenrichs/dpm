@@ -9,6 +9,7 @@
 const {
   looksLikeShareCode,
   looksLikeUid,
+  planListRemoval,
   planUserRemoval,
 } = require("../../data-removal/lib/model");
 const {
@@ -20,6 +21,9 @@ const {
 } = require("./dataView");
 const { looksLikeCaseId } = require("./cases");
 const { httpError } = require("./http");
+
+/** The action log keeps reasons for two years: a short why, no personal details. */
+const REASON_MAX = 200;
 
 const ACTIONS = [
   "remove-list",
@@ -154,24 +158,50 @@ function createData({ store, cases, log }) {
       if (String(req.confirm ?? "").trim() !== p.expect) {
         throw httpError(400, `Type ${p.expect} to confirm.`);
       }
+      const reason = String(req.reason ?? "").trim();
+      if (reason.length > REASON_MAX) {
+        throw httpError(
+          400,
+          `Keep the reason under ${REASON_MAX} characters, without names or emails.`,
+        );
+      }
       const caseId = req.caseId ? caseOf(req.caseId).id : undefined;
-      await run(p);
-      log.append({
+      const entry = {
         action: p.target.action,
         shareCode: p.target.code,
-        uid: p.target.uid,
+        // A takedown overwrites the owner record, so the log keeps who it was.
+        uid:
+          p.target.uid ??
+          (p.target.action === "remove-list"
+            ? planListRemoval(p.docs, p.target.code).ownerUid
+            : undefined),
         suggestionId: p.target.suggestionId,
         caseId,
-        reason: req.reason,
+        reason,
         device: ctx.device,
-      });
-      if (caseId) {
-        cases.record(caseId, p.target.action, p.target.code ?? p.target.uid);
+      };
+      const target = p.target.code ?? p.target.uid;
+      // Logged before and after: a removal that fails halfway (a user with
+      // several lists) still leaves a trace of what it started.
+      log.append({ ...entry, status: "started" });
+      try {
+        await run(p);
+      } catch (e) {
+        log.append({ ...entry, status: "failed" });
+        if (caseId) cases.record(caseId, `${p.target.action} (failed)`, target);
+        throw e;
       }
+      log.append({ ...entry, status: "done" });
+      if (caseId) cases.record(caseId, p.target.action, target);
       return { done: p.title.replace(/\?$/, ""), effects: p.effects };
     },
 
-    "GET /api/cases": () => ({ cases: cases.all() }),
+    // On the home server the requests (emails, people's words) stay locked
+    // until this device's passkey was used, like the removals.
+    "GET /api/cases": (_, ctx = {}) =>
+      ctx.armed === false
+        ? { cases: [], locked: true }
+        : { cases: cases.all() },
 
     "POST /api/cases/open": ({ from, message }) => {
       if (!String(message ?? "").trim() && !String(from ?? "").trim()) {
@@ -237,11 +267,20 @@ function createData({ store, cases, log }) {
   return { api };
 }
 
-/** Routes that delete or block: on the Pi each needs a fresh passkey. */
-const DESTRUCTIVE = new Set([
+/**
+ * Routes that need a passkey used in the last ten minutes on the home
+ * server: whatever deletes or blocks, the erasure requests (they hold
+ * people's emails and words), and the settings (they can start sending
+ * reports to Anthropic).
+ */
+const NEEDS_PASSKEY = new Set([
   "POST /api/data/action",
   "POST /api/cases/close",
   "POST /api/action",
+  "POST /api/cases/open",
+  "POST /api/cases/update",
+  "POST /api/cases/mark-sent",
+  "POST /api/settings",
 ]);
 
-module.exports = { createData, DESTRUCTIVE, ACTIONS };
+module.exports = { createData, NEEDS_PASSKEY, ACTIONS, REASON_MAX };

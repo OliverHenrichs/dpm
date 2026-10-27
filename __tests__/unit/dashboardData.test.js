@@ -140,11 +140,13 @@ describe("Data tab", () => {
   let dir;
   let dashboard;
   let log;
+  let store;
   beforeEach(async () => {
     dir = tmp();
     log = actionLog(path.join(dir, "actions.jsonl"));
+    store = demoStore();
     dashboard = createDashboard({
-      store: demoStore(),
+      store,
       reviews: reviewStore(path.join(dir, "reviews")),
       settingsFile: path.join(dir, "settings.json"),
       opts: { every: 5 },
@@ -176,7 +178,7 @@ describe("Data tab", () => {
         confirm: "WCS2026A",
         reason: "child safety",
       },
-      { device: "pixel" },
+      { device: "phone" },
     );
     expect(
       (await api("POST /api/data/list", { code: "WCS2026A" })).status,
@@ -185,7 +187,7 @@ describe("Data tab", () => {
       action: "remove-list",
       shareCode: "WCS2026A",
       reason: "child safety",
-      device: "pixel",
+      device: "phone",
     });
     await api("POST /api/data/action", {
       action: "release",
@@ -195,6 +197,63 @@ describe("Data tab", () => {
     expect(
       (await api("POST /api/data/registry")).takedowns.map((t) => t.code),
     ).toEqual(["OLDLIST1"]);
+  });
+
+  it("logs a start and an end, and the owner a takedown overwrites", async () => {
+    await api("POST /api/data/action", {
+      action: "remove-list",
+      code: "WCS2026A",
+      confirm: "WCS2026A",
+    });
+    const [done, started] = log.recent();
+    expect(started).toMatchObject({ status: "started", uid: PUBLISHER });
+    expect(done).toMatchObject({
+      action: "remove-list",
+      status: "done",
+      uid: PUBLISHER,
+    });
+  });
+
+  it("logs a removal that fails, on the request too", async () => {
+    const c = await api("POST /api/cases/open", { message: "delete me" });
+    store.removeList = async () => {
+      throw new Error("deadline exceeded");
+    };
+    await expect(
+      api("POST /api/data/action", {
+        action: "remove-list",
+        code: "WCS2026A",
+        confirm: "WCS2026A",
+        caseId: c.id,
+      }),
+    ).rejects.toThrow(/deadline/);
+    expect(log.recent()[0]).toMatchObject({ status: "failed" });
+    expect(
+      (await api("GET /api/cases")).cases[0].done.map((d) => d.action),
+    ).toEqual(["remove-list (failed)"]);
+  });
+
+  it("keeps reasons short", async () => {
+    await expect(
+      api("POST /api/data/action", {
+        action: "remove-list",
+        code: "WCS2026A",
+        confirm: "WCS2026A",
+        reason: "x".repeat(201),
+      }),
+    ).rejects.toThrow(/200 characters/);
+    expect(log.recent()).toEqual([]);
+  });
+
+  it("keeps erasure requests locked until the passkey was used", async () => {
+    await api("POST /api/cases/open", { message: "delete me" });
+    expect(await api("GET /api/cases", {}, { armed: false })).toEqual({
+      cases: [],
+      locked: true,
+    });
+    expect(
+      (await api("GET /api/cases", {}, { armed: true })).cases,
+    ).toHaveLength(1);
   });
 
   it("removes a user with their lists only when asked to", async () => {
@@ -321,8 +380,8 @@ describe("actionLog", () => {
 });
 
 describe("access", () => {
-  const rpId = "dpm-ops.test";
-  const origin = "https://dpm-ops.test:4777";
+  const rpId = "ops-host.test";
+  const origin = "https://ops-host.test:4777";
   let dir;
   let now;
   let access;
@@ -335,7 +394,7 @@ describe("access", () => {
     fs.writeFileSync(
       path.join(dir, "devices.json"),
       JSON.stringify([
-        { name: "pixel", fingerprint256: "AA" },
+        { name: "phone", fingerprint256: "AA" },
         { name: "old", fingerprint256: "BB", revokedAt: "2026-01-01" },
       ]),
     );
@@ -356,7 +415,7 @@ describe("access", () => {
   });
 
   it("lets in listed devices only", () => {
-    expect(access.deviceOf(socket("AA"))).toBe("pixel");
+    expect(access.deviceOf(socket("AA"))).toBe("phone");
     expect(() => access.deviceOf(socket("BB"))).toThrow(/revoked/);
     expect(() => access.deviceOf(socket("AA", false))).toThrow(/certificate/);
   });
@@ -402,58 +461,89 @@ describe("access", () => {
   }
 
   it("registers a passkey with a one-time code and arms the device for ten minutes", () => {
-    expect(() => access.registerOptions("pixel", "WRONG")).toThrow(/code/);
+    expect(() => access.registerOptions("phone", "WRONG")).toThrow(/code/);
     const key = authenticator();
     access.register(
-      "pixel",
-      key.register(access.registerOptions("pixel", "abcd2345")),
+      "phone",
+      key.register(access.registerOptions("phone", "abcd2345")),
     );
     // The code is used up.
-    expect(() => access.registerOptions("pixel", "ABCD2345")).toThrow(/code/);
-    expect(() => access.requireArmed("pixel")).toThrow(/passkey/);
+    expect(() => access.registerOptions("phone", "ABCD2345")).toThrow(/code/);
+    expect(() => access.requireArmed("phone")).toThrow(/passkey/);
     const status = access.assert(
-      "pixel",
-      key.sign(access.assertOptions("pixel")),
+      "phone",
+      key.sign(access.assertOptions("phone")),
     );
-    expect(status).toMatchObject({ device: "pixel", passkeys: 1 });
+    expect(status).toMatchObject({ device: "phone", passkeys: 1 });
     expect(status.armedUntil).toBeTruthy();
-    access.requireArmed("pixel");
+    access.requireArmed("phone");
     now += 11 * 60 * 1000;
-    expect(() => access.requireArmed("pixel")).toThrow(/passkey/);
+    expect(() => access.requireArmed("phone")).toThrow(/passkey/);
+  });
+
+  it("arms only from the passkey, not from each action", () => {
+    const key = authenticator();
+    access.register(
+      "phone",
+      key.register(access.registerOptions("phone", "ABCD2345")),
+    );
+    access.assert("phone", key.sign(access.assertOptions("phone")));
+    now += 6 * 60 * 1000;
+    access.requireArmed("phone");
+    now += 5 * 60 * 1000;
+    expect(() => access.requireArmed("phone")).toThrow(/passkey/);
+  });
+
+  it("refuses another device's passkey id", () => {
+    const key = authenticator();
+    const first = key.register(access.registerOptions("phone", "ABCD2345"));
+    access.register("phone", first);
+    fs.writeFileSync(
+      path.join(dir, "enroll.json"),
+      JSON.stringify({
+        hash: sha("ABCD2345").toString("hex"),
+        expires: now + 60_000,
+      }),
+    );
+    const again = key.register(access.registerOptions("computer", "ABCD2345"));
+    expect(() =>
+      access.register("computer", { ...again, id: first.id }),
+    ).toThrow(/Another device/);
+    expect(access.status("phone").passkeys).toBe(1);
   });
 
   it("refuses a wrong origin, site, missing verification or replayed challenge", () => {
     const key = authenticator();
     access.register(
-      "pixel",
-      key.register(access.registerOptions("pixel", "ABCD2345")),
+      "phone",
+      key.register(access.registerOptions("phone", "ABCD2345")),
     );
     expect(() =>
       access.assert(
-        "pixel",
-        key.sign(access.assertOptions("pixel"), { o: "https://evil.test" }),
+        "phone",
+        key.sign(access.assertOptions("phone"), { o: "https://evil.test" }),
       ),
     ).toThrow(/Open the dashboard/);
     expect(() =>
       access.assert(
-        "pixel",
-        key.sign(access.assertOptions("pixel"), { rp: "evil.test" }),
+        "phone",
+        key.sign(access.assertOptions("phone"), { rp: "evil.test" }),
       ),
     ).toThrow(/another site/);
     expect(() =>
       access.assert(
-        "pixel",
-        key.sign(access.assertOptions("pixel"), { flags: 0x01 }),
+        "phone",
+        key.sign(access.assertOptions("phone"), { flags: 0x01 }),
       ),
     ).toThrow(/verify/);
-    const opts = access.assertOptions("pixel");
-    access.assert("pixel", key.sign(opts));
-    expect(() => access.assert("pixel", key.sign(opts))).toThrow(
+    const opts = access.assertOptions("phone");
+    access.assert("phone", key.sign(opts));
+    expect(() => access.assert("phone", key.sign(opts))).toThrow(
       /doesn't match/,
     );
     // Another device can't use this device's passkey.
     expect(() =>
-      access.assert("laptop", key.sign(access.assertOptions("pixel"))),
+      access.assert("computer", key.sign(access.assertOptions("phone"))),
     ).toThrow(/Unknown passkey/);
   });
 });
@@ -474,8 +564,8 @@ const hasOpenssl = (() => {
     const { createServer } = require("@/tools/dashboard/server");
     const root = tmp();
     const out = jest.spyOn(console, "log").mockImplementation(() => {});
-    main(["init", "--name", "dpm-ops.test", "--ip", "127.0.0.1"], root);
-    main(["add-device", "pixel"], root);
+    main(["init", "--name", "ops-host.test", "--ip", "127.0.0.1"], root);
+    main(["add-device", "phone"], root);
     const password = out.mock.calls
       .flat()
       .join("\n")
@@ -484,15 +574,15 @@ const hasOpenssl = (() => {
     const tls = (f) => fs.readFileSync(path.join(root, "tls", f));
     const access = createAccess({
       dir: path.join(root, "access"),
-      rpId: "dpm-ops.test",
-      origin: "https://dpm-ops.test",
+      rpId: "ops-host.test",
+      origin: "https://ops-host.test",
     });
     const server = createServer(
       { api: { "GET /api/ping": (_, { device }) => ({ device }) } },
       {
         port: 0,
         token: "t".repeat(48),
-        hosts: ["dpm-ops.test"],
+        hosts: ["ops-host.test"],
         tls: {
           key: tls("server.key"),
           cert: tls("server.crt"),
@@ -510,12 +600,12 @@ const hasOpenssl = (() => {
             {
               host: "127.0.0.1",
               port,
-              servername: "dpm-ops.test",
+              servername: "ops-host.test",
               path: "/api/ping",
               ca: tls("ca.crt"),
-              headers: { Host: "dpm-ops.test", "X-Dpm-Token": "t".repeat(48) },
+              headers: { Host: "ops-host.test", "X-Dpm-Token": "t".repeat(48) },
               ...(withCert && {
-                pfx: tls("devices/pixel.p12"),
+                pfx: tls("devices/phone.p12"),
                 passphrase: password,
               }),
             },
@@ -527,9 +617,9 @@ const hasOpenssl = (() => {
           )
           .on("error", (e) => resolve(["error", e.code]));
       });
-    expect(await get(true)).toEqual([200, JSON.stringify({ device: "pixel" })]);
+    expect(await get(true)).toEqual([200, JSON.stringify({ device: "phone" })]);
     expect((await get(false))[0]).toBe("error");
-    main(["revoke-device", "pixel"], root);
+    main(["revoke-device", "phone"], root);
     expect((await get(true))[0]).toBe(403);
     await new Promise((r) => server.close(r));
     fs.rmSync(root, { recursive: true, force: true });

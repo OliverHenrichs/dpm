@@ -1,15 +1,15 @@
 /**
- * Who may use the dashboard when it serves the home network (on the
- * Raspberry Pi): only browsers holding one of the operator's device
+ * Who may use the dashboard when it serves the home network (on a home
+ * server): only browsers holding one of the operator's device
  * certificates get a page at all (the TLS handshake checks that the CA issued
  * it; this file checks it is on the device list and not revoked), and every
- * action that deletes or blocks needs a passkey from that device within the
- * last ten minutes.
+ * action that deletes or blocks (and the erasure requests and settings) needs
+ * a passkey from that device within the last ten minutes.
  *
  * Passkeys are WebAuthn credentials. The browser hands over the public key
  * at registration (`getPublicKey()`, SPKI), so checking a signature needs
  * only Node's crypto, no CBOR and no library. Registering one needs a
- * one-time code from `npm run ops:pki -- enroll-code` on the Pi.
+ * one-time code from `npm run ops:pki -- enroll-code` on the server.
  *
  * State lives in `<dir>`: devices.json (written by pki.js), passkeys.json,
  * enroll.json.
@@ -116,13 +116,19 @@ function createAccess({ dir, rpId, origin, clock = Date.now }) {
       };
     },
 
-    /** Throws 428 unless this device used its passkey in the last ten minutes. */
+    /** Whether this device used its passkey in the last ten minutes. */
+    isArmed(device) {
+      return (armedUntil.get(device) ?? 0) > clock();
+    },
+
+    /**
+     * Throws 428 unless this device used its passkey in the last ten minutes.
+     * Only the passkey arms a device, so a busy session is still asked again.
+     */
     requireArmed(device) {
-      if ((armedUntil.get(device) ?? 0) <= clock()) {
+      if (!this.isArmed(device)) {
         throw httpError(428, "Confirm with your passkey first.");
       }
-      // Each action keeps the device armed for another ten minutes.
-      armedUntil.set(device, clock() + ARMED_MS);
     },
 
     disarm(device) {
@@ -139,7 +145,7 @@ function createAccess({ dir, rpId, origin, clock = Date.now }) {
       ) {
         throw httpError(
           403,
-          "Wrong or expired code. Make a new one on the Pi: npm run ops:pki -- enroll-code",
+          "Wrong or expired code. Make a new one on the server: npm run ops:pki -- enroll-code",
         );
       }
       return {
@@ -175,6 +181,9 @@ function createAccess({ dir, rpId, origin, clock = Date.now }) {
         throw httpError(400, "Unreadable public key.");
       }
       fs.rmSync(enrollFile, { force: true });
+      if (passkeys().some((p) => p.id === id && p.device !== device)) {
+        throw httpError(409, "Another device already has this passkey.");
+      }
       const list = passkeys().filter((p) => p.id !== id);
       list.push({ id, device, publicKey, alg, signCount: 0, addedAt: now() });
       writeJson(passkeyFile, list);

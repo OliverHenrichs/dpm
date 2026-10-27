@@ -20,6 +20,7 @@ const FIELDS = [
   "caseId",
   "reason",
   "device",
+  "status",
 ];
 
 function actionLog(file, { keepDays = KEEP_DAYS } = {}) {

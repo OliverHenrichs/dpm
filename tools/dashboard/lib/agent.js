@@ -7,6 +7,10 @@
  * terms, and WebFetch limited to the video hosts DPM links to. No shell, no
  * edits, nothing it could send. Anything else it tries is refused without a
  * prompt (`--permission-mode dontAsk`).
+ *
+ * It runs in an empty temporary folder that holds only the report, the skill
+ * and the terms, not in the checkout: a report that talks it into reading a
+ * file then finds nothing there, not .env, an Admin key or a keystore.
  */
 
 const { spawn } = require("child_process");
@@ -49,7 +53,8 @@ function claudeArgs(inputFile, env = process.env, model = "") {
     `Read(/${inputFile})`,
     "Read(./TERMS_OF_USE.md)",
     ...VIDEO_HOSTS.map((h) => `WebFetch(domain:${h})`),
-    // Reading inside the repository needs no permission; its secrets stay out.
+    // The session's folder holds nothing else (see runReview); these stay
+    // refused in case it is ever started from the checkout again.
     "--disallowedTools",
     "Read(./.env)",
     "Read(./.env.*)",
@@ -101,15 +106,25 @@ async function runReview(input, { repoRoot, env = process.env, model } = {}) {
   const inputFile = path.join(dir, "report.json");
   fs.writeFileSync(inputFile, JSON.stringify(input, null, 2), { mode: 0o600 });
   try {
+    prepareFolder(dir, repoRoot);
     const stdout = await run(
       claudeBin(env),
       claudeArgs(inputFile, env, model),
-      repoRoot,
+      dir,
       Number(env.DPM_REVIEW_TIMEOUT_MS) || 10 * 60 * 1000,
     );
     return parseAgentOutput(stdout);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** The skill and the terms, copied next to the report: all the session may read. */
+function prepareFolder(dir, repoRoot) {
+  const skill = path.join(".claude", "skills", "review-report", "SKILL.md");
+  fs.mkdirSync(path.join(dir, path.dirname(skill)), { recursive: true });
+  for (const file of [skill, "TERMS_OF_USE.md"]) {
+    fs.copyFileSync(path.join(repoRoot, file), path.join(dir, file));
   }
 }
 
@@ -189,4 +204,11 @@ function reviewQueue(work) {
   };
 }
 
-module.exports = { claudeArgs, claudeBin, runReview, reviewQueue, VIDEO_HOSTS };
+module.exports = {
+  claudeArgs,
+  claudeBin,
+  prepareFolder,
+  runReview,
+  reviewQueue,
+  VIDEO_HOSTS,
+};

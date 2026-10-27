@@ -12,10 +12,11 @@ blocks happens only after a red alert screen where you type back the share code 
 
 It runs in one of two ways:
 
-- **On the laptop**, plain HTTP on 127.0.0.1, opened with the link it prints.
-- **On the Raspberry Pi**, HTTPS for the home network, open only to your own devices (laptop, PC,
-  Pixel) with a certificate from the dashboard's own CA, and a passkey before anything that
-  deletes or blocks. See [Running it on the Raspberry Pi](#running-it-on-the-raspberry-pi).
+- **On your computer**, plain HTTP on 127.0.0.1, opened with the link it prints.
+- **On a home server** (any small always-on Linux machine), HTTPS for the home network, open only
+  to your own devices with a certificate from the dashboard's own CA, and a passkey before
+  anything that deletes or blocks, opens the erasure requests or changes the settings. See
+  [Running it on a home server](#running-it-on-a-home-server).
 
 ## Setup
 
@@ -23,7 +24,7 @@ Everything `tools/data-removal/README.md` → _Setup_ says (its `firebase-admin`
 credentials in `.env`), plus [Claude Code](https://claude.com/claude-code) signed in for the agent
 reviews (`claude` on the PATH, or `DPM_CLAUDE_BIN=/path/to/claude`; on Windows it finds the `claude.exe` behind npm's `claude.cmd` itself).
 
-## Running it on the laptop
+## Running it on your computer
 
 ```bash
 npm run ops                      # production, from .env (npm run reports:review still works)
@@ -35,7 +36,8 @@ npm run ops:demo                 # made-up lists and reports in memory, no Fires
 
 It prints a link with a one-time token (`http://127.0.0.1:4777/#…`); open that. The page listens on
 127.0.0.1 only and refuses API calls without the token, so another website in the same browser
-cannot drive it.
+cannot drive it. The page takes the token out of the address bar once it has read it. It refuses
+`--listen` beyond this machine unless `--lan` is given.
 
 ## Overview tab
 
@@ -84,7 +86,10 @@ The agent session reads text strangers wrote, so it gets little:
 - **Input**: the report's reason, details and date, whether the reporter wants a reply, the list
   as subscribers see it (no share key, no app token), and other reports about the same list.
   **Never** the reporter's email address or any user id.
-- **Tools**: `Read` (its input file, `TERMS_OF_USE.md`, the skill; `.env` is denied) and
+- **Folder**: an empty temporary one holding only the input file, the skill and a copy of
+  `TERMS_OF_USE.md`, never the checkout, so nothing a report talks it into reading is there
+  (`.env`, the Admin key, a keystore).
+- **Tools**: `Read` (its input file, `TERMS_OF_USE.md`, the skill) and
   `WebFetch` for youtube.com, youtu.be, vimeo.com and dropbox.com only. No shell, no edits, no
   other sites; anything else is refused without asking (`--permission-mode dontAsk`). Spending is
   capped per review (`DPM_REVIEW_BUDGET_USD`, default 2).
@@ -119,9 +124,12 @@ page and the command line always find and remove the same things.
   deleted with your notes; the action log keeps what was removed.
 - **Blocks and takedowns**: every blocked id and every taken-down share code, with _Unblock_ and
   _Release_, so neither is forgotten.
-- **Action log**: what was removed or blocked, when, from which device and why. One line per
-  action in `actions.jsonl`: share codes, user ids, report and case ids and your reason, never list
-  content, an email address or a report's words. Lines older than two years are dropped when the
+- **Action log**: what was removed or blocked, when, from which device and why. Each action
+  writes a line when it starts and another when it is done or failed, so a removal that fails
+  halfway still shows; the page shows a _started_ line only when nothing followed it. Lines in
+  `actions.jsonl` hold share codes, user ids (for a takedown, the owner it had), report and case
+  ids and your reason (200 characters at most), never list content, an email address or a
+  report's words. Lines older than two years are dropped when the
   dashboard starts (PRIVACY_POLICY.md §6).
 
 Search and the list and user views read the whole snapshot (a few reads per list, as `find`
@@ -131,42 +139,44 @@ reads it fresh first.
 ## The red alert screen
 
 Every action that deletes or blocks (on the Reports tab and the Data tab, and closing a request)
-shows what it will do in words, then asks you to type back the share code, user id or request id.
-On the Pi it then asks for this device's passkey, unless you used it in the last ten minutes; each
-action keeps it armed for another ten minutes.
+shows what it will do in words, then asks you to type back the share code, user id or request id
+(for deleting a report, the reporter's id, since every report on a list shares its code). On a
+home server it then asks for this device's passkey, unless you used it in the last ten minutes.
+Only the passkey arms a device, so it is asked for again ten minutes after its last use. The
+Reports tab reads the list's owner record again before a takedown or block, so a list handed over
+or taken down since the last fetch is caught.
 
-## Running it on the Raspberry Pi
+## Running it on a home server
 
-The dashboard can run on a Raspberry Pi in your home network so you can use it from the laptop,
-the PC and the phone. It is never meant to face the internet: don't forward a port to it.
+The dashboard can run on a small always-on machine in your home network so you can use it from
+your computers and your phone. It is never meant to face the internet: don't forward a port to it.
 
-### 1. The Pi
+### 1. The server
 
-- 64-bit Raspberry Pi OS, Node 22 or newer, `openssl`, and git.
+- A 64-bit Linux, Node 22 or newer, `openssl`, and git.
 - A user of its own: `sudo adduser --disabled-password dpm-ops`, and clone the repository into its
   home. Run `npm --prefix tools/data-removal install` (the dashboard needs nothing else from npm).
-- Put `.env` (with `FIREBASE_PROJECT_ID` and `DPM_ADMIN_CREDENTIALS`) and the Admin key next to it,
-  readable only by that user (`chmod 600`). The key can delete everything in the project, so keep
-  the Pi's data on an encrypted disk (an encrypted USB SSD, or LUKS on the SD card).
+- Put `.env` (with `FIREBASE_PROJECT_ID` and `DPM_ADMIN_CREDENTIALS`) in the checkout, and the
+  Admin key **outside** it, for example `/home/dpm-ops/.config/dpm/admin-key.json`; both readable
+  only by that user (`chmod 600`). The key can delete everything in the project, so keep the
+  server's data on an encrypted disk.
 - For agent reviews, install Claude Code and sign in as that user, with _Help improve Claude_ off
-  (as on the laptop; see _What the agent sees_ above).
-- Give the Pi a fixed address in the router (FRITZ!Box: Home Network → Network → the Pi → _Always
-  assign this network device the same IPv4 address_). Its name, for example
-  `dpm-ops.fritz.box`, is what the devices open; passkeys need a name, not an IP address.
+  (see _What the agent sees_ above).
+- Give the server a fixed address in your router. Its name on the network, for example
+  `ops-host.local`, is what the devices open; passkeys need a name, not an IP address.
 
 ### 2. Certificates
 
 ```bash
-npm run ops:pki -- init --name dpm-ops.fritz.box --ip 192.168.178.50
-npm run ops:pki -- add-device laptop     # prints the .p12 file and its password
-npm run ops:pki -- add-device pc
-npm run ops:pki -- add-device pixel
+npm run ops:pki -- init --name ops-host.local --ip 192.0.2.10
+npm run ops:pki -- add-device computer   # prints the .p12 file and its password
+npm run ops:pki -- add-device phone
 npm run ops:pki -- devices
-npm run ops:pki -- revoke-device pixel   # a lost phone: refused from its next request
+npm run ops:pki -- revoke-device phone   # a lost phone: refused from its next request
 ```
 
 `init` makes a small CA of its own (`~/.local/share/dpm/dashboard/tls/`, `DPM_DASHBOARD_DIR`
-changes the root) and the Pi's server certificate. On each device:
+changes the root) and the server's certificate. On each device:
 
 1. Install `tls/ca.crt` as a trusted CA. Windows: double-click it → _Install certificate_ →
    _Local machine_ → _Trusted Root Certification Authorities_. Linux Chrome/Firefox: settings →
@@ -175,7 +185,8 @@ changes the root) and the Pi's server certificate. On each device:
 2. Import that device's `tls/devices/<name>.p12` with its password. Windows: double-click it.
    Android: the same menu → _VPN & app user certificate_. Firefox keeps its own store: settings →
    certificates → _Your certificates_ → import.
-3. Delete the copies you moved over.
+3. Delete the copies you moved over, and the `.p12` in `tls/devices/` on the server: with the
+   printed password it lets any browser in.
 
 A device certificate lasts two years, the server certificate 825 days; make new ones with
 `revoke-device` and `add-device`, or delete `tls/` and run `init` again.
@@ -202,15 +213,16 @@ ReadWritePaths=/home/dpm-ops
 WantedBy=multi-user.target
 ```
 
-`sudo systemctl enable --now dpm-ops`, then open `https://dpm-ops.fritz.box:4777/` on a device.
+`sudo systemctl enable --now dpm-ops`, then open `https://ops-host.local:4777/` on a device.
 The browser asks which certificate to show; pick the DPM Operations one. `journalctl -u dpm-ops`
 shows its output. To update: `git pull` as `dpm-ops`, then `sudo systemctl restart dpm-ops`.
 
 ### 4. Passkeys
 
-On each device, open the _Access_ tab. Run `npm run ops:pki -- enroll-code` on the Pi, type the
+On each device, open the _Access_ tab. Run `npm run ops:pki -- enroll-code` on the server, type the
 code (valid 15 minutes, once) and press _Register passkey_; the device asks for your fingerprint
-or screen lock. From then on, the red alert screen asks for it before a removal or block. A
+or screen lock. From then on, the red alert screen asks for it before a removal or block, and the
+erasure requests and the Reports tab's settings open only with it. A
 passkey belongs to the device certificate it was registered with; `revoke-device` removes both.
 
 ### How it keeps others out
@@ -221,7 +233,7 @@ passkey belongs to the device certificate it was registered with; `revoke-device
   read the page or send that header (the server allows no cross-site requests), so it can't drive
   the dashboard through a browser that holds a device certificate.
 - The server answers only to its own name (no DNS rebinding) and sends a strict CSP.
-- Passkeys are checked on the Pi with Node's crypto (`lib/access.js`), bound to the Pi's name.
+- Passkeys are checked on the server with Node's crypto (`lib/access.js`), bound to its name.
 
 ## Where its notes live
 
@@ -238,7 +250,7 @@ In `~/.local/share/dpm/dashboard/` (`DPM_DASHBOARD_DIR` changes it), readable on
 
 - `<project>/cases/`: one JSON file per open erasure request, deleted when it is closed.
 - `<project>/actions.jsonl`: the action log, two years.
-- `tls/`, `access/`: on the Pi, the CA, certificates, device list and passkeys.
+- `tls/`, `access/`: on a home server, the CA, certificates, device list and passkeys.
 
 ## Code
 

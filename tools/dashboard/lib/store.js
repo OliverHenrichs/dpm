@@ -72,6 +72,11 @@ function firebaseStore(conn, { snapshotTtlMs = 60_000 } = {}) {
       return reports.map((r) => reportView(r, about.get(r.code)));
     },
 
+    /** A list's owner record, read now (never cached). */
+    async owner(code) {
+      return plain(await db.collection(OWNERS).doc(code).get());
+    },
+
     findUser(uid) {
       return data.findUser(conn.auth, uid);
     },
@@ -259,6 +264,10 @@ function demoStore() {
             blockedSince: blocked[owner?.ownerUid] ?? null,
           });
         });
+    },
+
+    async owner(code) {
+      return structuredClone(find("owner", code));
     },
 
     async findUser(uid) {

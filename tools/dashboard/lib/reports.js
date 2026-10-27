@@ -17,6 +17,7 @@ const {
 } = require("./review");
 const { reviewQueue } = require("./agent");
 const { httpError, now, readJson } = require("./http");
+const { TAKEDOWN_OWNER } = require("../../data-removal/lib/model");
 
 function createReports({
   store,
@@ -256,37 +257,62 @@ function createReports({
      */
     "POST /api/action": async ({ id, action, confirm }, ctx = {}) => {
       const view = viewOf(id);
+      // The view can be minutes old: the list may have been handed over or
+      // taken down from the Data tab since. Act on the owner record as it is now.
+      const current = async () => {
+        const owner = await store.owner(view.shareCode);
+        return {
+          takenDown: owner?.ownerUid === TAKEDOWN_OWNER,
+          ownerUid:
+            owner?.ownerUid && owner.ownerUid !== TAKEDOWN_OWNER
+              ? String(owner.ownerUid)
+              : null,
+        };
+      };
       if (action === "remove-list") {
         if (confirm !== view.shareCode)
           throw httpError(400, "Type the share code.");
-        if (view.listStatus === "taken-down")
-          throw httpError(400, "Already taken down.");
+        const fresh = await current();
+        if (fresh.takenDown) throw httpError(400, "Already taken down.");
         await store.removeList(view.shareCode);
-        log({ action, shareCode: view.shareCode, reportId: id, ...ctx });
+        log({
+          action,
+          shareCode: view.shareCode,
+          uid: fresh.ownerUid,
+          reportId: id,
+          ...ctx,
+        });
         for (const v of state.views) {
-          if (v.shareCode === view.shareCode && view.publisherUid) {
+          if (v.shareCode === view.shareCode && fresh.ownerUid) {
             reviews.update(v.id, {
               reportCreatedAt: v.createdAt,
-              publisherUid: view.publisherUid,
+              publisherUid: fresh.ownerUid,
             });
           }
         }
         record(id, action);
       } else if (action === "block-publisher") {
-        if (!view.publisherUid) throw httpError(400, "No publisher to block.");
-        if (confirm !== view.publisherUid)
-          throw httpError(400, "Type the publisher's id.");
-        await store.blockUser(view.publisherUid);
-        log({
-          action: "block-user",
-          uid: view.publisherUid,
-          reportId: id,
-          ...ctx,
-        });
+        const fresh = await current();
+        // After a takedown the owner record no longer names them; the notes
+        // kept who published the list (saved at the takedown).
+        const uid = fresh.takenDown ? view.publisherUid : fresh.ownerUid;
+        if (!uid) throw httpError(400, "No list owner to block.");
+        if (!fresh.takenDown && uid !== view.publisherUid) {
+          await refresh();
+          throw httpError(
+            409,
+            "The list has a new owner since this page loaded. Check again.",
+          );
+        }
+        if (confirm !== uid) throw httpError(400, "Type the list owner's id.");
+        await store.blockUser(uid);
+        log({ action: "block-user", uid, reportId: id, ...ctx });
         record(id, action);
       } else if (action === "delete-report") {
-        if (confirm !== view.shareCode)
-          throw httpError(400, "Type the share code.");
+        // Every report on a list shares its code, so this one asks for the
+        // reporter's id: the dialog names which report goes.
+        if (confirm !== view.reporterUid)
+          throw httpError(400, "Type the reporter's id.");
         await store.deleteReport(id);
         log({ action, shareCode: view.shareCode, reportId: id, ...ctx });
         reviews.remove(id);

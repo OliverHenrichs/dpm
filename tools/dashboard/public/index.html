@@ -293,6 +293,9 @@
       h3:first-child {
         margin-top: 0;
       }
+      .warn-text {
+        color: var(--warn);
+      }
       .muted {
         color: var(--muted);
       }
@@ -873,6 +876,9 @@
       const token =
         document.querySelector('meta[name="dpm-token"]')?.content ||
         location.hash.slice(1);
+      // Out of the address bar and the history once read.
+      if (location.hash)
+        history.replaceState(null, "", location.pathname + location.search);
       const store = {
         get(k) {
           try {
@@ -891,6 +897,13 @@
       let state = null; // reports, from /api/state
       let access = { mode: "local", device: "local" };
       let cases = [];
+      /** On the home server the requests stay locked until the passkey is used. */
+      let casesLocked = false;
+      async function loadCases() {
+        const r = await call("GET", "/api/cases");
+        cases = r.cases;
+        casesLocked = !!r.locked;
+      }
       let tab = store.get("dpm-tab") || "overview";
       let selected = null;
       let detailKey = "";
@@ -1089,7 +1102,7 @@
 
       /**
        * Red alert for what deletes or blocks: the plan in words, the code typed
-       * back, then (on the Pi) the passkey. Resolves with the typed text, or null.
+       * back, then (on the home server) the passkey. Resolves with the typed text, or null.
        */
       function redAlert({ title, effects, expect, extra }) {
         return new Promise((resolve) => {
@@ -1111,7 +1124,7 @@
               {},
               effects.map((e) => h("li", {}, e)),
             ),
-            extra ?? null,
+            ...(extra ? [extra] : []),
             h(
               "label",
               { className: "field", for: "dlg-confirm" },
@@ -1147,7 +1160,7 @@
         });
       }
 
-      /** Calls a destructive route; on the Pi, a stale passkey is asked for again once. */
+      /** Calls a route that needs the passkey on the home server; a stale one is asked for again once. */
       async function destructive(method, url, body) {
         try {
           return await call(method, url, body);
@@ -1241,7 +1254,7 @@
         d.textContent =
           access.mode === "lan"
             ? `${access.device}${access.armedUntil ? " · armed" : ""}`
-            : "Laptop · local only";
+            : "This computer · local only";
         d.className = `chip${access.armedUntil ? " armed" : ""}`;
         document
           .getElementById("side-deco")
@@ -1550,7 +1563,8 @@
       ];
 
       async function reportCall(method, url, body) {
-        state = await call(method, url, body);
+        // Settings need the passkey on the home server; other calls never ask.
+        state = await destructive(method, url, body);
         render(true);
       }
 
@@ -2246,10 +2260,11 @@
                   "delete-report",
                   "Delete this report and its notes?",
                   [
+                    `The ${r.reason} report sent ${when(r.createdAt)}, by ${r.reporterUid}`,
                     "Do this once the reply is sent and the actions are done",
                     "The action log keeps what was done, without the report's words",
                   ],
-                  r.shareCode,
+                  r.reporterUid,
                 ),
               },
               "Delete report (done)",
@@ -2397,7 +2412,8 @@
         const reason = h("input", {
           type: "text",
           id: "dlg-reason",
-          placeholder: "Why (kept in the action log; no personal details)",
+          maxLength: 200,
+          placeholder: "Short why, kept two years: no names, emails or quotes",
         });
         const extra = h(
           "div",
@@ -2417,7 +2433,7 @@
           caseId: caseSelect?.value || undefined,
         });
         say(`${result.done}: done.`);
-        cases = (await call("GET", "/api/cases")).cases;
+        await loadCases();
         renderChrome();
         return result;
       }
@@ -2887,16 +2903,21 @@
       /* erasure requests */
       async function caseTarget(type, id) {
         if (cases.length === 0) {
-          say("Open an erasure request first (Data → Erasure requests).", true);
+          say(
+            casesLocked
+              ? "Unlock the erasure requests first (Data → Erasure requests)."
+              : "Open an erasure request first (Data → Erasure requests).",
+            true,
+          );
           return;
         }
         const target = cases.find((c) => c.id === data.caseId) ?? cases[0];
         try {
-          await call("POST", "/api/cases/update", {
+          await destructive("POST", "/api/cases/update", {
             id: target.id,
             addTarget: { type, id },
           });
-          cases = (await call("GET", "/api/cases")).cases;
+          await loadCases();
           say(`Added to the request from ${target.from || "(no sender)"}.`);
         } catch (e) {
           say(e.message, true);
@@ -2904,6 +2925,30 @@
       }
 
       function dataCases() {
+        if (casesLocked) {
+          return panel(
+            "Case files // locked",
+            "Erasure requests",
+            h(
+              "p",
+              { className: "small muted" },
+              "The requests hold people's emails and words, so they open with this device's passkey.",
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn primary",
+                onclick: act(async () => {
+                  await passkey();
+                  await loadCases();
+                  render(true);
+                }),
+              },
+              "Unlock with passkey",
+            ),
+          );
+        }
         const from = h("input", {
           type: "email",
           id: "case-from",
@@ -2937,12 +2982,12 @@
                 type: "button",
                 className: "btn primary",
                 onclick: act(async () => {
-                  const c = await call("POST", "/api/cases/open", {
+                  const c = await destructive("POST", "/api/cases/open", {
                     from: from.value,
                     message: message.value,
                   });
                   data.caseId = c.id;
-                  cases = (await call("GET", "/api/cases")).cases;
+                  await loadCases();
                   sound.confirm();
                   render(true);
                 }),
@@ -3014,11 +3059,12 @@
           value: c.note,
         });
         const save = (changes) =>
-          call("POST", "/api/cases/update", { id: c.id, ...changes }).then(
-            async () => {
-              cases = (await call("GET", "/api/cases")).cases;
-            },
-          );
+          destructive("POST", "/api/cases/update", {
+            id: c.id,
+            ...changes,
+          }).then(async () => {
+            await loadCases();
+          });
         return h(
           "div",
           { className: "stack" },
@@ -3102,8 +3148,8 @@
             save: (subject, body) => save({ reply: { subject, body } }),
             sent: c.replySentAt,
             markSent: async () => {
-              await call("POST", "/api/cases/mark-sent", { id: c.id });
-              cases = (await call("GET", "/api/cases")).cases;
+              await destructive("POST", "/api/cases/mark-sent", { id: c.id });
+              await loadCases();
               renderData();
             },
           }),
@@ -3252,6 +3298,25 @@
         );
       }
 
+      /**
+       * The log has a "started" line before each action and "done" or
+       * "failed" after it. Show a started line only when nothing followed it.
+       */
+      function shownLog(entries) {
+        const key = (e) =>
+          [e.action, e.shareCode, e.uid, e.suggestionId, e.device].join("|");
+        const finished = new Set();
+        return entries.filter((e) => {
+          // Newest first, so an action's end comes before its start.
+          if (e.status === "done" || e.status === "failed") {
+            finished.add(key(e));
+            return true;
+          }
+          if (e.status === "started") return !finished.delete(key(e));
+          return true;
+        });
+      }
+
       function dataLog() {
         if (!data.log) {
           call("GET", "/api/log")
@@ -3287,12 +3352,18 @@
                   h(
                     "tbody",
                     {},
-                    data.log.map((e) =>
+                    shownLog(data.log).map((e) =>
                       h(
                         "tr",
                         {},
                         h("td", { className: "mono small" }, when(e.at)),
-                        h("td", {}, e.action),
+                        h(
+                          "td",
+                          { className: e.status === "done" ? "" : "warn-text" },
+                          e.status && e.status !== "done"
+                            ? `${e.action} (${e.status === "started" ? "started, never finished" : e.status})`
+                            : e.action,
+                        ),
                         h(
                           "td",
                           { className: "mono small" },
@@ -3330,7 +3401,7 @@
               h(
                 "p",
                 { className: "muted small" },
-                "On the Raspberry Pi (npm run ops -- --lan) only your devices with a dashboard certificate get in, and every removal or block needs that device's passkey. See tools/dashboard/README.md.",
+                "On a home server (npm run ops -- --lan) only your devices with a dashboard certificate get in, and every removal, block or erasure request needs that device's passkey. See tools/dashboard/README.md.",
               ),
             ),
           );
@@ -3395,7 +3466,7 @@
             h(
               "p",
               { className: "small muted" },
-              "Run npm run ops:pki -- enroll-code on the Pi, type the code here, then confirm with your fingerprint or screen lock.",
+              "Run npm run ops:pki -- enroll-code on the server, type the code here, then confirm with your fingerprint or screen lock.",
             ),
             h(
               "div",
@@ -3437,6 +3508,7 @@
           lastReportIds = ids;
           state = s;
           cases = c.cases;
+          casesLocked = !!c.locked;
           if (first) access = await call("GET", "/api/access");
           render(first);
         } catch (e) {
