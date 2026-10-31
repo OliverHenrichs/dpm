@@ -120,16 +120,18 @@ export const useImportDecisions = ({
   const getImportDecisions = useCallback(
     (): ImportDecision[] =>
       importedLists.map((list) => {
-        const typed = nameOf(list).trim();
+        const field = nameFieldOf(list);
         return {
           list,
           action: actionOf(list),
           existingList: existingLists.find((e) => e.id === list.id),
           // Blank is no name: fall back to the field's default.
-          name: typed || (nameFieldOf(list)?.defaultName ?? list.name),
+          name: field
+            ? (names.get(list.id) ?? "").trim() || field.defaultName.trim()
+            : list.name,
         };
       }),
-    [importedLists, existingLists, actionOf, nameOf, nameFieldOf],
+    [importedLists, existingLists, actionOf, names, nameFieldOf],
   );
 
   const stats = useMemo(() => {

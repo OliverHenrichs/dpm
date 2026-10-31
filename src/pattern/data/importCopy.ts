@@ -1,4 +1,3 @@
-import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { generateUUID } from "@/src/pattern/types/PatternType";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 
