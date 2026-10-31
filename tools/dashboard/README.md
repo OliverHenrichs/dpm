@@ -168,6 +168,12 @@ The quota, listeners, requests and rules come from Cloud Monitoring and the Fire
 fetched when the dashboard starts and then hourly (_Fetch now_ for sooner). They cost no
 Firestore reads. Monitoring's figures lag a few minutes.
 
+**On Spark, Cloud Monitoring refuses** to give out time series ("This API method requires billing
+to be enabled"), whatever the key's roles: reading Firestore's figures needs a billing account on
+the project (Blaze). The quota and _Live and refused_ panels then say so and point to the Firebase
+console (_Firestore → Usage_); the rules check and our own counts work as they are. If the project
+ever moves to Blaze, the panels fill in by themselves at the next hourly fetch.
+
 ### The dpm-ops key
 
 A service account that can only look: it reads Monitoring's figures and the deployed rules, and

@@ -50,6 +50,8 @@ function createUsage({
     nextFetchAt: null,
     monitoring: null,
     monitoringError: null,
+    /** Cloud Monitoring answers only for projects with billing (Blaze). */
+    monitoringNeedsBilling: false,
     rules: null,
     rulesError: null,
     counts: null,
@@ -90,6 +92,8 @@ function createUsage({
       ]);
       state.monitoring = m.status === "fulfilled" ? m.value : state.monitoring;
       state.monitoringError = m.status === "rejected" ? m.reason.message : null;
+      state.monitoringNeedsBilling =
+        m.status === "rejected" && /requires billing/i.test(m.reason.message);
       state.rules = r.status === "fulfilled" ? r.value : state.rules;
       state.rulesError = r.status === "rejected" ? r.reason.message : null;
       state.fetchedAt = now();
@@ -138,7 +142,11 @@ function createUsage({
         : null,
       rulesMatch: state.rules ? state.rules.matches : null,
       fetchedAt: state.fetchedAt,
-      error: state.monitoringError || state.rulesError || null,
+      needsBilling: state.monitoringNeedsBilling,
+      error:
+        (state.monitoringNeedsBilling ? null : state.monitoringError) ||
+        state.rulesError ||
+        null,
     };
   }
 

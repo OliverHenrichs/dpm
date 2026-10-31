@@ -279,6 +279,27 @@ describe("Usage API", () => {
     usage.stop();
   });
 
+  it("tells Spark's billing refusal apart from other errors", async () => {
+    const usage = createUsage({
+      store: demoStore(),
+      source: {
+        ...demoUsage(),
+        monitoring: async () => {
+          throw new Error(
+            "This API method requires billing to be enabled. Please enable billing on project #1",
+          );
+        },
+      },
+      repoRules,
+    });
+    await usage.refresh();
+    const s = usage.api["GET /api/usage"]();
+    expect(s.monitoringNeedsBilling).toBe(true);
+    expect(s.summary).toMatchObject({ needsBilling: true, error: null });
+    expect(s.rules).not.toBeNull();
+    usage.stop();
+  });
+
   it("reports drift in the summary for Overview", async () => {
     const usage = createUsage({
       store: demoStore(),

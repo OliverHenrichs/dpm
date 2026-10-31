@@ -1733,8 +1733,31 @@
         );
       }
 
+      /** On Spark, Cloud Monitoring refuses: say so plainly, with where to look instead. */
+      function billingNote() {
+        return [
+          h(
+            "p",
+            {},
+            h("span", { className: "badge" }, "Spark plan"),
+            " Google answers these figures only for projects with billing (Blaze), so the dashboard can't show them on Spark.",
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            "Today's reads, writes and deletes are in the Firebase console → Firestore → Usage. The rules check and our own counts work as they are; this panel fills in by itself if the project ever moves to Blaze.",
+          ),
+        ];
+      }
+
       function quotaPanel() {
         const m = usage.monitoring;
+        if (!m && usage.monitoringNeedsBilling)
+          return panel(
+            "Subspace load // free tier",
+            "Firestore quota today",
+            billingNote(),
+          );
         if (!m)
           return panel(
             "Subspace load // free tier",
@@ -2056,14 +2079,21 @@
             "Firestore usage",
             h(
               "p",
-              { className: usage?.monitoringError ? "warn-text" : "muted" },
+              {
+                className:
+                  usage?.monitoringError && !usage.monitoringNeedsBilling
+                    ? "warn-text"
+                    : "muted",
+              },
               !usage
                 ? "Loading…"
-                : !usage.connected
-                  ? "Reads, writes and deletes against Spark's daily quota need the read-only dpm-ops key."
-                  : usage.monitoringError
-                    ? `Cloud Monitoring: ${usage.monitoringError}`
-                    : "Asking Cloud Monitoring…",
+                : usage.monitoringNeedsBilling
+                  ? "Spark plan: Google gives these figures only to projects with billing. See the Firebase console → Firestore → Usage."
+                  : !usage.connected
+                    ? "Reads, writes and deletes against Spark's daily quota need the read-only dpm-ops key."
+                    : usage.monitoringError
+                      ? `Cloud Monitoring: ${usage.monitoringError}`
+                      : "Asking Cloud Monitoring…",
             ),
             go2,
           );
