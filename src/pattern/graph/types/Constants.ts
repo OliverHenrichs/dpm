@@ -5,6 +5,8 @@ export const HORIZONTAL_SPACING = 170; // Space between depth levels
 export const LEFT_MARGIN = 120;
 export const NODE_WIDTH = 100;
 export const NODE_HEIGHT = 60;
+// How far an edge stops short of its target box, for the arrowhead to fill
+export const ARROW_LENGTH = 20;
 // Space for swimlane labels
 export const MIN_PATTERN_HEIGHT = VERTICAL_STACK_SPACING * 2;
 export const MIN_PATTERNS_VISIBLE = 2;

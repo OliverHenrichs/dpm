@@ -68,50 +68,54 @@ const FocusPreviewCard: React.FC<FocusPreviewCardProps> = ({
     <Animated.View
       entering={FadeIn.duration(theme.motion.duration.normal)}
       exiting={FadeOut.duration(theme.motion.duration.normal)}
-      style={[styles.slot, cardStyle]}
+      style={styles.slot}
     >
-      <Tappable
-        onPress={onOpen}
-        accessibilityLabel={t("focusPreviewOpen", { name: pattern.name })}
-        style={[
-          styles.card,
-          theme.graph.nodeOutline === "type" && { borderColor: typeColour },
-          { borderLeftColor: typeColour },
-        ]}
-      >
-        {video && <FocusPreviewVideo video={video} />}
-        <View style={styles.text}>
-          {/* The type colour as a swatch, not as the text's colour: some palette
+      {/* The pan's opacity on a view of its own: a layout animation owns the
+          opacity of the view it runs on. */}
+      <Animated.View style={cardStyle}>
+        <Tappable
+          onPress={onOpen}
+          accessibilityLabel={t("focusPreviewOpen", { name: pattern.name })}
+          style={[
+            styles.card,
+            theme.graph.nodeOutline === "type" && { borderColor: typeColour },
+            { borderLeftColor: typeColour },
+          ]}
+        >
+          {video && <FocusPreviewVideo video={video} />}
+          <View style={styles.text}>
+            {/* The type colour as a swatch, not as the text's colour: some palette
               colours fall well under 4.5:1 on the surface. */}
-          <View style={styles.typeRow}>
-            <View style={[styles.swatch, { backgroundColor: typeColour }]} />
-            <Text style={styles.type} numberOfLines={1}>
-              {typeName}
+            <View style={styles.typeRow}>
+              <View style={[styles.swatch, { backgroundColor: typeColour }]} />
+              <Text style={styles.type} numberOfLines={1}>
+                {typeName}
+              </Text>
+            </View>
+            <Text style={styles.name} numberOfLines={1}>
+              {pattern.name}
             </Text>
+            {facts.length > 0 && (
+              <Text style={styles.meta} numberOfLines={1}>
+                {facts.join(" · ")}
+              </Text>
+            )}
+            {!!pattern.description && (
+              <Text style={styles.description} numberOfLines={2}>
+                {pattern.description}
+              </Text>
+            )}
+            <View style={styles.footer}>
+              <Text style={styles.meta} numberOfLines={1}>
+                {`${t("prerequisites")} ${before} · ${t("buildsInto")} ${after}`}
+              </Text>
+              <Animated.Text style={[styles.hint, hintStyle]}>
+                {t("focusPreviewHint")}
+              </Animated.Text>
+            </View>
           </View>
-          <Text style={styles.name} numberOfLines={1}>
-            {pattern.name}
-          </Text>
-          {facts.length > 0 && (
-            <Text style={styles.meta} numberOfLines={1}>
-              {facts.join(" · ")}
-            </Text>
-          )}
-          {!!pattern.description && (
-            <Text style={styles.description} numberOfLines={2}>
-              {pattern.description}
-            </Text>
-          )}
-          <View style={styles.footer}>
-            <Text style={styles.meta} numberOfLines={1}>
-              {`${t("prerequisites")} ${before} · ${t("buildsInto")} ${after}`}
-            </Text>
-            <Animated.Text style={[styles.hint, hintStyle]}>
-              {t("focusPreviewHint")}
-            </Animated.Text>
-          </View>
-        </View>
-      </Tappable>
+        </Tappable>
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -133,6 +137,10 @@ const styles = StyleSheet.create((theme) => ({
     borderLeftWidth: theme.graph.typeBarWidth || theme.graph.nodeStrokeWidth,
     overflow: "hidden",
     ...theme.elevation.lg,
+    // Android draws an elevation shadow under the whole box as well, and it
+    // shows through while the card is see-through, like a tilted second card.
+    // The boxShadow alone stops at the card's edge.
+    elevation: 0,
   },
   text: { flex: 1, gap: theme.space.xxs },
   typeRow: { flexDirection: "row", alignItems: "center", gap: theme.space.xs },

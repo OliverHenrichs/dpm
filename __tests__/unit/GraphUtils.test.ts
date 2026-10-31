@@ -11,6 +11,8 @@
  * What remains here is the path geometry, which is still its own concern.
  */
 import { generateOrthogonalPath } from "@/src/pattern/graph/utils/GraphUtils";
+import { arrowheadGeometry } from "@/src/pattern/graph/render/edgeStyle";
+import { NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
 
 describe("generateOrthogonalPath", () => {
   it("draws a path between two points", () => {
@@ -32,5 +34,24 @@ describe("generateOrthogonalPath", () => {
       generateOrthogonalPath({ x: 10, y: 20 }, { x: 30, y: 40 });
 
     expect(build()).toBe(build());
+  });
+});
+
+describe("arrowheads", () => {
+  // After Hours draws edges 2 wide, Clipboard 1.5.
+  it.each([2, 1.5])("end on the box's edge at edge width %s", (edgeWidth) => {
+    const target = { x: 500, y: 0 };
+    const path = generateOrthogonalPath({ x: 0, y: 0 }, target, true);
+    const pathEndX = Number(
+      path
+        .trim()
+        .split(/[\s,]+/)
+        .at(-2),
+    );
+
+    // A marker's units are multiples of the stroke width.
+    const tipX = pathEndX + arrowheadGeometry(edgeWidth).length * edgeWidth;
+
+    expect(tipX).toBeCloseTo(target.x - NODE_WIDTH / 2);
   });
 });

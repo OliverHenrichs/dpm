@@ -8,7 +8,11 @@ import {
   LayoutPosition,
 } from "@/src/pattern/graph/utils/GraphUtils";
 import { GraphEdge, GraphNode } from "@/src/pattern/graph/model/GraphModel";
-import { edgeColor, edgeStroke } from "@/src/pattern/graph/render/edgeStyle";
+import {
+  arrowheadGeometry,
+  edgeColor,
+  edgeStroke,
+} from "@/src/pattern/graph/render/edgeStyle";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { SharedValue } from "react-native-reanimated";
 import DraggedEdge from "@/src/pattern/graph/render/DraggedEdge";
@@ -47,17 +51,18 @@ function isDragging(
 
 export const ArrowheadMarker: React.FC = () => {
   const { theme } = useUnistyles();
+  const { length, width, points } = arrowheadGeometry(theme.graph.edgeWidth);
   return (
     <Defs>
       <Marker
         id="arrowhead-graph"
-        markerWidth="5"
-        markerHeight="5"
+        markerWidth={length}
+        markerHeight={width}
         refX="0"
-        refY="3"
+        refY={width / 2}
         orient="auto"
       >
-        <Polygon points="0 0, 10 3, 0 6" fill={edgeColor(theme)} />
+        <Polygon points={points} fill={edgeColor(theme)} />
       </Marker>
     </Defs>
   );
