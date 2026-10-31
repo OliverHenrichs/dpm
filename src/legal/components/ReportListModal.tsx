@@ -30,7 +30,7 @@ interface ReportListModalProps {
 
 /**
  * Reporting a subscribed list to the operator (TERMS_OF_USE.md §4): what is wrong, optionally
- * where and how to reply. The publisher is not told who reported it.
+ * where and how to reply. The list owner is not told who reported it.
  */
 const ReportListModal: React.FC<ReportListModalProps> = ({ list, onClose }) => {
   const { t } = useTranslation();

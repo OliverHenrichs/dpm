@@ -4,6 +4,7 @@ import {
   IPatternList,
   IPatternModifierRef,
   ISuggestionPolicy,
+  IGeneratedVideo,
   IVideoReference,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
@@ -35,6 +36,7 @@ const MAX_PREREQUISITES = 50;
 const MAX_TAGS = 20;
 const MAX_VIDEOS = 10;
 const MAX_MODIFIER_REFS = 50;
+const MAX_GENERATED_METHOD = 64;
 
 const DAY_MS = 86_400_000;
 
@@ -61,6 +63,13 @@ export function canSuggestTo(list: IPatternList | null | undefined): boolean {
   return !!list?.readonly && !!list.shareCode && !!list.suggestions;
 }
 
+/** Whether this phone can suggest changes to the list's figures: its list owner allows them. */
+export function canSuggestEditsTo(
+  list: IPatternList | null | undefined,
+): boolean {
+  return canSuggestTo(list) && list?.suggestions?.edits === true;
+}
+
 /** Whether the list is this phone's own published list, where suggestions arrive. */
 export function receivesSuggestions(
   list: IPatternList | null | undefined,
@@ -71,10 +80,14 @@ export function receivesSuggestions(
 function onlineVideos(refs: IVideoReference[] | undefined): IVideoReference[] {
   return (refs ?? [])
     .filter((ref) => ref.type === "url")
-    .map(({ type, value, startTime }) => ({
+    .map(({ type, value, startTime, generated }) => ({
       type,
       value,
       ...(typeof startTime === "number" && { startTime }),
+      // Where it came from (anonymized), so the list owner can see it; never the transcript.
+      ...(generated && {
+        generated: { method: generated.method, createdAt: generated.createdAt },
+      }),
     }));
 }
 
@@ -105,10 +118,21 @@ export function suggestedPattern(pattern: NewPattern): NewPattern {
   };
 }
 
-const isObject = (v: unknown): v is Record<string, unknown> =>
+export const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-function asVideoRefs(raw: unknown): IVideoReference[] {
+function asGenerated(raw: unknown): IGeneratedVideo | undefined {
+  return isObject(raw) &&
+    typeof raw.method === "string" &&
+    raw.method.length <= MAX_GENERATED_METHOD &&
+    typeof raw.createdAt === "number" &&
+    Number.isFinite(raw.createdAt)
+    ? { method: raw.method, createdAt: raw.createdAt }
+    : undefined;
+}
+
+/** URL videos from another phone's suggestion; anything else is left out. */
+export function asVideoRefs(raw: unknown): IVideoReference[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter(
@@ -119,13 +143,17 @@ function asVideoRefs(raw: unknown): IVideoReference[] {
         /^https?:\/\//i.test(v.value),
     )
     .slice(0, MAX_VIDEOS)
-    .map((v) => ({
-      type: "url" as const,
-      value: v.value as string,
-      ...(typeof v.startTime === "number" &&
-        Number.isFinite(v.startTime) &&
-        v.startTime >= 0 && { startTime: v.startTime }),
-    }));
+    .map((v) => {
+      const generated = asGenerated(v.generated);
+      return {
+        type: "url" as const,
+        value: v.value as string,
+        ...(typeof v.startTime === "number" &&
+          Number.isFinite(v.startTime) &&
+          v.startTime >= 0 && { startTime: v.startTime }),
+        ...(generated && { generated }),
+      };
+    });
 }
 
 /**

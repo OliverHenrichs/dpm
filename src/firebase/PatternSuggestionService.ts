@@ -51,9 +51,23 @@ import {
 export interface SuggestionDocument {
   authorUid: string;
   authorName?: string;
+  /** The new figure, or for a change (`kind: "edit"`) the figure as the subscriber suggests it. */
   pattern: NewPattern;
+  /** A change to an existing figure (`src/pattern/suggestions/figureEdits.ts`); absent: a new one. */
+  kind?: "edit";
+  /** The figure a change is to. */
+  patternId?: number;
+  /** The figure as the subscriber's copy had it when they suggested the change. */
+  base?: NewPattern;
   createdAt: Timestamp;
   appToken: string;
+}
+
+/** What a suggested change refers to: the figure, and how the subscriber saw it. */
+export interface SuggestedEdit {
+  patternId: number;
+  /** Untrusted, like `pattern`: `figureChanges` reads it. */
+  base: unknown;
 }
 
 /** `sharedLists/{code}/suggestionCounters/{id}`. */
@@ -70,6 +84,8 @@ export interface PatternSuggestion {
   authorName?: string;
   /** Untrusted: another phone wrote it. `patternFromSuggestion` makes it safe to add. */
   pattern: unknown;
+  /** Present when the suggestion is a change to an existing figure. */
+  edit?: SuggestedEdit;
   /** Epoch milliseconds; 0 while the server has not stamped it. */
   createdAt: number;
 }
@@ -135,7 +151,8 @@ export async function getSuggestionStanding(
 }
 
 /**
- * Send a suggestion. The suggestion and today's counter are written in one transaction, which
+ * Send a suggestion: a new figure, or with `edit` a change to the figure `edit.patternId`,
+ * `edit.base` being that figure as this phone has it. The suggestion and today's counter are written in one transaction, which
  * the rules accept only while the list takes suggestions, the caller is not muted and the count
  * stays within the limit. A refusal is told apart by asking again (`getSuggestionStanding`),
  * since the rules only say no.
@@ -145,6 +162,7 @@ export async function submitSuggestion(
   policy: ISuggestionPolicy,
   pattern: NewPattern,
   authorName?: string,
+  edit?: { patternId: number; base: NewPattern },
 ): Promise<SubmitResult> {
   const firestore = requireDb();
   const uid = await ensureSignedIn();
@@ -170,6 +188,11 @@ export async function submitSuggestion(
         authorUid: uid,
         ...(name && { authorName: name }),
         pattern: suggestedPattern(pattern),
+        ...(edit && {
+          kind: "edit" as const,
+          patternId: edit.patternId,
+          base: suggestedPattern(edit.base),
+        }),
         createdAt: serverTimestamp(),
         appToken: APP_TOKEN,
       };
@@ -190,7 +213,7 @@ export async function submitSuggestion(
     );
     const current = (list.data()?.list as IPatternList | undefined)
       ?.suggestions;
-    if (!current) return "closed";
+    if (!current || (edit && !current.edits)) return "closed";
     const standing = await getSuggestionStanding(shareCode, current);
     if (standing.muted) return "muted";
     if (standing.remaining === 0) return "limit";
@@ -212,6 +235,10 @@ function toSuggestion(id: string, data: Record<string, unknown>) {
     ...(typeof data.authorName === "string" &&
       data.authorName.trim() && { authorName: data.authorName.trim() }),
     pattern: data.pattern,
+    ...(data.kind === "edit" &&
+      typeof data.patternId === "number" && {
+        edit: { patternId: data.patternId, base: data.base },
+      }),
     createdAt: createdAt instanceof Timestamp ? createdAt.toMillis() : 0,
   } satisfies PatternSuggestion;
 }

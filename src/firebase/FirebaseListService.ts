@@ -22,6 +22,7 @@ import {
 } from "@/src/firebase/firebaseConfig";
 import { ensureSignedIn, restoreSignIn } from "@/src/firebase/auth";
 import { generateShareKey } from "@/src/firebase/shareKey";
+import { clearSyncFailure, recordSyncFailure } from "@/src/firebase/SyncStatus";
 import {
   isPermissionDenied,
   randomCode,
@@ -146,21 +147,30 @@ export async function publishList(
   );
   batch.set(doc(firestore, SHARED_LISTS_COLLECTION, shareCode), payload);
   await batch.commit();
+  // Everything is published now, so an earlier failed push is made good.
+  await clearSyncFailure(shareCode).catch(() => {});
   return { shareCode, shareKey };
 }
 
 /**
  * Push an updated list to the existing Firestore document.
- * Requires list.shareCode to already be set.
+ * Requires list.shareCode to already be set. A failure is remembered for the sharing sheet
+ * (`SyncStatus`), since callers push in the background and swallow it.
  */
 export async function syncPublishedList(
   list: IPatternList,
   patterns: IPattern[],
 ): Promise<void> {
-  if (!list.shareCode) {
+  const shareCode = list.shareCode;
+  if (!shareCode) {
     throw new Error("Cannot sync: list has no shareCode.");
   }
-  await publishList(list, patterns);
+  try {
+    await publishList(list, patterns);
+  } catch (e) {
+    await recordSyncFailure(shareCode).catch(() => {});
+    throw e;
+  }
 }
 
 /**
@@ -235,6 +245,7 @@ export async function unpublishList(list: IPatternList): Promise<void> {
   batch.delete(doc(firestore, SHARED_LISTS_COLLECTION, list.shareCode));
   batch.delete(ownerRef);
   await batch.commit();
+  await clearSyncFailure(list.shareCode).catch(() => {});
 }
 
 /** The list is members-only and this phone is not let in (yet): `src/pattern/members/`. */

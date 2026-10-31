@@ -1,6 +1,7 @@
 const {
   TAKEDOWN_OWNER,
   describePath,
+  describeSuggestion,
   makeDoc,
   search,
   groupByList,
@@ -228,6 +229,44 @@ describe("planUserRemoval", () => {
       deletes: [],
       ownedLists: [CODE],
     });
+  });
+});
+
+describe("suggested changes to a pattern", () => {
+  const change = makeDoc(`sharedLists/${CODE}/suggestions/e1`, {
+    authorUid: KID,
+    authorName: "Emma",
+    kind: "edit",
+    patternId: 2,
+    base: { name: "Whip", tags: [], videoRefs: [] },
+    pattern: {
+      name: "Whip",
+      tags: ["Festival weekend"],
+      videoRefs: [{ type: "url", value: "https://youtu.be/emma-whip" }],
+    },
+  });
+
+  it("are found by any text in either snapshot", () => {
+    const hits = search([...snapshot(), change], "emma-whip");
+    expect(hits.map((h) => `${h.doc.path} ${h.field}`)).toEqual([
+      `sharedLists/${CODE}/suggestions/e1 pattern.videoRefs[0].value`,
+    ]);
+  });
+
+  it("are removed with the person who sent them", () => {
+    const plan = planUserRemoval([...snapshot(), change], KID);
+    expect(plan.deletes.map((d) => d.path)).toContain(
+      `sharedLists/${CODE}/suggestions/e1`,
+    );
+  });
+
+  it("are described by what they change", () => {
+    expect(describeSuggestion(change.data)).toBe(
+      'change to pattern 2 "Whip": tags, videoRefs',
+    );
+    expect(describeSuggestion({ pattern: { name: "Tuck turn" } })).toBe(
+      '"Tuck turn"',
+    );
   });
 });
 

@@ -18,8 +18,9 @@ export const SUPPORTED_MAJOR = 3;
  * 6: lists may carry `suggestions` (subscribers may suggest patterns).
  * 7: lists may carry `membersOnly` (only subscribers let in may read the published list).
  * 8: modifiers may carry `description` (what the modifier changes).
+ * 9: a list's `suggestions` may carry `edits` (subscribers may suggest changes to figures).
  */
-export const SUPPORTED_MINOR = 8;
+export const SUPPORTED_MINOR = 9;
 
 export interface ParsedVersion {
   major: number;

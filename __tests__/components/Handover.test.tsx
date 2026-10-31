@@ -15,7 +15,7 @@ import {
   getPatternListById,
   loadPatterns,
 } from "@/src/pattern/data/PatternListStorage";
-import ShareListModal from "@/src/pattern/list/ShareListModal";
+import HandOverModal from "@/src/pattern/handover/HandOverModal";
 import TakeOverListModal from "@/src/pattern/handover/TakeOverListModal";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import {
@@ -88,23 +88,17 @@ function publishedList(overrides: Partial<IPatternList> = {}): IPatternList {
 }
 
 describe("handing a list over", () => {
-  function renderShare(list = publishedList()) {
-    renderWithProviders(
-      <ShareListModal
-        visible
-        list={list}
-        patterns={[]}
-        onClose={jest.fn()}
-        onPublished={jest.fn()}
-        onUnpublished={jest.fn()}
-      />,
-      { activeListId: null },
-    );
-    return list;
+  function renderHandOver(list = publishedList()) {
+    const onClose = jest.fn();
+    renderWithProviders(<HandOverModal list={list} onClose={onClose} />, {
+      activeListId: null,
+    });
+    return { list, onClose };
   }
 
   it("offers the list after a confirmation, and shows the code", async () => {
-    const list = renderShare();
+    const { list } = renderHandOver();
+    expect(screen.getByText("WCS Thursday")).toBeOnTheScreen();
     fireEvent.press(await screen.findByText("Hand over to someone"));
     await screen.findByText("Hand over this list?");
     const buttons = screen.getAllByText("Hand over to someone");
@@ -120,7 +114,7 @@ describe("handing a list over", () => {
       code: CODE,
       expiresAt: Date.now() + 86400000,
     });
-    const list = renderShare();
+    const { list } = renderHandOver();
     await screen.findByText(CODE);
     fireEvent.press(screen.getByText("Withdraw the code"));
 
@@ -128,10 +122,11 @@ describe("handing a list over", () => {
     expect(withdrawHandover).toHaveBeenCalledWith(list, CODE);
   });
 
-  it("is not offered for a list that is not published", async () => {
-    renderShare(createTestPatternList({ name: "WCS Thursday" }));
-    await screen.findByText("Publish");
-    expect(screen.queryByText("Hand over to someone")).toBeNull();
+  it("closes with Done", async () => {
+    const { onClose } = renderHandOver();
+    await screen.findByText("Hand over to someone");
+    fireEvent.press(screen.getByText("Done"));
+    expect(onClose).toHaveBeenCalled();
   });
 });
 

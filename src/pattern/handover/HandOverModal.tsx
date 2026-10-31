@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/src/common/ui";
 import AppDialog from "@/src/common/components/AppDialog";
+import ModalOverlay from "@/src/common/components/ModalOverlay";
 import ShareableCode from "@/src/common/components/ShareableCode";
 import {
   getOpenHandover,
@@ -13,12 +14,19 @@ import {
   withdrawHandover,
 } from "@/src/firebase/HandoverService";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
+import { getCommonDialogCard } from "@/src/common/utils/CommonStyles";
+
+interface HandOverModalProps {
+  /** The list owner's own published list. */
+  list: IPatternList;
+  onClose: () => void;
+}
 
 /**
- * The part of the share sheet that hands a published list over to someone who follows it
- * (`src/pattern/handover/AGENTS.md`): make an offer, show its code, or withdraw it.
+ * Hands a published list over to someone who follows it (`src/pattern/handover/AGENTS.md`):
+ * make an offer, show its code, or withdraw it. Opened from the list's ⋮ sheet.
  */
-const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
+const HandOverModal: React.FC<HandOverModalProps> = ({ list, onClose }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   // undefined while looking up an offer made earlier.
@@ -48,7 +56,7 @@ const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
     try {
       await action();
     } catch (e) {
-      console.warn("HandoverSection:", e);
+      console.warn("HandOverModal:", e);
       setError(t("handOverFailed"));
     } finally {
       setBusy(false);
@@ -68,41 +76,46 @@ const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
     });
 
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionLabel}>{t("handOverList")}</Text>
-      {offer === undefined ? (
-        <ActivityIndicator size="small" color={theme.colors.primary} />
-      ) : offer ? (
-        <>
-          <ShareableCode
-            key={offer.code}
-            code={offer.code}
-            copyLabel={t("copyHandoverCode")}
-          />
-          <Text style={styles.hint}>
-            {t("handOverCodeHint", { days: HANDOVER_DAYS })}
-          </Text>
-          <Button
-            title={t("handOverWithdraw")}
-            icon="close"
-            variant="secondary"
-            disabled={busy}
-            onPress={handleWithdraw}
-          />
-        </>
-      ) : (
-        <>
-          <Text style={styles.hint}>{t("handOverHint")}</Text>
-          <Button
-            title={t("handOverStart")}
-            icon="account-switch-outline"
-            variant="secondary"
-            disabled={busy}
-            onPress={() => setConfirm(true)}
-          />
-        </>
-      )}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <ModalOverlay>
+        <View style={styles.card}>
+          <Text style={styles.title}>{t("handOverList")}</Text>
+          <Text style={styles.meta}>{list.name}</Text>
+          {offer === undefined ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : offer ? (
+            <>
+              <ShareableCode
+                key={offer.code}
+                code={offer.code}
+                copyLabel={t("copyHandoverCode")}
+              />
+              <Text style={styles.hint}>
+                {t("handOverCodeHint", { days: HANDOVER_DAYS })}
+              </Text>
+              <Button
+                title={t("handOverWithdraw")}
+                icon="close"
+                variant="secondary"
+                disabled={busy}
+                onPress={handleWithdraw}
+              />
+            </>
+          ) : (
+            <>
+              <Text style={styles.hint}>{t("handOverHint")}</Text>
+              <Button
+                title={t("handOverStart")}
+                icon="account-switch-outline"
+                disabled={busy}
+                onPress={() => setConfirm(true)}
+              />
+            </>
+          )}
+          {error && <Text style={styles.errorText}>{error}</Text>}
+          <Button title={t("done")} variant="ghost" onPress={onClose} />
+        </View>
+      </ModalOverlay>
 
       <AppDialog
         visible={confirm}
@@ -116,21 +129,24 @@ const HandoverSection: React.FC<{ list: IPatternList }> = ({ list }) => {
           handleOffer();
         }}
       />
-    </View>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
-  section: {
+  card: {
+    ...getCommonDialogCard(theme),
+    maxWidth: 420,
     gap: theme.space.sm,
-    marginBottom: theme.space.xl,
   },
-  sectionLabel: {
-    ...theme.typography.caption,
-    fontWeight: "600",
+  title: {
+    ...theme.typography.headline,
+    color: theme.colors.text,
+  },
+  meta: {
+    ...theme.typography.bodySmall,
     color: theme.colors.textMuted,
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    marginBottom: theme.space.sm,
   },
   hint: {
     ...theme.typography.bodySmall,
@@ -142,4 +158,4 @@ const styles = StyleSheet.create((theme) => ({
   },
 }));
 
-export default HandoverSection;
+export default HandOverModal;

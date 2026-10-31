@@ -24,12 +24,16 @@ import BottomSheet from "@/src/common/components/BottomSheet";
 import ShareListModal from "@/src/pattern/list/ShareListModal";
 import SubscribeListModal from "@/src/pattern/list/SubscribeListModal";
 import AppDialog from "@/src/common/components/AppDialog";
-import { syncPublishedList } from "@/src/firebase/FirebaseListService";
+import {
+  syncPublishedList,
+  unpublishList,
+} from "@/src/firebase/FirebaseListService";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { removeSubscription } from "@/src/firebase/SubscriptionService";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { createExampleList } from "@/src/pattern/data/ExampleList";
 import TakeOverListModal from "@/src/pattern/handover/TakeOverListModal";
+import HandOverModal from "@/src/pattern/handover/HandOverModal";
 import ReportListModal from "@/src/legal/components/ReportListModal";
 
 const PatternListSelector: React.FC = () => {
@@ -58,6 +62,14 @@ const PatternListSelector: React.FC = () => {
     null,
   );
   const [takenOverName, setTakenOverName] = useState<string | null>(null);
+  // The list owner's own published list being handed over, or no longer shared.
+  const [handOverTarget, setHandOverTarget] = useState<IPatternList | null>(
+    null,
+  );
+  const [unpublishTarget, setUnpublishTarget] = useState<IPatternList | null>(
+    null,
+  );
+  const [unpublishedName, setUnpublishedName] = useState<string | null>(null);
   // A subscribed list being reported to the operator (src/legal/).
   const [reportTarget, setReportTarget] = useState<IPatternList | null>(null);
 
@@ -192,15 +204,29 @@ const PatternListSelector: React.FC = () => {
     setShareTarget(updatedList); // keep modal open showing the new code
   };
 
-  const handleUnpublished = async (updatedList: IPatternList) => {
+  /** Stop sharing a list: removed from the cloud, kept on this phone. */
+  const confirmUnpublish = async () => {
+    if (!unpublishTarget) return;
+    const list = unpublishTarget;
+    setUnpublishTarget(null);
+    // The list's pull-to-refresh spinner shows while it is removed from the cloud.
+    setIsLoading(true);
     try {
-      await savePatternList(updatedList);
+      await unpublishList(list);
+    } catch (e) {
+      setIsLoading(false);
+      showError(e instanceof Error ? e.message : String(e));
+      return;
+    }
+    const { shareCode: _removed, shareKey: _key, ...rest } = list;
+    try {
+      await savePatternList(rest as IPatternList);
       await loadLists();
       await refreshActiveList();
     } catch (e) {
       console.error("Error persisting unpublish:", e);
     }
-    setShareTarget(null);
+    setUnpublishedName(list.name);
   };
 
   /** The handover went through: the list is this phone's to edit and publish now. */
@@ -383,7 +409,7 @@ const PatternListSelector: React.FC = () => {
           visible={listActionTarget !== null}
           onClose={() => setListActionTarget(null)}
           title={listActionTarget?.name ?? ""}
-          maxHeight="30%"
+          maxHeight="60%"
           minHeight="20%"
         >
           <View style={styles.actionSheetOptions}>
@@ -400,8 +426,8 @@ const PatternListSelector: React.FC = () => {
               <ListRow
                 title={
                   listActionTarget?.shareCode
-                    ? t("manageSharing")
-                    : t("shareToCloud")
+                    ? t("sharingTitle")
+                    : t("shareThisList")
                 }
                 icon="cloud-upload-outline"
                 onPress={() =>
@@ -409,6 +435,31 @@ const PatternListSelector: React.FC = () => {
                 }
               />
             )}
+            {firebaseAvailable &&
+              !listActionTarget?.readonly &&
+              listActionTarget?.shareCode && (
+                <ListRow
+                  title={t("handOverList")}
+                  icon="account-switch-outline"
+                  onPress={() => {
+                    setHandOverTarget(listActionTarget);
+                    setListActionTarget(null);
+                  }}
+                />
+              )}
+            {firebaseAvailable &&
+              !listActionTarget?.readonly &&
+              listActionTarget?.shareCode && (
+                <ListRow
+                  title={t("unpublish")}
+                  icon="cloud-off-outline"
+                  destructive
+                  onPress={() => {
+                    setUnpublishTarget(listActionTarget);
+                    setListActionTarget(null);
+                  }}
+                />
+              )}
             {!listActionTarget?.readonly && (
               <ListRow
                 title={t("deletePatternList")}
@@ -476,9 +527,30 @@ const PatternListSelector: React.FC = () => {
             patterns={sharePatterns}
             onClose={() => setShareTarget(null)}
             onPublished={handleShareUpdated}
-            onUnpublished={handleUnpublished}
           />
         )}
+        {handOverTarget && (
+          <HandOverModal
+            list={handOverTarget}
+            onClose={() => setHandOverTarget(null)}
+          />
+        )}
+        <AppDialog
+          visible={unpublishTarget !== null}
+          title={t("unpublishConfirmTitle")}
+          message={t("unpublishConfirmMessage")}
+          closeLabel={t("cancel")}
+          onClose={() => setUnpublishTarget(null)}
+          confirmLabel={t("unpublish")}
+          confirmDestructive
+          onConfirm={confirmUnpublish}
+        />
+        <AppDialog
+          visible={unpublishedName !== null}
+          title={t("unpublishSuccessTitle")}
+          message={t("unpublishSuccessMessage")}
+          onClose={() => setUnpublishedName(null)}
+        />
 
         {/* ── Subscribe modal ──────────────────────────────────────────── */}
         <SubscribeListModal
