@@ -19,11 +19,14 @@ import GraphDragHint from "@/src/pattern/graph/components/GraphDragHint";
 import AppDialog from "@/src/common/components/AppDialog";
 import { useGraphPositions } from "@/src/pattern/graph/hooks/useGraphPositions";
 import { useGraphLayout } from "@/src/pattern/graph/hooks/useGraphLayout";
+import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 
 const PatternGraphScreen: React.FC = () => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   const { activeList, patterns } = useActivePatternList();
+  // Recolouring a type from the legend: owners only, through the same mutation path as edits.
+  const { isReadonly, setPatternTypeColor } = usePatternCrud();
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [selectedPattern, setSelectedPattern] = useState<IPattern | undefined>(
@@ -120,6 +123,9 @@ const PatternGraphScreen: React.FC = () => {
             positions={positions}
             onMoveNode={moveNode}
             onNodeTap={handleNodeTap}
+            onChangeTypeColor={
+              activeList && !isReadonly ? setPatternTypeColor : undefined
+            }
           />
         </View>
 

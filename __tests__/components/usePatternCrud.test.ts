@@ -371,6 +371,67 @@ describe("usePatternCrud", () => {
       expect((await storedList(list.id)).name).toBe("Renamed");
     });
 
+    it("moves the figures of a removed type to the type chosen, and pushes them together", async () => {
+      const { result, list } = await mountCrud(
+        [pattern(1), pattern(2, { typeId: "keep" })],
+        { shareCode: "ABCD1234" },
+      );
+      const kept = { id: "keep", slug: "pass", color: "#4ECDC4" };
+
+      await act(async () => {
+        await result.current.saveList(
+          { ...list, patternTypes: [kept] },
+          { [TYPE_ID]: "keep" },
+        );
+      });
+
+      expect((await storedPatterns(list.id)).map((p) => p.typeId)).toEqual([
+        "keep",
+        "keep",
+      ]);
+      expect((await storedList(list.id)).patternTypes).toEqual([kept]);
+      expect(result.current.patterns.map((p) => p.typeId)).toEqual([
+        "keep",
+        "keep",
+      ]);
+      expect(mockedSync).toHaveBeenLastCalledWith(
+        expect.objectContaining({ patternTypes: [kept] }),
+        [
+          expect.objectContaining({ id: 1, typeId: "keep" }),
+          expect.objectContaining({ id: 2, typeId: "keep" }),
+        ],
+      );
+    });
+
+    it("recolours one type, and refuses an unknown type or a read-only list", async () => {
+      const { result, list } = await mountCrud([]);
+      const [push, pass] = list.patternTypes;
+      let ok: unknown;
+
+      await act(async () => {
+        ok = await result.current.setPatternTypeColor(push.id, "#123456");
+      });
+      expect(ok).toBe(true);
+      expect((await storedList(list.id)).patternTypes).toEqual([
+        { ...push, color: "#123456" },
+        pass,
+      ]);
+
+      await act(async () => {
+        ok = await result.current.setPatternTypeColor("gone", "#123456");
+      });
+      expect(ok).toBe(false);
+
+      const readonly = await mountCrud([], { readonly: true });
+      await act(async () => {
+        ok = await readonly.result.current.setPatternTypeColor(
+          readonly.list.patternTypes[0].id,
+          "#123456",
+        );
+      });
+      expect(ok).toBe(false);
+    });
+
     it("refuses another list, a read-only one, and a blank type name", async () => {
       const { result, list } = await mountCrud([]);
       let ok: unknown;

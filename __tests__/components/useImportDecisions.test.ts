@@ -181,4 +181,75 @@ describe("useImportDecisions", () => {
       expect(result.current.getImportDecisions()[0].action).toBe("skip");
     });
   });
+
+  describe("importing as a copy", () => {
+    it("names the copy with the next free number, and lets it be renamed", () => {
+      const existing = createTestPatternList({ name: "Salsa" });
+      const taken = createTestPatternList({ name: "Salsa (2)" });
+      const incoming = importable({ id: existing.id, name: "Salsa" });
+      const { result } = mount([incoming], [existing, taken]);
+
+      expect(result.current.nameFieldOf(incoming)).toBeNull();
+      act(() => result.current.setAction(incoming.id, "copy"));
+
+      expect(result.current.nameOf(incoming)).toBe("Salsa (3)");
+      expect(result.current.getImportDecisions()[0]).toMatchObject({
+        action: "copy",
+        name: "Salsa (3)",
+      });
+
+      act(() => result.current.setName(incoming.id, "  Salsa from Ana "));
+      expect(result.current.getImportDecisions()[0].name).toBe(
+        "Salsa from Ana",
+      );
+    });
+
+    it("falls back to the suggested name when the field is cleared", () => {
+      const existing = createTestPatternList({ name: "Salsa" });
+      const incoming = importable({ id: existing.id, name: "Salsa" });
+      const { result } = mount([incoming], [existing]);
+
+      act(() => result.current.setAction(incoming.id, "copy"));
+      act(() => result.current.setName(incoming.id, "   "));
+
+      expect(result.current.getImportDecisions()[0].name).toBe("Salsa (2)");
+    });
+
+    it("drops a typed name when the action changes", () => {
+      const existing = createTestPatternList({ name: "Salsa" });
+      const incoming = importable({ id: existing.id, name: "Salsa" });
+      const { result } = mount([incoming], [existing]);
+
+      act(() => result.current.setAction(incoming.id, "copy"));
+      act(() => result.current.setName(incoming.id, "Mine"));
+      act(() => result.current.setAction(incoming.id, "replace"));
+
+      expect(result.current.getImportDecisions()[0].name).toBe("Salsa");
+    });
+  });
+
+  describe("a new list with a name already taken", () => {
+    it("offers the name for renaming, keeping it by default", () => {
+      const existing = createTestPatternList({ name: "Salsa" });
+      const incoming = importable({ name: "salsa " });
+      const { result } = mount([incoming], [existing]);
+
+      expect(result.current.decisions.get(incoming.id)).toBe("replace");
+      expect(result.current.nameFieldOf(incoming)).toEqual({
+        defaultName: "salsa ",
+      });
+      expect(result.current.getImportDecisions()[0].name).toBe("salsa");
+
+      act(() => result.current.setName(incoming.id, "Salsa (Ana)"));
+      expect(result.current.getImportDecisions()[0].name).toBe("Salsa (Ana)");
+    });
+
+    it("offers no name field for a name nobody has", () => {
+      const incoming = importable({ name: "Zouk" });
+      const { result } = mount([incoming], [createTestPatternList()]);
+
+      expect(result.current.nameFieldOf(incoming)).toBeNull();
+      expect(result.current.getImportDecisions()[0].name).toBe("Zouk");
+    });
+  });
 });

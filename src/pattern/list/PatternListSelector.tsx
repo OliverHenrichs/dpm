@@ -20,6 +20,11 @@ import AppHeader from "@/src/common/components/AppHeader";
 import PlusButton from "@/src/common/components/PlusButton";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import PatternListTemplateModal from "./PatternListTemplateModal";
+import {
+  applyTypeMoves,
+  countPatternsByType,
+  TypeMoves,
+} from "@/src/pattern/list/typeMoves";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import ShareListModal from "@/src/pattern/list/ShareListModal";
 import SubscribeListModal from "@/src/pattern/list/SubscribeListModal";
@@ -49,7 +54,7 @@ const PatternListSelector: React.FC = () => {
     null,
   );
   const [editingList, setEditingList] = useState<IPatternList | null>(null);
-  const [usedTypeIds, setUsedTypeIds] = useState<Set<string>>(new Set());
+  const [typeUsage, setTypeUsage] = useState<Record<string, number>>({});
 
   // Cloud sharing state
   const [shareTarget, setShareTarget] = useState<IPatternList | null>(null);
@@ -152,21 +157,26 @@ const PatternListSelector: React.FC = () => {
     setListActionTarget(null);
     try {
       const patterns = await loadPatterns(list.id);
-      const ids = new Set(patterns.map((p) => p.typeId));
-      setUsedTypeIds(ids);
+      setTypeUsage(countPatternsByType(patterns));
       setEditingList(list);
     } catch (error) {
       console.error("Error loading patterns for edit:", error);
     }
   };
 
-  const handleSaveList = async (updatedList: IPatternList) => {
+  const handleSaveList = async (
+    updatedList: IPatternList,
+    typeMoves: TypeMoves,
+  ) => {
     try {
+      // Figures of a removed type go to the type the user chose, before the list drops it.
+      const patterns = await loadPatterns(updatedList.id);
+      const moved = applyTypeMoves(patterns, typeMoves);
+      if (moved !== patterns) await savePatterns(updatedList.id, moved);
       await savePatternList(updatedList);
       // If the list is already published, keep Firestore in sync automatically
       if (updatedList.shareCode) {
-        const patterns = await loadPatterns(updatedList.id);
-        await syncPublishedList(updatedList, patterns).catch((e) =>
+        await syncPublishedList(updatedList, moved).catch((e) =>
           console.warn("Firestore sync after edit failed:", e),
         );
       }
@@ -400,7 +410,7 @@ const PatternListSelector: React.FC = () => {
           onClose={() => setEditingList(null)}
           onCreateList={handleCreateList}
           editList={editingList ?? undefined}
-          usedTypeIds={usedTypeIds}
+          typeUsage={typeUsage}
           onSaveList={handleSaveList}
         />
 

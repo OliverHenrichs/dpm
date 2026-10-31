@@ -35,7 +35,8 @@ ripple on Android, a fade elsewhere), a 44dp touch target, `accessibilityRole` /
   touches").
 - The scrims that dismiss `BottomSheet` and `PatternDetailsModal` (siblings behind their cards).
 - The video editor's tap-to-mark overlay, a canvas rather than a control.
-- The type row's colour dot and swatches in `PatternListTemplateModal`: they show data colours and
+- The type row's colour dot and swatches in `PatternListTemplateModal` (the swatches are
+  `TypeColorSwatches`, shared with the Map's legend): they show data colours and
   their tests pin the row's structure. They are labelled and announce their state.
 
 ## The design gallery

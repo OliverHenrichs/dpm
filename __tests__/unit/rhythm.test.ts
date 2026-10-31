@@ -1,7 +1,9 @@
 import {
+  appendChainLink,
   appendRhythmStep,
   defaultRhythm,
   lastRhythmStep,
+  nextChainLink,
   nextRhythmSteps,
   removeLastRhythmStep,
   normalizeRhythm,
@@ -21,6 +23,12 @@ describe("rhythmCounts", () => {
     ["1 2 3&4 5 6 7&8", 8],
     ["1 2 3 (4) 5 6 7 (8)", 8],
     ["  1   2 ", 2],
+    // Rolling counts (review 2): any number of beats chained, each counted once.
+    ["1 2 3&4&5 6", 6],
+    ["1 2 3 4 5a6a7 8", 8],
+    ["1&2&3&4", 4],
+    ["1 2 3&4a5 6", 6],
+    ["1 2 (3) 4&5&6", 6],
   ])("reads %s as %i counts", (rhythm, counts) => {
     expect(rhythmCounts(rhythm)).toBe(counts);
   });
@@ -33,6 +41,12 @@ describe("rhythmCounts", () => {
     ["a word", "1 2 walk"],
     ["a triple out of step", "1 2 4&5"],
     ["an unclosed hold", "1 (2"],
+    ["a chain out of step", "1 2 3&5&6"],
+    ["a chain running backwards", "1 2 3&4&3"],
+    ["a chain with a dangling link", "1 2 3&4&"],
+    ["a chain starting with a link", "1 &2"],
+    ["a doubled link", "1 2&&3"],
+    ["a held chain", "1 (2&3)"],
   ])("refuses %s", (_, rhythm) => {
     expect(rhythmCounts(rhythm)).toBeNull();
   });
@@ -113,6 +127,29 @@ describe("composing a rhythm a step at a time", () => {
     expect(removeLastRhythmStep("")).toBe("");
     expect(lastRhythmStep(" 1 2 3a4 ")).toBe("3a4");
     expect(lastRhythmStep("  ")).toBeUndefined();
+  });
+
+  it("rolls a triple on by one beat, in its own spelling", () => {
+    expect(nextChainLink("1 2 3&4")).toBe("&5");
+    expect(nextChainLink("1 2 3a4")).toBe("a5");
+    expect(nextChainLink("1 2 3&4&5")).toBe("&6");
+    expect(appendChainLink("1 2 3&4 ", "&5")).toBe("1 2 3&4&5");
+    expect(rhythmCounts(appendChainLink("1 2 3&4", "&5"))).toBe(5);
+  });
+
+  it("does not roll on a single step, a held beat or what is not a rhythm", () => {
+    expect(nextChainLink("1 2")).toBeUndefined();
+    expect(nextChainLink("1 (2)")).toBeUndefined();
+    expect(nextChainLink("")).toBeUndefined();
+    expect(nextChainLink("1 3&4")).toBeUndefined();
+  });
+
+  it("undoes a rolled-on beat before the triple it rolled on from", () => {
+    expect(lastRhythmStep("1 2 3&4&5")).toBe("&5");
+    expect(removeLastRhythmStep("1 2 3&4&5")).toBe("1 2 3&4");
+    expect(removeLastRhythmStep("1 2 3a4a5a6")).toBe("1 2 3a4a5");
+    expect(lastRhythmStep("1 2 3&4")).toBe("3&4");
+    expect(removeLastRhythmStep("1 2 3&4")).toBe("1 2");
   });
 
   it("only ever composes rhythms", () => {

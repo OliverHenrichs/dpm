@@ -27,6 +27,8 @@ interface GraphViewContainerProps {
   positions: Map<number, LayoutPosition>;
   onMoveNode: (id: number, position: LayoutPosition) => void;
   onNodeTap: (pattern: IPattern) => void;
+  /** Recolours a type from the legend; absent for a read-only list. */
+  onChangeTypeColor?: (typeId: string, color: string) => void;
 }
 
 const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
@@ -38,6 +40,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   positions,
   onMoveNode,
   onNodeTap,
+  onChangeTypeColor,
 }) => {
   return (
     <>
@@ -68,6 +71,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
       <Legend
         patternTypes={patternTypes}
         showLevels={model.patterns.some((p) => !!p.level)}
+        onChangeTypeColor={onChangeTypeColor}
       />
     </>
   );

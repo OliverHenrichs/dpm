@@ -89,9 +89,15 @@ re-checks it.
 a key in `IMPORT_MESSAGE_KEYS` and all nine locales; the keys are chosen at runtime, so the static
 `t("…")` scan cannot see them and `__tests__/unit/importMessages.test.ts` checks them instead.
 
-**Conflicts.** `useImportDecisions` (`ImportAction = "skip" | "replace"` per list) derives each
+**Conflicts.** `useImportDecisions` (`ImportAction = "skip" | "replace" | "copy"` per list) derives each
 default from props on every read (`skip` when the id exists locally, `replace` when not) and keeps
-only the user's explicit choices in state. It once snapshotted defaults in a lazy `useState`, which
+only the user's explicit choices in state, names included. `copy` (offered only on an id clash)
+saves the list beside the local one through `importedListCopy` (`importCopy.ts`): a new id, an
+editable name prefilled with the next free "Name (2)", and no `shareCode` / `shareKey`, as after
+unpublishing (`readonly` stays what the file says). Pattern, type and modifier ids are scoped to
+their list, so they come along unchanged. A new id whose name another list already has shows the
+name field too, keeping the name by default, so two lists never share a name unseen. Each
+`ImportDecision` carries the `name` to save under. It once snapshotted defaults in a lazy `useState`, which
 ran while the always-mounted modal still had empty data, so every conflicting list was silently
 replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
 
