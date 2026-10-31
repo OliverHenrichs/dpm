@@ -196,8 +196,9 @@ function addDevice(root, name) {
     "-CAkey",
     ca("ca.key"),
     "-CAcreateserial",
+    // As long as the CA. A lost device is handled by revoke-device, not by waiting for expiry.
     "-days",
-    "730",
+    "3650",
     "-sha256",
     "-extfile",
     f("ext"),

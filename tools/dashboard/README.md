@@ -188,8 +188,9 @@ changes the root) and the server's certificate. On each device:
 3. Delete the copies you moved over, and the `.p12` in `tls/devices/` on the server: with the
    printed password it lets any browser in.
 
-A device certificate lasts two years, the server certificate 825 days; make new ones with
-`revoke-device` and `add-device`, or delete `tls/` and run `init` again.
+A device certificate lasts ten years, as long as the CA (a lost device is revoked, not waited out);
+the server certificate lasts 825 days. Make new ones with `revoke-device` and `add-device`, or
+delete `tls/` and run `init` again.
 
 ### 3. Run it as a service
 
