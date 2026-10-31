@@ -153,7 +153,7 @@ your computers and your phone. It is never meant to face the internet: don't for
 
 ### 1. The server
 
-- A 64-bit Linux, Node 22 or newer, `openssl`, and git.
+- A 64-bit Linux, Node 24 (LTS until April 2028) or newer, `openssl`, and git.
 - A user of its own: `sudo adduser --disabled-password dpm-ops`, and clone the repository into its
   home. Run `npm --prefix tools/data-removal install` (the dashboard needs nothing else from npm).
 - Put `.env` (with `FIREBASE_PROJECT_ID` and `DPM_ADMIN_CREDENTIALS`) in the checkout, and the
