@@ -207,6 +207,8 @@ ExecStart=/usr/bin/node --env-file=.env tools/dashboard/server.js --lan --port 4
 Restart=on-failure
 NoNewPrivileges=true
 ProtectSystem=strict
+PrivateTmp=true
+UMask=0077
 ReadWritePaths=/home/dpm-ops
 
 [Install]
