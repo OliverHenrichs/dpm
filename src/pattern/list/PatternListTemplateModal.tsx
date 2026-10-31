@@ -32,6 +32,7 @@ import {
 import { RevealTextInput } from "@/src/common/components/reveal";
 import RevealScrollView from "@/src/common/components/RevealScrollView";
 import AppDialog from "@/src/common/components/AppDialog";
+import TypeColorSwatches from "@/src/pattern/list/TypeColorSwatches";
 import {
   addTypeMove,
   countAfterMoves,
@@ -90,9 +91,6 @@ function applyListEdits(
 }
 
 const COLOR_VALUES = Object.values(PATTERN_TYPE_COLORS) as string[];
-const COLOR_NAMES = Object.keys(
-  PATTERN_TYPE_COLORS,
-) as (keyof typeof PATTERN_TYPE_COLORS)[];
 
 const TEMPLATES: Template[] = [
   {
@@ -353,24 +351,10 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
 
   const renderColorPopover = (typeId: string, currentColor: string) => (
     <View style={styles.colorPopover}>
-      <View style={styles.colorSwatchGrid}>
-        {COLOR_VALUES.map((color, idx) => (
-          <Pressable
-            key={COLOR_NAMES[idx]}
-            style={[
-              styles.colorSwatch(color),
-              color === currentColor && styles.colorSwatchSelected,
-            ]}
-            onPress={() => handleTypeColorChange(typeId, color)}
-            accessibilityRole="radio"
-            accessibilityLabel={t("colorSwatch", {
-              n: idx + 1,
-              count: COLOR_VALUES.length,
-            })}
-            accessibilityState={{ checked: color === currentColor }}
-          />
-        ))}
-      </View>
+      <TypeColorSwatches
+        current={currentColor}
+        onPick={(color) => handleTypeColorChange(typeId, color)}
+      />
     </View>
   );
 
@@ -711,23 +695,6 @@ const styles = StyleSheet.create((theme) => ({
     zIndex: 100,
     ...theme.elevation.md,
     elevation: 8,
-  },
-  colorSwatchGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    width: 148,
-    gap: theme.space.sm,
-  },
-  colorSwatch: (color: string) => ({
-    width: 28,
-    height: 28,
-    borderRadius: theme.radius.pill,
-    borderWidth: 2,
-    borderColor: "transparent",
-    backgroundColor: color,
-  }),
-  colorSwatchSelected: {
-    borderColor: theme.colors.text,
   },
   typeSlugInput: {
     ...theme.typography.bodySmall,

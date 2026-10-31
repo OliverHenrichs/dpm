@@ -704,6 +704,7 @@
   "subscribedListHint": "Sigues esta lista. Solo quien la publica puede cambiarla.",
   "rhythmSuggestionHint": "Usa este ritmo y ajusta los tiempos.",
   "legendTypeLane": "Carril {{type}}",
+  "legendTapToRecolor": "Toca un tipo para cambiar su color.",
   "legendPrerequisiteDirection": "Dirección del requisito previo",
   "variantHint": "Una variante es esta figura bailada con un modificador. Elige una para ver sus vídeos.",
   "modifierDescription": "Descripción",

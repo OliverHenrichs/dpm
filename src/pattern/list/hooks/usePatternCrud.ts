@@ -40,6 +40,8 @@ export interface PatternCrud {
   deleteModifier: (modifierId: string) => Promise<boolean>;
   /** The new type, or null for a read-only list, a blank name or one already used. */
   addPatternType: (name: string) => Promise<PatternType | null>;
+  /** Recolours one type (the Map's legend); false for a read-only list or an unknown type. */
+  setPatternTypeColor: (typeId: string, color: string) => Promise<boolean>;
   /**
    * Saves the list's own settings (name, types, dance), edited where its patterns are. `typeMoves`
    * reassigns the figures of each removed type to the type that takes them.
@@ -238,6 +240,22 @@ export function usePatternCrud(): PatternCrud {
     [activeList, isReadonly, patternTypes, updateActiveList],
   );
 
+  const setPatternTypeColor = useCallback(
+    async (typeId: string, color: string) => {
+      if (!activeList || isReadonly) return false;
+      if (!patternTypes.some((type) => type.id === typeId)) return false;
+      await updateActiveList({
+        ...activeList,
+        patternTypes: patternTypes.map((type) =>
+          type.id === typeId ? { ...type, color } : type,
+        ),
+        updatedAt: Date.now(),
+      });
+      return true;
+    },
+    [activeList, isReadonly, patternTypes, updateActiveList],
+  );
+
   const saveList = useCallback(
     async (list: IPatternList, typeMoves: TypeMoves = {}) => {
       if (!activeList || isReadonly || list.id !== activeList.id) return false;
@@ -264,6 +282,7 @@ export function usePatternCrud(): PatternCrud {
     editModifier,
     deleteModifier,
     addPatternType,
+    setPatternTypeColor,
     saveList,
   };
 }

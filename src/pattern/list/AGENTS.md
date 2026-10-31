@@ -85,6 +85,8 @@ nothing selected.
   until Save. `onSaveList(list, typeMoves)` hands them to the host, which reassigns the figures
   before the list drops the type: `usePatternCrud.saveList` on the List tab, `handleSaveList`
   on the Lists screen. The only type cannot be removed while in use, and says so on screen.
+- A type's colour is picked from `TypeColorSwatches`, in list settings and in the Map's legend
+  (`setPatternTypeColor` in `usePatternCrud`).
 - `EditPatternForm`'s type picker ends in _New type_ when given `onAddType` (`addPatternType`
   in `usePatternCrud`: unique name, the first unused palette colour), selecting the new type.
 - A modifier's position shows as _Entry_ / _During_ / _Exit_ (`prefix` / `amends` / `postfix`);

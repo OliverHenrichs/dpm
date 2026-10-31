@@ -704,6 +704,7 @@
   "subscribedListHint": "আপনি এই তালিকায় যুক্ত। শুধু এর প্রকাশক এটি বদলাতে পারেন।",
   "rhythmSuggestionHint": "এই ছন্দটি নেয় এবং কাউন্ট মিলিয়ে দেয়।",
   "legendTypeLane": "{{type}} লেন",
+  "legendTapToRecolor": "রং বদলাতে একটি টাইপে ট্যাপ করুন।",
   "legendPrerequisiteDirection": "পূর্বশর্তের দিক",
   "variantHint": "রূপভেদ হলো কোনো মডিফায়ারসহ নাচা এই প্যাটার্ন। এর ভিডিও দেখতে একটি বেছে নিন।",
   "modifierDescription": "বিবরণ",

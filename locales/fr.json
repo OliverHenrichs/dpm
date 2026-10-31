@@ -704,6 +704,7 @@
   "subscribedListHint": "Vous suivez cette liste. Seule la personne qui la publie peut la modifier.",
   "rhythmSuggestionHint": "Utilise ce rythme et ajuste les temps.",
   "legendTypeLane": "Couloir {{type}}",
+  "legendTapToRecolor": "Touchez un type pour changer sa couleur.",
   "legendPrerequisiteDirection": "Sens du prérequis",
   "variantHint": "Une variante est cette figure dansée avec un modificateur. Choisissez-en une pour voir ses vidéos.",
   "modifierDescription": "Description",

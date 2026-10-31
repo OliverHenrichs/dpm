@@ -704,6 +704,7 @@
   "subscribedListHint": "أنت تتابع هذه القائمة. ناشرها وحده يمكنه تغييرها.",
   "rhythmSuggestionHint": "يستخدم هذا الإيقاع ويضبط العدّات لتطابقه.",
   "legendTypeLane": "مسار {{type}}",
+  "legendTapToRecolor": "اضغط على نوع لتغيير لونه.",
   "legendPrerequisiteDirection": "اتجاه المتطلب السابق",
   "variantHint": "الصيغة هي هذه الحركة مؤدّاة مع مُعدِّل. اختر واحدة لترى مقاطعها.",
   "modifierDescription": "الوصف",

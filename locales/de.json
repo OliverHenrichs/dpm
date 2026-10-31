@@ -704,6 +704,7 @@
   "subscribedListHint": "Du folgst dieser Liste. Nur wer sie veröffentlicht, kann sie ändern.",
   "rhythmSuggestionHint": "Übernimmt diesen Rhythmus und passt die Counts an.",
   "legendTypeLane": "Bahn {{type}}",
+  "legendTapToRecolor": "Tippe auf einen Typ, um seine Farbe zu ändern.",
   "legendPrerequisiteDirection": "Richtung der Voraussetzung",
   "variantHint": "Eine Variante ist diese Figur mit einem Modifikator getanzt. Wähle eine, um ihre Videos zu sehen.",
   "modifierDescription": "Beschreibung",

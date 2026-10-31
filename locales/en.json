@@ -704,6 +704,7 @@
   "subscribedListHint": "You follow this list. Only the list owner can change it.",
   "rhythmSuggestionHint": "Uses this rhythm and sets the counts to match.",
   "legendTypeLane": "{{type}} lane",
+  "legendTapToRecolor": "Tap a type to change its colour.",
   "legendPrerequisiteDirection": "Prerequisite direction",
   "variantHint": "A variant is this figure danced with a modifier. Pick one to see its videos.",
   "modifierDescription": "Description",

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { Button } from "@/src/common/ui";
+import { Button, Tappable } from "@/src/common/ui";
+import TypeColorSwatches from "@/src/pattern/list/TypeColorSwatches";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -52,12 +53,23 @@ interface LegendProps {
   patternTypes: PatternType[];
   /** Level is optional; a list that uses none has no shading to explain. */
   showLevels?: boolean;
+  /**
+   * Recolours a type. Given only for a list the user may edit: each type then opens the
+   * palette list settings use, so the colours are found where they are seen (review 2).
+   */
+  onChangeTypeColor?: (typeId: string, color: string) => void;
 }
 
-const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
+const Legend: React.FC<LegendProps> = ({
+  patternTypes,
+  showLevels = true,
+  onChangeTypeColor,
+}) => {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
+  // The type whose palette is open, if any.
+  const [pickingTypeId, setPickingTypeId] = useState<string | null>(null);
 
   // Open by itself the first time the Map is shown, then stay out of the way.
   useEffect(() => {
@@ -99,14 +111,56 @@ const Legend: React.FC<LegendProps> = ({ patternTypes, showLevels = true }) => {
       {/* Type Colors */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("typeColors")}:</Text>
-        {patternTypes.map((type) => (
-          <View style={styles.legendItem} key={type.id}>
-            <NodeSample color={type.color} />
-            <Text style={styles.legendText}>
-              {t("legendTypeLane", { type: type.slug })}
-            </Text>
-          </View>
-        ))}
+        {onChangeTypeColor && (
+          <Text style={styles.hint}>{t("legendTapToRecolor")}</Text>
+        )}
+        {patternTypes.map((type) => {
+          const sample = (
+            <>
+              <NodeSample color={type.color} />
+              <Text style={styles.legendText}>
+                {t("legendTypeLane", { type: type.slug })}
+              </Text>
+            </>
+          );
+          if (!onChangeTypeColor) {
+            return (
+              <View style={styles.legendItem} key={type.id}>
+                {sample}
+              </View>
+            );
+          }
+          const isPicking = pickingTypeId === type.id;
+          return (
+            <View key={type.id}>
+              <Tappable
+                onPress={() =>
+                  setPickingTypeId((prev) =>
+                    prev === type.id ? null : type.id,
+                  )
+                }
+                accessibilityLabel={t("patternTypeColor", { type: type.slug })}
+                accessibilityState={{ expanded: isPicking }}
+                style={styles.legendItem}
+              >
+                {sample}
+              </Tappable>
+              {isPicking && (
+                <View style={styles.swatches}>
+                  <TypeColorSwatches
+                    current={type.color}
+                    onPick={(color) => {
+                      setPickingTypeId(null);
+                      if (color !== type.color) {
+                        onChangeTypeColor(type.id, color);
+                      }
+                    }}
+                  />
+                </View>
+              )}
+            </View>
+          );
+        })}
       </View>
 
       {/* Level Shading */}
@@ -221,6 +275,14 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     marginVertical: theme.space.xxs,
+  },
+  hint: {
+    ...theme.typography.micro,
+    color: theme.colors.textMuted,
+    marginBottom: theme.space.xs,
+  },
+  swatches: {
+    marginVertical: theme.space.xs,
   },
   legendText: {
     ...theme.typography.micro,

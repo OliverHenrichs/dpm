@@ -403,6 +403,35 @@ describe("usePatternCrud", () => {
       );
     });
 
+    it("recolours one type, and refuses an unknown type or a read-only list", async () => {
+      const { result, list } = await mountCrud([]);
+      const [push, pass] = list.patternTypes;
+      let ok: unknown;
+
+      await act(async () => {
+        ok = await result.current.setPatternTypeColor(push.id, "#123456");
+      });
+      expect(ok).toBe(true);
+      expect((await storedList(list.id)).patternTypes).toEqual([
+        { ...push, color: "#123456" },
+        pass,
+      ]);
+
+      await act(async () => {
+        ok = await result.current.setPatternTypeColor("gone", "#123456");
+      });
+      expect(ok).toBe(false);
+
+      const readonly = await mountCrud([], { readonly: true });
+      await act(async () => {
+        ok = await readonly.result.current.setPatternTypeColor(
+          readonly.list.patternTypes[0].id,
+          "#123456",
+        );
+      });
+      expect(ok).toBe(false);
+    });
+
     it("refuses another list, a read-only one, and a blank type name", async () => {
       const { result, list } = await mountCrud([]);
       let ok: unknown;
