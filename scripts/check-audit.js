@@ -10,13 +10,25 @@
 const fs = require("fs");
 
 const ACCEPTED = {
-  // expo-router -> query-string@7 -> decode-uri-component. The fix is ESM-only
-  // and cannot be forced under a CJS parent; waits for expo-router upstream.
+  // expo-router -> query-string@7 -> decode-uri-component@0.2. The fixes
+  // (0.4.3, 0.5.1) are ESM-only and cannot be forced under a CJS parent; waits
+  // for expo-router upstream. Both are slow-decoding DoS on crafted URLs, at
+  // worst a hang of the app on the phone that opens such a link.
   "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2026-12-01" },
-  // expo -> @expo/cli (and @expo/code-signing-certificates) -> node-forge.
-  // Dev tooling only (EAS update code signing), never in the app bundle.
-  // No patched release exists (1.4.0 is the latest and is affected).
-  "GHSA-86w9-cpqp-85rv": { name: "node-forge", until: "2026-12-01" },
+  "GHSA-qr28-fpjm-wq7f": { name: "decode-uri-component", until: "2026-12-01" },
+  // @expo/config, jest-config -> deepmerge. Dev tooling only, merging our own
+  // config objects, never in the app bundle. No patched release exists
+  // (4.3.1 is the latest and is affected).
+  "GHSA-gcqx-w48m-w2h4": { name: "deepmerge", until: "2026-12-01" },
+  // @expo/config, @expo/config-plugins, @expo/fingerprint, @expo/metro-config,
+  // @jest/reporters, test-exclude -> glob@10/13. Dev and build tooling only,
+  // never in the app bundle; none of them pass an AbortSignal, which is what
+  // the bypass needs. The fix is glob 14, a major the Expo packages don't allow.
+  "GHSA-3g3m-2fjr-6pw4": { name: "glob", until: "2026-12-01" },
+  // eslint, glob, @expo/fingerprint, test-exclude -> minimatch@3/9/10. Dev and
+  // build tooling only, matching our own patterns, never in the app bundle.
+  // The fix is minimatch 11, a major none of these parents allow.
+  "GHSA-g3hv-75wg-m249": { name: "minimatch", until: "2026-12-01" },
   // expo -> @expo/cli -> zod@3. Dev tooling only (validates our own app config),
   // never in the app bundle. No patched 3.x exists; the fix is a major Expo upgrade.
   // The root zod@4 (eslint-plugin-react-hooks) is overridden to a patched release.
