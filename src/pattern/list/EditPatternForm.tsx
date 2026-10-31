@@ -28,8 +28,10 @@ import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
+  appendChainLink,
   appendRhythmStep,
   lastRhythmStep,
+  nextChainLink,
   nextRhythmSteps,
   normalizeRhythm,
   basicRhythms,
@@ -533,6 +535,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     ? []
     : basicRhythms(activeList?.dance, newPattern.counts);
   const nextSteps = nextRhythmSteps(rhythmDraft);
+  // After a triple, one more beat rolled onto it (3&4 → 3&4&5): a rolling count.
+  const chainLink = nextChainLink(rhythmDraft);
   // The last step, for the undo chip beside the next steps: a mistap is fixed without the
   // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
   const lastStep = lastRhythmStep(rhythmDraft);
@@ -738,7 +742,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               ))}
             </View>
           )}
-          {(nextSteps.length > 0 || lastStep) && (
+          {(nextSteps.length > 0 || chainLink || lastStep) && (
             <View style={styles.rhythmSuggestions}>
               {nextSteps.map((step) => (
                 <Chip
@@ -751,6 +755,18 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                   }
                 />
               ))}
+              {chainLink && (
+                <Chip
+                  label={chainLink}
+                  icon="plus"
+                  accessibilityLabel={t("rhythmExtendStep", {
+                    link: chainLink,
+                  })}
+                  onPress={() =>
+                    changeRhythm(appendChainLink(rhythmDraft, chainLink))
+                  }
+                />
+              )}
               {lastStep && (
                 <Chip
                   label={t("rhythmUndoStep")}

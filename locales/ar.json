@@ -470,6 +470,7 @@
   "rhythmAddStep": "إضافة {{step}}",
   "rhythmUndoStep": "تراجع",
   "rhythmRemoveStep": "إزالة {{step}}",
+  "rhythmExtendStep": "إضافة {{link}} إلى الخطوة الأخيرة",
   "videoPartToKeep": "الجزء المحفوظ",
   "videoSeconds": "{{seconds}} ث",
   "videoSecondsOfMax": "{{seconds}} ث · حتى {{max}} ث",

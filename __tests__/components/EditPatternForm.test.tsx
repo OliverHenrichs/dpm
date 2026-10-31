@@ -474,6 +474,44 @@ describe("EditPatternForm composing a rhythm", () => {
     expect(rhythmInput().props.value).toBe("1 2 3&4");
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("4");
   });
+
+  it("rolls a triple on into a rolling count, and undoes one beat of it", async () => {
+    // The Telemark, as review 2's tester counts it: 1 2 3&4&5 6.
+    const onAccepted = jest.fn().mockResolvedValue(true);
+    renderWithProviders(
+      <EditPatternForm
+        patterns={[]}
+        patternTypes={[TYPE]}
+        modifiers={[]}
+        onAccepted={onAccepted}
+        onCancel={noop}
+      />,
+    );
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Figure Name"),
+      "Telemark",
+    );
+    openSection("Rhythm");
+    for (const step of ["1", "2"]) {
+      fireEvent.press(screen.getByLabelText(`Add ${step}`));
+    }
+    expect(screen.queryByLabelText(/to the last step/)).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("Add 3&4"));
+    fireEvent.press(screen.getByLabelText("Add &5 to the last step"));
+    fireEvent.press(screen.getByLabelText("Add &6 to the last step"));
+    fireEvent.press(screen.getByLabelText("Remove &6"));
+    fireEvent.press(screen.getByLabelText("Add 6"));
+
+    expect(rhythmInput().props.value).toBe("1 2 3&4&5 6");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("6");
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(onAccepted).toHaveBeenCalledWith(
+        expect.objectContaining({ counts: 6, rhythm: "1 2 3&4&5 6" }),
+      ),
+    );
+  });
 });
 
 describe("EditPatternForm layout", () => {

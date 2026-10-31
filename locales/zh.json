@@ -470,6 +470,7 @@
   "rhythmAddStep": "添加 {{step}}",
   "rhythmUndoStep": "撤销",
   "rhythmRemoveStep": "删除 {{step}}",
+  "rhythmExtendStep": "在最后一步后加上 {{link}}",
   "videoPartToKeep": "保留的片段",
   "videoSeconds": "{{seconds}} 秒",
   "videoSecondsOfMax": "{{seconds}} 秒 · 最长 {{max}} 秒",

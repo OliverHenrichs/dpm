@@ -5,6 +5,9 @@ import type { Dance } from "@/src/pattern/types/Dance";
  *
  * - `3` — a step on beat 3.
  * - `3&4` or `3a4` — a triple: three steps over beats 3 and 4.
+ * - `3&4&5`, `5a6a7` — a rolling count: consecutive beats chained with `&` or `a`, a step on
+ *   each beat and on each `&` or `a` between them (the Telemark's `1 2 3&4&5 6`, review 2).
+ *   Any number of beats can be chained; each counts once, so `3&4&5` takes three counts.
  * - `(4)` — beat 4 with no change of weight: a tap or a pause, as on 4 and 8 in salsa and
  *   bachata.
  *
@@ -13,7 +16,16 @@ import type { Dance } from "@/src/pattern/types/Dance";
  * and changing the counts clears a rhythm that no longer fits.
  */
 
-const TOKEN = /^(?:(\d+)|\((\d+)\)|(\d+)[&a](\d+))$/;
+/** A step `3`, a held beat `(4)`, or two or more beats chained with `&` or `a`. */
+const TOKEN = /^(?:(\d+)|\((\d+)\)|(\d+(?:[&a]\d+)+))$/;
+
+/** The beats a token covers, in order, or null when it is not a token. */
+function tokenBeats(token: string): number[] | null {
+  const match = TOKEN.exec(token);
+  if (!match) return null;
+  const [, step, held, chain] = match;
+  return chain ? chain.split(/[&a]/).map(Number) : [Number(step ?? held)];
+}
 
 /** How many counts a rhythm takes, or null when it is not one. */
 export function rhythmCounts(rhythm: string): number | null {
@@ -21,12 +33,10 @@ export function rhythmCounts(rhythm: string): number | null {
   if (tokens.length === 0) return null;
   let expected = 1;
   for (const token of tokens) {
-    const match = TOKEN.exec(token);
-    if (!match) return null;
-    const [, step, held, from, to] = match;
-    const beats = from ? [from, to] : [step ?? held];
+    const beats = tokenBeats(token);
+    if (!beats) return null;
     for (const beat of beats) {
-      if (Number(beat) !== expected) return null;
+      if (beat !== expected) return null;
       expected += 1;
     }
   }
@@ -114,12 +124,45 @@ export function appendRhythmStep(written: string, step: string): string {
   return trimmed ? `${trimmed} ${step}` : step;
 }
 
-/** The last step of `written`, or `undefined` when there is none. */
-export function lastRhythmStep(written: string): string | undefined {
-  return written.trim().split(/\s+/).filter(Boolean).pop();
+/**
+ * The link that rolls the last step on by one beat (`&5` after `3&4`, `a7` after `5a6`, in the
+ * last link's own spelling), or `undefined` when the last step is not a chain of beats or what
+ * is written is not a rhythm.
+ */
+export function nextChainLink(written: string): string | undefined {
+  const counts = rhythmCounts(written);
+  const last = written.trim().split(/\s+/).pop() ?? "";
+  if (counts === null || !TOKEN.exec(last)?.[3]) return undefined;
+  const joiner = /([&a])\d+$/.exec(last)?.[1] ?? "&";
+  return `${joiner}${counts + 1}`;
 }
 
-/** `written` without its last step: undoes `appendRhythmStep`, to fix a mistap. */
+/** `written` with `link` (from `nextChainLink`) joined onto its last step. */
+export function appendChainLink(written: string, link: string): string {
+  return `${written.trim()}${link}`;
+}
+
+/** The links of a chain past its first two beats: `3&4&5` → `&5`, else none. */
+function trailingLink(token: string): string | undefined {
+  if (!TOKEN.exec(token)?.[3]) return undefined;
+  const links = token.match(/[&a]\d+/g) ?? [];
+  return links.length > 1 ? links[links.length - 1] : undefined;
+}
+
+/**
+ * What the undo takes off `written`: a rolled-on link (`&5` of `3&4&5`), so undo reverses the
+ * extend; otherwise the whole last step. `undefined` when there is none.
+ */
+export function lastRhythmStep(written: string): string | undefined {
+  const last = written.trim().split(/\s+/).filter(Boolean).pop();
+  return last === undefined ? undefined : (trailingLink(last) ?? last);
+}
+
+/** `written` without what `lastRhythmStep` names: undoes the last tap, to fix a mistap. */
 export function removeLastRhythmStep(written: string): string {
-  return written.trim().split(/\s+/).slice(0, -1).join(" ");
+  const tokens = written.trim().split(/\s+/);
+  const last = tokens.pop() ?? "";
+  const link = trailingLink(last);
+  if (link) tokens.push(last.slice(0, -link.length));
+  return tokens.join(" ");
 }
