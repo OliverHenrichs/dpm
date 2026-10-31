@@ -1,6 +1,6 @@
 ---
 name: review-report
-description: Check a report about a published DPM list against the list and the terms of use, recommend a verdict, and draft the reply email to the reporter. Use when given a report file from the report review dashboard (tools/report-review), or asked to review a DPM report.
+description: Check a report about a published DPM list against the list and the terms of use, recommend a verdict, and draft the reply email to the reporter. Use when given a report file from the report review dashboard (tools/dashboard), or asked to review a DPM report.
 ---
 
 # Review a report about a published list

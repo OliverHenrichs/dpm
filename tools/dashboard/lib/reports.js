@@ -1,18 +1,10 @@
-#!/usr/bin/env node
 /**
- * The report review dashboard: a local web page listing every report about a
- * published list, with the list it is about, an agent's review and draft reply
- * (the review-report skill), and the operator's verdict and actions. Run from
- * the repository root with `npm run reports:review`; see README.md.
- *
- * It listens on 127.0.0.1 only, and every API call needs the token printed at
- * start, so no other page in the browser can drive it.
+ * The Reports tab: every report about a published list, with the list it is
+ * about, an agent's review and draft reply (the review-report skill), and the
+ * operator's verdict and actions. Report notes live in `reviews.js`.
  */
 
-const crypto = require("crypto");
 const fs = require("fs");
-const http = require("http");
-const path = require("path");
 const {
   DECISIONS,
   REVIEW_MODELS,
@@ -22,48 +14,19 @@ const {
   needsAutoReview,
   byPriority,
   looksLikeReportId,
-} = require("./lib/review");
-const { firebaseStore, demoStore } = require("./lib/store");
-const { reviewStore, defaultDir } = require("./lib/reviews");
-const { runReview, reviewQueue } = require("./lib/agent");
+} = require("./review");
+const { reviewQueue } = require("./agent");
+const { httpError, now, readJson } = require("./http");
+const { TAKEDOWN_OWNER } = require("../../data-removal/lib/model");
 
-const REPO_ROOT = path.resolve(__dirname, "..", "..");
-const PAGE = path.join(__dirname, "public", "index.html");
-
-const USAGE = `Usage: npm run reports:review -- [options]
-
-  --every <minutes>   Fetch reports this often (default 5; change it on the page too).
-  --agent             Turn agent reviews on (off by default: a review sends the
-                      report's text and the list to Anthropic).
-  --auto-review       Also start with auto review on: every new report gets an
-                      agent review. Implies --agent.
-  --port <port>       Default 4777.
-  --demo              Made-up reports in memory instead of Firestore
-                      (npm run reports:demo). Agent reviews still run for real.`;
-
-function parseArgs(argv) {
-  const opts = {
-    every: 5,
-    port: 4777,
-    agent: false,
-    autoReview: false,
-    demo: false,
-  };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === "--every") opts.every = Number(argv[++i]);
-    else if (a === "--port") opts.port = Number(argv[++i]);
-    else if (a === "--agent") opts.agent = true;
-    else if (a === "--auto-review") opts.agent = opts.autoReview = true;
-    else if (a === "--demo") opts.demo = true;
-    else if (a === "--help" || a === "-h") opts.help = true;
-    else throw new Error(`Unknown option ${a}\n\n${USAGE}`);
-  }
-  if (!(opts.every >= 1)) throw new Error("--every needs at least 1 minute.");
-  return opts;
-}
-
-function createDashboard({ store, reviews, settingsFile, opts, review }) {
+function createReports({
+  store,
+  reviews,
+  settingsFile,
+  opts,
+  review,
+  log = () => {},
+}) {
   const saved = readJson(settingsFile) ?? {};
   const state = {
     refreshMinutes: saved.refreshMinutes ?? opts.every,
@@ -292,33 +255,66 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
      * The irreversible ones. Each must be confirmed by typing back what it
      * acts on, as the data removal tool asks on the command line.
      */
-    "POST /api/action": async ({ id, action, confirm }) => {
+    "POST /api/action": async ({ id, action, confirm }, ctx = {}) => {
       const view = viewOf(id);
+      // The view can be minutes old: the list may have been handed over or
+      // taken down from the Data tab since. Act on the owner record as it is now.
+      const current = async () => {
+        const owner = await store.owner(view.shareCode);
+        return {
+          takenDown: owner?.ownerUid === TAKEDOWN_OWNER,
+          ownerUid:
+            owner?.ownerUid && owner.ownerUid !== TAKEDOWN_OWNER
+              ? String(owner.ownerUid)
+              : null,
+        };
+      };
       if (action === "remove-list") {
         if (confirm !== view.shareCode)
           throw httpError(400, "Type the share code.");
-        if (view.listStatus === "taken-down")
-          throw httpError(400, "Already taken down.");
+        const fresh = await current();
+        if (fresh.takenDown) throw httpError(400, "Already taken down.");
         await store.removeList(view.shareCode);
+        log({
+          action,
+          shareCode: view.shareCode,
+          uid: fresh.ownerUid,
+          reportId: id,
+          ...ctx,
+        });
         for (const v of state.views) {
-          if (v.shareCode === view.shareCode && view.publisherUid) {
+          if (v.shareCode === view.shareCode && fresh.ownerUid) {
             reviews.update(v.id, {
               reportCreatedAt: v.createdAt,
-              publisherUid: view.publisherUid,
+              publisherUid: fresh.ownerUid,
             });
           }
         }
         record(id, action);
       } else if (action === "block-publisher") {
-        if (!view.publisherUid) throw httpError(400, "No publisher to block.");
-        if (confirm !== view.publisherUid)
-          throw httpError(400, "Type the publisher's id.");
-        await store.blockUser(view.publisherUid);
+        const fresh = await current();
+        // After a takedown the owner record no longer names them; the notes
+        // kept who published the list (saved at the takedown).
+        const uid = fresh.takenDown ? view.publisherUid : fresh.ownerUid;
+        if (!uid) throw httpError(400, "No list owner to block.");
+        if (!fresh.takenDown && uid !== view.publisherUid) {
+          await refresh();
+          throw httpError(
+            409,
+            "The list has a new owner since this page loaded. Check again.",
+          );
+        }
+        if (confirm !== uid) throw httpError(400, "Type the list owner's id.");
+        await store.blockUser(uid);
+        log({ action: "block-user", uid, reportId: id, ...ctx });
         record(id, action);
       } else if (action === "delete-report") {
-        if (confirm !== view.shareCode)
-          throw httpError(400, "Type the share code.");
+        // Every report on a list shares its code, so this one asks for the
+        // reporter's id: the dialog names which report goes.
+        if (confirm !== view.reporterUid)
+          throw httpError(400, "Type the reporter's id.");
         await store.deleteReport(id);
+        log({ action, shareCode: view.shareCode, reportId: id, ...ctx });
         reviews.remove(id);
       } else {
         throw httpError(400, "Unknown action.");
@@ -341,125 +337,4 @@ function createDashboard({ store, reviews, settingsFile, opts, review }) {
   };
 }
 
-function now() {
-  return new Date().toISOString();
-}
-
-function httpError(status, message) {
-  return Object.assign(new Error(message), { status });
-}
-
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return null;
-  }
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (d) => {
-      body += d;
-      if (body.length > 1e6) reject(httpError(413, "Too large."));
-    });
-    req.on("end", () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch {
-        reject(httpError(400, "Not JSON."));
-      }
-    });
-  });
-}
-
-/**
- * The HTTP side. Refuses any Host but its own (DNS rebinding) and any API call
- * without the token, which only the printed link carries.
- */
-function createServer(dashboard, { port, token }) {
-  const page = fs.readFileSync(PAGE, "utf8");
-  const hosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
-  return http.createServer(async (req, res) => {
-    const send = (status, body, type = "application/json") => {
-      res.writeHead(status, {
-        "Content-Type": `${type}; charset=utf-8`,
-        "Cache-Control": "no-store",
-        "X-Content-Type-Options": "nosniff",
-        "Referrer-Policy": "no-referrer",
-        ...(type === "text/html" && {
-          "Content-Security-Policy":
-            "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
-        }),
-      });
-      res.end(type === "application/json" ? JSON.stringify(body) : body);
-    };
-    if (!hosts.has(req.headers.host))
-      return send(403, { error: "Wrong host." });
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    if (req.method === "GET" && url.pathname === "/") {
-      return send(200, page, "text/html");
-    }
-    const handler = dashboard.api[`${req.method} ${url.pathname}`];
-    if (!handler) return send(404, { error: "Not found." });
-    const given = String(req.headers["x-dpm-token"] ?? "");
-    if (
-      given.length !== token.length ||
-      !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(token))
-    ) {
-      return send(401, { error: "Open the link the dashboard printed." });
-    }
-    try {
-      const body = req.method === "POST" ? await readBody(req) : {};
-      send(200, await handler(body));
-    } catch (e) {
-      send(e.status ?? 500, { error: e.message });
-    }
-  });
-}
-
-async function main() {
-  const opts = parseArgs(process.argv.slice(2));
-  if (opts.help) {
-    console.log(USAGE);
-    return;
-  }
-  let store;
-  if (opts.demo) {
-    store = demoStore();
-  } else {
-    const { connect } = require("../data-removal/lib/firestore");
-    store = firebaseStore(connect());
-  }
-  const dir = path.join(defaultDir(), opts.demo ? "demo" : store.projectId);
-  const reviews = reviewStore(dir);
-  const dashboard = createDashboard({
-    store,
-    reviews,
-    settingsFile: path.join(dir, "settings.json"),
-    opts,
-    review: (input, { model }) =>
-      runReview(input, { repoRoot: REPO_ROOT, model }),
-  });
-  await dashboard.refresh();
-  const token = crypto.randomBytes(24).toString("hex");
-  const server = createServer(dashboard, { port: opts.port, token });
-  server.listen(opts.port, "127.0.0.1", () => {
-    console.log(
-      `Project ${store.projectId}${opts.demo ? " (demo data)" : store.emulated ? " (emulator)" : ""}`,
-    );
-    console.log(`Reviews kept in ${dir}`);
-    console.log(`\nOpen http://127.0.0.1:${opts.port}/#${token}\n`);
-    console.log("Ctrl+C stops it. Nothing is sent to anyone from here.");
-  });
-}
-
-if (require.main === module) {
-  main().catch((e) => {
-    console.error(e.message ?? e);
-    process.exitCode = 1;
-  });
-}
-
-module.exports = { createDashboard, createServer, parseArgs };
+module.exports = { createReports };

@@ -145,6 +145,14 @@ async function blockedSince(db, uid) {
   return snap.exists ? plain(snap.get("blockedAt")) : null;
 }
 
+/** Every blocked id with when it was blocked, oldest first. */
+async function listBlocked(db) {
+  const snap = await db.collection(BLOCKED).get();
+  return snap.docs
+    .map((d) => ({ uid: d.id, blockedAt: plain(d.get("blockedAt")) }))
+    .sort((a, b) => String(a.blockedAt).localeCompare(String(b.blockedAt)));
+}
+
 /**
  * Blocks an id: the rules then refuse its publishing, suggesting and asking
  * to join. Its account stays, so the phone keeps the blocked id; a deleted
@@ -187,6 +195,7 @@ module.exports = {
   removeList,
   releaseTakedown,
   blockedSince,
+  listBlocked,
   blockUser,
   unblockUser,
   deleteDocs,

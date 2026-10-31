@@ -1,8 +1,8 @@
 /**
- * The pure half of the report review dashboard: what a report looks like on
+ * The pure half of the Reports tab: what a report looks like on
  * the dashboard, what the review agent is given, what it must answer, and
  * where a report stands. No Firebase, no files, no processes here, so the unit
- * tests can run it (`__tests__/unit/reportReview.test.js`).
+ * tests can run it (`__tests__/unit/dashboardReports.test.js`).
  */
 
 const { TAKEDOWN_OWNER } = require("../../data-removal/lib/model");
