@@ -18,6 +18,7 @@ import { useActivePatternList } from "@/src/pattern/data/components/ActivePatter
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { nextPatternId } from "@/src/pattern/data/patternIds";
+import { applyTypeMoves, TypeMoves } from "@/src/pattern/list/typeMoves";
 
 /**
  * Every mutation returns whether it was applied, so callers can keep a form
@@ -39,8 +40,11 @@ export interface PatternCrud {
   deleteModifier: (modifierId: string) => Promise<boolean>;
   /** The new type, or null for a read-only list, a blank name or one already used. */
   addPatternType: (name: string) => Promise<PatternType | null>;
-  /** Saves the list's own settings (name, types, dance), edited where its patterns are. */
-  saveList: (list: IPatternList) => Promise<boolean>;
+  /**
+   * Saves the list's own settings (name, types, dance), edited where its patterns are. `typeMoves`
+   * reassigns the figures of each removed type to the type that takes them.
+   */
+  saveList: (list: IPatternList, typeMoves?: TypeMoves) => Promise<boolean>;
 }
 
 /**
@@ -235,12 +239,16 @@ export function usePatternCrud(): PatternCrud {
   );
 
   const saveList = useCallback(
-    async (list: IPatternList) => {
+    async (list: IPatternList, typeMoves: TypeMoves = {}) => {
       if (!activeList || isReadonly || list.id !== activeList.id) return false;
-      await updateActiveList(list);
+      // Figures first, so none is left on a removed type if the list write is what fails; the
+      // list's push to Firestore then carries the moved figures with it.
+      const moved = applyTypeMoves(patterns, typeMoves);
+      if (moved !== patterns) await updatePatterns(moved);
+      await updateActiveList(list, moved);
       return true;
     },
-    [activeList, isReadonly, updateActiveList],
+    [activeList, isReadonly, patterns, updatePatterns, updateActiveList],
   );
 
   return {

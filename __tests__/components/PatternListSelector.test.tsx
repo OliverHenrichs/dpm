@@ -301,4 +301,36 @@ describe("PatternListSelector", () => {
       );
     });
   });
+
+  describe("editing a list's types", () => {
+    it("moves the figures of a removed type to the one chosen", async () => {
+      const list = createTestPatternList({ name: "Salsa" });
+      const [push, pass] = list.patternTypes;
+      seedAsyncStorage({
+        [`@patterns_${list.id}`]: JSON.stringify([
+          createTestPattern(push.id, { id: 1 }),
+          createTestPattern(pass.id, { id: 2 }),
+        ]),
+      });
+      await renderSelector([list]);
+
+      fireEvent(screen.getByText("Salsa"), "longPress");
+      fireEvent.press(screen.getByText("Edit Figure List"));
+      await screen.findAllByText("Used by 1 figure");
+      fireEvent.press(screen.getByLabelText("Remove type: push"));
+      fireEvent.press(screen.getByText("Move and remove"));
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () =>
+        expect((await storedLists())[0].patternTypes).toEqual([pass]),
+      );
+      const stored = JSON.parse(
+        (await AsyncStorage.getItem(`@patterns_${list.id}`)) ?? "[]",
+      );
+      expect(stored.map((p: { typeId: string }) => p.typeId)).toEqual([
+        pass.id,
+        pass.id,
+      ]);
+    });
+  });
 });

@@ -31,6 +31,12 @@ import {
 } from "@/src/pattern/types/PatternType";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import RevealScrollView from "@/src/common/components/RevealScrollView";
+import AppDialog from "@/src/common/components/AppDialog";
+import {
+  addTypeMove,
+  countAfterMoves,
+  TypeMoves,
+} from "@/src/pattern/list/typeMoves";
 
 interface PatternListTemplateModalProps {
   visible: boolean;
@@ -39,10 +45,16 @@ interface PatternListTemplateModalProps {
   onCreateList?: (list: IPatternList, initialPatterns: IPattern[]) => void;
   /** When set the modal opens straight into the configure step in edit mode */
   editList?: IPatternList;
-  /** Type IDs that have at least one pattern — their ✕ button is disabled */
-  usedTypeIds?: Set<string>;
-  /** Called instead of onCreateList when editing an existing list */
-  onSaveList?: (updatedList: IPatternList) => void;
+  /**
+   * How many patterns use each type, by id. Removing a type in use asks where its figures go;
+   * the only type cannot be removed while in use.
+   */
+  typeUsage?: Record<string, number>;
+  /**
+   * Called instead of onCreateList when editing an existing list, with where the figures of
+   * each removed type go (empty when none moved). The host reassigns them as it saves.
+   */
+  onSaveList?: (updatedList: IPatternList, typeMoves: TypeMoves) => void;
 }
 
 interface Template {
@@ -166,7 +178,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   onClose,
   onCreateList,
   editList,
-  usedTypeIds,
+  typeUsage,
   onSaveList,
 }) => {
   const { t } = useTranslation();
@@ -190,6 +202,14 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   );
   const [draftPatterns, setDraftPatterns] = useState<DraftPatternEntry[]>([]);
   const [colorPopoverId, setColorPopoverId] = useState<string | null>(null);
+  // Where the figures of each type removed so far go, and the type whose removal is being asked.
+  const [typeMoves, setTypeMoves] = useState<TypeMoves>({});
+  const [movingTypeId, setMovingTypeId] = useState<string | null>(null);
+  const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
+  const usageOf = (id: string) =>
+    countAfterMoves(id, typeUsage ?? {}, typeMoves);
+  const movingType = draftTypes.find((dt) => dt.id === movingTypeId);
+  const moveTargets = draftTypes.filter((dt) => dt.id !== movingTypeId);
 
   // ── Slug validation ────────────────────────────────────────────────────────
   const slugErrors: Record<string, string> = {};
@@ -230,6 +250,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       // ── Edit path ─────────────────────────────────────────────────────
       onSaveList(
         applyListEdits(editList, draftName.trim(), finalTypes, draftDance),
+        typeMoves,
       );
     } else {
       // ── Create path ───────────────────────────────────────────────────
@@ -281,7 +302,28 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     setDraftTypes((prev) => [...prev, createPatternType("", nextColor)]);
   };
 
+  /** A type in use asks where its figures go first; one in use and alone cannot go. */
   const handleRemoveType = (id: string) => {
+    if (usageOf(id) === 0) {
+      removeType(id);
+      return;
+    }
+    const others = draftTypes.filter((dt) => dt.id !== id);
+    if (others.length === 0) return;
+    setColorPopoverId(null);
+    setMoveTargetId(others[0].id);
+    setMovingTypeId(id);
+  };
+
+  const confirmMoveType = () => {
+    if (movingTypeId && moveTargetId) {
+      setTypeMoves((prev) => addTypeMove(prev, movingTypeId, moveTargetId));
+      removeType(movingTypeId);
+    }
+    setMovingTypeId(null);
+  };
+
+  const removeType = (id: string) => {
     setDraftTypes((prev) => prev.filter((dt) => dt.id !== id));
     // Auto-uncheck patterns whose typeSlug no longer has a matching type
     const remaining = draftTypes.filter((dt) => dt.id !== id);
@@ -408,56 +450,69 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           {t("patternTypes")}
         </Text>
         {draftTypes.map((dt) => {
-          const isInUse = usedTypeIds?.has(dt.id) ?? false;
+          const usage = usageOf(dt.id);
+          // In use and alone: its figures would have nowhere to go.
+          const isStuck = usage > 0 && draftTypes.length === 1;
           const isPickingColor = colorPopoverId === dt.id;
           return (
-            <View
-              key={dt.id}
-              style={[styles.typeRow, isPickingColor && styles.typeRowRaised]}
-            >
-              {/* Color dot → popover, which is rendered last inside the row */}
-              <Pressable
-                onPress={(e) => {
-                  e?.stopPropagation?.();
-                  setColorPopoverId((prev) => (prev === dt.id ? null : dt.id));
-                }}
-                hitSlop={theme.space.sm}
-                style={styles.typeColorDot(dt.color)}
-                accessibilityRole="button"
-                accessibilityLabel={t("patternTypeColor", {
-                  type: dt.slug || t("typeName"),
-                })}
-                accessibilityState={{ expanded: isPickingColor }}
-              />
+            <React.Fragment key={dt.id}>
+              <View
+                style={[styles.typeRow, isPickingColor && styles.typeRowRaised]}
+              >
+                {/* Color dot → popover, which is rendered last inside the row */}
+                <Pressable
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    setColorPopoverId((prev) =>
+                      prev === dt.id ? null : dt.id,
+                    );
+                  }}
+                  hitSlop={theme.space.sm}
+                  style={styles.typeColorDot(dt.color)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("patternTypeColor", {
+                    type: dt.slug || t("typeName"),
+                  })}
+                  accessibilityState={{ expanded: isPickingColor }}
+                />
 
-              <RevealTextInput
-                style={[
-                  styles.typeSlugInput,
-                  slugErrors[dt.id] ? styles.typeSlugInputError : undefined,
-                ]}
-                value={dt.slug}
-                onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
-                placeholder={t("typeName")}
-                placeholderTextColor={theme.colors.textMuted}
-                onFocus={() => setColorPopoverId(null)}
-              />
-              <IconButton
-                icon="close"
-                size={theme.iconSize.md}
-                color="textMuted"
-                onPress={() => handleRemoveType(dt.id)}
-                disabled={isInUse}
-                accessibilityLabel={`${t("removePatternType")}: ${
-                  dt.slug || t("typeName")
-                }`}
-                accessibilityHint={
-                  isInUse ? t("cannotRemoveTypeHasPatterns") : undefined
-                }
-              />
-              {/* Last child on purpose: it overlays the row's own slug input,
+                <RevealTextInput
+                  style={[
+                    styles.typeSlugInput,
+                    slugErrors[dt.id] ? styles.typeSlugInputError : undefined,
+                  ]}
+                  value={dt.slug}
+                  onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
+                  placeholder={t("typeName")}
+                  placeholderTextColor={theme.colors.textMuted}
+                  onFocus={() => setColorPopoverId(null)}
+                />
+                <IconButton
+                  icon="close"
+                  size={theme.iconSize.md}
+                  color="textMuted"
+                  onPress={() => handleRemoveType(dt.id)}
+                  disabled={isStuck}
+                  accessibilityLabel={`${t("removePatternType")}: ${
+                    dt.slug || t("typeName")
+                  }`}
+                  accessibilityHint={
+                    isStuck ? t("cannotRemoveOnlyType") : undefined
+                  }
+                />
+                {/* Last child on purpose: it overlays the row's own slug input,
                   and paint order is what decides that where zIndex does not. */}
-              {isPickingColor && renderColorPopover(dt.id, dt.color)}
-            </View>
+                {isPickingColor && renderColorPopover(dt.id, dt.color)}
+              </View>
+              {usage > 0 && (
+                <Text style={styles.typeUsage}>
+                  {usage === 1
+                    ? t("typeUsedByOne")
+                    : t("typeUsedByMany", { count: usage })}
+                  {isStuck ? ` · ${t("cannotRemoveOnlyType")}` : ""}
+                </Text>
+              )}
+            </React.Fragment>
           );
         })}
         {/* Slug error messages */}
@@ -527,6 +582,38 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           />
         </View>
       </RevealScrollView>
+      <AppDialog
+        visible={movingType !== undefined}
+        title={t("moveTypeTitle", {
+          type: movingType?.slug || t("typeName"),
+        })}
+        message={
+          movingType && usageOf(movingType.id) === 1
+            ? t("moveTypeMessageOne", {
+                type: movingType.slug || t("typeName"),
+              })
+            : t("moveTypeMessageMany", {
+                count: movingType ? usageOf(movingType.id) : 0,
+                type: movingType?.slug || t("typeName"),
+              })
+        }
+        closeLabel={t("cancel")}
+        onClose={() => setMovingTypeId(null)}
+        confirmLabel={t("moveTypeConfirm")}
+        confirmDestructive
+        onConfirm={confirmMoveType}
+      >
+        {moveTargets.map((target) => (
+          <ListRow
+            key={target.id}
+            title={target.slug || t("typeName")}
+            leading={<View style={styles.typeColorPip(target.color)} />}
+            selection="single"
+            selected={moveTargetId === target.id}
+            onPress={() => setMoveTargetId(target.id)}
+          />
+        ))}
+      </AppDialog>
     </Pressable>
   );
   return step === "pick" ? renderPickStep() : renderConfigureStep();
@@ -655,6 +742,13 @@ const styles = StyleSheet.create((theme) => ({
   },
   typeSlugInputError: {
     borderColor: theme.colors.danger,
+  },
+  typeUsage: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+    marginTop: -theme.space.xs,
+    marginBottom: theme.space.sm,
+    marginLeft: 36,
   },
   slugError: {
     ...theme.typography.micro,

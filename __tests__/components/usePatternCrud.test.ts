@@ -371,6 +371,38 @@ describe("usePatternCrud", () => {
       expect((await storedList(list.id)).name).toBe("Renamed");
     });
 
+    it("moves the figures of a removed type to the type chosen, and pushes them together", async () => {
+      const { result, list } = await mountCrud(
+        [pattern(1), pattern(2, { typeId: "keep" })],
+        { shareCode: "ABCD1234" },
+      );
+      const kept = { id: "keep", slug: "pass", color: "#4ECDC4" };
+
+      await act(async () => {
+        await result.current.saveList(
+          { ...list, patternTypes: [kept] },
+          { [TYPE_ID]: "keep" },
+        );
+      });
+
+      expect((await storedPatterns(list.id)).map((p) => p.typeId)).toEqual([
+        "keep",
+        "keep",
+      ]);
+      expect((await storedList(list.id)).patternTypes).toEqual([kept]);
+      expect(result.current.patterns.map((p) => p.typeId)).toEqual([
+        "keep",
+        "keep",
+      ]);
+      expect(mockedSync).toHaveBeenLastCalledWith(
+        expect.objectContaining({ patternTypes: [kept] }),
+        [
+          expect.objectContaining({ id: 1, typeId: "keep" }),
+          expect.objectContaining({ id: 2, typeId: "keep" }),
+        ],
+      );
+    });
+
     it("refuses another list, a read-only one, and a blank type name", async () => {
       const { result, list } = await mountCrud([]);
       let ok: unknown;

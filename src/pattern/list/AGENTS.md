@@ -79,6 +79,12 @@ nothing selected.
   through `newVideo` route params (`src/videoLinks/AGENTS.md`).
 - `PatternListTemplateModal` creates and sets up a list: template, name, types, dance. The List
   tab opens it too, in edit mode (`saveList`), so types are edited where the patterns are.
+  Each type in use says how many figures use it (`typeUsage`). Its ✕ stays enabled: tapping it
+  asks where those figures go (an `AppDialog` with the other types as choices), and the move is
+  kept as `TypeMoves` (`typeMoves.ts`, removed type → target, chained when the target goes too)
+  until Save. `onSaveList(list, typeMoves)` hands them to the host, which reassigns the figures
+  before the list drops the type: `usePatternCrud.saveList` on the List tab, `handleSaveList`
+  on the Lists screen. The only type cannot be removed while in use, and says so on screen.
 - `EditPatternForm`'s type picker ends in _New type_ when given `onAddType` (`addPatternType`
   in `usePatternCrud`: unique name, the first unused palette colour), selecting the new type.
 - A modifier's position shows as _Entry_ / _During_ / _Exit_ (`prefix` / `amends` / `postfix`);
