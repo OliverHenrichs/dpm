@@ -9,12 +9,18 @@ import { ImportAction } from "@/src/pattern/data/hooks/useImportDecisions";
 import { ConflictBadge } from "./ConflictBadge";
 import { ImportActionButtons } from "./ImportActionButtons";
 import { Icon } from "@/src/common/ui/Icon";
+import { RevealTextInput } from "@/src/common/components/reveal";
+import { getCommonInput } from "@/src/common/utils/CommonStyles";
 
 interface ImportListItemProps {
   list: PatternListWithPatterns;
   existingList?: IPatternList;
   currentAction: ImportAction;
   onActionChange: (action: ImportAction) => void;
+  /** Shown for a copy, and for a new list whose name another list already has. */
+  showName?: boolean;
+  name?: string;
+  onNameChange?: (name: string) => void;
 }
 
 export const ImportListItem: React.FC<ImportListItemProps> = ({
@@ -22,6 +28,9 @@ export const ImportListItem: React.FC<ImportListItemProps> = ({
   existingList,
   currentAction,
   onActionChange,
+  showName = false,
+  name = "",
+  onNameChange,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -51,6 +60,27 @@ export const ImportListItem: React.FC<ImportListItemProps> = ({
         hasConflict={!!existingList}
         onActionChange={onActionChange}
       />
+      {showName && (
+        <View style={styles.nameBlock}>
+          <Text style={styles.nameLabel}>
+            {currentAction === "copy"
+              ? t("importCopyName")
+              : t("importNameClash")}
+          </Text>
+          <RevealTextInput
+            value={name}
+            onChangeText={onNameChange}
+            accessibilityLabel={
+              currentAction === "copy"
+                ? t("importCopyName")
+                : t("importNameClash")
+            }
+            placeholder={list.name}
+            placeholderTextColor={theme.colors.textMuted}
+            style={styles.nameInput}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -92,6 +122,18 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.typography.button,
     color: theme.colors.text,
     flex: 1,
+  },
+  nameBlock: {
+    marginTop: theme.space.md,
+    gap: theme.space.xs,
+  },
+  nameLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textMuted,
+  },
+  nameInput: {
+    ...getCommonInput(theme),
+    ...theme.typography.body,
   },
   listMeta: {
     ...theme.typography.caption,

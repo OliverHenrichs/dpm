@@ -263,6 +263,27 @@ describe("validateExportData", () => {
       );
     });
 
+    it("keeps a rolling count that fits the counts", () => {
+      const result = validateExportData(
+        fileWithList(
+          baseList({
+            patterns: [
+              createTestPattern(TYPE.id, {
+                id: 1,
+                counts: 6,
+                rhythm: "1 2 3&4&5 6",
+              }),
+            ],
+          }),
+        ),
+      );
+
+      expect(result.warnings).toEqual([]);
+      expect(result.data!.patternLists[0].patterns[0].rhythm).toBe(
+        "1 2 3&4&5 6",
+      );
+    });
+
     it("drops a rhythm that does not fit, with a warning", () => {
       const result = validateExportData(
         fileWithList(

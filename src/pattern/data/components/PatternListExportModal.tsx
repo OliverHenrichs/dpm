@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Modal, ScrollView, Switch, Text, View } from "react-native";
+import { Modal, ScrollView, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { Button } from "@/src/common/ui";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { Button, SwitchRow } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
 import { getCommonDialogCard } from "@/src/common/utils/CommonStyles";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { useTranslation } from "react-i18next";
@@ -46,7 +46,6 @@ const ExportSheet: React.FC<Omit<PatternListExportModalProps, "visible">> = ({
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { theme } = useUnistyles();
   const {
     selectedIds,
     toggleSelection,
@@ -90,62 +89,32 @@ const ExportSheet: React.FC<Omit<PatternListExportModalProps, "visible">> = ({
             />
           ))}
         </ScrollView>
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>{t("includeVideosInExport")}</Text>
-          <Switch
-            value={includeVideos}
-            onValueChange={setIncludeVideos}
-            trackColor={{
-              false: theme.colors.textMuted,
-              true: theme.colors.primary,
-            }}
-            thumbColor={theme.colors.border}
-          />
-        </View>
+        <SwitchRow
+          title={t("includeVideosInExport")}
+          value={includeVideos}
+          onValueChange={setIncludeVideos}
+          style={styles.toggle}
+        />
         {offerTranscripts && (
-          <>
-            <View style={styles.toggleRow}>
-              <Text
-                style={[
-                  styles.toggleLabel,
-                  !includeVideos && styles.disabledLabel,
-                ]}
-              >
-                {t("includeTranscriptsInExport")}
-              </Text>
-              <Switch
-                value={includeVideos && includeTranscripts}
-                onValueChange={setIncludeTranscripts}
-                disabled={!includeVideos}
-                accessibilityLabel={t("includeTranscriptsInExport")}
-                trackColor={{
-                  false: theme.colors.textMuted,
-                  true: theme.colors.primary,
-                }}
-                thumbColor={theme.colors.border}
-              />
-            </View>
-            <Text style={styles.toggleHint}>
-              {t(
-                includeVideos
-                  ? "includeTranscriptsHint"
-                  : "includeTranscriptsNeedsVideos",
-              )}
-            </Text>
-          </>
-        )}
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>{t("exportAsReadonly")}</Text>
-          <Switch
-            value={exportAsReadonly}
-            onValueChange={setExportAsReadonly}
-            trackColor={{
-              false: theme.colors.textMuted,
-              true: theme.colors.primary,
-            }}
-            thumbColor={theme.colors.border}
+          <SwitchRow
+            title={t("includeTranscriptsInExport")}
+            description={t(
+              includeVideos
+                ? "includeTranscriptsHint"
+                : "includeTranscriptsNeedsVideos",
+            )}
+            value={includeVideos && includeTranscripts}
+            onValueChange={setIncludeTranscripts}
+            disabled={!includeVideos}
+            style={styles.toggle}
           />
-        </View>
+        )}
+        <SwitchRow
+          title={t("exportAsReadonly")}
+          value={exportAsReadonly}
+          onValueChange={setExportAsReadonly}
+          style={styles.toggle}
+        />
         <View style={styles.buttonRow}>
           <Button
             title={t("cancel")}
@@ -180,25 +149,7 @@ const styles = StyleSheet.create((theme) => ({
     maxHeight: 400,
     marginBottom: theme.space.lg,
   },
-  toggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: theme.space.md,
-    marginBottom: theme.space.md,
-  },
-  toggleLabel: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.text,
-  },
-  disabledLabel: { color: theme.colors.textMuted },
-  toggleHint: {
-    ...theme.typography.caption,
-    color: theme.colors.textMuted,
-    // Belongs to the switch above: pulled up into that row's bottom margin.
-    marginTop: -theme.space.md,
-    marginBottom: theme.space.md,
-  },
+  toggle: { marginBottom: theme.space.md },
   buttonRow: {
     flexDirection: "row",
     gap: theme.space.md,

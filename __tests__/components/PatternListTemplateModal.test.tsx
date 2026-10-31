@@ -20,7 +20,7 @@ function renderModal(
   > = {},
 ) {
   const onCreateList = jest.fn<void, [IPatternList, NewPattern[]]>();
-  const onSaveList = jest.fn<void, [IPatternList]>();
+  const onSaveList = jest.fn<void, [IPatternList, Record<string, string>]>();
   const onClose = jest.fn();
   renderWithProviders(
     <PatternListTemplateModal
@@ -537,6 +537,7 @@ describe("PatternListTemplateModal", () => {
       expect(onCreateList).not.toHaveBeenCalled();
       expect(onSaveList).toHaveBeenCalledWith(
         expect.objectContaining({ id: list.id, name: "Renamed" }),
+        {},
       );
     });
 
@@ -555,28 +556,117 @@ describe("PatternListTemplateModal", () => {
       expect(screen.queryByText("Choose a Starting Point")).toBeNull();
     });
 
-    it("refuses to remove a type that still has patterns", () => {
+    it("says how many figures use a type", () => {
       const list = editable();
+      const [push, pass] = list.patternTypes;
       renderModal({
         editList: list,
-        usedTypeIds: new Set([list.patternTypes[0].id]),
+        typeUsage: { [push.id]: 3, [pass.id]: 1 },
+      });
+
+      expect(screen.getByText("Used by 3 figures")).toBeOnTheScreen();
+      expect(screen.getByText("Used by 1 figure")).toBeOnTheScreen();
+    });
+
+    it("asks where the figures of a type in use go, then moves them on save", () => {
+      const list = editable();
+      const [push, pass] = list.patternTypes;
+      const { onSaveList } = renderModal({
+        editList: list,
+        typeUsage: { [push.id]: 2 },
       });
 
       fireEvent.press(removeTypeButtons()[0]);
 
+      expect(screen.getByText("Remove push")).toBeOnTheScreen();
+      expect(
+        screen.getByText("2 figures use push. Move them to:"),
+      ).toBeOnTheScreen();
+      // The other types are the choices, the first picked.
+      expect(screen.getByRole("radio", { name: "pass" })).toBeSelected();
       expect(typeInputs()).toHaveLength(2);
+
+      fireEvent.press(screen.getByText("Move and remove"));
+      expect(typeInputs()).toHaveLength(1);
+      // pass is the only type left now, holding push's figures.
+      expect(screen.getByText(/^Used by 2 figures/)).toBeOnTheScreen();
+
+      fireEvent.press(screen.getByText("Save"));
+      const [saved, moves] = onSaveList.mock.calls[0];
+      expect(saved.patternTypes.map((t) => t.id)).toEqual([pass.id]);
+      expect(moves).toEqual({ [push.id]: pass.id });
     });
 
-    it("still allows removing a type with no patterns", () => {
+    it("keeps the type when the question is cancelled", () => {
+      const list = editable();
+      const [push] = list.patternTypes;
+      const { onSaveList } = renderModal({
+        editList: list,
+        typeUsage: { [push.id]: 1 },
+      });
+
+      fireEvent.press(removeTypeButtons()[0]);
+      expect(
+        screen.getByText("1 figure uses push. Move it to:"),
+      ).toBeOnTheScreen();
+      // The dialog's Cancel, after the sheet's own in the tree.
+      fireEvent.press(screen.getAllByText("Cancel").at(-1)!);
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(typeInputs()).toHaveLength(2);
+      expect(onSaveList.mock.calls[0][1]).toEqual({});
+    });
+
+    it("moves to the type picked, and follows a type that moves on again", () => {
+      const list = editable();
+      list.patternTypes.push(createPatternType("whip", "#45B7D1"));
+      const [push, pass, whip] = list.patternTypes;
+      const { onSaveList } = renderModal({
+        editList: list,
+        typeUsage: { [push.id]: 2, [pass.id]: 1 },
+      });
+
+      fireEvent.press(removeTypeButtons()[0]);
+      fireEvent.press(screen.getByRole("radio", { name: "pass" }));
+      fireEvent.press(screen.getByText("Move and remove"));
+      // pass now holds its own figure and push's two.
+      fireEvent.press(removeTypeButtons()[0]);
+      expect(
+        screen.getByText("3 figures use pass. Move them to:"),
+      ).toBeOnTheScreen();
+      fireEvent.press(screen.getByText("Move and remove"));
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(onSaveList.mock.calls[0][1]).toEqual({
+        [push.id]: whip.id,
+        [pass.id]: whip.id,
+      });
+    });
+
+    it("removes a type no figure uses without asking", () => {
       const list = editable();
       renderModal({
         editList: list,
-        usedTypeIds: new Set([list.patternTypes[0].id]),
+        typeUsage: { [list.patternTypes[0].id]: 1 },
       });
 
       fireEvent.press(removeTypeButtons()[1]);
 
       expect(typeInputs()).toHaveLength(1);
+      expect(screen.queryByText("Move and remove")).toBeNull();
+    });
+
+    it("will not remove the only type while figures use it, and says why", () => {
+      const list = createTestPatternList({
+        patternTypes: [createPatternType("push", "#FF6B6B")],
+      });
+      renderModal({
+        editList: list,
+        typeUsage: { [list.patternTypes[0].id]: 4 },
+      });
+
+      expect(removeTypeButtons()[0]).toBeDisabled();
+      expect(screen.getByText(/The only type: add another/)).toBeOnTheScreen();
     });
   });
 });

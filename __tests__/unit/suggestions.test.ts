@@ -206,6 +206,23 @@ describe("patternFromSuggestion", () => {
     expect(patternFromSuggestion(raw, list, patterns)).toEqual(raw);
   });
 
+  it("keeps a rolling count that fits the counts", () => {
+    const raw = {
+      name: "Telemark",
+      typeId: push.id,
+      counts: 6,
+      rhythm: "1 2 3&4&5 6",
+      prerequisites: [],
+      description: "",
+      tags: [],
+      videoRefs: [],
+      modifierRefs: [],
+    };
+    expect(patternFromSuggestion(raw, list, patterns)?.rhythm).toBe(
+      "1 2 3&4&5 6",
+    );
+  });
+
   it("drops what the list does not have, or no longer has", () => {
     const result = patternFromSuggestion(
       {

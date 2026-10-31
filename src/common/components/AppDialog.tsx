@@ -17,6 +17,8 @@ interface AppDialogProps {
   /** Style the confirm button as destructive (red). */
   confirmDestructive?: boolean;
   onConfirm?: () => void;
+  /** Choices between the message and the buttons (where a removed type's figures go). */
+  children?: React.ReactNode;
 }
 
 /**
@@ -35,6 +37,7 @@ const AppDialog: React.FC<AppDialogProps> = ({
   confirmLabel,
   confirmDestructive = false,
   onConfirm,
+  children,
 }) => {
   const hasConfirm = !!confirmLabel && !!onConfirm;
 
@@ -50,9 +53,13 @@ const AppDialog: React.FC<AppDialogProps> = ({
           <AppText variant="title" style={styles.title}>
             {title}
           </AppText>
-          <AppText color="textMuted" style={styles.message}>
+          <AppText
+            color="textMuted"
+            style={children ? styles.messageAboveChoices : styles.message}
+          >
             {message}
           </AppText>
+          {children ? <View style={styles.choices}>{children}</View> : null}
           <View style={styles.buttonRow}>
             {/* With a confirm action, dismissing is the quiet option beside
                 it; alone, it is the dialog's one action. */}
@@ -86,6 +93,12 @@ const styles = StyleSheet.create((theme) => ({
   },
   message: {
     marginBottom: theme.space.xxl,
+  },
+  messageAboveChoices: {
+    marginBottom: theme.space.sm,
+  },
+  choices: {
+    marginBottom: theme.space.xl,
   },
   buttonRow: {
     flexDirection: "row",

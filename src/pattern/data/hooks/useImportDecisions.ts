@@ -1,13 +1,20 @@
 import { useCallback, useMemo, useState } from "react";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
+import { nextFreeListName, sameListName } from "@/src/pattern/data/importCopy";
 
-export type ImportAction = "skip" | "replace";
+/**
+ * `replace` writes the imported list under its own id (over the local one when the id exists);
+ * `copy` writes it as a new list beside the local one (`importedListCopy`); `skip` leaves it.
+ */
+export type ImportAction = "skip" | "replace" | "copy";
 
 export interface ImportDecision {
   list: IPatternList;
   action: ImportAction;
   existingList?: IPatternList;
+  /** The name the list is saved under: the user's, else the default for its action. */
+  name: string;
 }
 
 interface UseImportDecisionsProps {
@@ -40,34 +47,91 @@ export const useImportDecisions = ({
   // first ran with an empty list and the real one arrived later as a prop
   // change. The map stayed empty, every lookup fell through to its
   // `|| "replace"` fallback, and a conflicting list was silently overwritten
-  // instead of skipped.
+  // instead of skipped. Names follow the same rule.
   const [overrides, setOverrides] = useState<Map<string, ImportAction>>(
     () => new Map(),
+  );
+  const [names, setNames] = useState<Map<string, string>>(() => new Map());
+
+  const actionOf = useCallback(
+    (list: PatternListWithPatterns) =>
+      overrides.get(list.id) ?? defaultAction(list, existingLists),
+    [overrides, existingLists],
   );
 
   const decisions = useMemo(() => {
     const map = new Map<string, ImportAction>();
-    importedLists.forEach((list) => {
-      map.set(
-        list.id,
-        overrides.get(list.id) ?? defaultAction(list, existingLists),
-      );
-    });
+    importedLists.forEach((list) => map.set(list.id, actionOf(list)));
     return map;
-  }, [importedLists, existingLists, overrides]);
+  }, [importedLists, actionOf]);
+
+  /**
+   * Whether the list's name can be edited, and what it starts as: a copy gets "Name (2)" (the
+   * next free number); a new list whose name another list already has keeps it unless renamed,
+   * so two lists never end up with one name without the user seeing it. Otherwise no field.
+   */
+  const nameFieldOf = useCallback(
+    (list: PatternListWithPatterns): { defaultName: string } | null => {
+      const action = actionOf(list);
+      if (action === "copy") {
+        const taken = [
+          ...existingLists.map((e) => e.name),
+          ...importedLists.filter((l) => l.id !== list.id).map((l) => l.name),
+        ];
+        return { defaultName: nextFreeListName(list.name, taken) };
+      }
+      const isNew = !existingLists.some((e) => e.id === list.id);
+      if (
+        action === "replace" &&
+        isNew &&
+        existingLists.some((e) => sameListName(e.name, list.name))
+      ) {
+        return { defaultName: list.name };
+      }
+      return null;
+    },
+    [actionOf, existingLists, importedLists],
+  );
+
+  /** The name field's text: what the user typed, else its default. */
+  const nameOf = useCallback(
+    (list: PatternListWithPatterns): string => {
+      const field = nameFieldOf(list);
+      if (!field) return list.name;
+      return names.get(list.id) ?? field.defaultName;
+    },
+    [nameFieldOf, names],
+  );
 
   const setAction = useCallback((listId: string, action: ImportAction) => {
     setOverrides((prev) => new Map(prev).set(listId, action));
+    // A name typed for one action is no default for another ("Salsa (2)" is no rename).
+    setNames((prev) => {
+      const next = new Map(prev);
+      next.delete(listId);
+      return next;
+    });
+  }, []);
+
+  const setName = useCallback((listId: string, name: string) => {
+    setNames((prev) => new Map(prev).set(listId, name));
   }, []);
 
   const getImportDecisions = useCallback(
     (): ImportDecision[] =>
-      importedLists.map((list) => ({
-        list,
-        action: overrides.get(list.id) ?? defaultAction(list, existingLists),
-        existingList: existingLists.find((e) => e.id === list.id),
-      })),
-    [importedLists, existingLists, overrides],
+      importedLists.map((list) => {
+        const field = nameFieldOf(list);
+        return {
+          list,
+          action: actionOf(list),
+          existingList: existingLists.find((e) => e.id === list.id),
+          // Blank is no name: fall back to the field's default.
+          name: field
+            ? (names.get(list.id) ?? "").trim() || field.defaultName.trim()
+            : list.name,
+        };
+      }),
+    [importedLists, existingLists, actionOf, names, nameFieldOf],
   );
 
   const stats = useMemo(() => {
@@ -88,6 +152,9 @@ export const useImportDecisions = ({
   return {
     decisions,
     setAction,
+    nameFieldOf,
+    nameOf,
+    setName,
     getImportDecisions,
     stats,
   };

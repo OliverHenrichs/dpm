@@ -17,6 +17,7 @@ import RevealScrollView from "@/src/common/components/RevealScrollView";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
 import PatternListTemplateModal from "@/src/pattern/list/PatternListTemplateModal";
+import { countPatternsByType } from "@/src/pattern/list/typeMoves";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import {
@@ -430,9 +431,9 @@ const PatternListManager = () => {
             visible={isEditingList}
             onClose={() => setIsEditingList(false)}
             editList={activeList}
-            usedTypeIds={new Set(patterns.map((p) => p.typeId))}
-            onSaveList={async (list) => {
-              await saveList(list);
+            typeUsage={countPatternsByType(patterns)}
+            onSaveList={async (list, typeMoves) => {
+              await saveList(list, typeMoves);
               setIsEditingList(false);
             }}
           />

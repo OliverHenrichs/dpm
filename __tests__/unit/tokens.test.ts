@@ -60,6 +60,25 @@ describe.each(PALETTES)("%s colours", (_, palette) => {
   });
 });
 
+/**
+ * SwitchRow's off state (review 2, point 6): the track is `borderStrong` on the row's `surface`
+ * and the thumb is `background` on the track. The modifier form's built-in switch used `border`
+ * and `surface` there, and its off state vanished in both dark palettes.
+ */
+describe.each(PALETTES)("%s switch, off", (_, palette) => {
+  it("sets its track apart from the row it sits on (3:1)", () => {
+    expect(
+      contrast(palette.borderStrong, palette.surface),
+    ).toBeGreaterThanOrEqual(NON_TEXT);
+  });
+
+  it("sets its thumb apart from the track (3:1)", () => {
+    expect(
+      contrast(palette.background, palette.borderStrong),
+    ).toBeGreaterThanOrEqual(NON_TEXT);
+  });
+});
+
 describe("styles", () => {
   it.each(APP_STYLES)("%s resolves every text style to a family", (style) => {
     const theme = buildTheme(style, "light", webFonts[style]);

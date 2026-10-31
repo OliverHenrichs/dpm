@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Switch, Text, View } from "react-native";
-import { Button, Chip } from "@/src/common/ui";
+import { Text, View } from "react-native";
+import { Button, Chip, SwitchRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import * as ImagePicker from "expo-image-picker";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
@@ -154,20 +154,12 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
         </View>
 
         {/* Universal toggle */}
-        <View style={styles.switchRow}>
-          <Text style={styles.label}>{t("universalModifier")}</Text>
-          <Switch
-            value={modifier.universal}
-            onValueChange={(val) =>
-              setModifier({ ...modifier, universal: val })
-            }
-            trackColor={{
-              false: theme.colors.border,
-              true: theme.colors.primary,
-            }}
-            thumbColor={theme.colors.surface}
-          />
-        </View>
+        <SwitchRow
+          title={t("universalModifier")}
+          value={modifier.universal}
+          onValueChange={(val) => setModifier({ ...modifier, universal: val })}
+          style={styles.switchRow}
+        />
 
         {/* Videos — only for universal modifiers */}
         {modifier.universal && (
@@ -236,8 +228,6 @@ const styles = StyleSheet.create((theme) => {
       flexWrap: "wrap",
     },
     switchRow: {
-      ...getCommonRow(),
-      justifyContent: "space-between",
       marginVertical: theme.space.sm,
     },
     buttonRow: {

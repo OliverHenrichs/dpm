@@ -124,6 +124,55 @@ describe("Legend", () => {
     });
   });
 
+  describe("changing a type's colour", () => {
+    beforeEach(() => seedAsyncStorage({ "@graphLegendSeen": "true" }));
+
+    it("is not offered without a way to save it (a read-only list)", () => {
+      renderLegend();
+      expand();
+
+      expect(screen.queryByLabelText("Colour of push")).toBeNull();
+      expect(screen.queryByText("Tap a type to change its colour.")).toBeNull();
+    });
+
+    it("opens the palette on a type and hands back the colour picked", () => {
+      const onChangeTypeColor = jest.fn();
+      renderWithProviders(
+        <Legend patternTypes={TYPES} onChangeTypeColor={onChangeTypeColor} />,
+      );
+      expand();
+      expect(
+        screen.getByText("Tap a type to change its colour."),
+      ).toBeOnTheScreen();
+
+      fireEvent.press(screen.getByLabelText("Colour of pass"));
+      const swatches = screen.getAllByRole("radio");
+      fireEvent.press(swatches[0]);
+
+      expect(onChangeTypeColor).toHaveBeenCalledWith(
+        TYPES[1].id,
+        expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
+      );
+      // Picking closes the palette.
+      expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    });
+
+    it("closes the palette on a second tap without changing anything", () => {
+      const onChangeTypeColor = jest.fn();
+      renderWithProviders(
+        <Legend patternTypes={TYPES} onChangeTypeColor={onChangeTypeColor} />,
+      );
+      expand();
+
+      fireEvent.press(screen.getByLabelText("Colour of push"));
+      expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
+      fireEvent.press(screen.getByLabelText("Colour of push"));
+
+      expect(screen.queryAllByRole("radio")).toHaveLength(0);
+      expect(onChangeTypeColor).not.toHaveBeenCalled();
+    });
+  });
+
   describe("edge cases", () => {
     beforeEach(() => seedAsyncStorage({ "@graphLegendSeen": "true" }));
 

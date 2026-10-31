@@ -48,7 +48,8 @@ function renderModal(lists: PatternListWithPatterns[]) {
   return { onExport, exportButton };
 }
 
-const transcriptSwitch = () => screen.getByLabelText("Include transcripts");
+const transcriptSwitch = () =>
+  screen.getByRole("switch", { name: "Include transcripts" });
 
 describe("PatternListExportModal — transcripts (L4)", () => {
   it("does not offer transcripts when there are none", () => {
@@ -71,7 +72,7 @@ describe("PatternListExportModal — transcripts (L4)", () => {
   it("includes them when the user chooses to", () => {
     const { onExport, exportButton } = renderModal([list("Taught", true)]);
 
-    fireEvent(transcriptSwitch(), "valueChange", true);
+    fireEvent.press(transcriptSwitch());
     fireEvent.press(exportButton());
 
     expect(onExport.mock.calls[0][1].includeTranscripts).toBe(true);
@@ -79,11 +80,13 @@ describe("PatternListExportModal — transcripts (L4)", () => {
 
   it("cannot include them without the videos they belong to", () => {
     const { onExport, exportButton } = renderModal([list("Taught", true)]);
-    fireEvent(transcriptSwitch(), "valueChange", true);
+    fireEvent.press(transcriptSwitch());
 
-    fireEvent(screen.getAllByRole("switch")[0], "valueChange", false);
+    fireEvent.press(screen.getAllByRole("switch")[0]);
 
-    expect(transcriptSwitch().props.disabled).toBe(true);
+    expect(transcriptSwitch()).toBeDisabled();
+    // A tap on the disabled switch changes nothing.
+    fireEvent.press(transcriptSwitch());
     expect(
       screen.getByText(/Transcripts travel with their videos/),
     ).toBeOnTheScreen();
