@@ -208,6 +208,21 @@ function planUserRemoval(docs, uid) {
   return { uid, deletes, ownedLists };
 }
 
+/**
+ * A suggestion in one line: a new pattern by its name, or a change to pattern `patternId`
+ * (`kind: "edit"`) by the fields it changes, not its two whole snapshots.
+ */
+function describeSuggestion(data) {
+  const name = data.pattern?.name ?? "(no name)";
+  if (data.kind !== "edit") return `"${name}"`;
+  const base = data.base ?? {};
+  const pattern = data.pattern ?? {};
+  const fields = [...new Set([...Object.keys(base), ...Object.keys(pattern)])]
+    .filter((k) => JSON.stringify(base[k]) !== JSON.stringify(pattern[k]))
+    .sort();
+  return `change to pattern ${data.patternId} "${base.name ?? name}": ${fields.join(", ") || "nothing"}`;
+}
+
 /** Every report, newest first. */
 function reportsOf(docs) {
   return docs
@@ -240,6 +255,7 @@ module.exports = {
   REPORTS,
   TAKEDOWN_OWNER,
   describePath,
+  describeSuggestion,
   makeDoc,
   search,
   groupByList,

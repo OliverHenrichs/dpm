@@ -462,6 +462,8 @@ describe("suggestion settings", () => {
     { dailyLimit: 3, per: "everyone" },
     { dailyLimit: 3 },
     { dailyLimit: 3, per: "list", extra: true },
+    { dailyLimit: 3, per: "list", edits: false },
+    { dailyLimit: 3, per: "list", edits: "yes" },
   ])("refuses the malformed setting %j", async (policy) => {
     await assertFails(
       publish(
@@ -675,6 +677,101 @@ describe("suggesting", () => {
         { merge: true },
       ),
     );
+  });
+});
+
+describe("suggesting changes to figures", () => {
+  const EDITS: ISuggestionPolicy = {
+    dailyLimit: 2,
+    per: "subscriber",
+    edits: true,
+  };
+  const edit = (extra: Record<string, unknown> = {}) => ({
+    policy: EDITS,
+    data: {
+      kind: "edit",
+      patternId: 99,
+      base: suggestionPattern("Sugar Tuck"),
+      pattern: suggestionPattern("Sugar Tuck (traveling)"),
+      ...extra,
+    },
+  });
+
+  it("accepts publishing a list that takes them", async () => {
+    await assertSucceeds(publish(as(PUBLISHER), listTakingSuggestions(EDITS)));
+  });
+
+  it("accepts a change while the list takes them, counted like a new figure", async () => {
+    await seed(listTakingSuggestions(EDITS));
+    await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1, edit()));
+    await assertSucceeds(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 2, { policy: EDITS }),
+    );
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 3, edit()));
+  });
+
+  it("refuses a change to a list that takes new figures only", async () => {
+    await seed(listTakingSuggestions());
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, {
+        ...edit(),
+        policy: { dailyLimit: 2, per: "subscriber" },
+      }),
+    );
+  });
+
+  it.each([
+    ["no base", { base: null }],
+    ["a malformed base", { base: { name: "" } }],
+    ["no figure id", { patternId: null }],
+    ["a figure id that is not a number", { patternId: "99" }],
+    ["another kind", { kind: "delete" }],
+  ])("refuses a change with %s", async (_label, extra) => {
+    await seed(listTakingSuggestions(EDITS));
+    const data: Record<string, unknown> = { ...edit().data, ...extra };
+    for (const key of Object.keys(data)) {
+      if (data[key] === null) delete data[key];
+    }
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, { policy: EDITS, data }),
+    );
+  });
+
+  it("refuses a base or figure id on a new figure", async () => {
+    await seed(listTakingSuggestions(EDITS));
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, {
+        policy: EDITS,
+        data: { base: suggestionPattern() },
+      }),
+    );
+    await assertFails(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, {
+        policy: EDITS,
+        data: { patternId: 99 },
+      }),
+    );
+  });
+
+  it("refuses a change from a muted subscriber", async () => {
+    await seed(listTakingSuggestions(EDITS));
+    await seedDoc(["sharedLists", CODE, "subscribers", SUBSCRIBER], {
+      status: "muted",
+      updatedAt: Timestamp.now(),
+    });
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1, edit()));
+  });
+
+  it("takes changes to a members-only list from members only", async () => {
+    const data = listTakingSuggestions(EDITS);
+    data.list.membersOnly = true;
+    await seed(data);
+    await assertFails(suggest(as(SUBSCRIBER), SUBSCRIBER, 1, edit()));
+    await seedDoc(["sharedLists", CODE, "subscribers", SUBSCRIBER], {
+      membership: "member",
+      updatedAt: Timestamp.now(),
+    });
+    await assertSucceeds(suggest(as(SUBSCRIBER), SUBSCRIBER, 1, edit()));
   });
 });
 

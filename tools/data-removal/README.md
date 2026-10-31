@@ -28,7 +28,7 @@ Run from the repository root.
 npm run data -- find "Emma"                    # any text: a name, a word, part of a video link
 npm run data -- find AB12CD34                  # a share code: everything under that list
 npm run data -- find <user id>                 # where an anonymous user id appears, and its account
-npm run data -- show AB12CD34                  # every pattern, video link, suggestion and subscriber
+npm run data -- show AB12CD34                  # every pattern, video link, suggestion (or suggested change) and subscriber
 npm run data -- remove-list AB12CD34           # delete the list and everything under it
 npm run data -- remove-user <user id>          # delete one person's suggestions, records and account
 npm run data -- remove-suggestion AB12CD34 <suggestion id>

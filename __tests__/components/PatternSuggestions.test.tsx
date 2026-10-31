@@ -368,7 +368,6 @@ describe("the share sheet", () => {
         patterns={[]}
         onClose={jest.fn()}
         onPublished={onPublished}
-        onUnpublished={jest.fn()}
       />,
       { activeListId: null },
     );
@@ -399,6 +398,9 @@ describe("the share sheet", () => {
     });
     const onPublished = renderShare(list);
 
+    // The details sit behind one summary row.
+    expect(screen.queryByText("10")).toBeNull();
+    fireEvent.press(screen.getByText("3 a day per subscriber · new figures"));
     fireEvent.press(screen.getByText("10"));
     await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(1));
     expect(onPublished.mock.calls[0][0].suggestions).toEqual({
@@ -430,19 +432,13 @@ describe("the share sheet", () => {
     );
   });
 
-  it("holds the setting of an unpublished list until it is published", async () => {
-    const list = createTestPatternList();
-    const onPublished = renderShare(list);
+  it("is set only once the list is published", () => {
+    renderShare(createTestPatternList());
 
-    fireEvent.press(screen.getByLabelText("Let subscribers suggest figures"));
-    expect(publishList).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByText("Publish"));
-
-    await waitFor(() => expect(onPublished).toHaveBeenCalled());
-    expect(onPublished.mock.calls[0][0]).toMatchObject({
-      shareCode: "AB12CD34",
-      suggestions: { dailyLimit: 3, per: "subscriber" },
-    });
+    expect(
+      screen.queryByLabelText("Let subscribers suggest figures"),
+    ).toBeNull();
+    expect(screen.getByText("Publish")).toBeOnTheScreen();
   });
 
   it("puts the setting back when publishing it fails", async () => {

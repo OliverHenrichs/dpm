@@ -166,7 +166,7 @@ describe("asking to join", () => {
   });
 });
 
-describe("the publisher's members", () => {
+describe("the list owner's members", () => {
   const member = (overrides: Partial<ListMember>): ListMember => ({
     uid: "alex-uid",
     membership: "requested",
@@ -269,7 +269,6 @@ describe("the share sheet", () => {
         patterns={[]}
         onClose={jest.fn()}
         onPublished={onPublished}
-        onUnpublished={jest.fn()}
       />,
       { activeListId: null },
     );
@@ -294,7 +293,7 @@ describe("the share sheet", () => {
     const onPublished = renderShare(
       createTestPatternList({ shareCode: "AB12CD34", membersOnly: true }),
     );
-    fireEvent.press(screen.getByLabelText("Members only"));
+    fireEvent.press(screen.getByLabelText("Anyone with the code"));
     await waitFor(() => expect(onPublished).toHaveBeenCalled());
     expect(mocked(publishList).mock.calls[0][0]).not.toHaveProperty(
       "membersOnly",
@@ -310,6 +309,27 @@ describe("the share sheet", () => {
     fireEvent.press(screen.getByText("Publish"));
     await waitFor(() => expect(publishList).toHaveBeenCalled());
     expect(mocked(publishList).mock.calls[0][0].membersOnly).toBe(true);
+  });
+
+  it("shows who is waiting to join and opens the members", async () => {
+    membersNow = [
+      {
+        uid: "alex-uid",
+        membership: "requested",
+        name: "Alex",
+        updatedAt: 1,
+      },
+    ];
+    renderShare(
+      createTestPatternList({ shareCode: "AB12CD34", membersOnly: true }),
+    );
+    fireEvent.press(await screen.findByText("1 waiting"));
+    expect(await screen.findByText("Alex")).toBeOnTheScreen();
+  });
+
+  it("has no members row while anyone with the code can open it", () => {
+    renderShare(createTestPatternList({ shareCode: "AB12CD34" }));
+    expect(screen.queryByText("Members")).toBeNull();
   });
 });
 

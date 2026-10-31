@@ -476,6 +476,8 @@ function normalizeList(
       suggestions: {
         dailyLimit: raw.suggestions.dailyLimit,
         per: raw.suggestions.per,
+        // 3.9. Anything but `true` means new figures only.
+        ...(raw.suggestions.edits === true && { edits: true as const }),
       },
     }),
     // 3.7. Anything but `true` means the list is open to anyone with its code.

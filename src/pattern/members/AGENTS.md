@@ -10,9 +10,10 @@ app: this stops strangers with the code, not a member who forwards a video.
 
 `IPatternList.membersOnly?: true`. Absent means open; switching off **removes the key**
 (`withMembersOnly`; `src/firebase/AGENTS.md`). It is published with the list, so a member's
-copy carries it, set in `ShareListModal` next to the suggestions switch (a published list
-publishes the change at once, after a confirmation, since closing a list shuts out everyone
-subscribed so far), and exported since format 3.7.
+copy carries it, set in `ShareListModal` under _Who can open it_ (a published list publishes
+the change at once, after a confirmation, since closing a list shuts out everyone subscribed so
+far; it then shows a _Members_ row with the number waiting, opening `MembersModal`), and exported
+since format 3.7.
 
 ## Firestore (`src/firebase/MembershipService.ts`, `firestore.rules`)
 

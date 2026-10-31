@@ -605,6 +605,33 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("suggested changes to figures (3.9)", () => {
+    it("keeps that subscribers may suggest changes, and nothing but `true`", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], {
+          suggestions: { dailyLimit: 3, per: "subscriber", edits: true },
+        }),
+        listWith([], {
+          suggestions: {
+            dailyLimit: 3,
+            per: "subscriber",
+            edits: "yes",
+          } as never,
+        }),
+      ]);
+
+      expect(importResult.patternLists![0].suggestions).toEqual({
+        dailyLimit: 3,
+        per: "subscriber",
+        edits: true,
+      });
+      expect(importResult.patternLists![1].suggestions).toEqual({
+        dailyLimit: 3,
+        per: "subscriber",
+      });
+    });
+  });
+
   describe("members-only lists (3.7)", () => {
     it("keeps that only members may read the published list", async () => {
       const { importResult } = await roundTrip([

@@ -9,6 +9,7 @@
 const readline = require("readline/promises");
 const {
   TAKEDOWN_OWNER,
+  describeSuggestion,
   search,
   groupByList,
   fieldLabel,
@@ -83,7 +84,7 @@ function printDoc(doc) {
         ? `takedown record (removed ${doc.data.removedAt})`
         : `owner record (owner ${doc.data.ownerUid})`;
     case "suggestion":
-      return `suggestion ${doc.id}: "${doc.data.pattern?.name}" by ${doc.data.authorName ?? "(no name)"} [${doc.data.authorUid}]`;
+      return `suggestion ${doc.id}: ${describeSuggestion(doc.data)} by ${doc.data.authorName ?? "(no name)"} [${doc.data.authorUid}]`;
     case "subscriber":
       return `subscriber ${doc.id}: ${[doc.data.name && `"${doc.data.name}"`, doc.data.membership, doc.data.status].filter(Boolean).join(", ")}`;
     case "counter":

@@ -3,7 +3,8 @@ import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-
 import { TERMS_VERSION } from "@/src/legal/TermsStorage";
 import { Clipboard } from "react-native";
 import ShareListModal from "@/src/pattern/list/ShareListModal";
-import { publishList, unpublishList } from "@/src/firebase/FirebaseListService";
+import { publishList } from "@/src/firebase/FirebaseListService";
+import { recordSyncFailure } from "@/src/firebase/SyncStatus";
 import { countSubscribers } from "@/src/firebase/SubscriptionService";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 import {
@@ -50,9 +51,6 @@ const mockedCount = countSubscribers as jest.MockedFunction<
 >;
 
 const mockedPublish = publishList as jest.MockedFunction<typeof publishList>;
-const mockedUnpublish = unpublishList as jest.MockedFunction<
-  typeof unpublishList
->;
 
 beforeEach(() => {
   // Publishing and suggesting ask for the terms of use once; agreed here, tested in TermsConsent.
@@ -62,7 +60,6 @@ beforeEach(() => {
     shareCode: "ABCD1234",
     shareKey: "test-share-key",
   });
-  mockedUnpublish.mockResolvedValue(undefined);
   mockedCount.mockResolvedValue(0);
 });
 
@@ -72,7 +69,6 @@ function renderShare(
 ) {
   const onClose = jest.fn();
   const onPublished = jest.fn<void, [IPatternList]>();
-  const onUnpublished = jest.fn<void, [IPatternList]>();
   renderWithProviders(
     <ShareListModal
       visible
@@ -80,11 +76,10 @@ function renderShare(
       patterns={patterns}
       onClose={onClose}
       onPublished={onPublished}
-      onUnpublished={onUnpublished}
     />,
     { activeListId: null },
   );
-  return { list, onClose, onPublished, onUnpublished };
+  return { list, onClose, onPublished };
 }
 
 const published = (name = "Salsa", shareCode = "ABCD1234") =>
@@ -95,15 +90,22 @@ describe("ShareListModal", () => {
     it("names the list and offers to publish it", () => {
       renderShare();
 
+      expect(screen.getByText("Share this list")).toBeOnTheScreen();
       expect(screen.getByText("Salsa")).toBeOnTheScreen();
+      expect(
+        screen.getByText("Anyone with the code can follow the list."),
+      ).toBeOnTheScreen();
       expect(screen.getByText("Publish")).toBeOnTheScreen();
     });
 
-    it("shows no share code yet", () => {
+    it("asks only who can open it: no code, suggestions or Done yet", () => {
       renderShare();
 
-      expect(screen.queryByText("Share Code")).toBeNull();
-      expect(screen.queryByText("Stop Sharing")).toBeNull();
+      expect(screen.getByText("Who can open it")).toBeOnTheScreen();
+      expect(screen.queryByText("ABCD1234")).toBeNull();
+      expect(screen.queryByText("Let subscribers suggest figures")).toBeNull();
+      expect(screen.queryByText("Done")).toBeNull();
+      expect(screen.getByText("Cancel")).toBeOnTheScreen();
     });
 
     it("publishes the list with its patterns", async () => {
@@ -153,13 +155,44 @@ describe("ShareListModal", () => {
   });
 
   describe("an already published list", () => {
-    it("shows the code and offers to sync or stop", () => {
+    it("shows the code and closes with Done, without publishing again", () => {
+      const { onClose } = renderShare(published());
+
+      expect(screen.getByText("Sharing")).toBeOnTheScreen();
+      expect(screen.getByText("ABCD1234")).toBeOnTheScreen();
+      // Handing over and stopping live in the list's ⋮ sheet on the Lists screen.
+      expect(screen.queryByText("Stop Sharing")).toBeNull();
+      expect(screen.queryByText("Hand over to someone")).toBeNull();
+      expect(screen.queryByText("Publish")).toBeNull();
+
+      fireEvent.press(screen.getByText("Done"));
+
+      expect(onClose).toHaveBeenCalled();
+      expect(mockedPublish).not.toHaveBeenCalled();
+    });
+
+    it("says it is up to date", async () => {
       renderShare(published());
 
-      expect(screen.getByText("Share Code")).toBeOnTheScreen();
-      expect(screen.getByText("ABCD1234")).toBeOnTheScreen();
-      expect(screen.getByText("Sync Changes")).toBeOnTheScreen();
-      expect(screen.getByText("Stop Sharing")).toBeOnTheScreen();
+      expect(await screen.findByText("Up to date")).toBeOnTheScreen();
+      expect(screen.queryByText("Retry")).toBeNull();
+    });
+
+    it("offers a retry when the last automatic sync failed", async () => {
+      await recordSyncFailure("ABCD1234");
+      const patterns = [createTestPattern("t", { id: 1 })];
+      renderShare(published(), patterns);
+
+      expect(await screen.findByText("Last sync failed")).toBeOnTheScreen();
+      fireEvent.press(screen.getByText("Retry"));
+
+      await waitFor(() =>
+        expect(mockedPublish).toHaveBeenCalledWith(
+          expect.objectContaining({ shareCode: "ABCD1234" }),
+          patterns,
+        ),
+      );
+      expect(await screen.findByText("Up to date")).toBeOnTheScreen();
     });
 
     it("copies the code to the clipboard", () => {
@@ -188,14 +221,10 @@ describe("ShareListModal", () => {
       const list = published();
       renderShare(list);
 
-      expect(screen.getByText("Subscribers")).toBeOnTheScreen();
-      expect(await screen.findByText("12")).toBeOnTheScreen();
-      expect(mockedCount).toHaveBeenCalledWith(list);
       expect(
-        screen.getByText(
-          "Phones that have this list and opened it in the last 90 days.",
-        ),
+        await screen.findByText("Subscribers: 12 (last 90 days)"),
       ).toBeOnTheScreen();
+      expect(mockedCount).toHaveBeenCalledWith(list);
     });
 
     it("says so when it cannot count, rather than showing zero", async () => {
@@ -205,81 +234,14 @@ describe("ShareListModal", () => {
       expect(
         await screen.findByText("Not available right now"),
       ).toBeOnTheScreen();
-      expect(screen.queryByText("0")).toBeNull();
+      expect(screen.queryByText(/Subscribers: 0/)).toBeNull();
     });
 
     it("is not counted for a list that is not published", () => {
       renderShare();
 
-      expect(screen.queryByText("Subscribers")).toBeNull();
+      expect(screen.queryByText(/Subscribers:/)).toBeNull();
       expect(mockedCount).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("stopping sharing", () => {
-    it("asks before doing it", () => {
-      renderShare(published());
-
-      fireEvent.press(screen.getByText("Stop Sharing"));
-
-      expect(screen.getByText("Stop Sharing?")).toBeOnTheScreen();
-      expect(mockedUnpublish).not.toHaveBeenCalled();
-    });
-
-    it("does nothing if the confirmation is dismissed", () => {
-      renderShare(published());
-
-      fireEvent.press(screen.getByText("Stop Sharing"));
-      // Index 1: the modal has its own Cancel; the dialog's renders after it.
-      fireEvent.press(screen.getAllByText("Cancel")[1]);
-
-      expect(mockedUnpublish).not.toHaveBeenCalled();
-      expect(screen.queryByText("Stop Sharing?")).toBeNull();
-    });
-
-    it("unpublishes by share code once confirmed", async () => {
-      renderShare(published());
-
-      fireEvent.press(screen.getByText("Stop Sharing"));
-      fireEvent.press(screen.getAllByText("Stop Sharing")[1]);
-
-      await waitFor(() =>
-        expect(mockedUnpublish).toHaveBeenCalledWith(
-          expect.objectContaining({ shareCode: "ABCD1234" }),
-        ),
-      );
-    });
-
-    it("hands back a list with the share code and key removed", async () => {
-      const { onUnpublished } = renderShare({
-        ...published(),
-        shareKey: "test-share-key",
-      });
-
-      fireEvent.press(screen.getByText("Stop Sharing"));
-      fireEvent.press(screen.getAllByText("Stop Sharing")[1]);
-
-      await waitFor(() =>
-        expect(screen.getByText("Sharing Stopped")).toBeOnTheScreen(),
-      );
-      fireEvent.press(screen.getByText("OK"));
-
-      const handedBack = onUnpublished.mock.calls.at(-1)![0];
-      expect(handedBack).not.toHaveProperty("shareCode");
-      expect(handedBack).not.toHaveProperty("shareKey");
-    });
-
-    it("reports a failure rather than claiming it stopped", async () => {
-      mockedUnpublish.mockRejectedValue(new Error("offline"));
-      const { onUnpublished } = renderShare(published());
-
-      fireEvent.press(screen.getByText("Stop Sharing"));
-      fireEvent.press(screen.getAllByText("Stop Sharing")[1]);
-
-      await waitFor(() =>
-        expect(screen.getByText("offline")).toBeOnTheScreen(),
-      );
-      expect(onUnpublished).not.toHaveBeenCalled();
     });
   });
 
@@ -302,14 +264,13 @@ describe("ShareListModal", () => {
       renderShare(published());
 
       expect(screen.queryByText("Publish")).toBeNull();
-      expect(screen.queryByText("Sync Changes")).toBeNull();
-      expect(screen.queryByText("Stop Sharing")).toBeNull();
+      expect(screen.queryByText("Retry")).toBeNull();
     });
 
     it("can still be closed", () => {
-      const { onClose } = renderShare();
+      const { onClose } = renderShare(published());
 
-      fireEvent.press(screen.getByText("Cancel"));
+      fireEvent.press(screen.getByText("Done"));
 
       expect(onClose).toHaveBeenCalled();
     });

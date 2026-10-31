@@ -10,8 +10,8 @@ counted for the whole list or per subscriber, and can mute a subscriber. Not to 
 are off; switching off **removes the key** (`src/firebase/AGENTS.md`). It lives on the list,
 so `publishList` publishes it and every subscriber's copy carries it through `useSharedList`: that
 is how a subscriber's app knows whether to offer _Suggest a figure_. It is set in
-`ShareListModal` (a published list publishes the change at once; an unpublished one waits for
-Publish) and travels in exports since format 3.6.
+`ShareListModal` once the list is published (the change is published at once; the details sit
+behind a summary row) and travels in exports since format 3.6.
 
 ## Firestore (`src/firebase/PatternSuggestionService.ts`, `firestore.rules`)
 
@@ -65,3 +65,35 @@ Under `sharedLists/{code}`:
   `usePatternCrud.addPattern` (new id, `createdAt`, the sync) and then deletes the suggestion.
 - Rules tests: `__tests__/rules/firestore.rules.test.ts` ("suggesting" and after). Component
   tests: `__tests__/components/PatternSuggestions.test.tsx`.
+
+## Changes to existing figures
+
+The list owner can also take suggested changes to the figures already in the list
+(`ISuggestionPolicy.edits: true`, the switch _Also changes to existing figures_ under the
+suggestions switch; off removes the key; exported since format 3.9). Design and Oliver's calls:
+the Claude Doc "Suggest figure edits: design" (2026-10-25).
+
+- **Same collection, same limit.** A change is a suggestion with `kind: "edit"`, `patternId` and
+  `base`: `pattern` is the figure as the subscriber suggests it, `base` as their copy had it.
+  Both go through `suggestedPattern`, so URL videos only, and a video keeps its `generated` mark
+  (anonymized) but never a transcript. The rules accept `kind` only while the policy has
+  `edits`; counters, mutes, members-only and blocking apply unchanged, so a change costs one
+  suggestion from the daily limit. `tools/data-removal` needs nothing new to find or remove one;
+  `show` lists the fields it changes.
+- **Subscriber.** On a subscribed copy that takes changes (`canSuggestEditsTo`), a figure's row
+  shows _Suggest a change_ in Edit's place. It opens `SuggestPatternModal` with `editing`: the
+  figure form on that figure, _Send suggestion_ refused while nothing a suggestion carries has
+  changed. Local videos stay behind as for a new figure (_Put online_ first).
+- **List owner** (`figureEdits.ts`, pure; `SuggestedEditReview.tsx`). `figureChanges(base,
+pattern, current, …)` turns the two snapshots into one line per change: a scalar field each,
+  counts and rhythm together, and each tag, prerequisite, video and modifier added or removed (a
+  video by its link; a new start time is its own line). Compared with the figure as it is now:
+  a change it already has is left out, one where the list owner has since changed the same thing
+  differently is marked `changedSince` and starts unticked, and anything referring to what the
+  list no longer has (a type, a figure, a modifier, a prerequisite that would close a loop) is
+  dropped. _Apply selected_ saves `applyFigureChanges(current, ticked)` through
+  `usePatternCrud.editPattern`; _Edit, then apply_ opens the form on that first. Either answers
+  the suggestion (it is deleted), as does _Reject_. A change to a figure that is gone can only
+  be dismissed.
+- Tests: `__tests__/unit/figureEdits.test.ts`, `__tests__/components/SuggestFigureEdits.test.tsx`,
+  rules "suggesting changes to figures".

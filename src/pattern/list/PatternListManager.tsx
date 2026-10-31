@@ -38,6 +38,7 @@ import { patternHasVideo } from "@/src/anonymize/jobs/replaceVideo";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import {
+  canSuggestEditsTo,
   canSuggestTo,
   receivesSuggestions,
 } from "@/src/pattern/suggestions/suggestions";
@@ -101,9 +102,13 @@ const PatternListManager = () => {
   // Pattern suggestions (src/pattern/suggestions/): a subscriber sends them, the publisher
   // reviews them here.
   const [isSuggesting, setIsSuggesting] = useState(false);
+  // A change to one figure, suggested from its row in Edit's place.
+  const [suggestingEdit, setSuggestingEdit] = useState<IPattern | null>(null);
   const [isReviewingSuggestions, setIsReviewingSuggestions] = useState(false);
   const { suggestions } = useListSuggestions(activeList);
   const mayBeSuggestedTo = firebaseAvailable && canSuggestTo(activeList);
+  const mayBeSuggestedEditsTo =
+    firebaseAvailable && canSuggestEditsTo(activeList);
   const reviewsSuggestions =
     firebaseAvailable &&
     receivesSuggestions(activeList) &&
@@ -385,12 +390,16 @@ const PatternListManager = () => {
 
         {mayBeSuggestedTo && (
           <SuggestPatternModal
-            visible={isSuggesting}
+            visible={isSuggesting || suggestingEdit !== null}
             list={activeList}
             patterns={patterns}
             patternTypes={patternTypes}
             modifiers={modifiers}
-            onClose={() => setIsSuggesting(false)}
+            editing={suggestingEdit ?? undefined}
+            onClose={() => {
+              setIsSuggesting(false);
+              setSuggestingEdit(null);
+            }}
           />
         )}
         {reviewsSuggestions && (
@@ -403,6 +412,7 @@ const PatternListManager = () => {
             suggestions={suggestions}
             onClose={() => setIsReviewingSuggestions(false)}
             onAccept={addPattern}
+            onApplyEdit={editPattern}
           />
         )}
 
@@ -462,6 +472,9 @@ const PatternListManager = () => {
               onAddFromVideo={handleAddFromVideo}
               reveal={reveal}
               onEdit={handleEditPattern}
+              onSuggestEdit={
+                mayBeSuggestedEditsTo ? setSuggestingEdit : undefined
+              }
               selectedPattern={selectedPattern}
               headerActions={
                 <>

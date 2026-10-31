@@ -21,6 +21,11 @@ interface PatternListItemProps {
   compact?: boolean;
   onSelect: (pattern: IPattern | undefined) => void;
   onEdit: (pattern: IPattern) => void;
+  /**
+   * Suggesting a change to the list owner, offered in Edit's place on a subscribed list that
+   * takes them (`src/pattern/suggestions/figureEdits.ts`).
+   */
+  onSuggestEdit?: (pattern: IPattern) => void;
   onDelete: (id?: number) => void;
 }
 
@@ -34,6 +39,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   compact = false,
   onSelect,
   onEdit,
+  onSuggestEdit,
   onDelete,
 }) => {
   const { t } = useTranslation();
@@ -73,7 +79,16 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
       <Text style={styles.metaText}>{videoCount}</Text>
     </View>
   );
-  const actions = !isReadonly && (
+  const actions = isReadonly ? (
+    onSuggestEdit && (
+      <IconButton
+        icon="pencil-plus-outline"
+        size={theme.iconSize.md}
+        onPress={() => onSuggestEdit(pattern)}
+        accessibilityLabel={t("suggestEdit")}
+      />
+    )
+  ) : (
     <>
       <IconButton
         icon="pencil"

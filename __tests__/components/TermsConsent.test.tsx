@@ -61,7 +61,6 @@ function renderShare() {
       patterns={[]}
       onClose={jest.fn()}
       onPublished={onPublished}
-      onUnpublished={jest.fn()}
     />,
     { activeListId: null },
   );
