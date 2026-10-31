@@ -1,4 +1,8 @@
-import { NODE_HEIGHT, NODE_WIDTH } from "@/src/pattern/graph/types/Constants";
+import {
+  ARROW_LENGTH,
+  NODE_HEIGHT,
+  NODE_WIDTH,
+} from "@/src/pattern/graph/types/Constants";
 
 export interface LayoutPosition {
   x: number;
@@ -118,24 +122,21 @@ function adjustEndpointForArrow(
   endPoint: LayoutPosition,
 ): LayoutPosition {
   "worklet";
-  // Arrow size - move endpoint away from box so arrow can extend to touch box surface
-  const arrowSize = 20;
-
   // Adjust end point: move it AWAY from the box by arrow size
   // This creates space for the arrow to extend from path endpoint to box surface
   let adjustedEndPoint: LayoutPosition;
   switch (toSide) {
     case NodeSide.TOP:
-      adjustedEndPoint = { x: endPoint.x, y: endPoint.y - arrowSize };
+      adjustedEndPoint = { x: endPoint.x, y: endPoint.y - ARROW_LENGTH };
       break;
     case NodeSide.RIGHT:
-      adjustedEndPoint = { x: endPoint.x + arrowSize, y: endPoint.y };
+      adjustedEndPoint = { x: endPoint.x + ARROW_LENGTH, y: endPoint.y };
       break;
     case NodeSide.BOTTOM:
-      adjustedEndPoint = { x: endPoint.x, y: endPoint.y + arrowSize };
+      adjustedEndPoint = { x: endPoint.x, y: endPoint.y + ARROW_LENGTH };
       break;
     case NodeSide.LEFT:
-      adjustedEndPoint = { x: endPoint.x - arrowSize, y: endPoint.y };
+      adjustedEndPoint = { x: endPoint.x - ARROW_LENGTH, y: endPoint.y };
       break;
   }
   return adjustedEndPoint;
