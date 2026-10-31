@@ -7,6 +7,10 @@
  * terms, and WebFetch limited to the video hosts DPM links to. No shell, no
  * edits, nothing it could send. Anything else it tries is refused without a
  * prompt (`--permission-mode dontAsk`).
+ *
+ * It runs in an empty temporary folder that holds only the report, the skill
+ * and the terms, not in the checkout: a report that talks it into reading a
+ * file then finds nothing there, not .env, an Admin key or a keystore.
  */
 
 const { spawn } = require("child_process");
@@ -49,7 +53,8 @@ function claudeArgs(inputFile, env = process.env, model = "") {
     `Read(/${inputFile})`,
     "Read(./TERMS_OF_USE.md)",
     ...VIDEO_HOSTS.map((h) => `WebFetch(domain:${h})`),
-    // Reading inside the repository needs no permission; its secrets stay out.
+    // The session's folder holds nothing else (see runReview); these stay
+    // refused in case it is ever started from the checkout again.
     "--disallowedTools",
     "Read(./.env)",
     "Read(./.env.*)",
@@ -64,6 +69,33 @@ function claudeArgs(inputFile, env = process.env, model = "") {
 }
 
 /**
+ * The program to start. On Windows, npm installs `claude` as a `claude.cmd`
+ * wrapper, which Node can't start without a shell (and a shell would mangle
+ * the JSON schema argument), so this looks for the `claude.exe` behind it.
+ */
+function claudeBin(env = process.env, platform = process.platform) {
+  if (env.DPM_CLAUDE_BIN) return env.DPM_CLAUDE_BIN;
+  if (platform !== "win32") return "claude";
+  const dirs = (env.PATH ?? env.Path ?? "").split(";").filter(Boolean);
+  for (const dir of dirs) {
+    for (const file of [
+      path.join(dir, "claude.exe"),
+      path.join(
+        dir,
+        "node_modules",
+        "@anthropic-ai",
+        "claude-code",
+        "bin",
+        "claude.exe",
+      ),
+    ]) {
+      if (fs.existsSync(file)) return file;
+    }
+  }
+  return "claude";
+}
+
+/**
  * Reviews one report. `input` is `agentInput(...)`; it goes to a private
  * temporary folder the session may read, deleted afterwards.
  *
@@ -74,15 +106,25 @@ async function runReview(input, { repoRoot, env = process.env, model } = {}) {
   const inputFile = path.join(dir, "report.json");
   fs.writeFileSync(inputFile, JSON.stringify(input, null, 2), { mode: 0o600 });
   try {
+    prepareFolder(dir, repoRoot);
     const stdout = await run(
-      env.DPM_CLAUDE_BIN || "claude",
+      claudeBin(env),
       claudeArgs(inputFile, env, model),
-      repoRoot,
+      dir,
       Number(env.DPM_REVIEW_TIMEOUT_MS) || 10 * 60 * 1000,
     );
     return parseAgentOutput(stdout);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** The skill and the terms, copied next to the report: all the session may read. */
+function prepareFolder(dir, repoRoot) {
+  const skill = path.join(".claude", "skills", "review-report", "SKILL.md");
+  fs.mkdirSync(path.join(dir, path.dirname(skill)), { recursive: true });
+  for (const file of [skill, "TERMS_OF_USE.md"]) {
+    fs.copyFileSync(path.join(repoRoot, file), path.join(dir, file));
   }
 }
 
@@ -162,4 +204,11 @@ function reviewQueue(work) {
   };
 }
 
-module.exports = { claudeArgs, runReview, reviewQueue, VIDEO_HOSTS };
+module.exports = {
+  claudeArgs,
+  claudeBin,
+  prepareFolder,
+  runReview,
+  reviewQueue,
+  VIDEO_HOSTS,
+};

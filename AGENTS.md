@@ -179,7 +179,7 @@ npm run lint             # ESLint over the whole project (expo lint .)
 npm run format:check     # Prettier, same glob CI uses (npm run format writes)
 npm run typecheck        # tsc --noEmit
 npm run data -- find …   # find and remove published data, operator only (tools/data-removal/)
-npm run reports:review   # report review dashboard, operator only (tools/report-review/)
+npm run ops              # operations dashboard (reports, data removal), operator only (tools/dashboard/)
 ```
 
 Stack: Expo SDK ~57, React Native 0.86, React 19, TypeScript ~6, new architecture, typed routes and

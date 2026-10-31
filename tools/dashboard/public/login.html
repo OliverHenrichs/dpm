@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>DPM Operations · Sign in</title>
+    <style>
+      /* The sign-in page on a home server: the only page that answers without a session. */
+      @font-face {
+        font-family: "Rajdhani";
+        font-weight: 600;
+        src: url("/fonts/rajdhani-600.woff2") format("woff2");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Share Tech Mono";
+        font-weight: 400;
+        src: url("/fonts/share-tech-mono-400.woff2") format("woff2");
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --bg: #050a14;
+        --bg-glow: #0f2a4a;
+        --text: #dff4ff;
+        --muted: #7fa3bd;
+        --accent: #3fd0ff;
+        --line: rgba(63, 208, 255, 0.45);
+        --field: rgba(2, 8, 18, 0.75);
+        --danger: #ff3b3b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: radial-gradient(
+          circle at 50% 0%,
+          var(--bg-glow),
+          var(--bg) 70%
+        );
+        color: var(--text);
+        font:
+          600 17px/1.45 "Rajdhani",
+          system-ui,
+          sans-serif;
+      }
+      main {
+        width: min(100%, 26rem);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 24px;
+        background: rgba(10, 30, 60, 0.45);
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 1.6rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      h2 {
+        margin: 24px 0 6px;
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      p {
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+      .mono {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+      }
+      button,
+      input {
+        font: inherit;
+        color: var(--text);
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        padding: 10px 14px;
+      }
+      button {
+        background: rgba(63, 208, 255, 0.14);
+        cursor: pointer;
+        width: 100%;
+      }
+      button.primary {
+        background: var(--accent);
+        color: var(--bg);
+        border-color: var(--accent);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      input {
+        width: 100%;
+        margin-bottom: 8px;
+        background: var(--field);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      #msg {
+        min-height: 1.4em;
+        margin-top: 16px;
+      }
+      #msg.error {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>DPM Operations</h1>
+      <p class="mono">Home network · passkey required</p>
+      <button type="button" class="primary" id="login">
+        Sign in with passkey
+      </button>
+
+      <h2>New device</h2>
+      <p>
+        On the server, run
+        <span class="mono">npm run ops:pki -- enroll-code &lt;device&gt;</span>
+        and type the code here. This device then registers a passkey and is
+        signed in.
+      </p>
+      <input
+        type="text"
+        id="code"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Code"
+        aria-label="Enrolment code"
+      />
+      <button type="button" id="enroll">Register passkey</button>
+      <p id="msg" role="status"></p>
+    </main>
+
+    <script>
+      const msg = document.getElementById("msg");
+      const say = (text, error = false) => {
+        msg.textContent = text;
+        msg.className = error ? "error" : "";
+      };
+      const toBuf = (s) =>
+        Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) =>
+          c.charCodeAt(0),
+        );
+      const toB64u = (buf) =>
+        btoa(String.fromCharCode(...new Uint8Array(buf)))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+
+      async function call(url, body) {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body ?? {}),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || res.statusText);
+        return json;
+      }
+
+      async function busy(button, fn) {
+        button.disabled = true;
+        say("");
+        try {
+          await fn();
+          say("Signed in.");
+          location.reload();
+        } catch (e) {
+          // The browser's own "cancelled" is no news.
+          say(e.name === "NotAllowedError" ? "Cancelled." : e.message, true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      document.getElementById("login").addEventListener("click", (e) =>
+        busy(e.currentTarget, async () => {
+          const o = await call("/api/access/login-options");
+          const cred = await navigator.credentials.get({
+            publicKey: {
+              challenge: toBuf(o.challenge),
+              rpId: o.rpId,
+              allowCredentials: [],
+              userVerification: "required",
+              timeout: 60000,
+            },
+          });
+          await call("/api/access/login", {
+            id: cred.id,
+            clientDataJSON: toB64u(cred.response.clientDataJSON),
+            authenticatorData: toB64u(cred.response.authenticatorData),
+            signature: toB64u(cred.response.signature),
+          });
+        }),
+      );
+
+      document.getElementById("enroll").addEventListener("click", (e) =>
+        busy(e.currentTarget, async () => {
+          const code = document.getElementById("code").value.trim();
+          if (!code) throw new Error("Type the code from the server first.");
+          const o = await call("/api/access/enroll-options", { code });
+          const cred = await navigator.credentials.create({
+            publicKey: {
+              challenge: toBuf(o.challenge),
+              rp: o.rp,
+              user: { ...o.user, id: toBuf(o.user.id) },
+              pubKeyCredParams: o.pubKeyCredParams,
+              excludeCredentials: o.excludeCredentials.map((c) => ({
+                ...c,
+                id: toBuf(c.id),
+              })),
+              // Discoverable, so signing in needs no user name.
+              authenticatorSelection: {
+                residentKey: "required",
+                userVerification: "required",
+              },
+              attestation: "none",
+              timeout: 60000,
+            },
+          });
+          await call("/api/access/enroll", {
+            id: cred.id,
+            publicKey: toB64u(cred.response.getPublicKey()),
+            alg: cred.response.getPublicKeyAlgorithm(),
+            clientDataJSON: toB64u(cred.response.clientDataJSON),
+          });
+        }),
+      );
+    </script>
+  </body>
+</html>
