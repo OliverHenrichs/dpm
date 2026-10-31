@@ -25,15 +25,16 @@ export const ImportActionButtons: React.FC<ImportActionButtonsProps> = ({
       </View>
     );
   }
-  // A two-option exclusive choice, announced as radio buttons with their
-  // checked state: which one is active was once conveyed by colour alone,
-  // which a screen reader cannot read out.
+  // An exclusive choice, announced as radio buttons with their checked state:
+  // which one is active was once conveyed by colour alone, which a screen
+  // reader cannot read out.
   return (
     <SegmentedControl
       kind="choice"
       segments={[
         { value: "skip", label: t("skip") },
         { value: "replace", label: t("replace") },
+        { value: "copy", label: t("importAsCopy") },
       ]}
       value={currentAction}
       onChange={onActionChange}

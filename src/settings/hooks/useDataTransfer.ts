@@ -16,6 +16,7 @@ import {
 } from "@/src/pattern/data/PatternListStorage";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
+import { importedListCopy } from "@/src/pattern/data/importCopy";
 
 const errorText = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -127,8 +128,13 @@ export const useDataTransfer = () => {
             skippedCount++;
             continue;
           }
-          // Save the pattern list
-          const listToSave = decision.list as PatternListWithPatterns;
+          // A copy is a new list beside the local one; otherwise the list keeps its id, under
+          // the name chosen for it.
+          const imported = decision.list as PatternListWithPatterns;
+          const listToSave =
+            decision.action === "copy"
+              ? importedListCopy(imported, decision.name)
+              : { ...imported, name: decision.name };
           await savePatternList(listToSave);
           // Save all patterns in the list
           await savePatterns(listToSave.id, listToSave.patterns);

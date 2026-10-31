@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, ScrollView, Text, View } from "react-native";
+import { Modal, Text, View } from "react-native";
+import RevealScrollView from "@/src/common/components/RevealScrollView";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
@@ -35,11 +36,18 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { decisions, setAction, getImportDecisions, stats } =
-    useImportDecisions({
-      importedLists,
-      existingLists,
-    });
+  const {
+    decisions,
+    setAction,
+    nameFieldOf,
+    nameOf,
+    setName,
+    getImportDecisions,
+    stats,
+  } = useImportDecisions({
+    importedLists,
+    existingLists,
+  });
   const handleImport = () => {
     onImport(getImportDecisions());
   };
@@ -58,7 +66,10 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
             totalPatterns={stats.totalPatternsCount}
             conflictCount={stats.conflictCount}
           />
-          <ScrollView style={styles.listContainer}>
+          <RevealScrollView
+            style={styles.listContainer}
+            keyboardShouldPersistTaps="handled"
+          >
             {importedLists.map((list) => {
               const existingList = existingLists.find((e) => e.id === list.id);
               const currentAction = decisions.get(list.id) || "replace";
@@ -69,10 +80,13 @@ const PatternListImportModal: React.FC<PatternListImportModalProps> = ({
                   existingList={existingList}
                   currentAction={currentAction}
                   onActionChange={(action) => setAction(list.id, action)}
+                  showName={nameFieldOf(list) !== null}
+                  name={nameOf(list)}
+                  onNameChange={(name) => setName(list.id, name)}
                 />
               );
             })}
-          </ScrollView>
+          </RevealScrollView>
           <View style={styles.buttonRow}>
             <Button
               title={t("cancel")}

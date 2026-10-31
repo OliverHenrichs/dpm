@@ -45,8 +45,9 @@ const importable = (
 
 const decision = (
   list: PatternListWithPatterns,
-  action: "skip" | "replace",
-): ImportDecision => ({ list, action });
+  action: ImportDecision["action"],
+  name: string = list.name,
+): ImportDecision => ({ list, action, name });
 
 const storedLists = async (): Promise<IPatternList[]> =>
   JSON.parse((await AsyncStorage.getItem("@patternLists")) ?? "[]");
@@ -259,6 +260,68 @@ describe("useDataTransfer", () => {
 
       const names = (await storedLists()).map((l) => l.name).sort();
       expect(names).toEqual(["Keep", "Written"]);
+    });
+
+    it("writes a copy as a new list beside the local one, unpublished", async () => {
+      const existing = createTestPatternList({
+        name: "Salsa",
+        shareCode: "ABCD1234",
+        shareKey: "secret",
+      });
+      seedAsyncStorage({
+        [`@patterns_${existing.id}`]: JSON.stringify([
+          createTestPattern("t", { id: 1, name: "Mine" }),
+        ]),
+      });
+      const incoming = importable({
+        id: existing.id,
+        name: "Salsa",
+        shareCode: "ABCD1234",
+        shareKey: "secret",
+        patterns: [createTestPattern("t", { id: 1, name: "Theirs" })],
+      });
+      const { result } = await mount({ lists: [existing] });
+
+      await act(async () => {
+        await result.current.handleImport([
+          decision(incoming, "copy", "Salsa (2)"),
+        ]);
+      });
+
+      const lists = await storedLists();
+      expect(lists).toHaveLength(2);
+      const copy = lists.find((l) => l.id !== existing.id)!;
+      expect(copy.name).toBe("Salsa (2)");
+      expect(copy).not.toHaveProperty("shareCode");
+      expect(copy).not.toHaveProperty("shareKey");
+      expect((await storedPatterns(copy.id)).map((p) => p.name)).toEqual([
+        "Theirs",
+      ]);
+      // The local list and its figures are untouched.
+      expect(lists.find((l) => l.id === existing.id)).toMatchObject({
+        name: "Salsa",
+        shareCode: "ABCD1234",
+      });
+      expect((await storedPatterns(existing.id)).map((p) => p.name)).toEqual([
+        "Mine",
+      ]);
+    });
+
+    it("saves a new list under the name chosen for it", async () => {
+      const incoming = importable({ name: "Salsa" });
+      const { result } = await mount({
+        lists: [createTestPatternList({ name: "Salsa" })],
+      });
+
+      await act(async () => {
+        await result.current.handleImport([
+          decision(incoming, "replace", "Salsa from Ana"),
+        ]);
+      });
+
+      expect(
+        (await storedLists()).find((l) => l.id === incoming.id)?.name,
+      ).toBe("Salsa from Ana");
     });
 
     it("reports what it did", async () => {
