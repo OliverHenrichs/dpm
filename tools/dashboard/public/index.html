@@ -477,6 +477,151 @@
         color: var(--good);
       }
 
+      /* usage */
+      .meters {
+        display: grid;
+        gap: 12px;
+      }
+      .meter-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 15px;
+      }
+      .meter-head .mono {
+        color: var(--text);
+      }
+      .meter {
+        position: relative;
+        height: 10px;
+        margin-top: 4px;
+        border: 1px solid var(--line-soft);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+      }
+      .meter span {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: 0 4px 4px 0;
+        background: var(--accent);
+        box-shadow: var(--glow);
+      }
+      .meter.warn span {
+        background: var(--warn);
+        box-shadow: none;
+      }
+      .meter.over span {
+        background: var(--danger);
+        box-shadow: var(--danger-glow);
+      }
+      .meter i {
+        position: absolute;
+        top: -1px;
+        bottom: -1px;
+        width: 2px;
+        background: var(--warn);
+        opacity: 0.7;
+      }
+      .bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 90px;
+        padding-top: 4px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .bars > div {
+        flex: 1;
+        min-width: 3px;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+      }
+      .bars > div:hover span {
+        box-shadow: var(--glow);
+        background: #8fe9ff;
+      }
+      .bars span {
+        display: block;
+        width: 100%;
+        min-height: 1px;
+        border-radius: 4px 4px 0 0;
+        background: var(--accent);
+        opacity: 0.85;
+      }
+      .bar-axis {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .figures {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+      }
+      .figure {
+        border: 1px solid var(--line-soft);
+        border-radius: 4px;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .figure .num {
+        display: block;
+        font-family: var(--mono);
+        font-size: 24px;
+        line-height: 1.1;
+        color: #8fe9ff;
+      }
+      .figure .small {
+        color: var(--muted);
+      }
+      table.plain {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      table.plain td {
+        padding: 3px 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      table.plain td:last-child {
+        text-align: right;
+        font-family: var(--mono);
+      }
+      pre.diff {
+        margin: 8px 0 0;
+        max-height: 360px;
+        overflow: auto;
+        padding: 8px;
+        border: 1px solid var(--line-soft);
+        border-radius: 4px;
+        background: var(--field);
+        font: 13px/1.45 var(--mono);
+        white-space: pre;
+      }
+      pre.diff .add {
+        color: var(--good);
+      }
+      pre.diff .del {
+        color: var(--danger);
+      }
+      pre.diff .gap {
+        color: var(--muted);
+      }
+      ol.steps li + li {
+        margin-top: 6px;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.92em;
+        color: #8fe9ff;
+        overflow-wrap: anywhere;
+      }
+
       /* lists of things */
       .group-title {
         font-family: var(--mono);
@@ -1296,7 +1441,7 @@
         if (tab === "overview") renderOverview();
         if (tab === "reports") renderReports(force);
         if (tab === "data" && force) renderData();
-        if (tab === "usage") renderUsage();
+        if (tab === "usage") renderUsage(force);
         if (tab === "play") renderPlay();
         if (tab === "access" && force) renderAccess();
       }
@@ -1381,6 +1526,24 @@
               "Case files",
               "data",
             ),
+          usage?.summary?.rulesMatch === false &&
+            card(
+              "warn",
+              "!",
+              "Master's Firestore rules not deployed",
+              "Shield config",
+              "usage",
+            ),
+          ["warn", "over"].includes(usage?.summary?.quota?.level) &&
+            card(
+              usage.summary.quota.level === "over" ? "urgent" : "warn",
+              pct(usage.summary.quota.worst),
+              usage.summary.quota.level === "over"
+                ? "Of today's Firestore quota: sharing is stopped"
+                : "Of today's Firestore quota used",
+              "Subspace load",
+              "usage",
+            ),
         ].filter(Boolean);
         box.replaceChildren(
           panel(
@@ -1409,24 +1572,7 @@
           h(
             "div",
             { className: "two", style: "margin-top:16px" },
-            panel(
-              "Subspace load // free tier",
-              "Firestore usage",
-              h(
-                "p",
-                { className: "muted" },
-                "Reads, writes and deletes against Spark's daily quota arrive in phase 2.",
-              ),
-              h(
-                "button",
-                {
-                  type: "button",
-                  className: "btn quiet",
-                  onclick: () => go("usage"),
-                },
-                "What's planned",
-              ),
-            ),
+            overviewQuota(),
             panel(
               "Hull integrity",
               "App vitals",
@@ -1449,46 +1595,558 @@
         );
       }
 
-      function renderUsage() {
-        document
-          .getElementById("tab-usage")
-          .replaceChildren(
-            panel(
-              "Subspace load // not connected",
-              "Usage",
-              h("p", {}, "Phase 2 brings this tab:"),
+      /* ---------- usage ---------- */
+      let usage = null; // from /api/usage
+      let usageKey = "";
+      const num = (n) => Math.round(n ?? 0).toLocaleString();
+      const pct = (share) =>
+        `${share >= 0.995 && share < 1 ? "99" : Math.round(share * 100)}%`;
+      function localTime(iso) {
+        return new Date(iso).toLocaleTimeString(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      /** One quota line: today's count, the limit, a bar with the 80% mark. */
+      function meter(label, q, warnAt) {
+        const cls = q.share >= 1 ? "over" : q.share >= warnAt ? "warn" : "";
+        return h(
+          "div",
+          {},
+          h(
+            "div",
+            { className: "meter-head" },
+            h("span", {}, label),
+            h(
+              "span",
+              { className: "muted" },
+              h("span", { className: "mono" }, num(q.today)),
+              ` / ${num(q.limit)} · ${pct(q.share)}`,
+              cls === "over"
+                ? h(
+                    "span",
+                    { className: "badge bad", style: "margin-left:6px" },
+                    "Over quota",
+                  )
+                : cls === "warn"
+                  ? h(
+                      "span",
+                      { className: "badge warn", style: "margin-left:6px" },
+                      "Above 80%",
+                    )
+                  : null,
+            ),
+          ),
+          h(
+            "div",
+            {
+              className: `meter ${cls}`,
+              role: "meter",
+              "aria-label": label,
+              "aria-valuemin": "0",
+              "aria-valuemax": String(q.limit),
+              "aria-valuenow": String(q.today),
+            },
+            h("span", { style: `width:${Math.min(100, q.share * 100)}%` }),
+            h("i", { style: `left:${warnAt * 100}%` }),
+          ),
+          h(
+            "div",
+            { className: "small muted", style: "margin-top:2px" },
+            `Yesterday ${num(q.yesterday)}`,
+          ),
+        );
+      }
+
+      /** A single-series bar chart; each bar's title is its tooltip. */
+      function bars(items, { label, first, last }) {
+        const max = Math.max(1, ...items.map((i) => i.value));
+        return h(
+          "div",
+          {},
+          h(
+            "div",
+            { className: "bars", role: "img", "aria-label": label },
+            items.map((i) =>
               h(
-                "ul",
-                {},
+                "div",
+                { title: `${i.label}: ${num(i.value)}` },
+                h("span", { style: `height:${(i.value / max) * 100}%` }),
+              ),
+            ),
+          ),
+          h(
+            "div",
+            { className: "bar-axis" },
+            h("span", {}, first),
+            h("span", {}, `max ${num(max)}`),
+            h("span", {}, last),
+          ),
+        );
+      }
+
+      function usageSetup() {
+        return panel(
+          "Subspace load // not connected",
+          "Connect Google Cloud",
+          usage?.setupError &&
+            h("div", { className: "banner" }, usage.setupError),
+          h(
+            "p",
+            {},
+            "Quota, listeners and the rules check need a read-only service account, dpm-ops, separate from the Admin key. Once:",
+          ),
+          h(
+            "ol",
+            { className: "steps" },
+            h(
+              "li",
+              {},
+              "Google Cloud console → IAM & Admin → Service accounts, in the Firebase project → Create service account, named ",
+              h("code", {}, "dpm-ops"),
+              ".",
+            ),
+            h(
+              "li",
+              {},
+              "Give it the roles Monitoring Viewer and Firebase Rules Viewer, nothing else.",
+            ),
+            h(
+              "li",
+              {},
+              "Keys → Add key → JSON. Keep the file outside the repository, readable only by you.",
+            ),
+            h(
+              "li",
+              {},
+              "In .env: ",
+              h("code", {}, "DPM_OPS_CREDENTIALS=/path/to/dpm-ops.json"),
+              ", then restart the dashboard.",
+            ),
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            "The gcloud commands for the same are in tools/dashboard/README.md. Your own counts below work without it.",
+          ),
+        );
+      }
+
+      function quotaPanel() {
+        const m = usage.monitoring;
+        if (!m)
+          return panel(
+            "Subspace load // free tier",
+            "Firestore quota today",
+            h(
+              "p",
+              { className: usage.monitoringError ? "warn-text" : "muted" },
+              usage.monitoringError
+                ? `Cloud Monitoring: ${usage.monitoringError}`
+                : "Asking Cloud Monitoring…",
+            ),
+          );
+        const q = m.quota;
+        const start = Date.parse(q.dayStart);
+        const hourly = q.reads.hours.map((v, k) => ({
+          value: v,
+          label: `${localTime(new Date(start + k * 3600000).toISOString())}`,
+        }));
+        return panel(
+          "Subspace load // free tier",
+          "Firestore quota today",
+          h(
+            "p",
+            { className: "small muted", style: "margin-top:0" },
+            `Spark's free quota; going over stops sharing for everyone until it resets at ${localTime(q.resetsAt)} (midnight Pacific). Monitoring figures lag a few minutes.`,
+          ),
+          h(
+            "div",
+            { className: "meters" },
+            meter("Reads", q.reads, q.warnAt),
+            meter("Writes", q.writes, q.warnAt),
+            meter("Deletes", q.deletes, q.warnAt),
+          ),
+          h("h3", { style: "margin-top:16px" }, "Reads per hour today"),
+          bars(hourly, {
+            label: "Reads per hour since the quota day began",
+            first: hourly[0]?.label ?? "",
+            last: hourly.at(-1)?.label ?? "",
+          }),
+          usage.monitoringError &&
+            h(
+              "p",
+              { className: "small warn-text" },
+              `Last fetch failed: ${usage.monitoringError}`,
+            ),
+        );
+      }
+
+      function livePanel() {
+        const m = usage.monitoring;
+        if (!m) return null;
+        const r = m.requests;
+        return panel(
+          "Sensor sweep",
+          "Live and refused",
+          h(
+            "div",
+            { className: "figures" },
+            h(
+              "div",
+              { className: "figure" },
+              h("span", { className: "num" }, num(m.listeners.now)),
+              h(
+                "span",
+                { className: "small" },
+                `Listeners now, peak today ${num(m.listeners.peakToday)}`,
+              ),
+            ),
+            h(
+              "div",
+              { className: "figure" },
+              h("span", { className: "num" }, num(m.connections.now)),
+              h(
+                "span",
+                { className: "small" },
+                `Connections now, peak today ${num(m.connections.peakToday)}`,
+              ),
+            ),
+            h(
+              "div",
+              { className: "figure" },
+              h("span", { className: "num" }, num(r.refusedTotal)),
+              h(
+                "span",
+                { className: "small" },
+                `Refused by the rules today, of ${num(r.total)} requests`,
+              ),
+            ),
+          ),
+          r.refused.length
+            ? [
+                h("h3", { style: "margin-top:16px" }, "Refused, by method"),
                 h(
-                  "li",
-                  {},
-                  "Firestore reads, writes and deletes per hour and day against Spark's free quota, with a warning at 80%",
+                  "table",
+                  { className: "plain" },
+                  r.refused.map((x) =>
+                    h("tr", {}, h("td", {}, x.name), h("td", {}, num(x.count))),
+                  ),
+                ),
+              ]
+            : null,
+          r.byCode.length
+            ? [
+                h(
+                  "h3",
+                  { style: "margin-top:16px" },
+                  "All requests today, by answer",
                 ),
                 h(
-                  "li",
-                  {},
-                  "Live listeners and refused requests (Cloud Monitoring)",
+                  "table",
+                  { className: "plain" },
+                  r.byCode.map((x) =>
+                    h("tr", {}, h("td", {}, x.name), h("td", {}, num(x.count))),
+                  ),
                 ),
-                h(
-                  "li",
-                  {},
-                  "Lists published, subscribers and suggestions per day, from our own data",
+              ]
+            : null,
+          h(
+            "p",
+            { className: "small muted" },
+            "A few refusals are normal: a phone asking for a list that went members-only, or a blocked user. Many at once after a release can mean the app and the deployed rules disagree.",
+          ),
+        );
+      }
+
+      function rulesPanel() {
+        const r = usage.rules;
+        if (!r)
+          return panel(
+            "Shield config",
+            "Firestore rules",
+            h(
+              "p",
+              { className: usage.rulesError ? "warn-text" : "muted" },
+              usage.rulesError
+                ? `Firebase Rules API: ${usage.rulesError}`
+                : "Asking the Firebase Rules API…",
+            ),
+          );
+        return panel(
+          "Shield config",
+          "Firestore rules",
+          h(
+            "p",
+            {},
+            r.matches
+              ? h("span", { className: "badge good" }, "Deployed")
+              : h("span", { className: "badge warn" }, "Not deployed"),
+            " ",
+            r.matches
+              ? `The live rules are ${r.against}.`
+              : `The live rules differ from ${r.against}: ${r.added} ${r.added === 1 ? "line" : "lines"} only in the repository, ${r.removed} only live.`,
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            `Released ${when(r.deployedAt)}${r.ruleset ? ` · ruleset ${r.ruleset}` : ""}.`,
+            r.matches
+              ? null
+              : " Run npm run rules:deploy from an up-to-date master to fix it, once the PRs that need them are merged.",
+          ),
+          !r.matches &&
+            r.diff.length > 0 &&
+            h(
+              "details",
+              {},
+              h("summary", {}, "Show the difference"),
+              h(
+                "pre",
+                { className: "diff" },
+                r.diff.map((d) =>
+                  d.op === "…"
+                    ? h("div", { className: "gap" }, "  …")
+                    : h(
+                        "div",
+                        {
+                          className:
+                            d.op === "+" ? "add" : d.op === "-" ? "del" : "",
+                        },
+                        `${d.op} ${d.line}`,
+                      ),
                 ),
-                h(
-                  "li",
-                  {},
-                  "Anonymous accounts: total, new, unused for a year",
-                ),
-                h("li", {}, "Whether master's Firestore rules are deployed"),
               ),
               h(
                 "p",
                 { className: "small muted" },
-                "It needs a read-only service account (dpm-ops) with monitoring and rules viewer roles.",
+                "+ only in the repository (deploying adds it), − only live (deploying removes it).",
               ),
             ),
+          usage.rulesError &&
+            h(
+              "p",
+              { className: "small warn-text" },
+              `Last check failed: ${usage.rulesError}`,
+            ),
+        );
+      }
+
+      function countsPanel() {
+        const c = usage?.counts;
+        const load = h(
+          "button",
+          {
+            type: "button",
+            className: c ? "btn quiet" : "btn primary",
+            onclick: act(async () => {
+              usage = await call("POST", "/api/usage/counts");
+              sound.confirm();
+              renderUsage(true);
+            }),
+          },
+          c ? "Count again" : "Count now",
+        );
+        if (!c)
+          return panel(
+            "Crew manifest",
+            "Our own counts",
+            h(
+              "p",
+              {},
+              "Lists, members-only lists, subscribers, suggestions, takedowns, blocks and sign-in accounts.",
+            ),
+            h(
+              "p",
+              { className: "small muted" },
+              "Counting reads every shared document once (a few reads per list), so it runs only when you ask.",
+            ),
+            load,
           );
+        const fig = (n, text) =>
+          h(
+            "div",
+            { className: "figure" },
+            h("span", { className: "num" }, num(n)),
+            h("span", { className: "small" }, text),
+          );
+        const days = (rows, label) =>
+          bars(
+            rows.map((r) => ({ value: r.count, label: r.day })),
+            {
+              label,
+              first: rows[0]?.day.slice(5),
+              last: rows.at(-1)?.day.slice(5),
+            },
+          );
+        return panel(
+          "Crew manifest",
+          "Our own counts",
+          h(
+            "div",
+            { className: "figures" },
+            fig(c.lists, `Shared lists, ${num(c.membersOnly)} members-only`),
+            fig(c.publishedThisWeek, "Published or updated this week"),
+            fig(
+              c.subscribers,
+              `Subscriber records, ${num(c.members)} members, ${num(c.joinRequests)} waiting to join`,
+            ),
+            fig(
+              c.suggestions,
+              `Suggestions, ${num(c.suggestionsThisWeek)} this week`,
+            ),
+            fig(c.reports, "Reports"),
+            fig(c.takedowns, "Takedowns"),
+            fig(c.blocked, "Blocked ids"),
+            c.accounts &&
+              fig(
+                c.accounts.total,
+                `Sign-in accounts, ${num(c.accounts.newThisWeek)} new this week`,
+              ),
+            c.accounts && fig(c.accounts.idleYear, "Accounts idle for a year"),
+          ),
+          h(
+            "div",
+            { className: "two", style: "margin-top:16px" },
+            h(
+              "div",
+              {},
+              h("h3", {}, "Lists published or updated, per day"),
+              days(
+                c.perDay.published,
+                "Lists published or updated per day, last 14 days",
+              ),
+            ),
+            h(
+              "div",
+              {},
+              h("h3", {}, "Suggestions sent, per day"),
+              days(c.perDay.suggestions, "Suggestions per day, last 14 days"),
+            ),
+          ),
+          h(
+            "div",
+            { className: "row", style: "margin-top:12px" },
+            load,
+            h(
+              "span",
+              { className: "small muted" },
+              `Counted ${ago(usage.countsAt)}, ${num(c.reads)} documents read. Days are UTC; a list counts on the day it was last published.`,
+            ),
+          ),
+        );
+      }
+
+      /** Overview's quota panel: three small meters, or how to connect. */
+      function overviewQuota() {
+        const q = usage?.monitoring?.quota;
+        const go2 = h(
+          "button",
+          {
+            type: "button",
+            className: "btn quiet",
+            onclick: () => go("usage"),
+          },
+          q ? "Open Usage" : usage?.connected ? "Open Usage" : "How to connect",
+        );
+        if (!q)
+          return panel(
+            "Subspace load // free tier",
+            "Firestore usage",
+            h(
+              "p",
+              { className: usage?.monitoringError ? "warn-text" : "muted" },
+              !usage
+                ? "Loading…"
+                : !usage.connected
+                  ? "Reads, writes and deletes against Spark's daily quota need the read-only dpm-ops key."
+                  : usage.monitoringError
+                    ? `Cloud Monitoring: ${usage.monitoringError}`
+                    : "Asking Cloud Monitoring…",
+            ),
+            go2,
+          );
+        return panel(
+          "Subspace load // free tier",
+          "Firestore usage",
+          h(
+            "div",
+            { className: "meters" },
+            meter("Reads", q.reads, q.warnAt),
+            meter("Writes", q.writes, q.warnAt),
+            meter("Deletes", q.deletes, q.warnAt),
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            `Resets at ${localTime(q.resetsAt)}. Fetched ${ago(usage.fetchedAt)}.`,
+          ),
+          go2,
+        );
+      }
+
+      function renderUsage(force) {
+        const key = JSON.stringify([
+          usage?.fetchedAt,
+          usage?.countsAt,
+          usage?.monitoringError,
+          usage?.rulesError,
+        ]);
+        if (!force && key === usageKey) return;
+        usageKey = key;
+        const box = document.getElementById("tab-usage");
+        if (!usage) {
+          box.replaceChildren(
+            panel(
+              "Subspace load",
+              "Usage",
+              h("p", { className: "muted" }, "Loading…"),
+            ),
+          );
+          return;
+        }
+        const head = h(
+          "div",
+          { className: "row", style: "margin-bottom:16px" },
+          usage.connected &&
+            h(
+              "button",
+              {
+                type: "button",
+                className: "btn",
+                onclick: act(async () => {
+                  usage = await call("POST", "/api/usage/refresh");
+                  sound.confirm();
+                  renderUsage(true);
+                }),
+              },
+              "Fetch now",
+            ),
+          h(
+            "span",
+            { className: "small muted" },
+            usage.connected
+              ? `${usage.demo ? "Made-up figures (demo). " : ""}Fetched ${usage.fetchedAt ? ago(usage.fetchedAt) : "not yet"}, every hour${usage.account ? ` as ${usage.account}` : ""}. Asking Monitoring and the rules costs no Firestore reads.`
+              : "Not connected to Google Cloud.",
+          ),
+        );
+        box.replaceChildren(
+          head,
+          usage.connected
+            ? h(
+                "div",
+                { className: "stack" },
+                h(
+                  "div",
+                  { className: "two", style: "align-items:start" },
+                  quotaPanel(),
+                  h("div", { className: "stack" }, livePanel(), rulesPanel()),
+                ),
+                countsPanel(),
+              )
+            : h("div", { className: "stack" }, usageSetup(), countsPanel()),
+        );
       }
 
       function renderPlay() {
@@ -3464,10 +4122,12 @@
       let lastReportIds = null;
       async function poll(first = false) {
         try {
-          const [s, c] = await Promise.all([
+          const [s, c, u] = await Promise.all([
             call("GET", "/api/state"),
             call("GET", "/api/cases"),
+            call("GET", "/api/usage"),
           ]);
+          usage = u;
           const ids = new Set(s.reports.map((r) => r.id));
           if (lastReportIds && [...ids].some((id) => !lastReportIds.has(id))) {
             sound.report();

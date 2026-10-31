@@ -2,8 +2,8 @@
 
 A web page for running DPM's cloud side: the reports about published lists, everything
 `npm run data` does (search, show, take down, remove a user, block), erasure requests that come by
-email, and a log of what was removed. Usage figures from Firebase and Google Play come in later
-phases; their tabs say what is planned. The page has no build step and loads nothing from outside
+email, a log of what was removed, and how busy Firestore is against Spark's free quota. Figures
+from Google Play come in a later phase; its tab says what is planned. The page has no build step and loads nothing from outside
 (its two fonts, Rajdhani and Share Tech Mono, are in `public/fonts/` under the SIL OFL).
 
 **Nothing is sent from here.** Replies go out from your own mail app. Anything that deletes or
@@ -24,6 +24,10 @@ Everything `tools/data-removal/README.md` → _Setup_ says (its `firebase-admin`
 credentials in `.env`), plus [Claude Code](https://claude.com/claude-code) signed in for the agent
 reviews (`claude` on the PATH, or `DPM_CLAUDE_BIN=/path/to/claude`; on Windows it finds the `claude.exe` behind npm's `claude.cmd` itself).
 
+For the Usage tab's quota and rules check, the read-only `dpm-ops` key (see
+[The dpm-ops key](#the-dpm-ops-key)). Without it, everything else works and the tab shows the
+setup steps.
+
 ## Running it on your computer
 
 ```bash
@@ -42,7 +46,8 @@ cannot drive it. The page takes the token out of the address bar once it has rea
 ## Overview tab
 
 What is waiting on you: reports about a child's safety, reports waiting for a verdict, replies not
-marked sent, open erasure requests. Each card opens its tab. A sound plays when a new report
+marked sent, open erasure requests, master's Firestore rules not deployed, and today's Firestore
+quota once it passes 80%. Below them, today's reads, writes and deletes. Each card opens its tab. A sound plays when a new report
 arrives; the _Sound on_ button in the header mutes every sound (remembered per browser).
 
 ## Reports tab
@@ -135,6 +140,67 @@ page and the command line always find and remove the same things.
 Search and the list and user views read the whole snapshot (a few reads per list, as `find`
 does), kept in memory for a minute so a search, a look and a removal read it once. Every removal
 reads it fresh first.
+
+## Usage tab
+
+How busy Firestore is, and whether the deployed rules are master's.
+
+- **Firestore quota today**: reads, writes and deletes since midnight Pacific (when Spark's free
+  quota resets; the page shows that time in yours) against the free limits of 50,000 reads,
+  20,000 writes and 20,000 deletes, with yesterday's totals and reads per hour. Over the quota,
+  Firestore refuses everyone (sharing stops) until the reset, so it warns from 80%. The
+  dashboard's own reads count too: _Count now_ and the Data tab's search read every shared
+  document once.
+- **Live and refused**: snapshot listeners and connections now and at today's peak (subscribers'
+  phones syncing), and today's requests by answer, with the ones the rules refused
+  (`PERMISSION_DENIED`) by method.
+- **Firestore rules**: the ruleset Firestore runs now against `firestore.rules` on master, as this
+  checkout last fetched it (`origin/master`, no `git fetch` here; without that ref, the file in
+  the checkout and its branch). If they differ, the difference, and a card on Overview: run
+  `npm run rules:deploy`.
+- **Our own counts** (only on _Count now_, since it reads the whole snapshot): shared lists and
+  how many are members-only, subscriber records, join requests, suggestions, reports, takedowns,
+  blocked ids, sign-in accounts (new this week, idle for a year: no sign-in or token refresh),
+  and lists published and suggestions sent per day over two weeks. Only the numbers are kept, in
+  memory.
+
+The quota, listeners, requests and rules come from Cloud Monitoring and the Firebase Rules API,
+fetched when the dashboard starts and then hourly (_Fetch now_ for sooner). They cost no
+Firestore reads. Monitoring's figures lag a few minutes.
+
+### The dpm-ops key
+
+A service account that can only look: it reads Monitoring's figures and the deployed rules, and
+can change nothing. It is separate from the Admin key, so a bug in these calls can't delete
+anything. Once, in the Firebase project:
+
+```bash
+PROJECT=<your Firebase project id>
+gcloud iam service-accounts create dpm-ops --project $PROJECT \
+  --display-name "DPM ops dashboard (read-only)"
+for role in roles/monitoring.viewer roles/firebaserules.viewer; do
+  gcloud projects add-iam-policy-binding $PROJECT \
+    --member "serviceAccount:dpm-ops@$PROJECT.iam.gserviceaccount.com" --role $role
+done
+gcloud services enable monitoring.googleapis.com --project $PROJECT
+gcloud iam service-accounts keys create ~/keys/dpm-ops.json \
+  --iam-account dpm-ops@$PROJECT.iam.gserviceaccount.com
+chmod 600 ~/keys/dpm-ops.json
+```
+
+Or in the Google Cloud console: _IAM & Admin → Service accounts → Create service account_
+(`dpm-ops`), roles _Monitoring Viewer_ and _Firebase Rules Viewer_, then _Keys → Add key →
+JSON_. Keep the file outside the repository and put its path in `.env`:
+
+```bash
+DPM_OPS_CREDENTIALS=/home/<you>/keys/dpm-ops.json
+```
+
+The dashboard signs its own token with the key (scopes `monitoring.read` and
+`firebase.readonly`), so it needs no Google library. If a panel says an API "has not been used in
+project", enable it with the link in the message (Cloud Monitoring API, Firebase Rules API).
+On Spark there is no bill, so there is no billing role; after a move to Blaze, a cost panel
+would need `roles/billing.viewer`.
 
 ## The red alert screen
 
@@ -285,8 +351,13 @@ In `~/.local/share/dpm/dashboard/` (`DPM_DASHBOARD_DIR` changes it), readable on
 - `lib/cases.js`, `lib/actionLog.js`, `lib/reviews.js`: the files above.
 - `lib/access.js`: devices, passkeys, sign-in, sessions and the ten-minute arming.
 - `public/login.html`: the sign-in and enrolment page on a home server.
+- `lib/usage.js`: the Usage tab's API and hourly fetch; `lib/usageView.js`: pure: the quota day,
+  Monitoring series into figures, the rules diff, our own counts; `lib/usageSources.js`: Cloud
+  Monitoring and the Rules API, or made-up demo figures; `lib/google.js`: the `dpm-ops` key's
+  token and read-only GETs.
 - `lib/agent.js`: the `claude -p` command line and the one-at-a-time queue.
 - `pki.js`: enrolment codes, the device list and revocation, and for `--lan` the CA and server certificate (`npm run ops:pki`).
 
-Unit-tested in `__tests__/unit/dashboardReports.test.js` and `dashboardData.test.js`, against
+Unit-tested in `__tests__/unit/dashboardReports.test.js`, `dashboardData.test.js` and
+`dashboardUsage.test.js`, against
 `demoStore`; the second also enrols a device and signs in over HTTP, and serves HTTPS with a `pki.js` certificate.

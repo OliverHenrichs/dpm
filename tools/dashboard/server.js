@@ -28,6 +28,9 @@ const { reviewStore, defaultDir } = require("./lib/reviews");
 const { runReview } = require("./lib/agent");
 const { createReports } = require("./lib/reports");
 const { createData, NEEDS_PASSKEY } = require("./lib/data");
+const { createUsage } = require("./lib/usage");
+const { googleUsage, demoUsage, repoRules } = require("./lib/usageSources");
+const { googleClient, readKey } = require("./lib/google");
 const { caseStore } = require("./lib/cases");
 const { actionLog } = require("./lib/actionLog");
 const { createAccess } = require("./lib/access");
@@ -145,6 +148,7 @@ function createDashboard({
   review,
   cases,
   log,
+  usage: usageOptions = {},
 }) {
   const reports = createReports({
     store,
@@ -155,11 +159,21 @@ function createDashboard({
     log: (entry) => log.append(entry),
   });
   const data = createData({ store, cases, log });
+  const usage = createUsage({
+    store,
+    source: null,
+    repoRules: () => repoRules(REPO_ROOT),
+    ...usageOptions,
+  });
   return {
-    api: { ...reports.api, ...data.api },
+    api: { ...reports.api, ...data.api, ...usage.api },
     refresh: reports.refresh,
-    stop: reports.stop,
+    stop: () => {
+      reports.stop();
+      usage.stop();
+    },
     queue: reports.queue,
+    usage,
   };
 }
 
@@ -320,6 +334,27 @@ function createServer(dashboard, { port, token, hosts, tls, access }) {
   return https.createServer({ ...tls, minVersion: "TLSv1.2" }, handle);
 }
 
+/**
+ * The Usage tab's source: made-up figures with --demo, else Google's APIs
+ * with the read-only dpm-ops key in DPM_OPS_CREDENTIALS. Without that key the
+ * tab shows how to make one; the rest of the dashboard runs as before.
+ */
+function usageSource(opts, store, env = process.env) {
+  if (opts.demo) {
+    return { source: demoUsage({ repoRoot: REPO_ROOT }) };
+  }
+  try {
+    const key = readKey(env);
+    if (!key) return { source: null };
+    return {
+      source: googleUsage(googleClient(key), store.projectId),
+      account: key.client_email,
+    };
+  } catch (e) {
+    return { source: null, setupError: e.message };
+  }
+}
+
 /** The TLS files and server name `pki.js init` wrote. */
 function loadTls(root) {
   const dir = path.join(root, "tls");
@@ -368,8 +403,12 @@ async function main() {
       runReview(input, { repoRoot: REPO_ROOT, model }),
     cases: caseStore(path.join(own, "cases")),
     log,
+    usage: usageSource(opts, store),
   });
   await dashboard.refresh();
+  // Monitoring and the rules: in the background, so a slow Google answer
+  // doesn't hold up the page.
+  dashboard.usage.refresh();
   const token = crypto.randomBytes(24).toString("hex");
 
   let server;

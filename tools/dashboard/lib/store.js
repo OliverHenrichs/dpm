@@ -81,6 +81,26 @@ function firebaseStore(conn, { snapshotTtlMs = 60_000 } = {}) {
       return data.findUser(conn.auth, uid);
     },
 
+    /**
+     * Every sign-in account's creation and last activity time, nothing else,
+     * for the Usage tab's counts (Firebase Auth, not Firestore reads).
+     */
+    async accounts() {
+      const out = [];
+      let pageToken;
+      do {
+        const page = await conn.auth.listUsers(1000, pageToken);
+        for (const u of page.users) {
+          out.push({
+            created: u.metadata.creationTime,
+            lastActive: u.metadata.lastRefreshTime ?? u.metadata.lastSignInTime,
+          });
+        }
+        pageToken = page.pageToken;
+      } while (pageToken);
+      return out;
+    },
+
     blockedSince(uid) {
       return data.blockedSince(db, uid);
     },
@@ -272,6 +292,23 @@ function demoStore() {
 
     async findUser(uid) {
       return users[uid] ?? null;
+    },
+
+    async accounts() {
+      const day = 86_400_000;
+      // The three named accounts, plus a crowd of made-up anonymous ones.
+      return [
+        ...Object.values(users).map((u) => ({
+          created: u.created,
+          lastActive: u.lastSignIn,
+        })),
+        ...Array.from({ length: 37 }, (_, i) => ({
+          created: new Date(Date.now() - (i * 11 + 2) * day).toISOString(),
+          lastActive: new Date(
+            Date.now() - (i % 9 === 0 ? 400 : i) * day,
+          ).toISOString(),
+        })),
+      ];
     },
 
     async blockedSince(uid) {
