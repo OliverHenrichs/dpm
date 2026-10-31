@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * The dashboard's own small certificate authority, for running it on a home
- * server (`npm run ops -- --lan`): a server certificate for the server's
- * name, and one client certificate per device (each computer, the phone)
- * that the browser shows to get in. Also hands out the one-time codes that let a
- * device register its passkey. Uses the `openssl` command line.
+ * Setting up and running the dashboard on a home server. Hands out the
+ * one-time codes that enrol a device (a passkey on that device), lists and
+ * revokes devices. For `--lan`, where the dashboard serves HTTPS itself,
+ * also makes a small CA of its own and the server's certificate (behind a
+ * proxy with `--proxy`, the proxy has the certificate). Uses the `openssl`
+ * command line for that.
  *
  * Run on the server with `npm run ops:pki -- <command>`; see README.md.
  */
@@ -14,24 +15,23 @@ const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { dashboardDir } = require("./server");
-const { hashCode, readDevices } = require("./lib/access");
+const { hashCode, readDevices, DEVICE_NAME } = require("./lib/access");
 const { now, writeJson } = require("./lib/http");
 
 const USAGE = `Usage: npm run ops:pki -- <command>
 
-  init --name <host> [--ip <address>]
-                      Make the CA and the server certificate. <host> is the
-                      name the devices open (for example ops-host.local);
-                      --ip adds the server's address too.
-  add-device <name>   A client certificate for one device, as <name>.p12 (with a
-                      printed password) to import into its browser.
+  enroll-code <device>
+                      A one-time code (15 minutes) to type on the sign-in page
+                      of that device (laptop, pixel): it then registers a
+                      passkey and is in.
+  devices             List the devices and their passkeys.
   revoke-device <name>
-                      Stop letting that device in, at once.
-  devices             List the devices.
-  enroll-code         A one-time code (15 minutes) for registering a passkey on
-                      the dashboard's Access page.`;
-
-const DEVICE_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
+                      Remove that device's passkeys; its sessions end at their
+                      next request.
+  init --name <host> [--ip <address>]
+                      Only for --lan: make a CA and the server certificate.
+                      <host> is the name the devices open (for example
+                      ops-host.local); --ip adds the server's address too.`;
 
 function openssl(args, input) {
   return execFileSync("openssl", args, {
@@ -43,11 +43,10 @@ function openssl(args, input) {
 function dirs(root = dashboardDir()) {
   const tls = path.join(root, "tls");
   const access = path.join(root, "access");
-  const devices = path.join(tls, "devices");
-  for (const d of [root, tls, access, devices]) {
+  for (const d of [root, tls, access]) {
     fs.mkdirSync(d, { recursive: true, mode: 0o700 });
   }
-  return { tls, access, devices };
+  return { tls, access };
 }
 
 function init(root, { name, ip }) {
@@ -143,111 +142,7 @@ function init(root, { name, ip }) {
   writeJson(f("server.json"), { name, ip: ip ?? null, createdAt: now() });
   console.log(`Made the CA and a server certificate for ${name} in ${tls}.`);
   console.log(
-    `Install ${f("ca.crt")} as a trusted CA on each device, then add each device with add-device.`,
-  );
-}
-
-function addDevice(root, name) {
-  if (!DEVICE_NAME.test(name ?? "")) {
-    throw new Error(
-      "A device name is lowercase letters, digits and dashes, like computer or phone.",
-    );
-  }
-  const { tls, access, devices } = dirs(root);
-  const ca = (n) => path.join(tls, n);
-  if (!fs.existsSync(ca("ca.key"))) throw new Error("Run init first.");
-  const list = readDevices(access);
-  if (list.some((d) => d.name === name && !d.revokedAt)) {
-    throw new Error(
-      `${name} already has a certificate. Revoke it first to make a new one.`,
-    );
-  }
-  const f = (ext) => path.join(devices, `${name}.${ext}`);
-  openssl([
-    "ecparam",
-    "-name",
-    "prime256v1",
-    "-genkey",
-    "-noout",
-    "-out",
-    f("key"),
-  ]);
-  openssl([
-    "req",
-    "-new",
-    "-key",
-    f("key"),
-    "-subj",
-    `/CN=${name}/O=DPM Operations`,
-    "-out",
-    f("csr"),
-  ]);
-  fs.writeFileSync(
-    f("ext"),
-    "basicConstraints=CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=clientAuth\n",
-  );
-  openssl([
-    "x509",
-    "-req",
-    "-in",
-    f("csr"),
-    "-CA",
-    ca("ca.crt"),
-    "-CAkey",
-    ca("ca.key"),
-    "-CAcreateserial",
-    // As long as the CA. A lost device is handled by revoke-device, not by waiting for expiry.
-    "-days",
-    "3650",
-    "-sha256",
-    "-extfile",
-    f("ext"),
-    "-out",
-    f("crt"),
-  ]);
-  const password = crypto.randomBytes(9).toString("base64url");
-  // 3DES and SHA-1 in the .p12 wrapper only: Android's certificate installer
-  // still refuses OpenSSL 3's default (AES) .p12 files.
-  openssl(
-    [
-      "pkcs12",
-      "-export",
-      "-inkey",
-      f("key"),
-      "-in",
-      f("crt"),
-      "-certfile",
-      ca("ca.crt"),
-      "-name",
-      `DPM Operations (${name})`,
-      "-out",
-      f("p12"),
-      "-passout",
-      "stdin",
-      "-keypbe",
-      "PBE-SHA1-3DES",
-      "-certpbe",
-      "PBE-SHA1-3DES",
-      "-macalg",
-      "sha1",
-    ],
-    `${password}\n`,
-  );
-  const cert = new crypto.X509Certificate(fs.readFileSync(f("crt")));
-  for (const ext of ["csr", "ext", "key"]) fs.rmSync(f(ext));
-  fs.chmodSync(f("p12"), 0o600);
-  writeJson(path.join(access, "devices.json"), [
-    ...list,
-    {
-      name,
-      fingerprint256: cert.fingerprint256,
-      serial: cert.serialNumber,
-      addedAt: now(),
-    },
-  ]);
-  console.log(`Made ${f("p12")}, password ${password}`);
-  console.log(
-    `Copy it to the device, import it into the browser (Android: Settings → Security → Install a certificate → VPN & app user certificate), then delete the copies and ${f("p12")}.`,
+    `Install ${f("ca.crt")} as a trusted CA on each device, then enrol each device with enroll-code <name>.`,
   );
 }
 
@@ -268,34 +163,56 @@ function revokeDevice(root, name) {
     );
   }
   console.log(
-    `Revoked ${name}; the dashboard refuses it from its next request.`,
+    `Revoked ${name}; its passkeys are gone and its sessions end at their next request.`,
   );
 }
 
 function listDevices(root) {
   const { access } = dirs(root);
   const list = readDevices(access);
+  const keys =
+    (fs.existsSync(path.join(access, "passkeys.json")) &&
+      JSON.parse(
+        fs.readFileSync(path.join(access, "passkeys.json"), "utf8"),
+      )) ||
+    [];
   if (list.length === 0)
-    console.log("No devices yet. add-device <name> makes one.");
+    console.log("No devices yet. enroll-code <name> enrols one.");
   for (const d of list) {
+    const mine = d.revokedAt ? [] : keys.filter((k) => k.device === d.name);
+    const last = mine
+      .map((k) => k.lastUsedAt)
+      .filter(Boolean)
+      .sort()
+      .pop();
     console.log(
-      `${d.name.padEnd(16)} added ${d.addedAt}${d.revokedAt ? `  revoked ${d.revokedAt}` : ""}`,
+      `${d.name.padEnd(16)} added ${d.addedAt}${d.revokedAt ? `  revoked ${d.revokedAt}` : `  ${mine.length} passkey(s)${last ? `, last used ${last}` : ""}`}`,
     );
   }
 }
 
-function enrollCode(root) {
+function enrollCode(root, device) {
+  if (!DEVICE_NAME.test(device ?? "")) {
+    throw new Error(
+      "enroll-code <device>: a device name is lowercase letters, digits and dashes, like laptop or pixel.",
+    );
+  }
   const { access } = dirs(root);
+  // 32 letters and digits, no look-alikes: 10 of them are 50 bits.
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const code = Array.from(
-    crypto.randomBytes(8),
+    crypto.randomBytes(10),
     (b) => alphabet[b % alphabet.length],
   ).join("");
   writeJson(path.join(access, "enroll.json"), {
     hash: hashCode(code),
+    device,
+    tries: 0,
     expires: Date.now() + 15 * 60 * 1000,
   });
-  console.log(`Passkey code: ${code} (valid 15 minutes, once)`);
+  console.log(
+    `Code for ${device}: ${code} (valid 15 minutes, once). Open the dashboard on ${device} and type it under "New device".`,
+  );
 }
 
 function main(argv = process.argv.slice(2), root = dashboardDir()) {
@@ -307,14 +224,12 @@ function main(argv = process.argv.slice(2), root = dashboardDir()) {
   switch (command) {
     case "init":
       return init(root, { name: flag("--name"), ip: flag("--ip") });
-    case "add-device":
-      return addDevice(root, rest[0]);
     case "revoke-device":
       return revokeDevice(root, rest[0]);
     case "devices":
       return listDevices(root);
     case "enroll-code":
-      return enrollCode(root);
+      return enrollCode(root, rest[0]);
     default:
       console.log(USAGE);
       process.exitCode = command ? 1 : 0;

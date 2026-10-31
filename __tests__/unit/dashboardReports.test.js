@@ -305,6 +305,31 @@ describe("parseArgs", () => {
     expect(() => parseArgs(["--listen", "0.0.0.0"])).toThrow(/--lan/);
     expect(parseArgs(["--lan"]).listen).toBe("0.0.0.0");
   });
+
+  it("serves behind a proxy only for an https host name", () => {
+    const o = parseArgs(["--proxy", "--origin", "https://ops.tooling.lan/"]);
+    expect(o).toMatchObject({
+      proxy: true,
+      origin: "https://ops.tooling.lan",
+      listen: "0.0.0.0",
+    });
+    expect(() => parseArgs(["--proxy"])).toThrow(/--origin/);
+    expect(() =>
+      parseArgs(["--proxy", "--origin", "http://ops.tooling.lan"]),
+    ).toThrow(/https/);
+    expect(() =>
+      parseArgs(["--proxy", "--origin", "https://ops.tooling.lan/x"]),
+    ).toThrow(/address alone/);
+    expect(() =>
+      parseArgs(["--proxy", "--origin", "https://192.168.1.5"]),
+    ).toThrow(/host name/);
+    expect(() => parseArgs(["--origin", "https://ops.tooling.lan"])).toThrow(
+      /--proxy/,
+    );
+    expect(() =>
+      parseArgs(["--lan", "--proxy", "--origin", "https://ops.tooling.lan"]),
+    ).toThrow(/not both/);
+  });
 });
 
 describe("claudeBin", () => {

@@ -9,10 +9,12 @@
  * - On your computer (default): plain HTTP on 127.0.0.1, every API call needs
  *   the token from the printed link, so no other page in the browser can
  *   drive it.
- * - On a home server (`--lan`): HTTPS for the home network. Only browsers
- *   with one of the operator's device certificates get in (`pki.js`), and
- *   whatever deletes or blocks needs a passkey from that device
- *   (`lib/access.js`).
+ * - On a home server, for the home network: only someone who signs in with
+ *   one of the operator's passkeys gets in, and whatever deletes or blocks
+ *   needs that passkey again within ten minutes (`lib/access.js`). Either
+ *   it serves HTTPS itself (`--lan`, certificate from `pki.js init`), or it
+ *   sits behind a proxy that does (`--proxy --origin https://<name>`) and
+ *   serves plain HTTP to it. The proxy is trusted with nothing but TLS.
  */
 
 const crypto = require("crypto");
@@ -33,6 +35,7 @@ const { readBody } = require("./lib/http");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const PAGE = path.join(__dirname, "public", "index.html");
+const LOGIN_PAGE = path.join(__dirname, "public", "login.html");
 /** Rajdhani and Share Tech Mono (SIL OFL), served from here: the page loads nothing from outside. */
 const FONTS = path.join(__dirname, "public", "fonts");
 
@@ -48,11 +51,16 @@ const USAGE = `Usage: npm run ops -- [options]
                       (npm run ops:demo). Agent reviews still run for real.
 
   --lan               Serve the home network over HTTPS (on a home server):
-                      device certificates and passkeys instead of the token
-                      link. Needs \`npm run ops:pki -- init\` first.
+                      passkey sign-in instead of the token link. Needs
+                      \`npm run ops:pki -- init\` first.
   --name <host>       The server's name on the network, as in its
                       certificate (default: the name pki.js init was given).
-  --listen <address>  Default 0.0.0.0 with --lan, 127.0.0.1 without.`;
+  --proxy             Serve the home network over plain HTTP behind a proxy
+                      that does HTTPS (Traefik, nginx): passkey sign-in as
+                      with --lan. Needs --origin.
+  --origin <url>      With --proxy: the https address the devices open, for
+                      example https://ops.tooling.lan.
+  --listen <address>  Default 0.0.0.0 with --lan or --proxy, 127.0.0.1 without.`;
 
 function parseArgs(argv) {
   const opts = {
@@ -62,6 +70,8 @@ function parseArgs(argv) {
     autoReview: false,
     demo: false,
     lan: false,
+    proxy: false,
+    origin: null,
     name: null,
     listen: null,
   };
@@ -74,16 +84,42 @@ function parseArgs(argv) {
     else if (a === "--demo") opts.demo = true;
     else if (a === "--lan") opts.lan = true;
     else if (a === "--name") opts.name = argv[++i];
+    else if (a === "--proxy") opts.proxy = true;
+    else if (a === "--origin") opts.origin = argv[++i];
     else if (a === "--listen") opts.listen = argv[++i];
     else if (a === "--help" || a === "-h") opts.help = true;
     else throw new Error(`Unknown option ${a}\n\n${USAGE}`);
   }
   if (!(opts.every >= 1)) throw new Error("--every needs at least 1 minute.");
-  opts.listen ??= opts.lan ? "0.0.0.0" : "127.0.0.1";
-  // Without --lan there is only the token: plain HTTP stays on this machine.
-  if (!opts.lan && !["127.0.0.1", "::1", "localhost"].includes(opts.listen)) {
+  if (opts.lan && opts.proxy)
+    throw new Error("Use --lan or --proxy, not both.");
+  if (opts.proxy) {
+    let url;
+    try {
+      url = new URL(opts.origin ?? "");
+    } catch {
+      throw new Error("--proxy needs --origin https://<name>.");
+    }
+    if (url.protocol !== "https:" || url.pathname !== "/" || url.search) {
+      throw new Error(
+        "--origin is the https address alone, like https://ops.tooling.lan.",
+      );
+    }
+    if (/^[0-9.]+$/.test(url.hostname) || url.hostname.includes(":")) {
+      throw new Error(
+        "--origin needs a host name, not an IP address (passkeys need a name).",
+      );
+    }
+    opts.origin = url.origin;
+  } else if (opts.origin) {
+    throw new Error("--origin goes with --proxy.");
+  }
+  const home = opts.lan || opts.proxy;
+  opts.listen ??= home ? "0.0.0.0" : "127.0.0.1";
+  // Without passkey sign-in there is only the token: plain HTTP stays on this machine.
+  if (!home && !["127.0.0.1", "::1", "localhost"].includes(opts.listen)) {
     throw new Error(
-      "--listen beyond this machine needs --lan (HTTPS with device certificates).",
+      "--listen beyond this machine needs --lan or --proxy (passkey sign-in).",
     );
   }
   return opts;
@@ -137,68 +173,89 @@ const PAGE_CSP =
 
 /**
  * The HTTP side. Refuses any Host but its own (DNS rebinding) and any API call
- * without the token. On a computer only the printed link carries the token;
- * on a home server the page carries it, and only a device with a valid certificate
- * gets the page. A custom header can't be sent cross-site without CORS, which
- * this server never allows, so another site can't drive the API even through
- * a browser holding a device certificate.
+ * without the token. On a computer only the printed link carries the token.
+ * On a home server nothing but the sign-in page and its four calls answers
+ * without a session; the page carries that session's own token, and every
+ * POST must come from the dashboard's own origin. A custom header can't be
+ * sent cross-site without CORS, which this server never allows, and the
+ * session cookie is SameSite=Strict, so another site can't drive the API
+ * even through a signed-in browser.
  *
- * @param {{ port: number, token: string, hosts?: string[], tls?: object, access?: ReturnType<typeof createAccess> }} options
+ * @param {{ port: number, token?: string, hosts?: string[], tls?: object, access?: ReturnType<typeof createAccess> }} options
  */
 function createServer(dashboard, { port, token, hosts, tls, access }) {
   const page = fs.readFileSync(PAGE, "utf8");
+  const loginPage = access && fs.readFileSync(LOGIN_PAGE, "utf8");
   const allowed = new Set(hosts ?? [`127.0.0.1:${port}`, `localhost:${port}`]);
   const mode = access ? "lan" : "local";
 
   const accessApi = access && {
-    "GET /api/access": (_, { device }) => ({ mode, ...access.status(device) }),
-    "POST /api/access/register-options": ({ code }, { device }) =>
-      access.registerOptions(device, code),
-    "POST /api/access/register": (body, { device }) =>
-      access.register(device, body),
-    "POST /api/access/assert-options": (_, { device }) =>
-      access.assertOptions(device),
-    "POST /api/access/assert": (body, { device }) =>
-      access.assert(device, body),
-    "POST /api/access/disarm": (_, { device }) => {
-      access.disarm(device);
-      return { mode, ...access.status(device) };
+    "GET /api/access": (_, { session }) => ({
+      mode,
+      ...access.status(session),
+    }),
+    "POST /api/access/assert-options": (_, { session }) =>
+      access.assertOptions(session),
+    "POST /api/access/assert": (body, { session }) => ({
+      mode,
+      ...access.assert(session, body),
+    }),
+    "POST /api/access/disarm": (_, { session }) => {
+      access.disarm(session);
+      return { mode, ...access.status(session) };
     },
   };
   const api = {
     ...dashboard.api,
     ...(accessApi ?? { "GET /api/access": () => ({ mode, device: "local" }) }),
   };
+  /** What answers without a session: signing in and enrolling. */
+  const signIn = access && {
+    "POST /api/access/login-options": () => access.loginOptions(),
+    "POST /api/access/login": (body) => access.login(body),
+    "POST /api/access/enroll-options": ({ code }) => access.enrollOptions(code),
+    "POST /api/access/enroll": (body) => access.enroll(body),
+  };
+  const sessionCookie = (value, maxAge) =>
+    `${access.cookieName}=${value}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=${maxAge}`;
 
   const handle = async (req, res) => {
-    const send = (status, body, type = "application/json") => {
+    const send = (status, body, type = "application/json", headers = {}) => {
       res.writeHead(status, {
         "Content-Type": `${type}; charset=utf-8`,
         ...SECURITY_HEADERS,
-        ...(tls && { "Strict-Transport-Security": "max-age=31536000" }),
+        ...(access && { "Strict-Transport-Security": "max-age=31536000" }),
         ...(type === "text/html" && { "Content-Security-Policy": PAGE_CSP }),
+        ...headers,
       });
       res.end(type === "application/json" ? JSON.stringify(body) : body);
     };
     if (!allowed.has(req.headers.host)) {
       return send(403, { error: "Wrong host." });
     }
-    let device = "local";
-    try {
-      if (access) device = access.deviceOf(req.socket);
-    } catch (e) {
-      return send(e.status ?? 403, { error: e.message });
+    // Every POST on a home server comes from the page itself. Browsers always
+    // send Origin with a POST from fetch.
+    if (
+      access &&
+      req.method === "POST" &&
+      req.headers.origin !== access.origin
+    ) {
+      return send(403, { error: "Wrong origin." });
     }
+    const session = access ? access.sessionOf(req.headers.cookie) : null;
+    const device = access ? session?.device : "local";
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === "GET" && url.pathname === "/") {
-      // On a home server the page itself carries the token (only
-      // certificate holders get the page); otherwise the printed link does.
+      // On a home server the page carries the session's token, and without a
+      // session the sign-in page comes instead; otherwise the printed link
+      // carries the token.
+      if (access && !session) return send(200, loginPage, "text/html");
       return send(
         200,
         access
           ? page.replace(
               "<!--dpm-token-->",
-              `<meta name="dpm-token" content="${token}" />`,
+              `<meta name="dpm-token" content="${session.token}" />`,
             )
           : page,
         "text/html",
@@ -219,37 +276,48 @@ function createServer(dashboard, { port, token, hosts, tls, access }) {
       }
     }
     const key = `${req.method} ${url.pathname}`;
+    if (signIn?.[key]) {
+      try {
+        const result = signIn[key](await readBody(req));
+        if (!result.cookie) return send(200, result);
+        return send(200, { device: result.device }, "application/json", {
+          "Set-Cookie": sessionCookie(result.cookie, access.sessionMaxSeconds),
+        });
+      } catch (e) {
+        return send(e.status ?? 500, { error: e.message });
+      }
+    }
+    if (access && !session) {
+      return send(401, { error: "Sign in again." });
+    }
+    if (key === "POST /api/access/sign-out" && session) {
+      access.signOut(session);
+      return send(200, {}, "application/json", {
+        "Set-Cookie": sessionCookie("", 0),
+      });
+    }
     const handler = api[key];
     if (!handler) return send(404, { error: "Not found." });
+    const expected = access ? session.token : token;
     const given = String(req.headers["x-dpm-token"] ?? "");
     if (
-      given.length !== token.length ||
-      !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(token))
+      given.length !== expected.length ||
+      !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected))
     ) {
       return send(401, { error: "Open the link the dashboard printed." });
     }
     try {
-      if (access && NEEDS_PASSKEY.has(key)) access.requireArmed(device);
+      if (access && NEEDS_PASSKEY.has(key)) access.requireArmed(session);
       const body = req.method === "POST" ? await readBody(req) : {};
-      const armed = access ? access.isArmed(device) : true;
-      send(200, await handler(body, { device, armed }));
+      const armed = access ? access.isArmed(session) : true;
+      send(200, await handler(body, { device, armed, session }));
     } catch (e) {
       send(e.status ?? 500, { error: e.message });
     }
   };
 
   if (!tls) return http.createServer(handle);
-  return https.createServer(
-    {
-      ...tls,
-      // The handshake only lets in certificates our own CA issued; the
-      // device list then decides which of them are still welcome.
-      requestCert: true,
-      rejectUnauthorized: true,
-      minVersion: "TLSv1.2",
-    },
-    handle,
-  );
+  return https.createServer({ ...tls, minVersion: "TLSv1.2" }, handle);
 }
 
 /** The TLS files and server name `pki.js init` wrote. */
@@ -261,7 +329,6 @@ function loadTls(root) {
       tls: {
         key: read("server.key"),
         cert: read("server.crt"),
-        ca: read("ca.crt"),
       },
       name: JSON.parse(read("server.json")).name,
     };
@@ -318,12 +385,24 @@ async function main() {
     });
     server = createServer(dashboard, {
       port: opts.port,
-      token,
       hosts: [hostPort],
       tls,
       access,
     });
     link = `https://${hostPort}/`;
+  } else if (opts.proxy) {
+    const origin = new URL(opts.origin);
+    const access = createAccess({
+      dir: path.join(root, "access"),
+      rpId: origin.hostname,
+      origin: origin.origin,
+    });
+    server = createServer(dashboard, {
+      port: opts.port,
+      hosts: [origin.host],
+      access,
+    });
+    link = `${origin.origin}/ (behind the proxy; serving HTTP on port ${opts.port})`;
   } else {
     server = createServer(dashboard, { port: opts.port, token });
     link = `http://127.0.0.1:${opts.port}/#${token}`;

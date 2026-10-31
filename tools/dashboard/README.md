@@ -14,7 +14,7 @@ It runs in one of two ways:
 
 - **On your computer**, plain HTTP on 127.0.0.1, opened with the link it prints.
 - **On a home server** (any small always-on Linux machine), HTTPS for the home network, open only
-  to your own devices with a certificate from the dashboard's own CA, and a passkey before
+  to someone who signs in with one of your devices' passkeys, and that passkey again before
   anything that deletes or blocks, opens the erasure requests or changes the settings. See
   [Running it on a home server](#running-it-on-a-home-server).
 
@@ -151,9 +151,14 @@ or taken down since the last fetch is caught.
 The dashboard can run on a small always-on machine in your home network so you can use it from
 your computers and your phone. It is never meant to face the internet: don't forward a port to it.
 
+Nothing is installed on the devices. Each one is **enrolled** once: a one-time code from the
+server, typed on the dashboard's sign-in page, registers a passkey on that device (fingerprint or
+screen lock). From then on the device signs in with that passkey.
+
 ### 1. The server
 
-- A 64-bit Linux, Node 24 (LTS until April 2028) or newer, `openssl`, and git.
+- Linux with Node 24 (LTS until April 2028) or newer, and git. On a 32-bit Raspberry Pi OS, which
+  Node 24 doesn't support, Node 22 runs it too (LTS until April 2027).
 - A user of its own: `sudo adduser --disabled-password dpm-ops`, and clone the repository into its
   home. Run `npm --prefix tools/data-removal install` (the dashboard needs nothing else from npm).
 - Put `.env` (with `FIREBASE_PROJECT_ID` and `DPM_ADMIN_CREDENTIALS`) in the checkout, and the
@@ -162,35 +167,25 @@ your computers and your phone. It is never meant to face the internet: don't for
   server's data on an encrypted disk.
 - For agent reviews, install Claude Code and sign in as that user, with _Help improve Claude_ off
   (see _What the agent sees_ above).
-- Give the server a fixed address in your router. Its name on the network, for example
-  `ops-host.local`, is what the devices open; passkeys need a name, not an IP address.
+- Give the server a fixed address in your router and a name on the network, for example
+  `ops-host.local`: that is what the devices open, and passkeys need a name, not an IP address.
 
-### 2. Certificates
+### 2. HTTPS: its own, or a proxy's
 
-```bash
-npm run ops:pki -- init --name ops-host.local --ip 192.0.2.10
-npm run ops:pki -- add-device computer   # prints the .p12 file and its password
-npm run ops:pki -- add-device phone
-npm run ops:pki -- devices
-npm run ops:pki -- revoke-device phone   # a lost phone: refused from its next request
-```
+Passkeys need HTTPS. Either:
 
-`init` makes a small CA of its own (`~/.local/share/dpm/dashboard/tls/`, `DPM_DASHBOARD_DIR`
-changes the root) and the server's certificate. On each device:
-
-1. Install `tls/ca.crt` as a trusted CA. Windows: double-click it → _Install certificate_ →
-   _Local machine_ → _Trusted Root Certification Authorities_. Linux Chrome/Firefox: settings →
-   certificates → _Authorities_ → import. Android: Settings → Security → More security settings →
-   Encryption & credentials → _Install a certificate_ → _CA certificate_.
-2. Import that device's `tls/devices/<name>.p12` with its password. Windows: double-click it.
-   Android: the same menu → _VPN & app user certificate_. Firefox keeps its own store: settings →
-   certificates → _Your certificates_ → import.
-3. Delete the copies you moved over, and the `.p12` in `tls/devices/` on the server: with the
-   printed password it lets any browser in.
-
-A device certificate lasts ten years, as long as the CA (a lost device is revoked, not waited out);
-the server certificate lasts 825 days. Make new ones with `revoke-device` and `add-device`, or
-delete `tls/` and run `init` again.
+- **The dashboard serves HTTPS itself** (`--lan`). `npm run ops:pki -- init --name ops-host.local`
+  makes a small CA (`~/.local/share/dpm/dashboard/tls/`, `DPM_DASHBOARD_DIR` changes the root)
+  and a server certificate for that name, valid 825 days. Install `tls/ca.crt` as a trusted CA on
+  each device once (Windows: double-click → _Install certificate_ → _Local machine_ → _Trusted Root
+  Certification Authorities_; Android: Settings → Security → More security settings → Encryption &
+  credentials → _Install a certificate_ → _CA certificate_). Or put a certificate for the name
+  from a CA the devices already trust into `tls/server.crt` and `tls/server.key`, and skip that.
+- **A proxy in front does HTTPS** (`--proxy --origin https://ops.home.lan`): Traefik, nginx or
+  Caddy, with a certificate the devices trust, forwarding to the dashboard's plain HTTP port.
+  The proxy is trusted with nothing but TLS: the dashboard reads no `X-Forwarded-*` header, so a
+  request that reaches its port some other way still has to sign in. It answers only to the
+  origin's host name, as the browser sends it.
 
 ### 3. Run it as a service
 
@@ -216,27 +211,48 @@ ReadWritePaths=/home/dpm-ops
 WantedBy=multi-user.target
 ```
 
-`sudo systemctl enable --now dpm-ops`, then open `https://ops-host.local:4777/` on a device.
-The browser asks which certificate to show; pick the DPM Operations one. `journalctl -u dpm-ops`
-shows its output. To update: `git pull` as `dpm-ops`, then `sudo systemctl restart dpm-ops`.
+(Behind a proxy: `--proxy --origin https://ops.home.lan --listen 127.0.0.1` instead of `--lan`,
+if the proxy runs on the same machine.) `sudo systemctl enable --now dpm-ops`, and
+`journalctl -u dpm-ops` shows its output. To update: `git pull` as `dpm-ops`, then
+`sudo systemctl restart dpm-ops`.
 
-### 4. Passkeys
+### 4. Devices
 
-On each device, open the _Access_ tab. Run `npm run ops:pki -- enroll-code` on the server, type the
-code (valid 15 minutes, once) and press _Register passkey_; the device asks for your fingerprint
-or screen lock. From then on, the red alert screen asks for it before a removal or block, and the
-erasure requests and the Reports tab's settings open only with it. A
-passkey belongs to the device certificate it was registered with; `revoke-device` removes both.
+```bash
+npm run ops:pki -- enroll-code laptop   # a one-time code for the device called laptop
+npm run ops:pki -- devices              # devices, their passkeys, last use
+npm run ops:pki -- revoke-device phone  # a lost phone: passkeys gone, signed out at its next request
+```
+
+Open the dashboard on that device, type the code under _New device_ (valid 15 minutes, once; five
+wrong tries void it) and confirm with the fingerprint or screen lock. The device is then signed
+in. Device names are lowercase letters, digits and `-`, up to 32 characters. To add a passkey to a
+device again (a new phone with the same name), make it another code.
+
+A session lasts until 12 hours without use or 7 days in all, whichever comes first, or until a
+restart; then the device signs in again with its passkey. The red alert screen asks for the
+passkey again before a removal or block, and the erasure requests and the Reports tab's settings
+open only with it, once ten minutes have passed since it was last used.
+
+A passkey synced by the phone's password manager (Google Password Manager, iCloud Keychain) also
+works on that account's other devices: the account and each device's screen lock are then what
+lets one in.
 
 ### How it keeps others out
 
-- The TLS handshake refuses any browser without a certificate from the dashboard's CA; the server
-  then checks the certificate is on the device list (`access/devices.json`) and not revoked.
-- The page carries a token that every API call must send back in a header. Another website can't
-  read the page or send that header (the server allows no cross-site requests), so it can't drive
-  the dashboard through a browser that holds a device certificate.
+- Without a session, the server answers only the sign-in page, its fonts, and the four sign-in
+  and enrolment calls; everything else is refused. After ten failed sign-ins or enrolments in ten
+  minutes (from anywhere: behind a proxy there is no client address to go by), those calls pause
+  for ten minutes.
+- A session is a random cookie (`__Host-dpm-session`: `Secure`, `HttpOnly`, `SameSite=Strict`)
+  the page's scripts can't read. The server keeps only its hash, in memory.
+- The page carries that session's own token, which every API call must send back in a header,
+  and every POST must come with the dashboard's own `Origin`. Another website can't read the page
+  or send that header (the server allows no cross-site requests), so it can't drive the dashboard
+  through a signed-in browser.
 - The server answers only to its own name (no DNS rebinding) and sends a strict CSP.
-- Passkeys are checked on the server with Node's crypto (`lib/access.js`), bound to its name.
+- Passkeys are checked on the server with Node's crypto (`lib/access.js`), bound to its name and
+  origin, with user verification required.
 
 ## Where its notes live
 
@@ -253,7 +269,7 @@ In `~/.local/share/dpm/dashboard/` (`DPM_DASHBOARD_DIR` changes it), readable on
 
 - `<project>/cases/`: one JSON file per open erasure request, deleted when it is closed.
 - `<project>/actions.jsonl`: the action log, two years.
-- `tls/`, `access/`: on a home server, the CA, certificates, device list and passkeys.
+- `tls/`, `access/`: on a home server, the CA and server certificate (`--lan`), the device list and passkeys.
 
 ## Code
 
@@ -267,9 +283,10 @@ In `~/.local/share/dpm/dashboard/` (`DPM_DASHBOARD_DIR` changes it), readable on
 - `lib/store.js`: Firestore through `tools/data-removal` (same plans as `npm run data`), or the
   demo data.
 - `lib/cases.js`, `lib/actionLog.js`, `lib/reviews.js`: the files above.
-- `lib/access.js`: device list, passkeys and the ten-minute arming.
+- `lib/access.js`: devices, passkeys, sign-in, sessions and the ten-minute arming.
+- `public/login.html`: the sign-in and enrolment page on a home server.
 - `lib/agent.js`: the `claude -p` command line and the one-at-a-time queue.
-- `pki.js`: the CA, certificates and passkey codes (`npm run ops:pki`).
+- `pki.js`: enrolment codes, the device list and revocation, and for `--lan` the CA and server certificate (`npm run ops:pki`).
 
 Unit-tested in `__tests__/unit/dashboardReports.test.js` and `dashboardData.test.js`, against
-`demoStore`; the second also issues certificates with `pki.js` and connects with them.
+`demoStore`; the second also enrols a device and signs in over HTTP, and serves HTTPS with a `pki.js` certificate.

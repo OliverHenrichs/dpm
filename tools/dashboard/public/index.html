@@ -873,6 +873,7 @@
     <div class="toast" id="toast" role="status" hidden></div>
 
     <script>
+      const homeServer = !!document.querySelector('meta[name="dpm-token"]');
       const token =
         document.querySelector('meta[name="dpm-token"]')?.content ||
         location.hash.slice(1);
@@ -978,6 +979,12 @@
           body: body ? JSON.stringify(body) : undefined,
         });
         const json = await res.json().catch(() => ({}));
+        // On a home server a 401 means the session ended (timed out, signed
+        // out, device revoked): reloading shows the sign-in page.
+        if (res.status === 401 && homeServer) {
+          location.reload();
+          await new Promise(() => {});
+        }
         if (!res.ok)
           throw Object.assign(new Error(json.error || res.statusText), {
             status: res.status,
@@ -1205,34 +1212,6 @@
         renderChrome();
       }
 
-      async function registerPasskey(code) {
-        const o = await call("POST", "/api/access/register-options", { code });
-        const cred = await navigator.credentials.create({
-          publicKey: {
-            challenge: toBuf(o.challenge),
-            rp: o.rp,
-            user: { ...o.user, id: toBuf(o.user.id) },
-            pubKeyCredParams: o.pubKeyCredParams,
-            excludeCredentials: o.excludeCredentials.map((c) => ({
-              ...c,
-              id: toBuf(c.id),
-            })),
-            authenticatorSelection: {
-              residentKey: "preferred",
-              userVerification: "required",
-            },
-            attestation: "none",
-            timeout: 60000,
-          },
-        });
-        access = await call("POST", "/api/access/register", {
-          id: cred.id,
-          publicKey: toB64u(cred.response.getPublicKey()),
-          alg: cred.response.getPublicKeyAlgorithm(),
-          clientDataJSON: toB64u(cred.response.clientDataJSON),
-        });
-      }
-
       /* ---------- chrome ---------- */
       function stardate() {
         const d = new Date();
@@ -1265,7 +1244,7 @@
             "Uplink ",
             access.mode === "lan" ? "lan-only" : "loopback",
             h("br"),
-            "Cert ",
+            "Device ",
             access.mode === "lan" ? access.device : "none",
           );
         const open = state
@@ -3401,18 +3380,12 @@
               h(
                 "p",
                 { className: "muted small" },
-                "On a home server (npm run ops -- --lan) only your devices with a dashboard certificate get in, and every removal, block or erasure request needs that device's passkey. See tools/dashboard/README.md.",
+                "On a home server (npm run ops -- --lan, or --proxy behind a proxy) only your devices sign in, each with its passkey, and every removal, block or erasure request needs that passkey again. See tools/dashboard/README.md.",
               ),
             ),
           );
           return;
         }
-        const code = h("input", {
-          type: "text",
-          id: "enroll-code",
-          placeholder: "Code from npm run ops:pki -- enroll-code",
-          autocomplete: "off",
-        });
         box.replaceChildren(
           panel(
             "Shields // lan-only",
@@ -3462,31 +3435,26 @@
                   "Disarm",
                 ),
             ),
-            h("h3", {}, "Register a passkey for this device"),
-            h(
-              "p",
-              { className: "small muted" },
-              "Run npm run ops:pki -- enroll-code on the server, type the code here, then confirm with your fingerprint or screen lock.",
-            ),
             h(
               "div",
               { className: "row" },
-              h("div", { className: "grow" }, code),
               h(
                 "button",
                 {
                   type: "button",
-                  className: "btn primary",
+                  className: "btn quiet",
                   onclick: act(async () => {
-                    await registerPasskey(code.value.trim());
-                    sound.confirm();
-                    say("Passkey registered.");
-                    renderChrome();
-                    renderAccess();
+                    await call("POST", "/api/access/sign-out");
+                    location.reload();
                   }),
                 },
-                "Register passkey",
+                "Sign out",
               ),
+            ),
+            h(
+              "p",
+              { className: "small muted" },
+              "Another device: run npm run ops:pki -- enroll-code <name> on the server, open the dashboard there and type the code under New device. A lost device: npm run ops:pki -- revoke-device <name>.",
             ),
           ),
         );

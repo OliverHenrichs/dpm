@@ -380,45 +380,31 @@ describe("actionLog", () => {
 });
 
 describe("access", () => {
-  const rpId = "ops-host.test";
-  const origin = "https://ops-host.test:4777";
+  const rpId = "ops.test";
+  const origin = "https://ops.test";
   let dir;
   let now;
   let access;
   const b64u = (b) => Buffer.from(b).toString("base64url");
   const sha = (d) => crypto.createHash("sha256").update(d).digest();
+  const code = (device, c = "ABCD2345XY", tries = 0) =>
+    fs.writeFileSync(
+      path.join(dir, "enroll.json"),
+      JSON.stringify({
+        hash: sha(c).toString("hex"),
+        device,
+        tries,
+        expires: now + 60_000,
+      }),
+    );
+  const cookieOf = ({ cookie }) => `${access.cookieName}=${cookie}`;
 
   beforeEach(() => {
     dir = tmp();
     now = 1_000_000;
-    fs.writeFileSync(
-      path.join(dir, "devices.json"),
-      JSON.stringify([
-        { name: "phone", fingerprint256: "AA" },
-        { name: "old", fingerprint256: "BB", revokedAt: "2026-01-01" },
-      ]),
-    );
-    fs.writeFileSync(
-      path.join(dir, "enroll.json"),
-      JSON.stringify({
-        hash: sha("ABCD2345").toString("hex"),
-        expires: now + 60_000,
-      }),
-    );
     access = createAccess({ dir, rpId, origin, clock: () => now });
   });
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
-
-  const socket = (fp, authorized = true) => ({
-    authorized,
-    getPeerCertificate: () => ({ fingerprint256: fp }),
-  });
-
-  it("lets in listed devices only", () => {
-    expect(access.deviceOf(socket("AA"))).toBe("phone");
-    expect(() => access.deviceOf(socket("BB"))).toThrow(/revoked/);
-    expect(() => access.deviceOf(socket("AA", false))).toThrow(/certificate/);
-  });
 
   /** A software authenticator: one EC key, signing like a phone would. */
   function authenticator() {
@@ -430,6 +416,7 @@ describe("access", () => {
     const clientData = (type, challenge, o = origin) =>
       Buffer.from(JSON.stringify({ type, challenge, origin: o }));
     return {
+      id,
       register(opts) {
         return {
           id,
@@ -460,91 +447,283 @@ describe("access", () => {
     };
   }
 
-  it("registers a passkey with a one-time code and arms the device for ten minutes", () => {
-    expect(() => access.registerOptions("phone", "WRONG")).toThrow(/code/);
+  /** Enrols `device` with a fresh code; returns its authenticator and first session. */
+  function enrol(device) {
+    code(device);
     const key = authenticator();
-    access.register(
-      "phone",
-      key.register(access.registerOptions("phone", "abcd2345")),
+    const result = access.enroll(
+      key.register(access.enrollOptions("abcd2345xy")),
     );
-    // The code is used up.
-    expect(() => access.registerOptions("phone", "ABCD2345")).toThrow(/code/);
-    expect(() => access.requireArmed("phone")).toThrow(/passkey/);
-    const status = access.assert(
-      "phone",
-      key.sign(access.assertOptions("phone")),
-    );
-    expect(status).toMatchObject({ device: "phone", passkeys: 1 });
-    expect(status.armedUntil).toBeTruthy();
-    access.requireArmed("phone");
-    now += 11 * 60 * 1000;
-    expect(() => access.requireArmed("phone")).toThrow(/passkey/);
+    return { key, result, session: access.sessionOf(cookieOf(result)) };
+  }
+
+  it("enrols a device with a one-time code and signs it in, armed", () => {
+    code("phone");
+    expect(() => access.enrollOptions("WRONG")).toThrow(/Wrong code/);
+    const { result, session } = enrol("phone");
+    expect(result.device).toBe("phone");
+    expect(session.device).toBe("phone");
+    expect(access.isArmed(session)).toBe(true);
+    // The code is used up, and the device is listed.
+    expect(() => access.enrollOptions("ABCD2345XY")).toThrow(/No valid code/);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(dir, "devices.json"), "utf8")),
+    ).toEqual([expect.objectContaining({ name: "phone" })]);
   });
 
-  it("arms only from the passkey, not from each action", () => {
-    const key = authenticator();
-    access.register(
-      "phone",
-      key.register(access.registerOptions("phone", "ABCD2345")),
+  it("voids a code after five wrong tries", () => {
+    code("phone", "ABCD2345XY", 4);
+    expect(() => access.enrollOptions("WRONG")).toThrow(/Wrong code/);
+    expect(() => access.enrollOptions("ABCD2345XY")).toThrow(/No valid code/);
+  });
+
+  it("signs in with a discoverable passkey and ends sessions that idle, age or are revoked", () => {
+    const { key } = enrol("phone");
+    const opts = access.loginOptions();
+    expect(opts.allowCredentials).toEqual([]);
+    const login = access.login(key.sign(opts));
+    expect(login.device).toBe("phone");
+    const cookie = cookieOf(login);
+    expect(access.sessionOf(cookie)).not.toBeNull();
+    expect(access.sessionOf(`${access.cookieName}=forged`)).toBeNull();
+    expect(access.sessionOf(undefined)).toBeNull();
+    // Idle for more than twelve hours.
+    now += 13 * 60 * 60 * 1000;
+    expect(access.sessionOf(cookie)).toBeNull();
+    // Older than seven days, however busy.
+    const busy = cookieOf(access.login(key.sign(access.loginOptions())));
+    for (let i = 0; i < 16; i++) {
+      now += 11 * 60 * 60 * 1000;
+      access.sessionOf(busy);
+    }
+    expect(access.sessionOf(busy)).toBeNull();
+    // Revoked (pki.js marks it): the session ends and signing in fails.
+    const last = cookieOf(access.login(key.sign(access.loginOptions())));
+    const { main } = require("@/tools/dashboard/pki");
+    const out = jest.spyOn(console, "log").mockImplementation(() => {});
+    main(["revoke-device", "phone"], path.dirname(dir) && dirRoot(dir));
+    out.mockRestore();
+    expect(access.sessionOf(last)).toBeNull();
+    expect(() => access.login(key.sign(access.loginOptions()))).toThrow(
+      /Unknown passkey/,
     );
-    access.assert("phone", key.sign(access.assertOptions("phone")));
-    now += 6 * 60 * 1000;
-    access.requireArmed("phone");
-    now += 5 * 60 * 1000;
-    expect(() => access.requireArmed("phone")).toThrow(/passkey/);
+  });
+
+  it("asks for the passkey again ten minutes after its last use", () => {
+    const { key, session } = enrol("phone");
+    access.requireArmed(session);
+    now += 11 * 60 * 1000;
+    expect(() => access.requireArmed(session)).toThrow(/passkey/);
+    const status = access.assert(
+      session,
+      key.sign(access.assertOptions(session)),
+    );
+    expect(status).toMatchObject({ device: "phone", passkeys: 1 });
+    access.requireArmed(session);
+    access.disarm(session);
+    expect(() => access.requireArmed(session)).toThrow(/passkey/);
   });
 
   it("refuses another device's passkey id", () => {
-    const key = authenticator();
-    const first = key.register(access.registerOptions("phone", "ABCD2345"));
-    access.register("phone", first);
-    fs.writeFileSync(
-      path.join(dir, "enroll.json"),
-      JSON.stringify({
-        hash: sha("ABCD2345").toString("hex"),
-        expires: now + 60_000,
-      }),
-    );
-    const again = key.register(access.registerOptions("computer", "ABCD2345"));
+    const { key } = enrol("phone");
+    code("computer");
+    const again = key.register(access.enrollOptions("ABCD2345XY"));
+    expect(() => access.enroll(again)).toThrow(/Another device/);
+    const other = enrol("computer").session;
     expect(() =>
-      access.register("computer", { ...again, id: first.id }),
-    ).toThrow(/Another device/);
-    expect(access.status("phone").passkeys).toBe(1);
+      access.assert(other, key.sign(access.assertOptions(other))),
+    ).toThrow(/Unknown passkey/);
   });
 
   it("refuses a wrong origin, site, missing verification or replayed challenge", () => {
-    const key = authenticator();
-    access.register(
-      "phone",
-      key.register(access.registerOptions("phone", "ABCD2345")),
-    );
+    const { key } = enrol("phone");
     expect(() =>
-      access.assert(
-        "phone",
-        key.sign(access.assertOptions("phone"), { o: "https://evil.test" }),
-      ),
+      access.login(key.sign(access.loginOptions(), { o: "https://evil.test" })),
     ).toThrow(/Open the dashboard/);
     expect(() =>
-      access.assert(
-        "phone",
-        key.sign(access.assertOptions("phone"), { rp: "evil.test" }),
-      ),
+      access.login(key.sign(access.loginOptions(), { rp: "evil.test" })),
     ).toThrow(/another site/);
     expect(() =>
-      access.assert(
-        "phone",
-        key.sign(access.assertOptions("phone"), { flags: 0x01 }),
-      ),
+      access.login(key.sign(access.loginOptions(), { flags: 0x01 })),
     ).toThrow(/verify/);
-    const opts = access.assertOptions("phone");
-    access.assert("phone", key.sign(opts));
-    expect(() => access.assert("phone", key.sign(opts))).toThrow(
-      /doesn't match/,
+    const opts = access.loginOptions();
+    access.login(key.sign(opts));
+    expect(() => access.login(key.sign(opts))).toThrow(/doesn't match/);
+  });
+
+  it("pauses sign-in after ten failures in ten minutes", () => {
+    for (let i = 0; i < 10; i++) {
+      expect(() => access.enrollOptions("nope")).toThrow(/code/);
+    }
+    expect(() => access.loginOptions()).toThrow(/Too many/);
+    now += 11 * 60 * 1000;
+    expect(access.loginOptions().challenge).toBeTruthy();
+  });
+});
+
+/** createAccess is given <root>/access; pki.js takes <root>. */
+function dirRoot(accessDir) {
+  const root = tmp();
+  fs.rmSync(path.join(root), { recursive: true, force: true });
+  fs.mkdirSync(root);
+  fs.symlinkSync(accessDir, path.join(root, "access"));
+  return root;
+}
+
+describe("home server", () => {
+  const http = require("http");
+  const { main } = require("@/tools/dashboard/pki");
+  const { createServer } = require("@/tools/dashboard/server");
+  const ORIGIN = "https://ops.test";
+  let root;
+  let server;
+  let port;
+  let now;
+  let access;
+
+  beforeEach(async () => {
+    root = tmp();
+    now = 1_000_000;
+    access = createAccess({
+      dir: path.join(root, "access"),
+      rpId: "ops.test",
+      origin: ORIGIN,
+      clock: () => now,
+    });
+    server = createServer(
+      {
+        api: {
+          "GET /api/ping": (_, { device }) => ({ device }),
+          "POST /api/settings": () => ({ ok: true }),
+        },
+      },
+      { port: 0, hosts: ["ops.test"], access },
     );
-    // Another device can't use this device's passkey.
-    expect(() =>
-      access.assert("computer", key.sign(access.assertOptions("phone"))),
-    ).toThrow(/Unknown passkey/);
+    await new Promise((r) => server.listen(0, "127.0.0.1", r));
+    port = server.address().port;
+  });
+  afterEach(async () => {
+    await new Promise((r) => server.close(r));
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  const req = (method, p, { headers = {}, body } = {}) =>
+    new Promise((resolve) => {
+      const r = http.request(
+        {
+          host: "127.0.0.1",
+          port,
+          method,
+          path: p,
+          headers: {
+            Host: "ops.test",
+            ...(method === "POST" && {
+              Origin: ORIGIN,
+              "Content-Type": "application/json",
+            }),
+            ...headers,
+          },
+        },
+        (res) => {
+          let text = "";
+          res.on("data", (d) => (text += d));
+          res.on("end", () =>
+            resolve({ status: res.statusCode, headers: res.headers, text }),
+          );
+        },
+      );
+      r.end(body ? JSON.stringify(body) : undefined);
+    });
+
+  it("shows only the sign-in page until a passkey signs in, then the dashboard with that session's token", async () => {
+    const page = await req("GET", "/");
+    expect(page.status).toBe(200);
+    expect(page.text).toMatch(/Sign in with passkey/);
+    expect(page.text).not.toMatch(/dpm-token/);
+    expect((await req("GET", "/api/ping")).status).toBe(401);
+    expect(
+      (await req("GET", "/api/ping", { headers: { Host: "evil.test" } }))
+        .status,
+    ).toBe(403);
+    expect(
+      (
+        await req("POST", "/api/access/login-options", {
+          headers: { Origin: "https://evil.test" },
+        })
+      ).status,
+    ).toBe(403);
+
+    // Enrol "phone" with a code from pki.js.
+    const out = jest.spyOn(console, "log").mockImplementation(() => {});
+    expect(() => main(["enroll-code", "Bad Name"], root)).toThrow(
+      /device name/,
+    );
+    main(["enroll-code", "phone"], root);
+    const c = out.mock.calls
+      .flat()
+      .join("\n")
+      .match(/Code for phone: (\S+)/)[1];
+    out.mockRestore();
+    const opts = JSON.parse(
+      (await req("POST", "/api/access/enroll-options", { body: { code: c } }))
+        .text,
+    );
+    expect(opts.user.name).toBe("phone");
+    const { publicKey } = crypto.generateKeyPairSync("ec", {
+      namedCurve: "P-256",
+    });
+    const b64u = (b) => Buffer.from(b).toString("base64url");
+    const enrolled = await req("POST", "/api/access/enroll", {
+      body: {
+        id: "key1",
+        publicKey: b64u(publicKey.export({ format: "der", type: "spki" })),
+        alg: -7,
+        clientDataJSON: b64u(
+          JSON.stringify({
+            type: "webauthn.create",
+            challenge: opts.challenge,
+            origin: ORIGIN,
+          }),
+        ),
+      },
+    });
+    expect(enrolled.status).toBe(200);
+    const setCookie = enrolled.headers["set-cookie"][0];
+    expect(setCookie).toMatch(
+      /^__Host-dpm-session=[\w-]+; Path=\/; Secure; HttpOnly; SameSite=Strict; Max-Age=604800$/,
+    );
+    const cookie = setCookie.split(";")[0];
+
+    const signedIn = await req("GET", "/", { headers: { Cookie: cookie } });
+    const token = signedIn.text.match(/name="dpm-token" content="(\w+)"/)[1];
+    const auth = { Cookie: cookie, "X-Dpm-Token": token };
+    expect(
+      (await req("GET", "/api/ping", { headers: { Cookie: cookie } })).status,
+    ).toBe(401);
+    expect(
+      JSON.parse((await req("GET", "/api/ping", { headers: auth })).text),
+    ).toEqual({ device: "phone" });
+    expect(
+      (await req("POST", "/api/settings", { headers: auth, body: {} })).status,
+    ).toBe(200);
+    // Ten minutes on, settings need the passkey again.
+    now += 11 * 60 * 1000;
+    expect(
+      (await req("POST", "/api/settings", { headers: auth, body: {} })).status,
+    ).toBe(428);
+    expect(
+      JSON.parse((await req("GET", "/api/access", { headers: auth })).text),
+    ).toMatchObject({
+      mode: "lan",
+      device: "phone",
+      passkeys: 1,
+      armedUntil: null,
+    });
+
+    // Signing out ends the session.
+    const out2 = await req("POST", "/api/access/sign-out", { headers: auth });
+    expect(out2.headers["set-cookie"][0]).toMatch(/Max-Age=0/);
+    expect((await req("GET", "/api/ping", { headers: auth })).status).toBe(401);
   });
 });
 
@@ -558,19 +737,17 @@ const hasOpenssl = (() => {
 })();
 
 (hasOpenssl ? describe : describe.skip)("pki", () => {
-  it("makes a CA, a server certificate and device certificates the server lets in", async () => {
+  it("makes a server certificate for --lan that serves HTTPS", async () => {
     const https = require("https");
     const { main } = require("@/tools/dashboard/pki");
     const { createServer } = require("@/tools/dashboard/server");
     const root = tmp();
     const out = jest.spyOn(console, "log").mockImplementation(() => {});
     main(["init", "--name", "ops-host.test", "--ip", "127.0.0.1"], root);
-    main(["add-device", "phone"], root);
-    const password = out.mock.calls
-      .flat()
-      .join("\n")
-      .match(/password (\S+)/)[1];
     out.mockRestore();
+    expect(() => main(["init", "--name", "ops-host.test"], root)).toThrow(
+      /already has a CA/,
+    );
     const tls = (f) => fs.readFileSync(path.join(root, "tls", f));
     const access = createAccess({
       dir: path.join(root, "access"),
@@ -578,49 +755,37 @@ const hasOpenssl = (() => {
       origin: "https://ops-host.test",
     });
     const server = createServer(
-      { api: { "GET /api/ping": (_, { device }) => ({ device }) } },
+      { api: {} },
       {
         port: 0,
-        token: "t".repeat(48),
         hosts: ["ops-host.test"],
-        tls: {
-          key: tls("server.key"),
-          cert: tls("server.crt"),
-          ca: tls("ca.crt"),
-        },
+        tls: { key: tls("server.key"), cert: tls("server.crt") },
         access,
       },
     );
     await new Promise((r) => server.listen(0, "127.0.0.1", r));
     const { port } = server.address();
-    const get = (withCert) =>
-      new Promise((resolve) => {
-        https
-          .get(
-            {
-              host: "127.0.0.1",
-              port,
-              servername: "ops-host.test",
-              path: "/api/ping",
-              ca: tls("ca.crt"),
-              headers: { Host: "ops-host.test", "X-Dpm-Token": "t".repeat(48) },
-              ...(withCert && {
-                pfx: tls("devices/phone.p12"),
-                passphrase: password,
-              }),
-            },
-            (res) => {
-              let body = "";
-              res.on("data", (d) => (body += d));
-              res.on("end", () => resolve([res.statusCode, body]));
-            },
-          )
-          .on("error", (e) => resolve(["error", e.code]));
-      });
-    expect(await get(true)).toEqual([200, JSON.stringify({ device: "phone" })]);
-    expect((await get(false))[0]).toBe("error");
-    main(["revoke-device", "phone"], root);
-    expect((await get(true))[0]).toBe(403);
+    const [status, body] = await new Promise((resolve) => {
+      https
+        .get(
+          {
+            host: "127.0.0.1",
+            port,
+            servername: "ops-host.test",
+            path: "/",
+            ca: tls("ca.crt"),
+            headers: { Host: "ops-host.test" },
+          },
+          (res) => {
+            let text = "";
+            res.on("data", (d) => (text += d));
+            res.on("end", () => resolve([res.statusCode, text]));
+          },
+        )
+        .on("error", (e) => resolve(["error", e.code]));
+    });
+    expect(status).toBe(200);
+    expect(body).toMatch(/Sign in with passkey/);
     await new Promise((r) => server.close(r));
     fs.rmSync(root, { recursive: true, force: true });
   });
