@@ -1,5 +1,4 @@
 import React from "react";
-import { Switch } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
@@ -222,7 +221,8 @@ function renderForm(existing?: IModifier) {
 
 const nameField = () => screen.getByPlaceholderText("Modifier Name");
 const saveModifier = () => fireEvent.press(screen.getByText("Save"));
-const universalSwitch = () => screen.UNSAFE_getByType(Switch);
+const universalSwitch = () =>
+  screen.getByRole("switch", { name: "Universal (applies to all figures)" });
 
 describe("EditModifierForm", () => {
   describe("creating", () => {
@@ -319,7 +319,7 @@ describe("EditModifierForm", () => {
     it("offers them once it is made universal", () => {
       renderForm(modifier("slow", { universal: false }));
 
-      fireEvent(universalSwitch(), "valueChange", true);
+      fireEvent.press(universalSwitch());
 
       expect(screen.getByLabelText("Add")).toBeOnTheScreen();
     });
@@ -383,7 +383,7 @@ describe("EditModifierForm", () => {
         }),
       );
 
-      fireEvent(universalSwitch(), "valueChange", false);
+      fireEvent.press(universalSwitch());
       saveModifier();
 
       expect(saved().universal).toBe(false);
