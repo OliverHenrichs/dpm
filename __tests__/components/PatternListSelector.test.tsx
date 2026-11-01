@@ -316,6 +316,7 @@ describe("PatternListSelector", () => {
 
       fireEvent(screen.getByText("Salsa"), "longPress");
       fireEvent.press(screen.getByText("Edit Figure List"));
+      fireEvent.press(await screen.findByText("Levels"));
       await screen.findAllByText("Used by 1 figure");
       fireEvent.press(screen.getByText("Numbers 1, 2, 3 …"));
       fireEvent.press(screen.getByLabelText("Remove level: 1"));
@@ -353,6 +354,7 @@ describe("PatternListSelector", () => {
 
       fireEvent(screen.getByText("Salsa"), "longPress");
       fireEvent.press(screen.getByText("Edit Figure List"));
+      fireEvent.press(await screen.findByText("Figure Types"));
       await screen.findAllByText("Used by 1 figure");
       fireEvent.press(screen.getByLabelText("Remove type: push"));
       fireEvent.press(screen.getByText("Move and remove"));
