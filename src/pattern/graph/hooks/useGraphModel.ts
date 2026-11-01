@@ -15,9 +15,10 @@ import {
 export function useGraphModel(
   patterns: IPattern[],
   patternTypes: PatternType[],
+  levelIds?: readonly string[],
 ): GraphModel {
   return useMemo(
-    () => buildGraphModel(patterns, patternTypes),
-    [patterns, patternTypes],
+    () => buildGraphModel(patterns, patternTypes, levelIds),
+    [patterns, patternTypes, levelIds],
   );
 }

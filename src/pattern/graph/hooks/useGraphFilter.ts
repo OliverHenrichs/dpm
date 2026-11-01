@@ -43,6 +43,8 @@ export function useGraphFilter(
   patterns: IPattern[],
   patternTypes: PatternType[],
   activeListId: string | undefined,
+  /** The list's levels in their order (`resolveLevelIds`), for the nodes' shading. */
+  levelIds?: readonly string[],
 ): GraphFilterState {
   const [filter, setFilter] = useState<PatternFilter>(EMPTY_FILTER);
   const [chainMode, setChainMode] = useState<ChainMode>(DEFAULT_CHAIN_MODE);
@@ -59,7 +61,7 @@ export function useGraphFilter(
     setFilter(EMPTY_FILTER);
   }
 
-  const fullModel = useGraphModel(patterns, patternTypes);
+  const fullModel = useGraphModel(patterns, patternTypes, levelIds);
   const { filteredPatterns, hasActiveFilter } = usePatternFilter(
     patterns,
     filter,

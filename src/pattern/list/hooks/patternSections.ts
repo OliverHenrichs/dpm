@@ -1,6 +1,6 @@
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import { PatternLevel } from "@/src/pattern/types/PatternLevel";
+import { BUILT_IN_LEVEL_IDS } from "@/src/pattern/types/PatternLevel";
 import type { SortConfig, SortField } from "@/src/pattern/list/SortBottomSheet";
 
 /**
@@ -10,13 +10,11 @@ import type { SortConfig, SortField } from "@/src/pattern/list/SortBottomSheet";
  * added under a header per day; a sort by name stays one list, since a header per letter says
  * nothing. The date sort orders by id, which grows as patterns are added, so its days come in
  * order; patterns from before dates were kept (`IPattern.createdAt`) sit under their own header,
- * and a list with no dates at all stays one list. Types
- * follow the order the list gives them and levels run beginner to advanced, rather than by
- * internal id or by the spelling of the level. A pattern without a value (no level, a type the
- * list no longer has) always goes last, in a section of its own, whichever way the sort runs.
+ * and a list with no dates at all stays one list. Types and levels follow the order the list
+ * gives them (`IPatternList.levels`, easiest first), rather than by internal id or by spelling.
+ * A pattern without a value (no level, a level or type the list no longer has) always goes last,
+ * in a section of its own, whichever way the sort runs.
  */
-
-const LEVEL_ORDER: string[] = Object.values(PatternLevel);
 
 /** The fields whose sort splits the list into sections. */
 export function isSectionedSort(field: SortField): boolean {
@@ -29,24 +27,22 @@ export function isSectionedSort(field: SortField): boolean {
 }
 
 /**
- * Where a pattern ranks on a field, or `undefined` when it has no value there. Values the app
- * does not know (an older list's level, a deleted type) rank after the known ones, by spelling.
+ * Where a pattern ranks on a field, or `undefined` when it has no value there. A value the list
+ * does not have (a level from an older import, a deleted type) counts as none.
  */
 function rank(
   pattern: IPattern,
   field: SortField,
   typeOrder: Map<string, number>,
+  levelOrder: Map<string, number>,
 ): number | string | undefined {
   switch (field) {
     case "name":
       return pattern.name.toLowerCase();
     case "typeId":
       return typeOrder.get(pattern.typeId);
-    case "level": {
-      if (!pattern.level) return undefined;
-      const index = LEVEL_ORDER.indexOf(pattern.level);
-      return index >= 0 ? index : LEVEL_ORDER.length;
-    }
+    case "level":
+      return pattern.level ? levelOrder.get(pattern.level) : undefined;
     case "counts":
       return typeof pattern.counts === "number" ? pattern.counts : undefined;
     case "id":
@@ -63,25 +59,24 @@ export function sortPatterns(
   patterns: IPattern[],
   { field, order }: SortConfig,
   patternTypes: PatternType[] = [],
+  /** The list's levels in their order (`resolveLevelIds`). */
+  levelIds: readonly string[] = BUILT_IN_LEVEL_IDS,
 ): IPattern[] {
   const typeOrder = new Map(patternTypes.map((type, i) => [type.id, i]));
+  const levelOrder = new Map(levelIds.map((id, i) => [id, i]));
   const direction = order === "asc" ? 1 : -1;
   const byName = (a: IPattern, b: IPattern) =>
     a.name.toLowerCase().localeCompare(b.name.toLowerCase());
 
   return [...patterns].sort((a, b) => {
-    const ra = rank(a, field, typeOrder);
-    const rb = rank(b, field, typeOrder);
+    const ra = rank(a, field, typeOrder, levelOrder);
+    const rb = rank(b, field, typeOrder, levelOrder);
     if (ra === undefined || rb === undefined) {
       if (ra !== rb) return ra === undefined ? 1 : -1;
       return byName(a, b);
     }
     const primary = compareValues(ra, rb) * direction;
     if (primary !== 0) return primary;
-    // An unknown level ranks with the other unknowns; its spelling orders it among them.
-    if (field === "level" && a.level !== b.level) {
-      return compareValues(a.level ?? "", b.level ?? "") * direction;
-    }
     // Inside a section, patterns read alphabetically whichever way the sections run.
     return field === "name" ? 0 : byName(a, b);
   });
@@ -100,7 +95,8 @@ export type PatternListEntry =
 
 /** The words a section header needs, so this file stays free of i18n. */
 export interface SectionLabels {
-  level: (level: string) => string;
+  /** A level's name in the list, or undefined for one the list does not have (no level). */
+  level: (levelId: string) => string | undefined;
   counts: (counts: number) => string;
   /** The day a timestamp falls on, as a header. */
   day: (timestamp: number) => string;
@@ -128,10 +124,12 @@ function sectionOf(
         ? { key: `type:${type.id}`, title: type.slug, color: type.color }
         : { key: "type:none", title: labels.noType };
     }
-    case "level":
-      return pattern.level
-        ? { key: `level:${pattern.level}`, title: labels.level(pattern.level) }
+    case "level": {
+      const title = pattern.level ? labels.level(pattern.level) : undefined;
+      return title !== undefined
+        ? { key: `level:${pattern.level}`, title }
         : { key: "level:none", title: labels.noLevel };
+    }
     case "id":
       return pattern.createdAt
         ? {

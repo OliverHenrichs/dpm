@@ -1,8 +1,12 @@
 import { APP_STYLES, mix, palettes } from "@/src/common/theme/tokens";
 import { contrast } from "@/src/common/theme/contrast";
 import { PATTERN_TYPE_COLORS } from "@/src/pattern/types/PatternType";
-import { LEVEL_TINTS, levelTint } from "@/src/pattern/graph/model/nodeFrame";
-import { PatternLevel } from "@/src/pattern/types/PatternLevel";
+import {
+  LEVEL_TINTS,
+  levelTint,
+  levelTints,
+} from "@/src/pattern/graph/model/nodeFrame";
+import { MAX_LEVELS, PatternLevel } from "@/src/pattern/types/PatternLevel";
 
 /**
  * A Map box is the surface with some of the pattern type's colour mixed in, more the harder
@@ -39,5 +43,51 @@ describe("levelTint", () => {
 
   it("draws an unset level like a beginner one", () => {
     expect(levelTint(undefined)).toBe(LEVEL_TINTS.beginner);
+  });
+});
+
+describe("levelTints", () => {
+  it("keeps today's exact tints for three levels", () => {
+    expect(levelTints(3)).toEqual([
+      LEVEL_TINTS.beginner,
+      LEVEL_TINTS.intermediate,
+      LEVEL_TINTS.advanced,
+    ]);
+  });
+
+  it.each([2, 4, 5, 8, MAX_LEVELS])(
+    "spreads %i levels from the lightest to the darkest, getting denser",
+    (count) => {
+      const tints = levelTints(count);
+      expect(tints).toHaveLength(count);
+      expect(tints[0]).toBeCloseTo(LEVEL_TINTS.beginner);
+      expect(tints[count - 1]).toBeCloseTo(LEVEL_TINTS.advanced);
+      for (let i = 1; i < count; i++) {
+        expect(tints[i]).toBeGreaterThan(tints[i - 1]);
+      }
+      // Within the range the contrast test above checks.
+      for (const tint of tints) {
+        expect(tint).toBeLessThanOrEqual(LEVEL_TINTS.advanced + 1e-9);
+      }
+    },
+  );
+
+  it("gives a lone level the middle tint, so it differs from no level", () => {
+    expect(levelTints(1)).toEqual([LEVEL_TINTS.intermediate]);
+    expect(levelTints(0)).toEqual([]);
+  });
+});
+
+describe("levelTint among a list's own levels", () => {
+  const course = ["c1", "c2", "c3", "c4", "c5"];
+
+  it("shades by the level's place in the list", () => {
+    expect(levelTint("c1", course)).toBeCloseTo(LEVEL_TINTS.beginner);
+    expect(levelTint("c3", course)).toBeCloseTo(0.23);
+    expect(levelTint("c5", course)).toBeCloseTo(LEVEL_TINTS.advanced);
+  });
+
+  it("draws a level the list does not have like no level", () => {
+    expect(levelTint("advanced", course)).toBe(LEVEL_TINTS.beginner);
   });
 });

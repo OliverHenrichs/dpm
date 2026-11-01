@@ -206,6 +206,45 @@ describe("patternFromSuggestion", () => {
     expect(patternFromSuggestion(raw, list, patterns)).toEqual(raw);
   });
 
+  it("takes any level the list has, and only those", () => {
+    const course = {
+      ...list,
+      levels: [
+        { id: "0f3c9a5e7b2d4c18a6e1f09d3b7c5a42", name: "1" },
+        { id: "c2", name: "2" },
+      ],
+    };
+    const raw = (level: string) => ({
+      name: "Sugar Tuck",
+      typeId: push.id,
+      counts: 6,
+      level,
+      prerequisites: [],
+      description: "",
+      tags: [],
+      videoRefs: [],
+      modifierRefs: [],
+    });
+    expect(
+      patternFromSuggestion(
+        raw("0f3c9a5e7b2d4c18a6e1f09d3b7c5a42"),
+        course,
+        patterns,
+      )?.level,
+    ).toBe("0f3c9a5e7b2d4c18a6e1f09d3b7c5a42");
+    // A built-in level is not one of this list's any more.
+    expect(
+      patternFromSuggestion(raw("beginner"), course, patterns),
+    ).not.toHaveProperty("level");
+    // Without levels of its own, the list has the built-in three.
+    expect(patternFromSuggestion(raw("advanced"), list, patterns)?.level).toBe(
+      "advanced",
+    );
+    expect(patternFromSuggestion(raw("c2"), list, patterns)).not.toHaveProperty(
+      "level",
+    );
+  });
+
   it("keeps a rolling count that fits the counts", () => {
     const raw = {
       name: "Telemark",

@@ -7,7 +7,7 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 
 ### Both views
 
-- Each figure is a box in its type's colour. A higher level shows as a stronger tint. Boxes follow
+- Each figure is a box in its type's colour. A higher level shows as a stronger tint, spread over the list's own levels (three levels keep the original shades). Boxes follow
   the app style: rounded and outlined in After Hours, square with a colour bar in Clipboard.
 - A box **badges what it carries**: a play mark when the figure or one of its variants has a
   video, and up to three dots for attached modifiers. Universal modifiers are not counted, since

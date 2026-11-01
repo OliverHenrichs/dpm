@@ -65,16 +65,16 @@ Links to the terms of use and the privacy policy on the website.
 
 ## Rules that must always hold
 
-| Rule                                                                                 | Guarded by                                              |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| Every user-facing string exists in all nine languages, with matching placeholders    | `__tests__/unit/i18n.test.ts`                           |
-| A picked language outranks the phone's, permanently                                  | `__tests__/unit/languagePersistence.test.ts`            |
-| An export round-trips every field, for every supported format version                | `__tests__/unit/ExportImportRoundTrip.test.ts`          |
-| A file from a newer version is refused, never half-imported                          | `__tests__/unit/validateExportData.test.ts`             |
-| Conflicting lists default to skip, and nothing is replaced without the user's choice | `__tests__/components/useImportDecisions.test.ts`       |
-| A copy import gets a new id and no share code                                        | `__tests__/unit/importCopy.test.ts`                     |
-| Each release's notes exist in all nine languages and the newest is the app's version | `__tests__/unit/changelog.test.ts`                      |
-| Stored data is migrated once, forwards only, before anything reads it                | `__tests__/unit/migrations.test.ts`                     |
+| Rule                                                                                 | Guarded by                                        |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| Every user-facing string exists in all nine languages, with matching placeholders    | `__tests__/unit/i18n.test.ts`                     |
+| A picked language outranks the phone's, permanently                                  | `__tests__/unit/languagePersistence.test.ts`      |
+| An export round-trips every field, for every supported format version                | `__tests__/unit/ExportImportRoundTrip.test.ts`    |
+| A file from a newer version is refused, never half-imported                          | `__tests__/unit/validateExportData.test.ts`       |
+| Conflicting lists default to skip, and nothing is replaced without the user's choice | `__tests__/components/useImportDecisions.test.ts` |
+| A copy import gets a new id and no share code                                        | `__tests__/unit/importCopy.test.ts`               |
+| Each release's notes exist in all nine languages and the newest is the app's version | `__tests__/unit/changelog.test.ts`                |
+| Stored data is migrated once, forwards only, before anything reads it                | `__tests__/unit/migrations.test.ts`               |
 
 ## Not built yet
 

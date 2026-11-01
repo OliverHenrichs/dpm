@@ -28,6 +28,7 @@ import type {
   SharedListOwnerDocument,
 } from "@/src/firebase/FirebaseListService";
 import type { ISuggestionPolicy } from "@/src/pattern/types/IPatternList";
+import { newLevelId } from "@/src/pattern/types/PatternLevel";
 import {
   counterIdFor,
   suggestedPattern,
@@ -47,6 +48,8 @@ const CODE = "AB12CD34";
 const KEY = "k".repeat(43);
 const PUBLISHER = "publisher-uid";
 const SUBSCRIBER = "subscriber-uid";
+/** One list's id across publishes, as on the publisher's phone. */
+const LIST_ID = "6f1c2a4e-1b7d-4c3e-9a8f-2d5e7b9c0a11";
 
 function rulesWithTestToken(): string {
   const rules = readFileSync(
@@ -68,7 +71,11 @@ function rulesWithTestToken(): string {
 function sharedListDoc(
   overrides: Partial<SharedListDocument> = {},
 ): SharedListDocument {
-  const list = createTestPatternList({ shareCode: CODE, nextPatternId: 3 });
+  const list = createTestPatternList({
+    id: LIST_ID,
+    shareCode: CODE,
+    nextPatternId: 3,
+  });
   const typeId = list.patternTypes[0].id;
   return {
     list,
@@ -169,6 +176,16 @@ describe("publishing", () => {
     await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
   });
 
+  it("accepts a list with levels of its own, and the sync that goes back to the built-in ones", async () => {
+    const data = sharedListDoc();
+    data.list.levels = [
+      { id: newLevelId(), name: "1" },
+      { id: newLevelId(), name: "2" },
+    ];
+    await assertSucceeds(publish(as(PUBLISHER), data));
+    await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
+  });
+
   it("refuses a publish from a device that has not signed in", async () => {
     await assertFails(publish(anonymous(), sharedListDoc(), owner("")));
   });
@@ -239,6 +256,27 @@ describe("publishing", () => {
         extra: 1,
       }),
     );
+  });
+
+  it("refuses a re-publish that changes the list's id", async () => {
+    // A publisher copying another shared list's id into theirs could
+    // otherwise overwrite that list on phones following both.
+    await seed(sharedListDoc());
+    const data = sharedListDoc();
+    data.list.id = "another-lists-id";
+    await assertFails(publish(as(PUBLISHER), data));
+  });
+
+  it("refuses an empty or oversized list id and an oversized name", async () => {
+    const noId = sharedListDoc();
+    noId.list.id = "";
+    await assertFails(publish(as(PUBLISHER), noId));
+    const longId = sharedListDoc();
+    longId.list.id = "x".repeat(65);
+    await assertFails(publish(as(PUBLISHER), longId));
+    const longName = sharedListDoc();
+    longName.list.name = "x".repeat(201);
+    await assertFails(publish(as(PUBLISHER), longName));
   });
 
   it("refuses a document missing a field", async () => {
@@ -512,6 +550,17 @@ describe("suggesting", () => {
       { count: 1, last: "anon" },
     );
     await assertSucceeds(batch.commit());
+  });
+
+  it("accepts a figure on a level of the list's own (a 32-character id)", async () => {
+    await seed(listTakingSuggestions());
+    const level = newLevelId();
+    expect(level).toHaveLength(32);
+    await assertSucceeds(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, {
+        data: { pattern: { ...suggestionPattern(), level } },
+      }),
+    );
   });
 
   it("refuses a suggestion past the limit per subscriber, but not another subscriber's", async () => {

@@ -23,6 +23,8 @@ import PatternListItem from "./PatternListItem";
 import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
 import { buildListEntries, PatternListEntry } from "./hooks/patternSections";
+import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
+import { levelName } from "@/src/pattern/types/PatternLevel";
 import PatternSectionHeader from "./PatternSectionHeader";
 import { useThemeContext } from "@/src/common/components/ThemeContext";
 
@@ -80,10 +82,14 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     props.patterns,
     filter,
   );
+  // The active list's levels, in its order: they rank the level sort and name its sections.
+  const levels = useActiveListLevels();
+  const levelIds = useMemo(() => levels.map((level) => level.id), [levels]);
   const { sortedPatterns } = usePatternSort(
     filteredPatterns,
     sortConfig,
     props.patternTypes,
+    levelIds,
   );
   const entries = useMemo(
     () =>
@@ -92,7 +98,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         sortConfig.field,
         props.patternTypes ?? [],
         {
-          level: (level) => t(level),
+          level: (id) => levelName(levels, id, t),
           counts: (n) => t("countsSection", { n }),
           day: (timestamp) =>
             new Date(timestamp).toLocaleDateString(i18n.language, {
@@ -106,7 +112,14 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           noDate: t("noDateSection"),
         },
       ),
-    [sortedPatterns, sortConfig.field, props.patternTypes, t, i18n.language],
+    [
+      sortedPatterns,
+      sortConfig.field,
+      props.patternTypes,
+      levels,
+      t,
+      i18n.language,
+    ],
   );
   // Section headers stay at the top while their patterns scroll under them.
   const stickyHeaderIndices = useMemo(

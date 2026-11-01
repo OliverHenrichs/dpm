@@ -302,6 +302,44 @@ describe("PatternListSelector", () => {
     });
   });
 
+  describe("editing a list's levels", () => {
+    it("moves the figures of a removed level to the one chosen", async () => {
+      const list = createTestPatternList({ name: "Salsa" });
+      const type = list.patternTypes[0].id;
+      seedAsyncStorage({
+        [`@patterns_${list.id}`]: JSON.stringify([
+          createTestPattern(type, { id: 1, level: "beginner" }),
+          createTestPattern(type, { id: 2, level: "advanced" }),
+        ]),
+      });
+      await renderSelector([list]);
+
+      fireEvent(screen.getByText("Salsa"), "longPress");
+      fireEvent.press(screen.getByText("Edit Figure List"));
+      fireEvent.press(await screen.findByText("Levels"));
+      await screen.findAllByText("Used by 1 figure");
+      fireEvent.press(screen.getByText("Numbers 1, 2, 3 …"));
+      fireEvent.press(screen.getByLabelText("Remove level: 1"));
+      fireEvent.press(screen.getByRole("radio", { name: "3" }));
+      fireEvent.press(screen.getByText("Move and remove"));
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () =>
+        expect((await storedLists())[0].levels).toEqual([
+          { id: "intermediate", name: "2" },
+          { id: "advanced", name: "3" },
+        ]),
+      );
+      const stored = JSON.parse(
+        (await AsyncStorage.getItem(`@patterns_${list.id}`)) ?? "[]",
+      );
+      expect(stored.map((p: { level?: string }) => p.level)).toEqual([
+        "advanced",
+        "advanced",
+      ]);
+    });
+  });
+
   describe("editing a list's types", () => {
     it("moves the figures of a removed type to the one chosen", async () => {
       const list = createTestPatternList({ name: "Salsa" });
@@ -316,6 +354,7 @@ describe("PatternListSelector", () => {
 
       fireEvent(screen.getByText("Salsa"), "longPress");
       fireEvent.press(screen.getByText("Edit Figure List"));
+      fireEvent.press(await screen.findByText("Figure Types"));
       await screen.findAllByText("Used by 1 figure");
       fireEvent.press(screen.getByLabelText("Remove type: push"));
       fireEvent.press(screen.getByText("Move and remove"));

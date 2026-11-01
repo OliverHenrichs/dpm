@@ -676,6 +676,67 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("a list's own levels (3.11)", () => {
+    const course = [
+      { id: "c1", name: "1" },
+      { id: "c2", name: "2" },
+      { id: "c3", name: "3" },
+    ];
+
+    it("keeps the levels in their order, and the figures on them", async () => {
+      const { importResult } = await roundTrip([
+        listWith([createTestPattern(TYPE.id, { id: 1, level: "c2" })], {
+          levels: course,
+        }),
+      ]);
+
+      const list = importResult.patternLists![0];
+      expect(list.levels).toEqual(course);
+      expect(list.patterns[0].level).toBe("c2");
+    });
+
+    it("drops entries without an id or a name, repeats, and past twelve", async () => {
+      const many = Array.from({ length: 14 }, (_, i) => ({
+        id: `l${i}`,
+        name: `Level ${i}`,
+      }));
+      const { importResult } = await roundTrip([
+        listWith([], {
+          levels: [
+            { id: "a", name: "  Basics  " },
+            { id: "", name: "No id" },
+            { id: "b", name: "   " },
+            { id: "a", name: "Again" },
+            { name: "Lost" },
+            "junk",
+            { id: "c", name: "Advanced" },
+          ] as never,
+        }),
+        listWith([], { levels: many }),
+      ]);
+
+      expect(importResult.patternLists![0].levels).toEqual([
+        { id: "a", name: "Basics" },
+        { id: "c", name: "Advanced" },
+      ]);
+      expect(importResult.patternLists![1].levels).toEqual(many.slice(0, 12));
+    });
+
+    it("leaves a list without them, or with nothing usable, on the built-in levels", async () => {
+      const { importResult } = await roundTrip([
+        listWith([createTestPattern(TYPE.id, { id: 1, level: "advanced" })]),
+        listWith([], { levels: [{ id: "x", name: "" }] }),
+        listWith([], { levels: "1, 2, 3" as never }),
+      ]);
+
+      importResult.patternLists!.forEach((list) =>
+        expect(list).not.toHaveProperty("levels"),
+      );
+      // A figure keeps the level id it has, as before.
+      expect(importResult.patternLists![0].patterns[0].level).toBe("advanced");
+    });
+  });
+
   describe("members-only lists (3.7)", () => {
     it("keeps that only members may read the published list", async () => {
       const { importResult } = await roundTrip([

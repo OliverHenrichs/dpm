@@ -214,12 +214,47 @@ describe("figureChanges", () => {
       list,
       patterns,
     );
-    // The rhythm and level are dropped, so they read as cleared; the videos as all removed.
+    // The rhythm is dropped, so it reads as cleared; a level the list does not have is left
+    // out, as a type would be; the videos read as all removed.
     expect(ids(lines)).toEqual([
-      "level",
       "counts",
       "video:remove:https://youtu.be/tuck",
     ]);
+  });
+
+  it("suggests a level among the list's own, and leaves out one it does not have", () => {
+    const course = {
+      ...list,
+      levels: [
+        { id: "c1", name: "1" },
+        { id: "c2", name: "2" },
+      ],
+    };
+    const onCourse = { ...sugarTuck, level: "c1" };
+    const baseOnCourse = { ...base, level: "c1" };
+    expect(
+      figureChanges(
+        baseOnCourse,
+        { ...baseOnCourse, level: "c2" },
+        onCourse,
+        course,
+        patterns,
+      ),
+    ).toEqual([{ id: "level", kind: "level", from: "c1", to: "c2" }]);
+    expect(
+      figureChanges(
+        baseOnCourse,
+        { ...baseOnCourse, level: "advanced" },
+        onCourse,
+        course,
+        patterns,
+      ),
+    ).toEqual([]);
+    // Clearing the level is always a change the list can take.
+    const { level: _level, ...cleared } = baseOnCourse;
+    expect(
+      ids(figureChanges(baseOnCourse, cleared, onCourse, course, patterns)),
+    ).toEqual(["level"]);
   });
 
   it("keeps the anonymized marker on a suggested video", () => {

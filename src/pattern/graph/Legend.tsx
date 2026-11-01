@@ -7,7 +7,8 @@ import { useTranslation } from "react-i18next";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import Svg, { Circle, Path } from "react-native-svg";
 import NodeFrame from "@/src/pattern/graph/render/NodeFrame";
-import { LEVEL_TINTS } from "@/src/pattern/graph/model/nodeFrame";
+import { LEVEL_TINTS, levelTints } from "@/src/pattern/graph/model/nodeFrame";
+import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
   isLegendSeen,
   markLegendSeen,
@@ -67,6 +68,9 @@ const Legend: React.FC<LegendProps> = ({
 }) => {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
+  // The list's own levels, lightest first, shaded as the graph shades them.
+  const levels = useActiveListLevels();
+  const tints = levelTints(levels.length);
   const [isExpanded, setIsExpanded] = useState(false);
   // The type whose palette is open, if any.
   const [pickingTypeId, setPickingTypeId] = useState<string | null>(null);
@@ -167,13 +171,10 @@ const Legend: React.FC<LegendProps> = ({
       {showLevels && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("levelShading")}:</Text>
-          {(["beginner", "intermediate", "advanced"] as const).map((level) => (
-            <View style={styles.legendItem} key={level}>
-              <NodeSample
-                color={theme.colors.primary}
-                tint={LEVEL_TINTS[level]}
-              />
-              <Text style={styles.legendText}>{t(level)}</Text>
+          {levels.map((level, i) => (
+            <View style={styles.legendItem} key={level.id}>
+              <NodeSample color={theme.colors.primary} tint={tints[i]} />
+              <Text style={styles.legendText}>{level.name}</Text>
             </View>
           ))}
         </View>

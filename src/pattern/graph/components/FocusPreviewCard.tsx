@@ -1,6 +1,8 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
+import { levelName } from "@/src/pattern/types/PatternLevel";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -44,6 +46,7 @@ const FocusPreviewCard: React.FC<FocusPreviewCardProps> = ({
   onOpen,
 }) => {
   const { t } = useTranslation();
+  const levels = useActiveListLevels();
   const { theme } = useUnistyles();
   const { pattern } = node;
   const typeColour = node.color ?? theme.colors.primary;
@@ -59,7 +62,7 @@ const FocusPreviewCard: React.FC<FocusPreviewCardProps> = ({
   }));
 
   const facts = [
-    pattern.level ? t(pattern.level) : null,
+    levelName(levels, pattern.level, t) ?? null,
     pattern.counts ? `${t("counts")} ${pattern.counts}` : null,
     pattern.rhythm || null,
   ].filter(Boolean);

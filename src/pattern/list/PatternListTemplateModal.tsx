@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import FormSection from "@/src/pattern/list/FormSection";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { Button, Chip, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -31,13 +32,21 @@ import {
 } from "@/src/pattern/types/PatternType";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import RevealScrollView from "@/src/common/components/RevealScrollView";
-import AppDialog from "@/src/common/components/AppDialog";
 import TypeColorSwatches from "@/src/pattern/list/TypeColorSwatches";
 import {
   addTypeMove,
   countAfterMoves,
+  LevelMoves,
   TypeMoves,
 } from "@/src/pattern/list/typeMoves";
+import MoveFiguresDialog from "@/src/pattern/list/MoveFiguresDialog";
+import LevelEditor from "@/src/pattern/list/LevelEditor";
+import {
+  IPatternLevel,
+  levelNameErrors,
+  resolveLevels,
+  storedLevels,
+} from "@/src/pattern/types/PatternLevel";
 
 interface PatternListTemplateModalProps {
   visible: boolean;
@@ -51,11 +60,17 @@ interface PatternListTemplateModalProps {
    * the only type cannot be removed while in use.
    */
   typeUsage?: Record<string, number>;
+  /** How many patterns are on each level, by id. Removing a level in use asks where they go. */
+  levelUsage?: Record<string, number>;
   /**
    * Called instead of onCreateList when editing an existing list, with where the figures of
-   * each removed type go (empty when none moved). The host reassigns them as it saves.
+   * each removed type and level go (empty when none moved). The host reassigns them as it saves.
    */
-  onSaveList?: (updatedList: IPatternList, typeMoves: TypeMoves) => void;
+  onSaveList?: (
+    updatedList: IPatternList,
+    typeMoves: TypeMoves,
+    levelMoves: LevelMoves,
+  ) => void;
 }
 
 interface Template {
@@ -72,20 +87,23 @@ interface DraftPatternEntry {
   included: boolean;
 }
 
-/** Applies the edited name/types to an existing list and re-stamps updatedAt. */
+/** Applies the edited name/types/levels to an existing list and re-stamps updatedAt. */
 function applyListEdits(
   list: IPatternList,
   name: string,
   patternTypes: PatternType[],
   dance: Dance | undefined,
+  levels: IPatternLevel[] | undefined,
 ): IPatternList {
-  // No dance removes the key rather than storing `undefined`, which Firestore rejects.
-  const { dance: _previous, ...rest } = list;
+  // No dance (or the built-in levels) removes the key rather than storing `undefined`, which
+  // Firestore rejects.
+  const { dance: _previous, levels: _previousLevels, ...rest } = list;
   return {
     ...rest,
     name,
     patternTypes,
     ...(dance && { dance }),
+    ...(levels && { levels }),
     updatedAt: Date.now(),
   };
 }
@@ -177,6 +195,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   onCreateList,
   editList,
   typeUsage,
+  levelUsage,
   onSaveList,
 }) => {
   const { t } = useTranslation();
@@ -208,6 +227,11 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     countAfterMoves(id, typeUsage ?? {}, typeMoves);
   const movingType = draftTypes.find((dt) => dt.id === movingTypeId);
   const moveTargets = draftTypes.filter((dt) => dt.id !== movingTypeId);
+  // The levels, easiest first, and where the figures of each level removed so far go.
+  const [draftLevels, setDraftLevels] = useState<IPatternLevel[]>(() =>
+    resolveLevels(editList?.levels, t),
+  );
+  const [levelMoves, setLevelMoves] = useState<LevelMoves>({});
 
   // ── Slug validation ────────────────────────────────────────────────────────
   const slugErrors: Record<string, string> = {};
@@ -219,8 +243,11 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       slugErrors[type.id] = t("duplicateTypeSlug");
     }
   });
+  const levelErrors = levelNameErrors(draftLevels);
   const canCreate =
-    draftName.trim().length > 0 && Object.keys(slugErrors).length === 0;
+    draftName.trim().length > 0 &&
+    Object.keys(slugErrors).length === 0 &&
+    Object.keys(levelErrors).length === 0;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSelectTemplate = (template: Template) => {
@@ -243,12 +270,24 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       ...dt,
       slug: normalizeSlug(dt.slug),
     }));
+    // Absent when they are the built-in three as named in this language.
+    const finalLevels = storedLevels(
+      draftLevels.map((level) => ({ ...level, name: level.name.trim() })),
+      t,
+    );
 
     if (isEditMode && editList && onSaveList) {
       // ── Edit path ─────────────────────────────────────────────────────
       onSaveList(
-        applyListEdits(editList, draftName.trim(), finalTypes, draftDance),
+        applyListEdits(
+          editList,
+          draftName.trim(),
+          finalTypes,
+          draftDance,
+          finalLevels,
+        ),
         typeMoves,
+        levelMoves,
       );
     } else {
       // ── Create path ───────────────────────────────────────────────────
@@ -259,6 +298,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       const created = {
         ...createPatternList(draftName.trim(), finalTypes),
         modifiers,
+        ...(finalLevels && { levels: finalLevels }),
       };
       const newList = draftDance ? { ...created, dance: draftDance } : created;
       const includedPatterns = draftPatterns
@@ -270,7 +310,16 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         draftDance,
         modifiers,
       );
-      onCreateList?.(newList, initialPatterns);
+      // A starter figure on a level the user removed starts without one.
+      const levelIds = new Set(draftLevels.map((level) => level.id));
+      onCreateList?.(
+        newList,
+        initialPatterns.map((pattern) => {
+          if (!pattern.level || levelIds.has(pattern.level)) return pattern;
+          const { level: _removed, ...rest } = pattern;
+          return rest;
+        }),
+      );
     }
     handleClose();
   };
@@ -387,218 +436,262 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     </View>
   );
 
+  // Taps on the form's plain areas close the colour popover. A Pressable around the scroller
+  // did that before, but it also took the touch from the scroller, so dragging on a label did
+  // not scroll. This view sits inside the scroller and hands the touch over once it moves.
+  const closeColorPopover = () => setColorPopoverId(null);
+  const danceSummary =
+    draftDance === undefined ? t("danceNone") : t(DANCE_NAME_KEYS[draftDance]);
+  // A folded section with a problem shows the problem, so a greyed-out Save has a reason in sight.
+  const firstSlugError = Object.values(slugErrors)[0];
+  const typesSummary =
+    firstSlugError ??
+    draftTypes.map((dt) => dt.slug || t("typeName")).join(", ");
+  const firstLevelError = Object.values(levelErrors)[0];
+  const levelsSummary = firstLevelError
+    ? t(firstLevelError === "empty" ? "emptyTypeSlug" : "duplicateTypeSlug")
+    : draftLevels.map((level) => level.name.trim()).join(" · ");
+  const patternsSummary = `${
+    draftPatterns.filter((entry) => entry.included).length
+  }/${draftPatterns.length}`;
+  // A new list shows everything; editing one opens on the name, the rest a tap away.
+  const sectionsOpen = !isEditMode;
+
+  // Save and Cancel stay outside the scroller, as in the figure form, so they are in sight
+  // however long the list of types and levels gets.
   const renderConfigureStep = () => (
-    <Pressable style={styles.step} onPress={() => setColorPopoverId(null)}>
+    <View style={styles.step}>
       <RevealScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={closeColorPopover}
       >
-        <Text style={styles.title}>{t("configureYourList")}</Text>
-        <Text style={styles.subtitle}>{t("configureListHint")}</Text>
+        <View
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={closeColorPopover}
+        >
+          <Text style={styles.title}>{t("configureYourList")}</Text>
+          <Text style={styles.subtitle}>{t("configureListHint")}</Text>
 
-        {/* ── Name ──────────────────────────────────────────────────────── */}
-        <Text style={styles.label}>{t("listName")}</Text>
-        <RevealTextInput
-          style={styles.input}
-          value={draftName}
-          onChangeText={setDraftName}
-          // The placeholder is the template's name, so it cannot double as the
-          // field's label — a screen reader would announce the suggestion and
-          // never say what the field is for.
-          accessibilityLabel={t("listName")}
-          placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
-          placeholderTextColor={theme.colors.textMuted}
-        />
-
-        {/* ── Dance: which rhythms are suggested ──────────────────────────── */}
-        <Text style={[styles.label, styles.sectionGap]}>{t("dance")}</Text>
-        <Text style={styles.subtitle}>{t("danceHint")}</Text>
-        <View style={styles.danceRow}>
-          <Chip
-            label={t("danceNone")}
-            selected={draftDance === undefined}
-            onPress={() => setDraftDance(undefined)}
+          {/* ── Name ──────────────────────────────────────────────────────── */}
+          <Text style={styles.label}>{t("listName")}</Text>
+          <RevealTextInput
+            style={styles.input}
+            value={draftName}
+            onChangeText={setDraftName}
+            // The placeholder is the template's name, so it cannot double as the
+            // field's label — a screen reader would announce the suggestion and
+            // never say what the field is for.
+            accessibilityLabel={t("listName")}
+            placeholder={t(selectedTemplate?.nameKey ?? "templateBlankName")}
+            placeholderTextColor={theme.colors.textMuted}
           />
-          {DANCES.map((dance) => (
-            <Chip
-              key={dance}
-              label={t(DANCE_NAME_KEYS[dance])}
-              selected={draftDance === dance}
-              onPress={() => setDraftDance(dance)}
-            />
-          ))}
-        </View>
 
-        {/* ── Pattern Types ─────────────────────────────────────────────── */}
-        <Text style={[styles.label, styles.sectionGap]}>
-          {t("patternTypes")}
-        </Text>
-        {draftTypes.map((dt) => {
-          const usage = usageOf(dt.id);
-          // In use and alone: its figures would have nowhere to go.
-          const isStuck = usage > 0 && draftTypes.length === 1;
-          const isPickingColor = colorPopoverId === dt.id;
-          return (
-            <React.Fragment key={dt.id}>
-              <View
-                style={[styles.typeRow, isPickingColor && styles.typeRowRaised]}
-              >
-                {/* Color dot → popover, which is rendered last inside the row */}
-                <Pressable
-                  onPress={(e) => {
-                    e?.stopPropagation?.();
-                    setColorPopoverId((prev) =>
-                      prev === dt.id ? null : dt.id,
-                    );
-                  }}
-                  hitSlop={theme.space.sm}
-                  style={styles.typeColorDot(dt.color)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("patternTypeColor", {
-                    type: dt.slug || t("typeName"),
-                  })}
-                  accessibilityState={{ expanded: isPickingColor }}
-                />
-
-                <RevealTextInput
-                  style={[
-                    styles.typeSlugInput,
-                    slugErrors[dt.id] ? styles.typeSlugInputError : undefined,
-                  ]}
-                  value={dt.slug}
-                  onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
-                  placeholder={t("typeName")}
-                  placeholderTextColor={theme.colors.textMuted}
-                  onFocus={() => setColorPopoverId(null)}
-                />
-                <IconButton
-                  icon="close"
-                  size={theme.iconSize.md}
-                  color="textMuted"
-                  onPress={() => handleRemoveType(dt.id)}
-                  disabled={isStuck}
-                  accessibilityLabel={`${t("removePatternType")}: ${
-                    dt.slug || t("typeName")
-                  }`}
-                  accessibilityHint={
-                    isStuck ? t("cannotRemoveOnlyType") : undefined
-                  }
-                />
-                {/* Last child on purpose: it overlays the row's own slug input,
-                  and paint order is what decides that where zIndex does not. */}
-                {isPickingColor && renderColorPopover(dt.id, dt.color)}
-              </View>
-              {usage > 0 && (
-                <Text style={styles.typeUsage}>
-                  {usage === 1
-                    ? t("typeUsedByOne")
-                    : t("typeUsedByMany", { count: usage })}
-                  {isStuck ? ` · ${t("cannotRemoveOnlyType")}` : ""}
-                </Text>
-              )}
-            </React.Fragment>
-          );
-        })}
-        {/* Slug error messages */}
-        {draftTypes.map((dt) =>
-          slugErrors[dt.id] ? (
-            <Text key={`err-${dt.id}`} style={styles.slugError}>
-              {dt.slug || t("typeName")}: {slugErrors[dt.id]}
-            </Text>
-          ) : null,
-        )}
-
-        <Button
-          title={t("addPatternType")}
-          icon="plus"
-          variant="outline"
-          size="sm"
-          onPress={handleAddType}
-          style={styles.addTypeButton}
-        />
-
-        {/* ── Foundational Patterns ─────────────────────────────────────── */}
-        {draftPatterns.length > 0 && (
+          {/* ── Dance: which rhythms are suggested ──────────────────────── */}
           <View style={styles.sectionGap}>
-            <Text style={styles.label}>{t("startingPatterns")}</Text>
-            <Text style={styles.sectionHint}>{t("startingPatternsHint")}</Text>
-            {draftPatterns.map((entry, idx) => {
-              const color = getTypeColor(entry.templatePattern.typeSlug);
-              const typeRemoved = color === undefined;
-              return (
-                <ListRow
-                  key={idx}
-                  title={entry.templatePattern.name}
-                  selection="multiple"
-                  selected={entry.included && !typeRemoved}
-                  disabled={typeRemoved}
-                  onPress={() => togglePattern(idx)}
-                  subtitle={
-                    <View style={styles.patternToggleMeta}>
-                      {color && <View style={styles.typeColorPip(color)} />}
-                      <Text style={styles.patternToggleSlug}>
-                        {entry.templatePattern.typeSlug}
-                      </Text>
-                      <Text style={styles.patternToggleCounts}>
-                        · {entry.templatePattern.counts} {t("counts")}
-                      </Text>
-                    </View>
-                  }
+            <FormSection
+              title={t("dance")}
+              summary={danceSummary}
+              initiallyOpen={sectionsOpen}
+            >
+              <Text style={styles.subtitle}>{t("danceHint")}</Text>
+              <View style={styles.danceRow}>
+                <Chip
+                  label={t("danceNone")}
+                  selected={draftDance === undefined}
+                  onPress={() => setDraftDance(undefined)}
                 />
-              );
-            })}
-          </View>
-        )}
+                {DANCES.map((dance) => (
+                  <Chip
+                    key={dance}
+                    label={t(DANCE_NAME_KEYS[dance])}
+                    selected={draftDance === dance}
+                    onPress={() => setDraftDance(dance)}
+                  />
+                ))}
+              </View>
+            </FormSection>
 
-        {/* ── Buttons ───────────────────────────────────────────────────── */}
-        <View style={[styles.buttonRow, styles.footerGap]}>
-          <Button
-            title={isEditMode ? t("cancel") : t("back")}
-            variant="secondary"
-            onPress={isEditMode ? handleClose : () => setStep("pick")}
-            style={styles.footerButton}
-          />
-          <Button
-            title={isEditMode ? t("saveChanges") : t("create")}
-            onPress={handleCreate}
-            disabled={!canCreate}
-            style={styles.footerButton}
-          />
+            {/* ── Figure types ──────────────────────────────────────────── */}
+            <FormSection
+              title={t("patternTypes")}
+              summary={typesSummary}
+              initiallyOpen={sectionsOpen}
+            >
+              {draftTypes.map((dt) => {
+                const usage = usageOf(dt.id);
+                // In use and alone: its figures would have nowhere to go.
+                const isStuck = usage > 0 && draftTypes.length === 1;
+                const isPickingColor = colorPopoverId === dt.id;
+                return (
+                  <React.Fragment key={dt.id}>
+                    <View
+                      style={[
+                        styles.typeRow,
+                        isPickingColor && styles.typeRowRaised,
+                      ]}
+                    >
+                      {/* Color dot → popover, which is rendered last inside the row */}
+                      <Pressable
+                        onPress={(e) => {
+                          e?.stopPropagation?.();
+                          setColorPopoverId((prev) =>
+                            prev === dt.id ? null : dt.id,
+                          );
+                        }}
+                        hitSlop={theme.space.sm}
+                        style={styles.typeColorDot(dt.color)}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("patternTypeColor", {
+                          type: dt.slug || t("typeName"),
+                        })}
+                        accessibilityState={{ expanded: isPickingColor }}
+                      />
+
+                      <RevealTextInput
+                        style={[
+                          styles.typeSlugInput,
+                          slugErrors[dt.id]
+                            ? styles.typeSlugInputError
+                            : undefined,
+                        ]}
+                        value={dt.slug}
+                        onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
+                        placeholder={t("typeName")}
+                        placeholderTextColor={theme.colors.textMuted}
+                        onFocus={() => setColorPopoverId(null)}
+                      />
+                      <IconButton
+                        icon="close"
+                        size={theme.iconSize.md}
+                        color="textMuted"
+                        onPress={() => handleRemoveType(dt.id)}
+                        disabled={isStuck}
+                        accessibilityLabel={`${t("removePatternType")}: ${
+                          dt.slug || t("typeName")
+                        }`}
+                        accessibilityHint={
+                          isStuck ? t("cannotRemoveOnlyType") : undefined
+                        }
+                      />
+                      {/* Last child on purpose: it overlays the row's own slug input,
+                        and paint order is what decides that where zIndex does not. */}
+                      {isPickingColor && renderColorPopover(dt.id, dt.color)}
+                    </View>
+                    {usage > 0 && (
+                      <Text style={styles.typeUsage}>
+                        {usage === 1
+                          ? t("typeUsedByOne")
+                          : t("typeUsedByMany", { count: usage })}
+                        {isStuck ? ` · ${t("cannotRemoveOnlyType")}` : ""}
+                      </Text>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+              {/* Slug error messages */}
+              {draftTypes.map((dt) =>
+                slugErrors[dt.id] ? (
+                  <Text key={`err-${dt.id}`} style={styles.slugError}>
+                    {dt.slug || t("typeName")}: {slugErrors[dt.id]}
+                  </Text>
+                ) : null,
+              )}
+
+              <Button
+                title={t("addPatternType")}
+                icon="plus"
+                variant="outline"
+                size="sm"
+                onPress={handleAddType}
+                style={styles.addTypeButton}
+              />
+            </FormSection>
+
+            {/* ── Levels ────────────────────────────────────────────────── */}
+            <FormSection
+              title={t("listLevels")}
+              summary={levelsSummary}
+              initiallyOpen={sectionsOpen}
+            >
+              <LevelEditor
+                levels={draftLevels}
+                onChange={setDraftLevels}
+                usage={levelUsage ?? {}}
+                moves={levelMoves}
+                onChangeMoves={setLevelMoves}
+              />
+            </FormSection>
+
+            {/* ── Starting figures ──────────────────────────────────────── */}
+            {draftPatterns.length > 0 && (
+              <FormSection
+                title={t("startingPatterns")}
+                summary={patternsSummary}
+                initiallyOpen={sectionsOpen}
+              >
+                <Text style={styles.sectionHint}>
+                  {t("startingPatternsHint")}
+                </Text>
+                {draftPatterns.map((entry, idx) => {
+                  const color = getTypeColor(entry.templatePattern.typeSlug);
+                  const typeRemoved = color === undefined;
+                  return (
+                    <ListRow
+                      key={idx}
+                      title={entry.templatePattern.name}
+                      selection="multiple"
+                      selected={entry.included && !typeRemoved}
+                      disabled={typeRemoved}
+                      onPress={() => togglePattern(idx)}
+                      subtitle={
+                        <View style={styles.patternToggleMeta}>
+                          {color && <View style={styles.typeColorPip(color)} />}
+                          <Text style={styles.patternToggleSlug}>
+                            {entry.templatePattern.typeSlug}
+                          </Text>
+                          <Text style={styles.patternToggleCounts}>
+                            · {entry.templatePattern.counts} {t("counts")}
+                          </Text>
+                        </View>
+                      }
+                    />
+                  );
+                })}
+              </FormSection>
+            )}
+          </View>
         </View>
       </RevealScrollView>
-      <AppDialog
-        visible={movingType !== undefined}
-        title={t("moveTypeTitle", {
-          type: movingType?.slug || t("typeName"),
-        })}
-        message={
-          movingType && usageOf(movingType.id) === 1
-            ? t("moveTypeMessageOne", {
-                type: movingType.slug || t("typeName"),
-              })
-            : t("moveTypeMessageMany", {
-                count: movingType ? usageOf(movingType.id) : 0,
-                type: movingType?.slug || t("typeName"),
-              })
-        }
-        closeLabel={t("cancel")}
+
+      <View style={[styles.buttonRow, styles.footer]}>
+        <Button
+          title={isEditMode ? t("cancel") : t("back")}
+          variant="secondary"
+          onPress={isEditMode ? handleClose : () => setStep("pick")}
+          style={styles.footerButton}
+        />
+        <Button
+          title={isEditMode ? t("saveChanges") : t("create")}
+          onPress={handleCreate}
+          disabled={!canCreate}
+          style={styles.footerButton}
+        />
+      </View>
+      <MoveFiguresDialog
+        removing={movingType ? movingType.slug || t("typeName") : undefined}
+        count={movingType ? usageOf(movingType.id) : 0}
+        targets={moveTargets.map((target) => ({
+          id: target.id,
+          title: target.slug || t("typeName"),
+          leading: <View style={styles.typeColorPip(target.color)} />,
+        }))}
+        selectedId={moveTargetId}
+        onSelect={setMoveTargetId}
         onClose={() => setMovingTypeId(null)}
-        confirmLabel={t("moveTypeConfirm")}
-        confirmDestructive
         onConfirm={confirmMoveType}
-      >
-        {moveTargets.map((target) => (
-          <ListRow
-            key={target.id}
-            title={target.slug || t("typeName")}
-            leading={<View style={styles.typeColorPip(target.color)} />}
-            selection="single"
-            selected={moveTargetId === target.id}
-            onPress={() => setMoveTargetId(target.id)}
-          />
-        ))}
-      </AppDialog>
-    </Pressable>
+      />
+    </View>
   );
   return step === "pick" ? renderPickStep() : renderConfigureStep();
 };
@@ -610,8 +703,8 @@ const styles = StyleSheet.create((theme) => ({
   sectionGap: {
     marginTop: theme.space.xl,
   },
-  footerGap: {
-    marginTop: theme.space.xxl,
+  footer: {
+    marginTop: theme.space.md,
   },
   modalContent: {
     ...getCommonDialogCard(theme),
