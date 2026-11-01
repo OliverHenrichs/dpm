@@ -26,6 +26,14 @@ The decision behind this layout is [0001](decisions/0001-living-specs-and-decisi
 
 `.github/pull_request_template.md` repeats these as a checklist.
 
+## In CI
+
+`npm run docs:check` (`scripts/check-docs.js`, in the verify job) fails on a relative link that
+points at nothing, a path a product spec names that does not exist, a nested `AGENTS.md` missing
+from the root index, and a file over its size budget: root `AGENTS.md` 24 KB, a nested
+`AGENTS.md` 10 KB, a product spec 15 KB. Files that were already over have a cap at their size in
+`OVER_BUDGET`: they may shrink, never grow. Over budget means split the file, not raise the number.
+
 ## Product specs
 
 One file per feature area (`docs/product/README.md` lists them), written as behaviour a tester
