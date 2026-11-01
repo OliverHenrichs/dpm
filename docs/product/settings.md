@@ -87,5 +87,4 @@ Links to the terms of use and the privacy policy on the website.
 
 ## Decisions
 
-None recorded yet. Candidate: export files are for backups and new phones, never for sharing
-(Oliver, 2026-10-25).
+- [0008](../decisions/0008-export-files-are-for-backups.md) Export files are for backups and moving phones

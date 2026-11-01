@@ -114,4 +114,5 @@ model).
 
 ## Decisions
 
-None recorded yet.
+- [0005](../decisions/0005-figure-ids-are-never-reused.md) Figure ids are never reused
+- [0009](../decisions/0009-variations-are-modifiers.md) Variations are modifiers
