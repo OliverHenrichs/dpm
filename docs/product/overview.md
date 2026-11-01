@@ -41,6 +41,9 @@ The drawer holds **Lists** and **Settings**. Inside the open list, bottom tabs s
 ## Not built yet, across areas
 
 - iOS.
-- Sequences of figures, own levels per list, tag management, slow/quick notation (from tester
-  review 2).
-- Feature requests and votes (L5).
+- Sequences, own levels, tag management, slow/quick notation (see
+  [lists and figures](lists-and-figures.md)).
+- Feature requests and votes ([#137](https://github.com/OliverHenrichs/dpm/issues/137)).
+
+The backlog lives in [GitHub Issues](https://github.com/OliverHenrichs/dpm/issues). A spec lists
+only the gaps a tester might mistake for bugs, each with its issue.

@@ -78,7 +78,7 @@ Links to the terms of use and the privacy policy on the website.
 
 ## Not built yet
 
-- Arabic text reads correctly but the layout is not mirrored right to left.
+- Arabic text reads correctly but the layout is not mirrored right to left ([#138](https://github.com/OliverHenrichs/dpm/issues/138)).
 
 ## Code
 
