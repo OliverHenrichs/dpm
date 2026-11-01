@@ -21,9 +21,17 @@ works offline and stays on the phone unless the user shares it.
 - The name field is not focused on its own, so the keyboard doesn't hide the setup.
 - A list's **dance** picks the basic rhythms the form suggests and the dance terms transcription
   listens for. It can be _None_.
-- **Editing a list** (from the Lists screen or the List tab) changes its name, dance and types.
-  Each type in use says how many figures use it. Removing a type in use asks which type its
-  figures move to. The only type cannot be removed while figures use it.
+- **Editing a list** (from the Lists screen or the List tab) changes its name, dance, types and
+  levels. Dance, Figure Types, Levels and Starting Figures fold: open for a new list, closed with
+  a one-line summary when editing one (a folded section with a problem shows the problem). Save
+  and Cancel stay pinned below. Each type in use says how many figures use it. Removing a type in
+  use asks which type its figures move to. The only type cannot be removed while figures use it.
+- A list has its own **levels**, easiest first, up to 12. A new list has Beginner, Intermediate
+  and Advanced. The presets _Beginner / Intermediate / Advanced_, _Numbers_ (1, 2, 3 …) and _Own
+  names_ rename the levels in place by position, so figures keep their step. Levels can be
+  renamed (non-empty, unique ignoring case), moved up or down, added and removed. Removing a level
+  in use asks where its figures go: another level or _No level_. The last level cannot go. An
+  untouched list keeps the built-in names in the app's language.
 - A type's **colour** comes from a fixed palette, picked in the list settings or from the Map's
   legend.
 - **Deleting a list** asks first. A read-only list cannot be edited or deleted, only unsubscribed
@@ -36,7 +44,7 @@ works offline and stays on the phone unless the user shares it.
   system camera). A video seeds the new figure, and after saving the app offers to edit the video
   ([video tools](video-tools.md)).
 - A figure has a **name** (required: Save stays grey until there is one), a **type**, optional
-  **level** (Beginner, Intermediate, Advanced; tapping the chosen level again clears it),
+  **level** (one of the list's levels; tapping the chosen level again clears it),
   **counts**, an optional **rhythm**, a **description**, **tags**, **prerequisites**, up to 10
   **videos** and **modifiers**.
 - The form can add a **new type** from its type picker.
@@ -81,27 +89,31 @@ works offline and stays on the phone unless the user shares it.
 
 - **Sort** by name, type, level, counts or date added, ascending or descending. Every sort except
   name splits the list into sections with pinned headers and counts. Types follow the list's
-  order, levels run beginner to advanced, and figures without a value come last.
+  order, levels the list's order (easiest first), and figures without a value come last. A
+  figure whose level the list no longer has counts as no level.
 - **Filter** by name, type, level, exact counts and tags. The same filter applies to the List and
   the Map. Filters are not remembered when the user leaves the list.
 
 ## Rules that must always hold
 
-| Rule                                                                          | Guarded by                                                                     |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Figure ids are never reused, even after a delete                              | `__tests__/unit/patternIds.test.ts`, `usePatternCrud.test.ts`                  |
-| Deleting a figure leaves no dangling prerequisite anywhere                    | `__tests__/unit/PrerequisiteIntegrity.test.ts`, `PatternListManager.test.tsx`  |
-| Prerequisites can never form a loop through the editor                        | `__tests__/components/EditPatternForm.test.tsx`                                |
-| A stored rhythm always matches its counts                                     | `__tests__/unit/rhythm.test.ts`                                                |
-| Every mutation is refused on a read-only list                                 | `__tests__/components/usePatternCrud.test.ts`                                  |
-| A refused save keeps the form as the user left it                             | `__tests__/components/PatternListManager.test.tsx`                             |
-| Removing a type moves its figures first                                       | `__tests__/unit/typeMoves.test.ts`                                             |
-| A figure and each of its variants hold at most 10 videos                      | `__tests__/unit/replaceVideo.test.ts`                                          |
-| The example list's and templates' prerequisites and modifiers all resolve     | `__tests__/unit/exampleList.test.ts`                                           |
+| Rule                                                                      | Guarded by                                                                    |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Figure ids are never reused, even after a delete                          | `__tests__/unit/patternIds.test.ts`, `usePatternCrud.test.ts`                 |
+| Deleting a figure leaves no dangling prerequisite anywhere                | `__tests__/unit/PrerequisiteIntegrity.test.ts`, `PatternListManager.test.tsx` |
+| Prerequisites can never form a loop through the editor                    | `__tests__/components/EditPatternForm.test.tsx`                               |
+| A stored rhythm always matches its counts                                 | `__tests__/unit/rhythm.test.ts`                                               |
+| Every mutation is refused on a read-only list                             | `__tests__/components/usePatternCrud.test.ts`                                 |
+| A refused save keeps the form as the user left it                         | `__tests__/components/PatternListManager.test.tsx`                            |
+| Removing a type moves its figures first                                   | `__tests__/unit/typeMoves.test.ts`                                            |
+| Removing a level moves its figures first, to a level or to none           | `__tests__/unit/typeMoves.test.ts`, `PatternListTemplateModal.test.tsx`       |
+| A list has at most 12 levels, with non-empty unique names                 | `__tests__/unit/patternLevels.test.ts`                                        |
+| Presets rename levels in place, so no figure changes level                | `__tests__/unit/patternLevels.test.ts`                                        |
+| A level id a list doesn't have shows as no level                          | `__tests__/unit/patternLevels.test.ts`                                        |
+| A figure and each of its variants hold at most 10 videos                  | `__tests__/unit/replaceVideo.test.ts`                                         |
+| The example list's and templates' prerequisites and modifiers all resolve | `__tests__/unit/exampleList.test.ts`                                          |
 
 ## Not built yet
 
-- Own levels per list (PR #126, from tester review 2).
 - Tag management ([#133](https://github.com/OliverHenrichs/dpm/issues/133)).
 - Counts and rhythm per variant, on attached modifiers only ([#134](https://github.com/OliverHenrichs/dpm/issues/134)).
 - Slow/quick notation, `S Q Q` ([#135](https://github.com/OliverHenrichs/dpm/issues/135)).

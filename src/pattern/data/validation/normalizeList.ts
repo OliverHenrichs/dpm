@@ -15,6 +15,7 @@ import {
   ModifierPosition,
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
+import { IPatternLevel, MAX_LEVELS } from "@/src/pattern/types/PatternLevel";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import {
   ImportMessage,
@@ -412,6 +413,26 @@ function normalizeLaneOrder(
   return order.length > 0 ? order : undefined;
 }
 
+/**
+ * 3.11. A list's own levels, easiest first: entries with a non-empty string id not seen before
+ * and a name that is not blank (trimmed), at most `MAX_LEVELS`. Anything else is dropped
+ * quietly; nothing left (or not a list) drops the key, which means the built-in three.
+ */
+function normalizeLevels(raw: unknown): IPatternLevel[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const seen = new Set<string>();
+  const levels: IPatternLevel[] = [];
+  for (const entry of raw) {
+    if (levels.length >= MAX_LEVELS) break;
+    if (!isObject(entry) || !isNonEmptyString(entry.id)) continue;
+    if (typeof entry.name !== "string" || !entry.name.trim()) continue;
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    levels.push({ id: entry.id, name: entry.name.trim() });
+  }
+  return levels.length > 0 ? levels : undefined;
+}
+
 export function normalizeList(
   raw: unknown,
   index: number,
@@ -440,6 +461,7 @@ export function normalizeList(
   );
 
   const laneOrder = normalizeLaneOrder(raw.laneOrder, patternTypes);
+  const levels = normalizeLevels(raw.levels);
   const now = Date.now();
   return {
     id: raw.id,
@@ -467,6 +489,7 @@ export function normalizeList(
     // 3.7. Anything but `true` means the list is open to anyone with its code.
     ...(raw.membersOnly === true && { membersOnly: true as const }),
     ...(laneOrder && { laneOrder }),
+    ...(levels && { levels }),
     // The id high-water mark: exports always carried it, but import used to drop it, so the id
     // of a figure deleted from the end could be handed out again. A bad value is dropped and
     // `nextPatternId()` falls back to the figures present.

@@ -6,7 +6,7 @@ import {
   IPatternModifierRef,
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
-import { PatternLevel } from "@/src/pattern/types/PatternLevel";
+import { resolveLevelIds } from "@/src/pattern/types/PatternLevel";
 import { asVideoRefs, isObject } from "@/src/pattern/suggestions/suggestions";
 
 /**
@@ -71,8 +71,6 @@ interface Snapshot {
   modifierRefs: IPatternModifierRef[];
 }
 
-const levels: string[] = Object.values(PatternLevel);
-
 function snapshot(raw: unknown): Snapshot | null {
   if (!isObject(raw)) return null;
   const name = typeof raw.name === "string" ? raw.name.trim() : "";
@@ -98,8 +96,9 @@ function snapshot(raw: unknown): Snapshot | null {
     name,
     typeId: typeof raw.typeId === "string" ? raw.typeId : "",
     counts,
+    // Checked against the list's levels in `figureChanges`, as the type is.
     ...(typeof raw.level === "string" &&
-      levels.includes(raw.level) && { level: raw.level }),
+      raw.level !== "" && { level: raw.level }),
     ...(typeof raw.rhythm === "string" &&
       rhythmMatchesCounts(raw.rhythm, counts) && { rhythm: raw.rhythm }),
     description: typeof raw.description === "string" ? raw.description : "",
@@ -194,19 +193,23 @@ export function figureChanges(
       ...(changedSince && { changedSince, now: current.typeId }),
     }));
   }
-  scalar(
-    base.level ?? "",
-    next.level ?? "",
-    current.level ?? "",
-    eq,
-    (changedSince) => ({
-      id: "level",
-      kind: "level",
-      ...(base.level && { from: base.level }),
-      ...(next.level && { to: next.level }),
-      ...(changedSince && { changedSince, now: current.level ?? null }),
-    }),
-  );
+  // A level the list does not have (any more) is left out, as a type is; clearing it is not.
+  const levelIds = resolveLevelIds(list.levels);
+  if (!next.level || levelIds.includes(next.level)) {
+    scalar(
+      base.level ?? "",
+      next.level ?? "",
+      current.level ?? "",
+      eq,
+      (changedSince) => ({
+        id: "level",
+        kind: "level",
+        ...(base.level && { from: base.level }),
+        ...(next.level && { to: next.level }),
+        ...(changedSince && { changedSince, now: current.level ?? null }),
+      }),
+    );
+  }
   const countsOf = (s: { counts: number; rhythm?: string }) => ({
     counts: s.counts,
     ...(s.rhythm && { rhythm: s.rhythm }),

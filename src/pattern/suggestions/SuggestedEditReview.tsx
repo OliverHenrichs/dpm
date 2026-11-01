@@ -17,6 +17,8 @@ import {
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
+import { IPatternLevel, levelName } from "@/src/pattern/types/PatternLevel";
+import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
   applyFigureChanges,
   ChangeLine,
@@ -54,6 +56,7 @@ const SuggestedEditReview: React.FC<SuggestedEditReviewProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
+  const levels = useActiveListLevels();
   const [ticked, setTicked] = useState(
     () => new Set(lines.filter((l) => !l.changedSince).map((l) => l.id)),
   );
@@ -115,6 +118,7 @@ const SuggestedEditReview: React.FC<SuggestedEditReviewProps> = ({
             {lines.map((line) => {
               const { title, detail } = describe(line, {
                 t,
+                levels,
                 patterns,
                 patternTypes,
                 modifiers,
@@ -122,7 +126,7 @@ const SuggestedEditReview: React.FC<SuggestedEditReviewProps> = ({
               const since =
                 line.changedSince &&
                 t("suggestionEditChangedSince", {
-                  now: describeNow(line, { t, patternTypes }),
+                  now: describeNow(line, { t, levels, patternTypes }),
                 });
               return (
                 <ListRow
@@ -164,6 +168,8 @@ const SuggestedEditReview: React.FC<SuggestedEditReviewProps> = ({
 
 interface Context {
   t: TFunction;
+  /** The list's levels, named (`useActiveListLevels`). */
+  levels: IPatternLevel[];
   patterns: IPattern[];
   patternTypes: PatternType[];
   modifiers: IModifier[];
@@ -171,6 +177,13 @@ interface Context {
 
 const typeName = (types: PatternType[], id: string | undefined) =>
   types.find((pt) => pt.id === id)?.slug ?? "?";
+
+/** A level by name in the list; one it does not have reads as no level. */
+const levelText = (
+  t: TFunction,
+  levels: IPatternLevel[],
+  id: string | null | undefined,
+) => levelName(levels, id ?? undefined, t) ?? t("noLevel");
 
 const countsText = (c: CountsAndRhythm) =>
   c.rhythm ? `${c.counts} (${c.rhythm})` : String(c.counts);
@@ -181,12 +194,10 @@ const startText = (t: TFunction, seconds: number | null | undefined) =>
 /** What a change line says: what changes, and the detail under it. */
 function describe(
   line: ChangeLine,
-  { t, patterns, patternTypes, modifiers }: Context,
+  { t, levels, patterns, patternTypes, modifiers }: Context,
 ): { title: string; detail?: string } {
   const modifierName = (id: string | undefined) =>
     id ? (modifiers.find((m) => m.id === id)?.name ?? "?") : undefined;
-  const levelText = (level: string | null | undefined) =>
-    level ? t(level) : t("noLevel");
   switch (line.kind) {
     case "name":
       return {
@@ -202,8 +213,8 @@ function describe(
     case "level":
       return {
         title: t("suggestionEditLevel", {
-          from: levelText(line.from),
-          to: levelText(line.to),
+          from: levelText(t, levels, line.from),
+          to: levelText(t, levels, line.to),
         }),
       };
     case "counts":
@@ -294,7 +305,7 @@ function describe(
 /** The list owner's own value, for a line they have changed since. */
 function describeNow(
   line: ChangeLine,
-  { t, patternTypes }: Pick<Context, "t" | "patternTypes">,
+  { t, levels, patternTypes }: Pick<Context, "t" | "levels" | "patternTypes">,
 ): string {
   switch (line.kind) {
     case "name":
@@ -303,7 +314,7 @@ function describeNow(
     case "type":
       return typeName(patternTypes, line.now);
     case "level":
-      return line.now ? t(line.now) : t("noLevel");
+      return levelText(t, levels, line.now);
     case "counts":
       return line.now ? countsText(line.now) : "";
     case "videoStart":

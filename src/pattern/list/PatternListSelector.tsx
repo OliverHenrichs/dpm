@@ -21,8 +21,11 @@ import PlusButton from "@/src/common/components/PlusButton";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import PatternListTemplateModal from "./PatternListTemplateModal";
 import {
+  applyLevelMoves,
   applyTypeMoves,
+  countPatternsByLevel,
   countPatternsByType,
+  LevelMoves,
   TypeMoves,
 } from "@/src/pattern/list/typeMoves";
 import BottomSheet from "@/src/common/components/BottomSheet";
@@ -55,6 +58,7 @@ const PatternListSelector: React.FC = () => {
   );
   const [editingList, setEditingList] = useState<IPatternList | null>(null);
   const [typeUsage, setTypeUsage] = useState<Record<string, number>>({});
+  const [levelUsage, setLevelUsage] = useState<Record<string, number>>({});
 
   // Cloud sharing state
   const [shareTarget, setShareTarget] = useState<IPatternList | null>(null);
@@ -158,6 +162,7 @@ const PatternListSelector: React.FC = () => {
     try {
       const patterns = await loadPatterns(list.id);
       setTypeUsage(countPatternsByType(patterns));
+      setLevelUsage(countPatternsByLevel(patterns));
       setEditingList(list);
     } catch (error) {
       console.error("Error loading patterns for edit:", error);
@@ -167,11 +172,15 @@ const PatternListSelector: React.FC = () => {
   const handleSaveList = async (
     updatedList: IPatternList,
     typeMoves: TypeMoves,
+    levelMoves: LevelMoves,
   ) => {
     try {
-      // Figures of a removed type go to the type the user chose, before the list drops it.
+      // Figures of a removed type or level go where the user chose, before the list drops it.
       const patterns = await loadPatterns(updatedList.id);
-      const moved = applyTypeMoves(patterns, typeMoves);
+      const moved = applyLevelMoves(
+        applyTypeMoves(patterns, typeMoves),
+        levelMoves,
+      );
       if (moved !== patterns) await savePatterns(updatedList.id, moved);
       await savePatternList(updatedList);
       // If the list is already published, keep Firestore in sync automatically
@@ -411,6 +420,7 @@ const PatternListSelector: React.FC = () => {
           onCreateList={handleCreateList}
           editList={editingList ?? undefined}
           typeUsage={typeUsage}
+          levelUsage={levelUsage}
           onSaveList={handleSaveList}
         />
 

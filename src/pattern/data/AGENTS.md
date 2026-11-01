@@ -110,7 +110,7 @@ replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.10.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.11.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -161,6 +161,8 @@ Version history (what each minor added):
 - **3.10** `IPatternList.laneOrder`, the timeline's lanes as the user dragged them (type ids, top
   to bottom; `src/pattern/graph/`). Only ids of the list's types are kept, each once; nothing
   left drops the key, which means the automatic order.
+- **3.11** `IPatternList.levels` (`{ id, name }`). Kept: unique ids with a non-blank name, at
+  most `MAX_LEVELS`; nothing left drops the key.
 
 ## Shared list context
 

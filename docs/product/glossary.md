@@ -5,28 +5,28 @@ text, the website, release notes and example content.
 
 ## App words
 
-| On screen                | In code                 | Meaning                                                                                       |
-| ------------------------ | ----------------------- | --------------------------------------------------------------------------------------------- |
-| figure                   | `pattern`, `IPattern`   | One move or sequence of moves with a name. De _Figur_, es/pt _figura_, fr _figure_, ar حركة   |
-| list                     | `IPatternList`          | A collection of figures with its own types and modifiers                                      |
-| type                     | `PatternType`           | A family of figures (Push, Pass, Whip, Tuck in the WCS template), with a colour               |
-| level                    | `PatternLevel`          | Beginner, Intermediate or Advanced; optional                                                  |
-| prerequisite, builds on  | `prerequisites`         | A figure that should be learned before this one. "Builds into" is the reverse                 |
-| foundational figure      | `foundational`          | A figure with no prerequisites                                                                |
-| modifier                 | `IModifier`             | A change to how a figure is danced ("with inside turn"). Positions: Entry, During, Exit       |
-| universal modifier       | `universal: true`       | A modifier that applies to every figure, with its own videos                                  |
-| variant                  | `IPatternModifierRef`   | A figure danced with one attached modifier, with its own videos                               |
-| counts                   | `counts`                | How many beats a figure takes                                                                 |
-| rhythm                   | `rhythm`                | The step pattern over those beats, written `1 2 3&4 5&6`                                      |
-| Map, Timeline, Network   | graph, `timeline`, `graph` | The tab and its two views                                                                  |
-| list owner               | publisher, owner        | The person who publishes a list and edits it for everyone                                     |
-| subscriber, follower     | subscriber              | Someone who follows a published list; their copy is read-only                                 |
-| share code               | `shareCode`             | The 8-character code others use to follow a list                                              |
-| members only             | `membersOnly`           | A published list only people let in can open                                                  |
-| hand over                | handover                | Giving a published list to someone who follows it                                             |
-| suggestion               | suggestion              | A figure, or a change to one, sent by a subscriber for the owner to review                    |
-| Anonymized               | `generated`             | A video the app made to hide who dances in it                                                 |
-| transcript               | `transcript`            | What was said in a video, written down on the phone                                           |
+| On screen               | In code                    | Meaning                                                                                                  |
+| ----------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| figure                  | `pattern`, `IPattern`      | One move or sequence of moves with a name. De _Figur_, es/pt _figura_, fr _figure_, ar حركة              |
+| list                    | `IPatternList`             | A collection of figures with its own types and modifiers                                                 |
+| type                    | `PatternType`              | A family of figures (Push, Pass, Whip, Tuck in the WCS template), with a colour                          |
+| level                   | `IPatternLevel`            | A step of a list's own levels, easiest first (Beginner, Intermediate, Advanced unless renamed); optional |
+| prerequisite, builds on | `prerequisites`            | A figure that should be learned before this one. "Builds into" is the reverse                            |
+| foundational figure     | `foundational`             | A figure with no prerequisites                                                                           |
+| modifier                | `IModifier`                | A change to how a figure is danced ("with inside turn"). Positions: Entry, During, Exit                  |
+| universal modifier      | `universal: true`          | A modifier that applies to every figure, with its own videos                                             |
+| variant                 | `IPatternModifierRef`      | A figure danced with one attached modifier, with its own videos                                          |
+| counts                  | `counts`                   | How many beats a figure takes                                                                            |
+| rhythm                  | `rhythm`                   | The step pattern over those beats, written `1 2 3&4 5&6`                                                 |
+| Map, Timeline, Network  | graph, `timeline`, `graph` | The tab and its two views                                                                                |
+| list owner              | publisher, owner           | The person who publishes a list and edits it for everyone                                                |
+| subscriber, follower    | subscriber                 | Someone who follows a published list; their copy is read-only                                            |
+| share code              | `shareCode`                | The 8-character code others use to follow a list                                                         |
+| members only            | `membersOnly`              | A published list only people let in can open                                                             |
+| hand over               | handover                   | Giving a published list to someone who follows it                                                        |
+| suggestion              | suggestion                 | A figure, or a change to one, sent by a subscriber for the owner to review                               |
+| Anonymized              | `generated`                | A video the app made to hide who dances in it                                                            |
+| transcript              | `transcript`               | What was said in a video, written down on the phone                                                      |
 
 Avoid on screen: _pattern_ (except in the app's name, Dance Pattern Mapper), _publisher_,
 _keeper_, _graph_, _node_.

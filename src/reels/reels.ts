@@ -1,5 +1,6 @@
 import {
   IPattern,
+  IPatternLevel,
   IPatternList,
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
@@ -24,6 +25,8 @@ export interface Reel {
   pattern: IPattern;
   typeName?: string;
   typeColor?: string;
+  /** The list's own levels (`IPatternList.levels`), to name the pattern's; absent = built-in. */
+  levels?: IPatternLevel[];
   videos: ReelVideo[];
 }
 
@@ -65,6 +68,7 @@ export function collectReels(sources: ListWithPatterns[]): Reel[] {
           pattern,
           typeName: type?.slug,
           typeColor: type?.color,
+          ...(list.levels && { levels: list.levels }),
           videos: videosOf(pattern, list),
         };
       })

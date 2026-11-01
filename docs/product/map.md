@@ -7,7 +7,7 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 
 ### Both views
 
-- Each figure is a box in its type's colour. A higher level shows as a stronger tint. Boxes follow
+- Each figure is a box in its type's colour. A higher level shows as a stronger tint, spread over the list's own levels (three levels keep the original shades). Boxes follow
   the app style: rounded and outlined in After Hours, square with a colour bar in Clipboard.
 - A box **badges what it carries**: a play mark when the figure or one of its variants has a
   video, and up to three dots for attached modifiers. Universal modifiers are not counted, since
@@ -52,16 +52,16 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 
 ## Rules that must always hold
 
-| Rule                                                                                  | Guarded by                                                        |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Every figure gets a position, even with dangling or looping prerequisites             | `__tests__/unit/GraphLayoutInvariants.test.ts`                    |
-| Filtering never makes a shown figure or its subtree vanish                            | `__tests__/unit/filterGraphModel.test.ts`                         |
-| Both views agree on depth, edges and loops (one graph model)                          | `__tests__/unit/GraphModel.test.ts`                               |
-| A figure added to a manual arrangement is placed near its prerequisites              | `__tests__/unit/resolveLayout.test.ts`                            |
-| Stored positions of deleted figures are pruned on save                                | `__tests__/components/useGraphPositions.test.ts`                  |
-| Lanes not named in the manual order follow it in automatic order                      | `__tests__/unit/laneOrder.test.ts`                                |
-| Node text keeps 4.5:1 contrast on every type colour in every theme                    | `__tests__/unit/nodeFrame.test.ts`                                |
-| Badges sit inside the box outline in both styles                                      | `__tests__/components/nodeBadgeRender.test.tsx`                   |
+| Rule                                                                      | Guarded by                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------ |
+| Every figure gets a position, even with dangling or looping prerequisites | `__tests__/unit/GraphLayoutInvariants.test.ts`   |
+| Filtering never makes a shown figure or its subtree vanish                | `__tests__/unit/filterGraphModel.test.ts`        |
+| Both views agree on depth, edges and loops (one graph model)              | `__tests__/unit/GraphModel.test.ts`              |
+| A figure added to a manual arrangement is placed near its prerequisites   | `__tests__/unit/resolveLayout.test.ts`           |
+| Stored positions of deleted figures are pruned on save                    | `__tests__/components/useGraphPositions.test.ts` |
+| Lanes not named in the manual order follow it in automatic order          | `__tests__/unit/laneOrder.test.ts`               |
+| Node text keeps 4.5:1 contrast on every type colour in every theme        | `__tests__/unit/nodeFrame.test.ts`               |
+| Badges sit inside the box outline in both styles                          | `__tests__/components/nodeBadgeRender.test.tsx`  |
 
 ## Not built yet
 

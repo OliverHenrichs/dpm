@@ -8,6 +8,8 @@ import { PatternType } from "@/src/pattern/types/PatternType";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
 import AppDialog from "@/src/common/components/AppDialog";
 import { useTranslation } from "react-i18next";
+import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
+import { levelName } from "@/src/pattern/types/PatternLevel";
 import { prefersDarkText } from "@/src/common/theme/contrast";
 
 interface PatternListItemProps {
@@ -63,7 +65,8 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
       0,
     );
   // The overview names what a pattern is; counts and the rest wait in the opened row.
-  const level = pattern.level ? t(pattern.level) : undefined;
+  const levels = useActiveListLevels();
+  const level = levelName(levels, pattern.level, t);
 
   const videoBadge = videoCount > 0 && (
     <View

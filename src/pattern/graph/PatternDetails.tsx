@@ -8,6 +8,8 @@ import {
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
+import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
+import { levelName } from "@/src/pattern/types/PatternLevel";
 import {
   getCommon2ndOrderLabel,
   getCommonLabel,
@@ -44,6 +46,9 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   showTopSeparator = true,
 }) => {
   const { t } = useTranslation();
+  const levels = useActiveListLevels();
+  // A level the list does not have shows as none.
+  const selectedLevel = levelName(levels, selectedPattern.level, t);
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
     null,
   );
@@ -148,12 +153,10 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
           <Text style={styles.patternDetailsValue}>{getTypeName()}</Text>
         </View>
         {/* Level is optional (it matters for courses); unset, it takes no room. */}
-        {!!selectedPattern.level && (
+        {!!selectedLevel && (
           <View style={styles.patternDetailsCol}>
             <Text style={styles.label}>{t("level")}:</Text>
-            <Text style={styles.patternDetailsValue}>
-              {t(selectedPattern.level)}
-            </Text>
+            <Text style={styles.patternDetailsValue}>{selectedLevel}</Text>
           </View>
         )}
       </View>

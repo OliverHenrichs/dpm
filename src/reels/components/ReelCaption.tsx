@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 import { Reel } from "@/src/reels/reels";
+import { levelName } from "@/src/pattern/types/PatternLevel";
 
 interface ReelCaptionProps {
   reel: Reel;
@@ -18,7 +19,7 @@ export function reelMeta(
 ): string {
   return [
     reel.typeName,
-    reel.pattern.level ? t(reel.pattern.level) : undefined,
+    levelName(reel.levels, reel.pattern.level, t),
     showListName ? reel.listName : undefined,
   ]
     .filter(Boolean)

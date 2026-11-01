@@ -18,7 +18,12 @@ import { useActivePatternList } from "@/src/pattern/data/components/ActivePatter
 import { syncPublishedList } from "@/src/firebase/FirebaseListService";
 import { repairDanglingPrerequisites } from "@/src/pattern/graph/utils/GenericGraphUtils";
 import { nextPatternId } from "@/src/pattern/data/patternIds";
-import { applyTypeMoves, TypeMoves } from "@/src/pattern/list/typeMoves";
+import {
+  applyLevelMoves,
+  applyTypeMoves,
+  LevelMoves,
+  TypeMoves,
+} from "@/src/pattern/list/typeMoves";
 
 /**
  * Every mutation returns whether it was applied, so callers can keep a form
@@ -48,10 +53,15 @@ export interface PatternCrud {
    */
   setLaneOrder: (order: string[] | undefined) => Promise<boolean>;
   /**
-   * Saves the list's own settings (name, types, dance), edited where its patterns are. `typeMoves`
-   * reassigns the figures of each removed type to the type that takes them.
+   * Saves the list's own settings (name, types, dance, levels), edited where its patterns are.
+   * `typeMoves` reassigns the figures of each removed type to the type that takes them, and
+   * `levelMoves` those of each removed level to another level or none.
    */
-  saveList: (list: IPatternList, typeMoves?: TypeMoves) => Promise<boolean>;
+  saveList: (
+    list: IPatternList,
+    typeMoves?: TypeMoves,
+    levelMoves?: LevelMoves,
+  ) => Promise<boolean>;
 }
 
 /**
@@ -278,11 +288,18 @@ export function usePatternCrud(): PatternCrud {
   );
 
   const saveList = useCallback(
-    async (list: IPatternList, typeMoves: TypeMoves = {}) => {
+    async (
+      list: IPatternList,
+      typeMoves: TypeMoves = {},
+      levelMoves: LevelMoves = {},
+    ) => {
       if (!activeList || isReadonly || list.id !== activeList.id) return false;
-      // Figures first, so none is left on a removed type if the list write is what fails; the
-      // list's push to Firestore then carries the moved figures with it.
-      const moved = applyTypeMoves(patterns, typeMoves);
+      // Figures first, so none is left on a removed type or level if the list write is what
+      // fails; the list's push to Firestore then carries the moved figures with it.
+      const moved = applyLevelMoves(
+        applyTypeMoves(patterns, typeMoves),
+        levelMoves,
+      );
       if (moved !== patterns) await updatePatterns(moved);
       await updateActiveList(list, moved);
       return true;

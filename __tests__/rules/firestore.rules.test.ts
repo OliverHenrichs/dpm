@@ -28,6 +28,7 @@ import type {
   SharedListOwnerDocument,
 } from "@/src/firebase/FirebaseListService";
 import type { ISuggestionPolicy } from "@/src/pattern/types/IPatternList";
+import { newLevelId } from "@/src/pattern/types/PatternLevel";
 import {
   counterIdFor,
   suggestedPattern,
@@ -166,6 +167,16 @@ describe("publishing", () => {
     data.list.laneOrder = data.list.patternTypes.map((type) => type.id);
     await assertSucceeds(publish(as(PUBLISHER), data));
     // _Reset to automatic_ removes the key.
+    await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
+  });
+
+  it("accepts a list with levels of its own, and the sync that goes back to the built-in ones", async () => {
+    const data = sharedListDoc();
+    data.list.levels = [
+      { id: newLevelId(), name: "1" },
+      { id: newLevelId(), name: "2" },
+    ];
+    await assertSucceeds(publish(as(PUBLISHER), data));
     await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
   });
 
@@ -512,6 +523,17 @@ describe("suggesting", () => {
       { count: 1, last: "anon" },
     );
     await assertSucceeds(batch.commit());
+  });
+
+  it("accepts a figure on a level of the list's own (a 32-character id)", async () => {
+    await seed(listTakingSuggestions());
+    const level = newLevelId();
+    expect(level).toHaveLength(32);
+    await assertSucceeds(
+      suggest(as(SUBSCRIBER), SUBSCRIBER, 1, {
+        data: { pattern: { ...suggestionPattern(), level } },
+      }),
+    );
   });
 
   it("refuses a suggestion past the limit per subscriber, but not another subscriber's", async () => {

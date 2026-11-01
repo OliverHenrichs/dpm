@@ -10,6 +10,7 @@ import {
   emptyGraphModel,
 } from "@/src/pattern/graph/model/GraphModel";
 import { IPattern } from "@/src/pattern/types/IPatternList";
+import { LEVEL_TINTS } from "@/src/pattern/graph/model/nodeFrame";
 import {
   createTestPattern,
   createTestPatternType,
@@ -254,6 +255,30 @@ describe("buildGraphModel", () => {
     const model = buildGraphModel([pattern(1)], [TYPE]);
 
     expect(model.nodes[0].color).toBe("#FF0000");
+  });
+
+  it("shades each node by its level among the list's levels", () => {
+    const leveled = (id: number, level?: string) =>
+      createTestPattern(TYPE.id, { id, level });
+    const builtIn = buildGraphModel(
+      [leveled(1, "beginner"), leveled(2, "advanced"), leveled(3)],
+      [TYPE],
+    );
+    expect(builtIn.nodes.map((n) => n.tint)).toEqual([
+      LEVEL_TINTS.beginner,
+      LEVEL_TINTS.advanced,
+      LEVEL_TINTS.beginner,
+    ]);
+
+    // Five course levels: the last is as dark as Advanced, and an old built-in id is no level.
+    const course = buildGraphModel(
+      [leveled(1, "c5"), leveled(2, "c1"), leveled(3, "advanced")],
+      [TYPE],
+      ["c1", "c2", "c3", "c4", "c5"],
+    );
+    expect(course.nodes[0].tint).toBeCloseTo(LEVEL_TINTS.advanced);
+    expect(course.nodes[1].tint).toBeCloseTo(LEVEL_TINTS.beginner);
+    expect(course.nodes[2].tint).toBe(LEVEL_TINTS.beginner);
   });
 
   it("leaves the colour undefined when the type is unknown", () => {

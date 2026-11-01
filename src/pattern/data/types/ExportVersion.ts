@@ -20,8 +20,9 @@ export const SUPPORTED_MAJOR = 3;
  * 8: modifiers may carry `description` (what the modifier changes).
  * 9: a list's `suggestions` may carry `edits` (subscribers may suggest changes to figures).
  * 10: lists may carry `laneOrder` (the timeline's lanes as the user dragged them).
+ * 11: lists may carry `levels` (their own levels, easiest first).
  */
-export const SUPPORTED_MINOR = 10;
+export const SUPPORTED_MINOR = 11;
 
 export interface ParsedVersion {
   major: number;

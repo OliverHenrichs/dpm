@@ -411,24 +411,24 @@ const ShareListModal: React.FC<ShareListModalProps> = ({
             )}
 
             {error && <Text style={styles.errorText}>{error}</Text>}
-
-            <View style={styles.buttonCol}>
-              {firebaseAvailable && !isPublished && (
-                <Button
-                  title={t("publishToCloud")}
-                  icon="cloud-upload-outline"
-                  loading={saving === "publish"}
-                  disabled={busy}
-                  onPress={() => withTerms(() => void handlePublish("publish"))}
-                />
-              )}
-              <Button
-                title={isPublished ? t("done") : t("cancel")}
-                variant={isPublished ? "primary" : "ghost"}
-                onPress={onClose}
-              />
-            </View>
           </ScrollView>
+          {/* Outside the scroller, so Publish and Done stay in sight. */}
+          <View style={styles.buttonCol}>
+            {firebaseAvailable && !isPublished && (
+              <Button
+                title={t("publishToCloud")}
+                icon="cloud-upload-outline"
+                loading={saving === "publish"}
+                disabled={busy}
+                onPress={() => withTerms(() => void handlePublish("publish"))}
+              />
+            )}
+            <Button
+              title={isPublished ? t("done") : t("cancel")}
+              variant={isPublished ? "primary" : "ghost"}
+              onPress={onClose}
+            />
+          </View>
         </View>
       </ModalOverlay>
 
@@ -468,6 +468,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   scroll: {
     flexGrow: 0,
+    flexShrink: 1,
   },
   scrollContent: {
     flexGrow: 0,
@@ -556,6 +557,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   buttonCol: {
     gap: theme.space.md,
+    marginTop: theme.space.md,
   },
 }));
 

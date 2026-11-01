@@ -133,22 +133,22 @@ const ReportListModal: React.FC<ReportListModalProps> = ({ list, onClose }) => {
                 style={styles.spinner}
               />
             )}
-
-            <View style={styles.buttonRow}>
-              <Button
-                title={t("cancel")}
-                variant="secondary"
-                onPress={onClose}
-                style={styles.footerButton}
-              />
-              <Button
-                title={t("reportSend")}
-                onPress={() => void send()}
-                disabled={busy || !reason}
-                style={styles.footerButton}
-              />
-            </View>
           </ScrollView>
+          {/* Outside the scroller, so Send stays in sight above the keyboard. */}
+          <View style={styles.buttonRow}>
+            <Button
+              title={t("cancel")}
+              variant="secondary"
+              onPress={onClose}
+              style={styles.footerButton}
+            />
+            <Button
+              title={t("reportSend")}
+              onPress={() => void send()}
+              disabled={busy || !reason}
+              style={styles.footerButton}
+            />
+          </View>
         </View>
       </ModalOverlay>
     </Modal>
@@ -208,7 +208,7 @@ const styles = StyleSheet.create((theme) => ({
   buttonRow: {
     flexDirection: "row",
     gap: theme.space.md,
-    marginTop: theme.space.xl,
+    marginTop: theme.space.md,
   },
   footerButton: { flex: 1 },
 }));

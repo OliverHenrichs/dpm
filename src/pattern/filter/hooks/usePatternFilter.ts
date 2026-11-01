@@ -26,9 +26,8 @@ export function usePatternFilter(patterns: IPattern[], filter: PatternFilter) {
         }
       }
 
-      // Level filter. `IPattern.level` is a bare string — older lists carry
-      // values that are not in the enum — so compare as strings rather than
-      // casting one side into the other.
+      // Level filter, by level id. A figure whose level the list does not have
+      // matches no chip, as it shows no level.
       if (
         filter.levels.length > 0 &&
         (!pattern.level ||

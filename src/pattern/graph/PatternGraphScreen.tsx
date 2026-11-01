@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { IPattern } from "@/src/pattern/types/IPatternList";
@@ -27,6 +27,7 @@ import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
 import { canSuggestEditsTo } from "@/src/pattern/suggestions/suggestions";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { reorderLanes } from "@/src/pattern/graph/utils/laneOrder";
+import { resolveLevelIds } from "@/src/pattern/types/PatternLevel";
 
 const PatternGraphScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -72,6 +73,10 @@ const PatternGraphScreen: React.FC = () => {
   // Get pattern types / modifiers from active list or empty array
   const patternTypes = activeList?.patternTypes ?? [];
   const modifiers = activeList?.modifiers ?? [];
+  // The list's levels in their order, for the nodes' shading. Memoised: the model is rebuilt
+  // whenever its identity changes.
+  const listLevels = activeList?.levels;
+  const levelIds = useMemo(() => resolveLevelIds(listLevels), [listLevels]);
 
   // One model, shared by both views: switching between them costs nothing and
   // they cannot disagree about depth, edges or cycles. Narrowed to the filter's
@@ -87,7 +92,7 @@ const PatternGraphScreen: React.FC = () => {
     shownCount,
     totalCount,
     clearFilter,
-  } = useGraphFilter(patterns, patternTypes, activeList?.id);
+  } = useGraphFilter(patterns, patternTypes, activeList?.id, levelIds);
 
   // Re-fit the viewport when the drawn set changes, or a narrowed graph opens
   // at the zoom the whole graph needed and reads as an empty canvas.
