@@ -4,7 +4,7 @@ import {
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
-import { normalizeList } from "@/src/pattern/data/validation/validateExportData";
+import { normalizeList } from "@/src/pattern/data/validation/normalizeList";
 import { ImportMessage } from "@/src/pattern/data/validation/importMessages";
 
 /**
