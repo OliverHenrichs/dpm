@@ -98,3 +98,9 @@ nothing selected.
   its optional `description` shows in the Modifiers tab and under the variant strip when picked.
   With no variant picked, `PatternDetails` says what a variant is.
 - `ShareListModal` / `SubscribeListModal` are the sharing UI (`src/firebase/AGENTS.md`).
+
+## The figure and modifier forms scroll themselves
+
+`EditPatternForm` and `EditModifierForm` each own their `RevealScrollView`, with Save and Cancel in a
+footer outside it, so a host gives them a sheet and no scroller. Type and level fold into a
+`FormSection`: open on a new figure, closed on a seeded one.

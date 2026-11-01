@@ -71,6 +71,7 @@ import {
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
 import { RevealTextInput } from "@/src/common/components/reveal";
+import RevealScrollView from "@/src/common/components/RevealScrollView";
 import PutOnlineSheet, {
   PutOnlineTarget,
 } from "@/src/videoLinks/components/PutOnlineSheet";
@@ -546,447 +547,484 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     .filter(Boolean)
     .join(", ");
 
-  return (
-    <View style={styles.addPatternContainer}>
-      <Text style={styles.sectionTitle}>
-        {title ?? (existing ? t("editPattern") : t("addPattern"))}
-      </Text>
-      {header}
-      <View style={styles.inputRow}>
-        <View style={styles.input}>
-          <Text style={styles.label}>{t("patternName")}</Text>
-          <RevealTextInput
-            ref={nameInputRef}
-            placeholder={t("patternName")}
-            value={newPattern.name}
-            onChangeText={(text) =>
-              setNewPattern({ ...newPattern, name: text })
-            }
-            maxLength={nameMaxLength}
-            style={styles.input}
-            placeholderTextColor={theme.colors.textMuted}
-          />
-        </View>
-        <View style={styles.input}>
-          <Text style={styles.label}>{t("counts")}</Text>
-          <RevealTextInput
-            placeholder={t("counts")}
-            value={newPattern.counts.toString()}
-            onChangeText={(text) => changeCounts(parseInt(text) || 0)}
-            keyboardType="numeric"
-            style={styles.input}
-            placeholderTextColor={theme.colors.textMuted}
-          />
-        </View>
-      </View>
+  const selectedType = patternTypes.find((p) => p.id === newPattern.typeId);
+  // The chosen type and level, for the folded section's one line.
+  const typeLevelSummary = [
+    selectedType?.slug,
+    newPattern.level && t(newPattern.level),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
-      {/* Modifier pill strip (only shown when modifiers exist) */}
-      {modifiers.length > 0 && (
-        <View style={styles.modifierSection}>
-          <ModifierPillStrip
-            modifiers={modifiers}
-            modifierRefs={newPattern.modifierRefs ?? []}
-            baseVideoCount={newPattern.videoRefs.length}
-            selectedModifierId={selectedModifierId}
-            onSelect={setSelectedModifierId}
-            isEditMode
-            onDetachModifier={handleDetachModifier}
-            onShowAttachPicker={
-              unattachedModifiers.length > 0
-                ? () => setShowAttachPicker(true)
+  // Save and Cancel stay outside the scroller, so they are in sight however long the form is.
+  return (
+    <View style={styles.form}>
+      <RevealScrollView
+        // Tapping a rhythm step keeps the keyboard up, so typing can go on.
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.addPatternContainer}>
+          <Text style={styles.sectionTitle}>
+            {title ?? (existing ? t("editPattern") : t("addPattern"))}
+          </Text>
+          {header}
+          <View style={styles.inputRow}>
+            <View style={styles.input}>
+              <Text style={styles.label}>{t("patternName")}</Text>
+              <RevealTextInput
+                ref={nameInputRef}
+                placeholder={t("patternName")}
+                value={newPattern.name}
+                onChangeText={(text) =>
+                  setNewPattern({ ...newPattern, name: text })
+                }
+                maxLength={nameMaxLength}
+                style={styles.input}
+                placeholderTextColor={theme.colors.textMuted}
+              />
+            </View>
+            <View style={styles.input}>
+              <Text style={styles.label}>{t("counts")}</Text>
+              <RevealTextInput
+                placeholder={t("counts")}
+                value={newPattern.counts.toString()}
+                onChangeText={(text) => changeCounts(parseInt(text) || 0)}
+                keyboardType="numeric"
+                style={styles.input}
+                placeholderTextColor={theme.colors.textMuted}
+              />
+            </View>
+          </View>
+
+          {/* Modifier pill strip (only shown when modifiers exist) */}
+          {modifiers.length > 0 && (
+            <View style={styles.modifierSection}>
+              <ModifierPillStrip
+                modifiers={modifiers}
+                modifierRefs={newPattern.modifierRefs ?? []}
+                baseVideoCount={newPattern.videoRefs.length}
+                selectedModifierId={selectedModifierId}
+                onSelect={setSelectedModifierId}
+                isEditMode
+                onDetachModifier={handleDetachModifier}
+                onShowAttachPicker={
+                  unattachedModifiers.length > 0
+                    ? () => setShowAttachPicker(true)
+                    : undefined
+                }
+              />
+              {isActiveVideoReadonly && (
+                <Text style={styles.readonlyHint}>
+                  {t("universalVideosReadonly")}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Videos — contextual based on pill selection */}
+          <PatternVideos
+            videoRefs={activeVideoRefs}
+            thumbnails={thumbnails}
+            onAddVideo={openAddVideoModal}
+            onRemoveVideo={handleRemoveVideo}
+            onEditVideo={canEditVideos ? handleEditVideo : undefined}
+            onEditVideoAt={
+              canEditVideos
+                ? (index) => openEditor(activeVideoRefs[index])
+                : undefined
+            }
+            onPutOnlineAt={
+              canPutOnline
+                ? (index) => openPutOnline(activeVideoRefs[index])
+                : undefined
+            }
+            onOpenTranscript={(index) => openTranscript(activeVideoRefs[index])}
+            disabled={
+              isActiveVideoReadonly || activeVideoRefs.length >= MAX_VIDEOS
+            }
+            full={
+              !isActiveVideoReadonly && activeVideoRefs.length >= MAX_VIDEOS
+            }
+          />
+          {draftJobs.map((job) =>
+            job.status === "review" ? (
+              <View key={job.id} style={styles.jobRow}>
+                <Text style={[styles.jobLine, styles.jobRowText]}>
+                  {reviewsSuggestion(job)
+                    ? t("suggestJobInFormReview")
+                    : t("videoJobInFormReview")}
+                </Text>
+                <Button
+                  title={t("videoJobReviewButton")}
+                  size="sm"
+                  onPress={() => setReviewId(job.id)}
+                />
+              </View>
+            ) : (
+              // Each line names its kind: a transcription that failed for want of sound sat above
+              // a cut still running, and "processing" for both read as one job failing and going on.
+              <Text
+                key={job.id}
+                style={[
+                  styles.jobLine,
+                  job.status === "failed" && styles.jobLineFailed,
+                ]}
+              >
+                {job.status === "queued"
+                  ? t(`${job.kind}JobInFormQueued`)
+                  : job.status === "running"
+                    ? writesWithoutCount(job)
+                      ? t("suggestJobInFormWriting")
+                      : t(`${job.kind}JobInFormRunning`, {
+                          percent: Math.round(job.progress * 100),
+                        })
+                    : t(`${job.kind}JobInFormFailed`, {
+                        error: job.errorKey
+                          ? t(job.errorKey)
+                          : (job.error ?? ""),
+                      })}
+              </Text>
+            ),
+          )}
+          {draftJobs.some(
+            (j) => j.status === "queued" || j.status === "running",
+          ) && <Text style={styles.jobLine}>{t("videoJobsKeepOpen")}</Text>}
+          <FormSection
+            title={t("typeAndLevel")}
+            summary={typeLevelSummary || t("formSectionEmpty")}
+            // A new figure's type is a choice to make; an existing one's rarely changes.
+            initiallyOpen={!seed}
+          >
+            <View style={styles.inputRow}>
+              <View style={styles.input}>
+                <Text style={styles.label}>{t("type")}</Text>
+                {patternTypes.map((type) => (
+                  <Chip
+                    key={type.id}
+                    label={type.slug.toUpperCase()}
+                    swatch={type.color}
+                    selected={newPattern.typeId === type.id}
+                    onPress={() =>
+                      setNewPattern({ ...newPattern, typeId: type.id })
+                    }
+                  />
+                ))}
+                {onAddType && (
+                  <Chip
+                    label={t("newType")}
+                    icon="plus"
+                    onPress={() => {
+                      setNewTypeRefused(false);
+                      setNewTypeName("");
+                    }}
+                  />
+                )}
+              </View>
+              <View style={styles.input}>
+                <Text style={styles.label}>{t("level")}</Text>
+                {levels.map((level) => (
+                  <Chip
+                    key={level}
+                    label={t(level)}
+                    selected={newPattern.level === level}
+                    accessibilityHint={
+                      newPattern.level === level
+                        ? t("levelClearHint")
+                        : undefined
+                    }
+                    onPress={() => {
+                      // Tapping the chosen level clears it. The key goes, rather than holding
+                      // `undefined`, which Firestore rejects when the list is published.
+                      const { level: current, ...rest } = newPattern;
+                      setNewPattern(
+                        current === level ? rest : { ...rest, level },
+                      );
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          </FormSection>
+          <FormSection
+            title={t("rhythm")}
+            summary={rhythmDraft.trim() || t("formSectionEmpty")}
+            initiallyOpen={!!seed?.rhythm}
+          >
+            <View style={styles.rhythmBlock}>
+              <RevealTextInput
+                placeholder={t("rhythmPlaceholder")}
+                value={rhythmDraft}
+                onChangeText={changeRhythm}
+                accessibilityLabel={t("rhythm")}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.rhythmInput}
+                placeholderTextColor={theme.colors.textMuted}
+              />
+              {rhythmInvalid && (
+                <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
+              )}
+              {suggestedRhythms.length > 0 && (
+                <View style={styles.rhythmSuggestions}>
+                  {suggestedRhythms.map((rhythm) => (
+                    <Chip
+                      key={rhythm}
+                      label={rhythm}
+                      icon="music-note-outline"
+                      accessibilityHint={t("rhythmSuggestionHint")}
+                      onPress={() => changeRhythm(rhythm)}
+                    />
+                  ))}
+                </View>
+              )}
+              {(nextSteps.length > 0 || chainLink || lastStep) && (
+                <View style={styles.rhythmSuggestions}>
+                  {nextSteps.map((step) => (
+                    <Chip
+                      key={step}
+                      label={step}
+                      icon="plus"
+                      accessibilityLabel={t("rhythmAddStep", { step })}
+                      onPress={() =>
+                        changeRhythm(appendRhythmStep(rhythmDraft, step))
+                      }
+                    />
+                  ))}
+                  {chainLink && (
+                    <Chip
+                      label={chainLink}
+                      icon="plus"
+                      accessibilityLabel={t("rhythmExtendStep", {
+                        link: chainLink,
+                      })}
+                      onPress={() =>
+                        changeRhythm(appendChainLink(rhythmDraft, chainLink))
+                      }
+                    />
+                  )}
+                  {lastStep && (
+                    <Chip
+                      label={t("rhythmUndoStep")}
+                      icon="backspace-outline"
+                      accessibilityLabel={t("rhythmRemoveStep", {
+                        step: lastStep,
+                      })}
+                      onPress={() =>
+                        changeRhythm(removeLastRhythmStep(rhythmDraft))
+                      }
+                    />
+                  )}
+                </View>
+              )}
+            </View>
+          </FormSection>
+          <FormSection
+            title={t("description")}
+            summary={newPattern.description.trim() || t("formSectionEmpty")}
+            initiallyOpen={!!seed?.description.trim()}
+          >
+            <RevealTextInput
+              placeholder={t("description")}
+              value={newPattern.description}
+              onChangeText={(text) =>
+                setNewPattern({ ...newPattern, description: text })
+              }
+              style={styles.textarea}
+              multiline
+              placeholderTextColor={theme.colors.textMuted}
+            />
+          </FormSection>
+          <FormSection
+            title={t("prerequisites")}
+            summary={prerequisiteSummary || t("formSectionEmpty")}
+            initiallyOpen={!!seed?.prerequisites.length}
+          >
+            <PatternPrerequisites
+              patterns={patterns}
+              chosen={newPattern.prerequisites}
+              setChosen={(prerequisites) =>
+                setNewPattern({ ...newPattern, prerequisites })
+              }
+              ineligible={ineligiblePrerequisiteIds}
+              editingId={existing?.id}
+            />
+          </FormSection>
+          <FormSection
+            title={t("tags")}
+            summary={newPattern.tags.join(", ") || t("formSectionEmpty")}
+            initiallyOpen={!!seed?.tags.length}
+          >
+            <PatternTags
+              tags={newPattern.tags}
+              setTags={(tags) => setNewPattern({ ...newPattern, tags })}
+              allPatterns={patterns}
+              editingId={existing?.id}
+            />
+          </FormSection>
+          <VideoReviewModal
+            job={reviewing}
+            onClose={() => setReviewId(null)}
+            source={reviewSource}
+          />
+          <AppDialog
+            visible={editBlocked}
+            title={t("videoEditTitle")}
+            message={t("videoEditOnlyLocal", { max: MAX_VIDEOS })}
+            onClose={() => setEditBlocked(false)}
+          />
+          <BottomSheet
+            visible={showAnonymizePicker}
+            onClose={() => setShowAnonymizePicker(false)}
+            title={t("anonymizeChooseVideo")}
+            minHeight="25%"
+            maxHeight="50%"
+          >
+            {onlineVideos > 0 && (
+              <Text style={styles.jobLine}>{t("videoEditOnlineHint")}</Text>
+            )}
+            <View style={styles.anonymizeChoices}>
+              {editable.map(({ ref, index }) => (
+                <Tappable
+                  key={ref.value}
+                  onPress={() => openEditor(ref)}
+                  accessibilityLabel={t("anonymizeVideoN", { n: index + 1 })}
+                  style={styles.anonymizeThumbButton}
+                >
+                  {thumbnails[index] ? (
+                    <Image
+                      source={{ uri: thumbnails[index] }}
+                      style={styles.anonymizeThumb}
+                    />
+                  ) : (
+                    <View style={[styles.anonymizeThumb, styles.thumbFallback]}>
+                      <Text style={styles.buttonText}>{index + 1}</Text>
+                    </View>
+                  )}
+                </Tappable>
+              ))}
+            </View>
+            <Button
+              title={t("anonymizeFromGallery")}
+              icon="image-plus"
+              variant="secondary"
+              onPress={pickForAnonymize}
+              disabled={activeVideoRefs.length >= MAX_VIDEOS}
+            />
+          </BottomSheet>
+          <AnonymizeModal
+            target={anonymizeTarget}
+            onClose={() => setAnonymizeTarget(null)}
+            onTranscriptChange={
+              canCorrectTranscripts && anonymizeTarget
+                ? (transcript) =>
+                    correctTranscript(anonymizeTarget.sourceUri, transcript)
                 : undefined
             }
           />
-          {isActiveVideoReadonly && (
-            <Text style={styles.readonlyHint}>
-              {t("universalVideosReadonly")}
-            </Text>
-          )}
-        </View>
-      )}
-
-      {/* Videos — contextual based on pill selection */}
-      <PatternVideos
-        videoRefs={activeVideoRefs}
-        thumbnails={thumbnails}
-        onAddVideo={openAddVideoModal}
-        onRemoveVideo={handleRemoveVideo}
-        onEditVideo={canEditVideos ? handleEditVideo : undefined}
-        onEditVideoAt={
-          canEditVideos
-            ? (index) => openEditor(activeVideoRefs[index])
-            : undefined
-        }
-        onPutOnlineAt={
-          canPutOnline
-            ? (index) => openPutOnline(activeVideoRefs[index])
-            : undefined
-        }
-        onOpenTranscript={(index) => openTranscript(activeVideoRefs[index])}
-        disabled={isActiveVideoReadonly || activeVideoRefs.length >= MAX_VIDEOS}
-        full={!isActiveVideoReadonly && activeVideoRefs.length >= MAX_VIDEOS}
-      />
-      {draftJobs.map((job) =>
-        job.status === "review" ? (
-          <View key={job.id} style={styles.jobRow}>
-            <Text style={[styles.jobLine, styles.jobRowText]}>
-              {reviewsSuggestion(job)
-                ? t("suggestJobInFormReview")
-                : t("videoJobInFormReview")}
-            </Text>
-            <Button
-              title={t("videoJobReviewButton")}
-              size="sm"
-              onPress={() => setReviewId(job.id)}
-            />
-          </View>
-        ) : (
-          // Each line names its kind: a transcription that failed for want of sound sat above
-          // a cut still running, and "processing" for both read as one job failing and going on.
-          <Text
-            key={job.id}
-            style={[
-              styles.jobLine,
-              job.status === "failed" && styles.jobLineFailed,
-            ]}
-          >
-            {job.status === "queued"
-              ? t(`${job.kind}JobInFormQueued`)
-              : job.status === "running"
-                ? writesWithoutCount(job)
-                  ? t("suggestJobInFormWriting")
-                  : t(`${job.kind}JobInFormRunning`, {
-                      percent: Math.round(job.progress * 100),
-                    })
-                : t(`${job.kind}JobInFormFailed`, {
-                    error: job.errorKey ? t(job.errorKey) : (job.error ?? ""),
-                  })}
-          </Text>
-        ),
-      )}
-      {draftJobs.some(
-        (j) => j.status === "queued" || j.status === "running",
-      ) && <Text style={styles.jobLine}>{t("videoJobsKeepOpen")}</Text>}
-      <View style={styles.inputRow}>
-        <View style={styles.input}>
-          <Text style={styles.label}>{t("type")}</Text>
-          {patternTypes.map((type) => (
-            <Chip
-              key={type.id}
-              label={type.slug.toUpperCase()}
-              swatch={type.color}
-              selected={newPattern.typeId === type.id}
-              onPress={() => setNewPattern({ ...newPattern, typeId: type.id })}
-            />
-          ))}
-          {onAddType && (
-            <Chip
-              label={t("newType")}
-              icon="plus"
-              onPress={() => {
-                setNewTypeRefused(false);
-                setNewTypeName("");
-              }}
-            />
-          )}
-        </View>
-        <View style={styles.input}>
-          <Text style={styles.label}>{t("level")}</Text>
-          {levels.map((level) => (
-            <Chip
-              key={level}
-              label={t(level)}
-              selected={newPattern.level === level}
-              accessibilityHint={
-                newPattern.level === level ? t("levelClearHint") : undefined
-              }
-              onPress={() => {
-                // Tapping the chosen level clears it. The key goes, rather than holding
-                // `undefined`, which Firestore rejects when the list is published.
-                const { level: current, ...rest } = newPattern;
-                setNewPattern(current === level ? rest : { ...rest, level });
-              }}
-            />
-          ))}
-        </View>
-      </View>
-      <FormSection
-        title={t("rhythm")}
-        summary={rhythmDraft.trim() || t("formSectionEmpty")}
-        initiallyOpen={!!seed?.rhythm}
-      >
-        <View style={styles.rhythmBlock}>
-          <RevealTextInput
-            placeholder={t("rhythmPlaceholder")}
-            value={rhythmDraft}
-            onChangeText={changeRhythm}
-            accessibilityLabel={t("rhythm")}
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={styles.rhythmInput}
-            placeholderTextColor={theme.colors.textMuted}
-          />
-          {rhythmInvalid && (
-            <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
-          )}
-          {suggestedRhythms.length > 0 && (
-            <View style={styles.rhythmSuggestions}>
-              {suggestedRhythms.map((rhythm) => (
-                <Chip
-                  key={rhythm}
-                  label={rhythm}
-                  icon="music-note-outline"
-                  accessibilityHint={t("rhythmSuggestionHint")}
-                  onPress={() => changeRhythm(rhythm)}
-                />
-              ))}
-            </View>
-          )}
-          {(nextSteps.length > 0 || chainLink || lastStep) && (
-            <View style={styles.rhythmSuggestions}>
-              {nextSteps.map((step) => (
-                <Chip
-                  key={step}
-                  label={step}
-                  icon="plus"
-                  accessibilityLabel={t("rhythmAddStep", { step })}
-                  onPress={() =>
-                    changeRhythm(appendRhythmStep(rhythmDraft, step))
-                  }
-                />
-              ))}
-              {chainLink && (
-                <Chip
-                  label={chainLink}
-                  icon="plus"
-                  accessibilityLabel={t("rhythmExtendStep", {
-                    link: chainLink,
-                  })}
-                  onPress={() =>
-                    changeRhythm(appendChainLink(rhythmDraft, chainLink))
-                  }
-                />
-              )}
-              {lastStep && (
-                <Chip
-                  label={t("rhythmUndoStep")}
-                  icon="backspace-outline"
-                  accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
-                  onPress={() =>
-                    changeRhythm(removeLastRhythmStep(rhythmDraft))
-                  }
-                />
-              )}
-            </View>
-          )}
-        </View>
-      </FormSection>
-      <FormSection
-        title={t("description")}
-        summary={newPattern.description.trim() || t("formSectionEmpty")}
-        initiallyOpen={!!seed?.description.trim()}
-      >
-        <RevealTextInput
-          placeholder={t("description")}
-          value={newPattern.description}
-          onChangeText={(text) =>
-            setNewPattern({ ...newPattern, description: text })
-          }
-          style={styles.textarea}
-          multiline
-          placeholderTextColor={theme.colors.textMuted}
-        />
-      </FormSection>
-      <FormSection
-        title={t("prerequisites")}
-        summary={prerequisiteSummary || t("formSectionEmpty")}
-        initiallyOpen={!!seed?.prerequisites.length}
-      >
-        <PatternPrerequisites
-          patterns={patterns}
-          chosen={newPattern.prerequisites}
-          setChosen={(prerequisites) =>
-            setNewPattern({ ...newPattern, prerequisites })
-          }
-          ineligible={ineligiblePrerequisiteIds}
-          editingId={existing?.id}
-        />
-      </FormSection>
-      <FormSection
-        title={t("tags")}
-        summary={newPattern.tags.join(", ") || t("formSectionEmpty")}
-        initiallyOpen={!!seed?.tags.length}
-      >
-        <PatternTags
-          tags={newPattern.tags}
-          setTags={(tags) => setNewPattern({ ...newPattern, tags })}
-          allPatterns={patterns}
-          editingId={existing?.id}
-        />
-      </FormSection>
-      <VideoReviewModal
-        job={reviewing}
-        onClose={() => setReviewId(null)}
-        source={reviewSource}
-      />
-      <AppDialog
-        visible={editBlocked}
-        title={t("videoEditTitle")}
-        message={t("videoEditOnlyLocal", { max: MAX_VIDEOS })}
-        onClose={() => setEditBlocked(false)}
-      />
-      <BottomSheet
-        visible={showAnonymizePicker}
-        onClose={() => setShowAnonymizePicker(false)}
-        title={t("anonymizeChooseVideo")}
-        minHeight="25%"
-        maxHeight="50%"
-      >
-        {onlineVideos > 0 && (
-          <Text style={styles.jobLine}>{t("videoEditOnlineHint")}</Text>
-        )}
-        <View style={styles.anonymizeChoices}>
-          {editable.map(({ ref, index }) => (
-            <Tappable
-              key={ref.value}
-              onPress={() => openEditor(ref)}
-              accessibilityLabel={t("anonymizeVideoN", { n: index + 1 })}
-              style={styles.anonymizeThumbButton}
-            >
-              {thumbnails[index] ? (
-                <Image
-                  source={{ uri: thumbnails[index] }}
-                  style={styles.anonymizeThumb}
-                />
-              ) : (
-                <View style={[styles.anonymizeThumb, styles.thumbFallback]}>
-                  <Text style={styles.buttonText}>{index + 1}</Text>
-                </View>
-              )}
-            </Tappable>
-          ))}
-        </View>
-        <Button
-          title={t("anonymizeFromGallery")}
-          icon="image-plus"
-          variant="secondary"
-          onPress={pickForAnonymize}
-          disabled={activeVideoRefs.length >= MAX_VIDEOS}
-        />
-      </BottomSheet>
-      <AnonymizeModal
-        target={anonymizeTarget}
-        onClose={() => setAnonymizeTarget(null)}
-        onTranscriptChange={
-          canCorrectTranscripts && anonymizeTarget
-            ? (transcript) =>
-                correctTranscript(anonymizeTarget.sourceUri, transcript)
-            : undefined
-        }
-      />
-      <TranscriptSheet
-        target={transcriptTarget}
-        onClose={() => setTranscriptTarget(null)}
-        onDescriptionChange={(append) =>
-          setNewPattern((prev) => ({
-            ...prev,
-            description: append(prev.description ?? ""),
-          }))
-        }
-        onApplySuggestion={applySuggestion}
-        onTranscriptChange={
-          canCorrectTranscripts && transcriptTarget
-            ? (transcript) =>
-                correctTranscript(transcriptTarget.sourceUri, transcript)
-            : undefined
-        }
-        onRetranscribe={
-          canEditVideos && transcriptTarget && activeList
-            ? (language) =>
-                startTranscription(
-                  { ...transcriptTarget, listId: activeList.id },
-                  language,
-                )
-            : undefined
-        }
-      />
-      <PutOnlineSheet
-        target={putOnlineOpen}
-        onClose={() => setPutOnlineTarget(null)}
-      />
-      <AddVideoModal
-        visible={showAddVideoModal}
-        onClose={() => setShowAddVideoModal(false)}
-        onPickFromLibrary={handlePickFromLibrary}
-        onAddUrl={handleAddUrlVideo}
-      />
-
-      {/* New type, without leaving the form */}
-      <BottomSheet
-        visible={newTypeName !== null}
-        onClose={() => setNewTypeName(null)}
-        title={t("addPatternType")}
-        minHeight="20%"
-        maxHeight="50%"
-      >
-        <View style={styles.newTypeBlock}>
-          <RevealTextInput
-            placeholder={t("typeName")}
-            value={newTypeName ?? ""}
-            onChangeText={(text) => {
-              setNewTypeName(text);
-              setNewTypeRefused(false);
-            }}
-            accessibilityLabel={t("typeName")}
-            autoFocus
-            style={styles.newTypeInput}
-            placeholderTextColor={theme.colors.textMuted}
-          />
-          {newTypeRefused && (
-            <Text style={styles.rhythmError}>{t("duplicateTypeSlug")}</Text>
-          )}
-          <Button
-            title={t("addPatternType")}
-            icon="plus"
-            disabled={!newTypeName?.trim()}
-            onPress={async () => {
-              const type = await onAddType?.(newTypeName ?? "");
-              if (!type) {
-                setNewTypeRefused(true);
-                return;
-              }
-              setNewPattern((prev) => ({ ...prev, typeId: type.id }));
-              setNewTypeName(null);
-            }}
-          />
-        </View>
-      </BottomSheet>
-
-      {/* Attach modifier picker */}
-      <BottomSheet
-        visible={showAttachPicker}
-        onClose={() => setShowAttachPicker(false)}
-        title={t("attachModifier")}
-        minHeight="20%"
-        maxHeight="50%"
-      >
-        {unattachedModifiers.map((mod) => (
-          <ListRow
-            key={mod.id}
-            title={mod.name}
-            meta={
-              mod.position === "prefix"
-                ? t("modifierPositionPrefix")
-                : mod.position === "postfix"
-                  ? t("modifierPositionPostfix")
-                  : t("modifierPositionAmends")
+          <TranscriptSheet
+            target={transcriptTarget}
+            onClose={() => setTranscriptTarget(null)}
+            onDescriptionChange={(append) =>
+              setNewPattern((prev) => ({
+                ...prev,
+                description: append(prev.description ?? ""),
+              }))
             }
-            icon="plus-circle-outline"
-            onPress={() => handleAttachModifier(mod.id)}
+            onApplySuggestion={applySuggestion}
+            onTranscriptChange={
+              canCorrectTranscripts && transcriptTarget
+                ? (transcript) =>
+                    correctTranscript(transcriptTarget.sourceUri, transcript)
+                : undefined
+            }
+            onRetranscribe={
+              canEditVideos && transcriptTarget && activeList
+                ? (language) =>
+                    startTranscription(
+                      { ...transcriptTarget, listId: activeList.id },
+                      language,
+                    )
+                : undefined
+            }
           />
-        ))}
-      </BottomSheet>
+          <PutOnlineSheet
+            target={putOnlineOpen}
+            onClose={() => setPutOnlineTarget(null)}
+          />
+          <AddVideoModal
+            visible={showAddVideoModal}
+            onClose={() => setShowAddVideoModal(false)}
+            onPickFromLibrary={handlePickFromLibrary}
+            onAddUrl={handleAddUrlVideo}
+          />
 
+          {/* New type, without leaving the form */}
+          <BottomSheet
+            visible={newTypeName !== null}
+            onClose={() => setNewTypeName(null)}
+            title={t("addPatternType")}
+            minHeight="20%"
+            maxHeight="50%"
+          >
+            <View style={styles.newTypeBlock}>
+              <RevealTextInput
+                placeholder={t("typeName")}
+                value={newTypeName ?? ""}
+                onChangeText={(text) => {
+                  setNewTypeName(text);
+                  setNewTypeRefused(false);
+                }}
+                accessibilityLabel={t("typeName")}
+                autoFocus
+                style={styles.newTypeInput}
+                placeholderTextColor={theme.colors.textMuted}
+              />
+              {newTypeRefused && (
+                <Text style={styles.rhythmError}>{t("duplicateTypeSlug")}</Text>
+              )}
+              <Button
+                title={t("addPatternType")}
+                icon="plus"
+                disabled={!newTypeName?.trim()}
+                onPress={async () => {
+                  const type = await onAddType?.(newTypeName ?? "");
+                  if (!type) {
+                    setNewTypeRefused(true);
+                    return;
+                  }
+                  setNewPattern((prev) => ({ ...prev, typeId: type.id }));
+                  setNewTypeName(null);
+                }}
+              />
+            </View>
+          </BottomSheet>
+
+          {/* Attach modifier picker */}
+          <BottomSheet
+            visible={showAttachPicker}
+            onClose={() => setShowAttachPicker(false)}
+            title={t("attachModifier")}
+            minHeight="20%"
+            maxHeight="50%"
+          >
+            {unattachedModifiers.map((mod) => (
+              <ListRow
+                key={mod.id}
+                title={mod.name}
+                meta={
+                  mod.position === "prefix"
+                    ? t("modifierPositionPrefix")
+                    : mod.position === "postfix"
+                      ? t("modifierPositionPostfix")
+                      : t("modifierPositionAmends")
+                }
+                icon="plus-circle-outline"
+                onPress={() => handleAttachModifier(mod.id)}
+              />
+            ))}
+          </BottomSheet>
+        </View>
+      </RevealScrollView>
       {showNameHint && !canSave && (
         <Text style={styles.nameHint} accessibilityLiveRegion="polite">
           {t("patternNameRequired")}
@@ -1015,10 +1053,10 @@ const styles = StyleSheet.create((theme) => {
   const baseInput = getCommonInput(theme);
   const commonBorder = getCommonBorder(theme);
   return {
+    form: { flexShrink: 1 },
     addPatternContainer: {
       ...commonBorder,
       padding: theme.space.sm,
-      marginBottom: theme.space.lg,
       backgroundColor: theme.colors.surface,
     },
     sectionTitle: {
@@ -1053,9 +1091,13 @@ const styles = StyleSheet.create((theme) => {
       ...theme.typography.caption,
       color: theme.colors.danger,
       textAlign: "center",
-      marginBottom: theme.space.sm,
+      marginTop: theme.space.sm,
     },
-    buttonRow: { ...getCommonRow(), gap: theme.space.sm },
+    buttonRow: {
+      ...getCommonRow(),
+      gap: theme.space.sm,
+      marginTop: theme.space.sm,
+    },
     footerButton: { flex: 1 },
     buttonText: {
       ...theme.typography.label,

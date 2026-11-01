@@ -11,6 +11,7 @@
   "counts": "拍数",
   "type": "类型",
   "level": "难度",
+  "typeAndLevel": "类型和难度",
   "description": "说明",
   "video": "视频",
   "videos": "视频",

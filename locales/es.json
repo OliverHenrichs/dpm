@@ -11,6 +11,7 @@
   "counts": "Tiempos",
   "type": "Tipo",
   "level": "Nivel",
+  "typeAndLevel": "Tipo y nivel",
   "description": "Descripción",
   "video": "Vídeo",
   "videos": "Vídeos",

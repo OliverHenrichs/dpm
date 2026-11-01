@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Modal, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import RevealScrollView from "@/src/common/components/RevealScrollView";
 import { getCommonFormSheet } from "@/src/common/utils/CommonStyles";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
@@ -14,7 +13,7 @@ interface PatternFormModalProps {
   children: React.ReactNode;
 }
 
-/** The sheet the figure form opens in, adding or editing: a slide-up modal with a scroller. */
+/** The sheet the figure form opens in, adding or editing: a slide-up modal. The form scrolls itself. */
 export const PatternFormModal: React.FC<PatternFormModalProps> = ({
   visible,
   onRequestClose,
@@ -27,15 +26,7 @@ export const PatternFormModal: React.FC<PatternFormModalProps> = ({
     onRequestClose={onRequestClose}
   >
     <ModalOverlay padding="none">
-      <View style={styles.modalContent}>
-        <RevealScrollView
-          // Tapping a rhythm step keeps the keyboard up, so typing can go on.
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1 }}
-        >
-          {children}
-        </RevealScrollView>
-      </View>
+      <View style={styles.modalContent}>{children}</View>
     </ModalOverlay>
   </Modal>
 );

@@ -4,7 +4,6 @@ import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import RevealScrollView from "@/src/common/components/RevealScrollView";
 import { Button, ListRow } from "@/src/common/ui";
 import {
   getCommonDialogCard,
@@ -78,28 +77,23 @@ const SuggestedEditReview: React.FC<SuggestedEditReviewProps> = ({
       >
         <ModalOverlay padding="none">
           <View style={styles.formContent}>
-            <RevealScrollView
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ flexGrow: 1 }}
-            >
-              <EditPatternForm
-                patterns={patterns}
-                patternTypes={patternTypes}
-                modifiers={modifiers}
-                existing={editing}
-                onAccepted={(edited: NewPattern | IPattern) =>
-                  onApply({ ...edited, id: figure.id } as IPattern)
-                }
-                onCancel={() => setEditing(null)}
-                title={t("suggestionReviewTitle")}
-                saveLabel={t("suggestionApply")}
-                header={
-                  <Text style={styles.meta}>
-                    {t("suggestionFrom", { name: author })}
-                  </Text>
-                }
-              />
-            </RevealScrollView>
+            <EditPatternForm
+              patterns={patterns}
+              patternTypes={patternTypes}
+              modifiers={modifiers}
+              existing={editing}
+              onAccepted={(edited: NewPattern | IPattern) =>
+                onApply({ ...edited, id: figure.id } as IPattern)
+              }
+              onCancel={() => setEditing(null)}
+              title={t("suggestionReviewTitle")}
+              saveLabel={t("suggestionApply")}
+              header={
+                <Text style={styles.meta}>
+                  {t("suggestionFrom", { name: author })}
+                </Text>
+              }
+            />
           </View>
         </ModalOverlay>
       </Modal>

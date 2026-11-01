@@ -11,6 +11,7 @@
   "counts": "Counts",
   "type": "Type",
   "level": "Level",
+  "typeAndLevel": "Type and level",
   "description": "Description",
   "video": "Video",
   "videos": "Videos",
