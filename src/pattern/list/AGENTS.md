@@ -115,3 +115,11 @@ nothing selected.
 `EditPatternForm` and `EditModifierForm` each own their `RevealScrollView`, with Save and Cancel in a
 footer outside it, so a host gives them a sheet and no scroller. Type and level fold into a
 `FormSection`: open on a new figure, closed on a seeded one.
+
+Every form in a modal does the same: Save/Cancel (or Send, Publish, Done) sit outside the
+scroller. List settings, the Report form and the sharing sheet follow it. List settings fold
+Dance, Figure types, Levels and Starting figures into `FormSection`s, open for a new list and
+closed when editing one. Never wrap a scroller in a `Pressable` to catch taps outside a popover:
+the Pressable takes the touch, so dragging on a label no longer scrolls. List settings put a
+responder `View` inside the scroller instead (`onStartShouldSetResponder`, closing on release),
+which hands the touch to the scroller once it moves.

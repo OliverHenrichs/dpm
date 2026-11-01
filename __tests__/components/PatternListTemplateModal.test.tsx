@@ -35,11 +35,20 @@ function renderModal(
     />,
     { activeListId: null },
   );
+  // Editing a list opens on its name with the sections folded; open them for the tests below.
+  if (overrides.editList) openSections();
   const created = (): Created => ({
     list: onCreateList.mock.calls.at(-1)![0],
     patterns: onCreateList.mock.calls.at(-1)![1],
   });
   return { onCreateList, onSaveList, onClose, created };
+}
+
+/** Unfold every folded section of list settings. */
+function openSections() {
+  for (const title of ["Dance", "Figure Types", "Levels"]) {
+    fireEvent.press(screen.getByText(title));
+  }
 }
 
 /** Walk from the template picker into the configure step. */
@@ -506,6 +515,42 @@ describe("PatternListTemplateModal", () => {
       fireEvent.press(screen.getByText("Save"));
 
       expect(onSaveList.mock.calls[0][0]).not.toHaveProperty("dance");
+    });
+  });
+
+  describe("sections", () => {
+    it("opens every section for a new list", () => {
+      renderModal();
+      pickTemplate("West Coast Swing");
+
+      expect(typeInputs().length).toBeGreaterThan(0);
+      expect(levelInputs()).toHaveLength(3);
+    });
+
+    it("folds them when editing, says what each holds, and opens on a tap", () => {
+      const list = createTestPatternList({ name: "Salsa", dance: "wcs" });
+      renderWithProviders(
+        <PatternListTemplateModal
+          visible
+          editList={list}
+          onClose={jest.fn()}
+          onCreateList={jest.fn()}
+          onSaveList={jest.fn()}
+        />,
+        { activeListId: null },
+      );
+
+      expect(typeInputs()).toHaveLength(0);
+      expect(levelInputs()).toHaveLength(0);
+      expect(
+        screen.getByText("Beginner · Intermediate · Advanced"),
+      ).toBeOnTheScreen();
+      expect(screen.getByText("West Coast Swing")).toBeOnTheScreen();
+
+      fireEvent.press(screen.getByText("Levels"));
+      expect(levelInputs()).toHaveLength(3);
+      // Save and Cancel are there with every section folded.
+      expect(screen.getByText("Save")).toBeOnTheScreen();
     });
   });
 

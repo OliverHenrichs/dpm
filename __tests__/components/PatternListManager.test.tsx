@@ -805,7 +805,8 @@ describe("PatternListManager pattern types", () => {
     const { list } = await renderManager([pattern(1, "Sugar Push")]);
 
     fireEvent.press(screen.getByLabelText("Edit the list and its types"));
-    fireEvent.press(await screen.findByText("Add type"));
+    fireEvent.press(await screen.findByText("Figure Types"));
+    fireEvent.press(screen.getByText("Add type"));
     const names = screen.getAllByPlaceholderText("Type name");
     fireEvent.changeText(names.at(-1)!, "pass");
     fireEvent.press(screen.getByText("Save"));
@@ -821,7 +822,8 @@ describe("PatternListManager pattern types", () => {
     const { list } = await renderManager([]);
 
     fireEvent.press(screen.getByLabelText("Edit the list and its types"));
-    fireEvent.press(await screen.findByText("Add type"));
+    fireEvent.press(await screen.findByText("Figure Types"));
+    fireEvent.press(screen.getByText("Add type"));
     fireEvent.press(screen.getByText("Cancel"));
 
     await waitFor(() => expect(screen.queryByText("Add type")).toBeNull());
