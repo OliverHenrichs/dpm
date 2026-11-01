@@ -161,6 +161,14 @@ describe("publishing", () => {
     );
   });
 
+  it("accepts a list with a manual lane order, and the sync that drops it", async () => {
+    const data = sharedListDoc();
+    data.list.laneOrder = data.list.patternTypes.map((type) => type.id);
+    await assertSucceeds(publish(as(PUBLISHER), data));
+    // _Reset to automatic_ removes the key.
+    await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
+  });
+
   it("refuses a publish from a device that has not signed in", async () => {
     await assertFails(publish(anonymous(), sharedListDoc(), owner("")));
   });

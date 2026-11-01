@@ -26,13 +26,15 @@ import EditPatternModal, {
 import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
 import { canSuggestEditsTo } from "@/src/pattern/suggestions/suggestions";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
+import { reorderLanes } from "@/src/pattern/graph/utils/laneOrder";
 
 const PatternGraphScreen: React.FC = () => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   const { activeList, patterns } = useActivePatternList();
-  // Recolouring a type from the legend: owners only, through the same mutation path as edits.
-  const { isReadonly, setPatternTypeColor } = usePatternCrud();
+  // Recolouring a type from the legend and reordering the lanes: owners only, through the same
+  // mutation path as edits.
+  const { isReadonly, setPatternTypeColor, setLaneOrder } = usePatternCrud();
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   // By id, so the details show the figure as it is now: after an edit from here, the change
@@ -49,6 +51,7 @@ const PatternGraphScreen: React.FC = () => {
   const [suggestingEdit, setSuggestingEdit] = useState<IPattern | null>(null);
   const mayBeSuggestedEditsTo =
     firebaseAvailable && canSuggestEditsTo(activeList);
+  const [resetLaneOrderVisible, setResetLaneOrderVisible] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [filterVisible, setFilterVisible] = useState(false);
   const [resetLayoutVisible, setResetLayoutVisible] = useState(false);
@@ -98,6 +101,19 @@ const PatternGraphScreen: React.FC = () => {
   const { positions, hasManualLayout, moveNode, resetLayout } =
     useGraphPositions(activeList?.id, patterns, autoPositions);
 
+  // The timeline's lanes as the user dragged them. Saved over every type of the list, so lanes a
+  // filter hides keep their places (`reorderLanes`).
+  const laneOrder = activeList?.laneOrder;
+  const handleReorderLanes = (shownOrder: string[]) => {
+    void setLaneOrder(
+      reorderLanes(patternTypes, patterns, laneOrder, shownOrder),
+    );
+  };
+  const handleResetLaneOrder = async () => {
+    setResetLaneOrderVisible(false);
+    await setLaneOrder(undefined);
+  };
+
   const handleResetLayout = async () => {
     setResetLayoutVisible(false);
     await resetLayout();
@@ -117,6 +133,8 @@ const PatternGraphScreen: React.FC = () => {
             onFilter={() => setFilterVisible(true)}
             canResetLayout={hasManualLayout}
             onResetLayout={() => setResetLayoutVisible(true)}
+            canResetLaneOrder={!isReadonly && !!laneOrder?.length}
+            onResetLaneOrder={() => setResetLaneOrderVisible(true)}
           />
 
           <GraphDragHint
@@ -143,6 +161,10 @@ const PatternGraphScreen: React.FC = () => {
             onChangeTypeColor={
               activeList && !isReadonly ? setPatternTypeColor : undefined
             }
+            laneOrder={laneOrder}
+            onReorderLanes={
+              activeList && !isReadonly ? handleReorderLanes : undefined
+            }
           />
         </View>
 
@@ -166,6 +188,16 @@ const PatternGraphScreen: React.FC = () => {
           confirmLabel={t("reset")}
           onConfirm={handleResetLayout}
           onClose={() => setResetLayoutVisible(false)}
+        />
+
+        <AppDialog
+          visible={resetLaneOrderVisible}
+          title={t("resetLaneOrder")}
+          message={t("resetLaneOrderConfirm")}
+          closeLabel={t("cancel")}
+          confirmLabel={t("reset")}
+          onConfirm={handleResetLaneOrder}
+          onClose={() => setResetLaneOrderVisible(false)}
         />
 
         <PatternDetailsModal

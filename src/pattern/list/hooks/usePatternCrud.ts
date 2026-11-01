@@ -43,6 +43,11 @@ export interface PatternCrud {
   /** Recolours one type (the Map's legend); false for a read-only list or an unknown type. */
   setPatternTypeColor: (typeId: string, color: string) => Promise<boolean>;
   /**
+   * Saves the timeline's lanes as the user dragged them (type ids, top to bottom), or with
+   * `undefined` goes back to the automatic order. False for a read-only list.
+   */
+  setLaneOrder: (order: string[] | undefined) => Promise<boolean>;
+  /**
    * Saves the list's own settings (name, types, dance), edited where its patterns are. `typeMoves`
    * reassigns the figures of each removed type to the type that takes them.
    */
@@ -256,6 +261,22 @@ export function usePatternCrud(): PatternCrud {
     [activeList, isReadonly, patternTypes, updateActiveList],
   );
 
+  const setLaneOrder = useCallback(
+    async (order: string[] | undefined) => {
+      if (!activeList || isReadonly) return false;
+      // Back to automatic removes the key rather than setting it to `undefined`: the list is
+      // published as it is, and Firestore refuses `undefined`.
+      const { laneOrder: _previous, ...rest } = activeList;
+      await updateActiveList({
+        ...rest,
+        ...(order?.length && { laneOrder: order }),
+        updatedAt: Date.now(),
+      });
+      return true;
+    },
+    [activeList, isReadonly, updateActiveList],
+  );
+
   const saveList = useCallback(
     async (list: IPatternList, typeMoves: TypeMoves = {}) => {
       if (!activeList || isReadonly || list.id !== activeList.id) return false;
@@ -283,6 +304,7 @@ export function usePatternCrud(): PatternCrud {
     deleteModifier,
     addPatternType,
     setPatternTypeColor,
+    setLaneOrder,
     saveList,
   };
 }

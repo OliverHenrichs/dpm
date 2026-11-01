@@ -19,8 +19,9 @@ export const SUPPORTED_MAJOR = 3;
  * 7: lists may carry `membersOnly` (only subscribers let in may read the published list).
  * 8: modifiers may carry `description` (what the modifier changes).
  * 9: a list's `suggestions` may carry `edits` (subscribers may suggest changes to figures).
+ * 10: lists may carry `laneOrder` (the timeline's lanes as the user dragged them).
  */
-export const SUPPORTED_MINOR = 9;
+export const SUPPORTED_MINOR = 10;
 
 export interface ParsedVersion {
   major: number;

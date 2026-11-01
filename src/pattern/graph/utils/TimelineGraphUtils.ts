@@ -39,6 +39,8 @@ export function calculateDynamicTimelineLayout(
   width: number,
   baseHeight: number,
   depthMap: Map<number, number>,
+  /** The user's lane order (`IPatternList.laneOrder`); absent for the automatic one. */
+  laneOrder?: readonly string[],
 ): {
   positions: Map<number, LayoutPosition>;
   minHeight: number;
@@ -47,8 +49,8 @@ export function calculateDynamicTimelineLayout(
   skipLevelEdgeInfos: SkipLevelEdgeInfo[];
   typeColorMap: Map<string, string>;
 } {
-  // Lanes for the types shown, linked types side by side (`laneOrder.ts`).
-  const lanes = orderLanes(patternTypes, patterns);
+  // Lanes for the types shown: the user's order, else linked types side by side (`laneOrder.ts`).
+  const lanes = orderLanes(patternTypes, patterns, laneOrder);
   const grouped = groupPatternsByTypeId(patterns, lanes);
   const maxStackPerType = calculateMaxStackPerTypeDynamic(grouped, depthMap);
 

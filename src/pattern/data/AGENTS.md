@@ -103,7 +103,7 @@ replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.8.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.10.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -149,6 +149,11 @@ Version history (what each minor added):
   let in may read the published list (`src/pattern/members/`). Anything but `true` is dropped.
 - **3.8** `IModifier.description`, what the modifier changes. Trimmed; blank or not text is
   dropped quietly. Template modifiers bring a translated one (`TemplateModifier.descriptionKey`).
+- **3.9** `ISuggestionPolicy.edits` (`true` or absent), whether subscribers may also suggest
+  changes to existing figures (`src/pattern/suggestions/`). Anything but `true` is dropped.
+- **3.10** `IPatternList.laneOrder`, the timeline's lanes as the user dragged them (type ids, top
+  to bottom; `src/pattern/graph/`). Only ids of the list's types are kept, each once; nothing
+  left drops the key, which means the automatic order.
 
 ## Shared list context
 
