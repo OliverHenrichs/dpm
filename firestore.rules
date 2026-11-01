@@ -160,7 +160,9 @@ service cloud.firestore {
     match /sharedLists/{shareCode} {
 
       // SharedListDocument, exactly as publishList() writes it. The share
-      // key must never be in it: subscribers read this document.
+      // key must never be in it: subscribers read this document. What is
+      // inside each figure is not checked here (rules cannot loop over a
+      // list); subscribers' apps check it (validateSharedList).
       function isSharedList(data) {
         return data.keys().hasOnly(
             ['list', 'patterns', 'publisherVersion', 'publishedAt', 'appToken'])
@@ -168,7 +170,10 @@ service cloud.firestore {
             ['list', 'patterns', 'publisherVersion', 'publishedAt', 'appToken'])
           && data.list is map
           && data.list.id is string
+          && data.list.id.size() > 0
+          && data.list.id.size() <= 64
           && data.list.name is string
+          && data.list.name.size() <= 200
           && data.list.shareCode == shareCode
           && !('readonly' in data.list)
           && !('shareKey' in data.list)
@@ -199,7 +204,16 @@ service cloud.firestore {
         && notBlocked()
         && hasAppToken(request.resource.data)
         && isSharedList(request.resource.data)
+        && keepsListId()
         && getAfter(ownerPath(shareCode)).data.ownerUid == request.auth.uid;
+
+      // A published list keeps its id: subscribers' phones store it under that
+      // id, and a list that took another list's id could overwrite that list
+      // on every phone following both.
+      function keepsListId() {
+        return resource == null
+          || request.resource.data.list.id == resource.data.list.id;
+      }
 
       // A delete carries no data, so the caller is compared with the owner on
       // record; unpublishList() first takes ownership with the key if needed.
@@ -362,7 +376,8 @@ service cloud.firestore {
         return data.keys().hasOnly(['count', 'last'])
           && data.keys().hasAll(['count', 'last'])
           && data.count is int
-          && data.last is string;
+          && data.last is string
+          && data.last.size() <= 64;
       }
 
       // Only today's counters, and only the list's or the caller's own: no
