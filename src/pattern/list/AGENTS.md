@@ -114,4 +114,7 @@ nothing selected.
 
 `EditPatternForm` and `EditModifierForm` each own their `RevealScrollView`, with Save and Cancel in a
 footer outside it, so a host gives them a sheet and no scroller. Type and level fold into a
-`FormSection`: open on a new figure, closed on a seeded one.
+`FormSection`: open on a new figure, closed on a seeded one. List settings
+(`PatternListTemplateModal`) has the same shape: a footer outside its scroller, and dance, types,
+levels and starting figures in `FormSection`s, open on a new list, closed on an existing one. A
+closed section with an invalid field shows the error as its summary, since Save stays disabled.

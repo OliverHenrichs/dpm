@@ -18,6 +18,7 @@ function renderModal(
   overrides: Partial<
     React.ComponentProps<typeof PatternListTemplateModal>
   > = {},
+  folded = false,
 ) {
   const onCreateList = jest.fn<void, [IPatternList, NewPattern[]]>();
   const onSaveList = jest.fn<
@@ -35,6 +36,12 @@ function renderModal(
     />,
     { activeListId: null },
   );
+  // Editing starts with the sections closed; most tests are about what is inside them.
+  if (overrides.editList && !folded) {
+    ["Dance", "Figure Types", "Levels"].forEach((title) =>
+      fireEvent.press(screen.getByText(title)),
+    );
+  }
   const created = (): Created => ({
     list: onCreateList.mock.calls.at(-1)![0],
     patterns: onCreateList.mock.calls.at(-1)![1],
@@ -518,6 +525,33 @@ describe("PatternListTemplateModal", () => {
           createPatternType("pass", "#4ECDC4"),
         ],
       });
+
+    it("starts with the sections closed, each saying what it holds", () => {
+      renderModal({ editList: editable() }, true);
+
+      expect(screen.getByText("push, pass")).toBeTruthy();
+      expect(screen.queryByText("Add type")).toBeNull();
+      expect(screen.getByText("Save")).toBeTruthy();
+    });
+
+    it("opens and closes a section", () => {
+      renderModal({ editList: editable() }, true);
+
+      fireEvent.press(screen.getByText("Figure Types"));
+      expect(screen.queryByText("push, pass")).toBeNull();
+      fireEvent.press(screen.getByText("Figure Types"));
+      expect(screen.getByText("push, pass")).toBeTruthy();
+    });
+
+    it("says what is wrong in a section closed on an invalid field", () => {
+      renderModal({ editList: editable() }, true);
+
+      fireEvent.press(screen.getByText("Figure Types"));
+      fireEvent.changeText(screen.getByDisplayValue("push"), "pass");
+      fireEvent.press(screen.getByText("Figure Types"));
+
+      expect(screen.getByText("Name already used")).toBeTruthy();
+    });
 
     it("opens straight into configure, skipping the picker", () => {
       renderModal({ editList: editable() });

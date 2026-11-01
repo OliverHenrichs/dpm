@@ -107,7 +107,6 @@ const LevelEditor: React.FC<LevelEditorProps> = ({
 
   return (
     <View>
-      <Text style={styles.label}>{t("listLevels")}</Text>
       <Text style={styles.hint}>{t("listLevelsHint")}</Text>
 
       <Text style={styles.presetLabel}>{t("levelPresetsLabel")}</Text>
@@ -213,11 +212,6 @@ const LevelEditor: React.FC<LevelEditorProps> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  label: {
-    ...theme.typography.label,
-    color: theme.colors.text,
-    marginBottom: theme.space.xs,
-  },
   hint: {
     ...theme.typography.caption,
     color: theme.colors.textMuted,

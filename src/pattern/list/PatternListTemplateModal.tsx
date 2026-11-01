@@ -40,6 +40,7 @@ import {
 } from "@/src/pattern/list/typeMoves";
 import MoveFiguresDialog from "@/src/pattern/list/MoveFiguresDialog";
 import LevelEditor from "@/src/pattern/list/LevelEditor";
+import FormSection from "@/src/pattern/list/FormSection";
 import {
   IPatternLevel,
   levelNameErrors,
@@ -242,10 +243,12 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       slugErrors[type.id] = t("duplicateTypeSlug");
     }
   });
+  const levelErrors = levelNameErrors(draftLevels);
+  const firstLevelError = Object.values(levelErrors)[0];
   const canCreate =
     draftName.trim().length > 0 &&
     Object.keys(slugErrors).length === 0 &&
-    Object.keys(levelNameErrors(draftLevels)).length === 0;
+    Object.keys(levelErrors).length === 0;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSelectTemplate = (template: Template) => {
@@ -434,8 +437,16 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     </View>
   );
 
+  // Save and Cancel stay outside the scroller, so they are in sight however long the form is.
+  // The Pressable only answers while a colour popover is open: a press handler around a scroller
+  // claims every touch that lands on plain text, and the drag never reaches the scroller.
   const renderConfigureStep = () => (
-    <Pressable style={styles.step} onPress={() => setColorPopoverId(null)}>
+    <Pressable
+      style={styles.step}
+      onPress={() => setColorPopoverId(null)}
+      disabled={colorPopoverId === null}
+      accessible={false}
+    >
       <RevealScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -458,114 +469,141 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         />
 
         {/* ── Dance: which rhythms are suggested ──────────────────────────── */}
-        <Text style={[styles.label, styles.sectionGap]}>{t("dance")}</Text>
-        <Text style={styles.subtitle}>{t("danceHint")}</Text>
-        <View style={styles.danceRow}>
-          <Chip
-            label={t("danceNone")}
-            selected={draftDance === undefined}
-            onPress={() => setDraftDance(undefined)}
-          />
-          {DANCES.map((dance) => (
+        <View style={styles.sectionGap} />
+        <FormSection
+          title={t("dance")}
+          summary={draftDance ? t(DANCE_NAME_KEYS[draftDance]) : t("danceNone")}
+          initiallyOpen={!isEditMode}
+        >
+          <Text style={styles.sectionHint}>{t("danceHint")}</Text>
+          <View style={styles.danceRow}>
             <Chip
-              key={dance}
-              label={t(DANCE_NAME_KEYS[dance])}
-              selected={draftDance === dance}
-              onPress={() => setDraftDance(dance)}
+              label={t("danceNone")}
+              selected={draftDance === undefined}
+              onPress={() => setDraftDance(undefined)}
             />
-          ))}
-        </View>
+            {DANCES.map((dance) => (
+              <Chip
+                key={dance}
+                label={t(DANCE_NAME_KEYS[dance])}
+                selected={draftDance === dance}
+                onPress={() => setDraftDance(dance)}
+              />
+            ))}
+          </View>
+        </FormSection>
 
         {/* ── Pattern Types ─────────────────────────────────────────────── */}
-        <Text style={[styles.label, styles.sectionGap]}>
-          {t("patternTypes")}
-        </Text>
-        {draftTypes.map((dt) => {
-          const usage = usageOf(dt.id);
-          // In use and alone: its figures would have nowhere to go.
-          const isStuck = usage > 0 && draftTypes.length === 1;
-          const isPickingColor = colorPopoverId === dt.id;
-          return (
-            <React.Fragment key={dt.id}>
-              <View
-                style={[styles.typeRow, isPickingColor && styles.typeRowRaised]}
-              >
-                {/* Color dot → popover, which is rendered last inside the row */}
-                <Pressable
-                  onPress={(e) => {
-                    e?.stopPropagation?.();
-                    setColorPopoverId((prev) =>
-                      prev === dt.id ? null : dt.id,
-                    );
-                  }}
-                  hitSlop={theme.space.sm}
-                  style={styles.typeColorDot(dt.color)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("patternTypeColor", {
-                    type: dt.slug || t("typeName"),
-                  })}
-                  accessibilityState={{ expanded: isPickingColor }}
-                />
-
-                <RevealTextInput
+        <FormSection
+          title={t("patternTypes")}
+          summary={
+            Object.values(slugErrors)[0] ??
+            draftTypes.map((dt) => normalizeSlug(dt.slug)).join(", ")
+          }
+          initiallyOpen={!isEditMode}
+        >
+          {draftTypes.map((dt) => {
+            const usage = usageOf(dt.id);
+            // In use and alone: its figures would have nowhere to go.
+            const isStuck = usage > 0 && draftTypes.length === 1;
+            const isPickingColor = colorPopoverId === dt.id;
+            return (
+              <React.Fragment key={dt.id}>
+                <View
                   style={[
-                    styles.typeSlugInput,
-                    slugErrors[dt.id] ? styles.typeSlugInputError : undefined,
+                    styles.typeRow,
+                    isPickingColor && styles.typeRowRaised,
                   ]}
-                  value={dt.slug}
-                  onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
-                  placeholder={t("typeName")}
-                  placeholderTextColor={theme.colors.textMuted}
-                  onFocus={() => setColorPopoverId(null)}
-                />
-                <IconButton
-                  icon="close"
-                  size={theme.iconSize.md}
-                  color="textMuted"
-                  onPress={() => handleRemoveType(dt.id)}
-                  disabled={isStuck}
-                  accessibilityLabel={`${t("removePatternType")}: ${
-                    dt.slug || t("typeName")
-                  }`}
-                  accessibilityHint={
-                    isStuck ? t("cannotRemoveOnlyType") : undefined
-                  }
-                />
-                {/* Last child on purpose: it overlays the row's own slug input,
-                  and paint order is what decides that where zIndex does not. */}
-                {isPickingColor && renderColorPopover(dt.id, dt.color)}
-              </View>
-              {usage > 0 && (
-                <Text style={styles.typeUsage}>
-                  {usage === 1
-                    ? t("typeUsedByOne")
-                    : t("typeUsedByMany", { count: usage })}
-                  {isStuck ? ` · ${t("cannotRemoveOnlyType")}` : ""}
-                </Text>
-              )}
-            </React.Fragment>
-          );
-        })}
-        {/* Slug error messages */}
-        {draftTypes.map((dt) =>
-          slugErrors[dt.id] ? (
-            <Text key={`err-${dt.id}`} style={styles.slugError}>
-              {dt.slug || t("typeName")}: {slugErrors[dt.id]}
-            </Text>
-          ) : null,
-        )}
+                >
+                  {/* Color dot → popover, which is rendered last inside the row */}
+                  <Pressable
+                    onPress={(e) => {
+                      e?.stopPropagation?.();
+                      setColorPopoverId((prev) =>
+                        prev === dt.id ? null : dt.id,
+                      );
+                    }}
+                    hitSlop={theme.space.sm}
+                    style={styles.typeColorDot(dt.color)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("patternTypeColor", {
+                      type: dt.slug || t("typeName"),
+                    })}
+                    accessibilityState={{ expanded: isPickingColor }}
+                  />
 
-        <Button
-          title={t("addPatternType")}
-          icon="plus"
-          variant="outline"
-          size="sm"
-          onPress={handleAddType}
-          style={styles.addTypeButton}
-        />
+                  <RevealTextInput
+                    style={[
+                      styles.typeSlugInput,
+                      slugErrors[dt.id] ? styles.typeSlugInputError : undefined,
+                    ]}
+                    value={dt.slug}
+                    onChangeText={(v) => handleTypeSlugChange(dt.id, v)}
+                    placeholder={t("typeName")}
+                    placeholderTextColor={theme.colors.textMuted}
+                    onFocus={() => setColorPopoverId(null)}
+                  />
+                  <IconButton
+                    icon="close"
+                    size={theme.iconSize.md}
+                    color="textMuted"
+                    onPress={() => handleRemoveType(dt.id)}
+                    disabled={isStuck}
+                    accessibilityLabel={`${t("removePatternType")}: ${
+                      dt.slug || t("typeName")
+                    }`}
+                    accessibilityHint={
+                      isStuck ? t("cannotRemoveOnlyType") : undefined
+                    }
+                  />
+                  {/* Last child on purpose: it overlays the row's own slug input,
+                  and paint order is what decides that where zIndex does not. */}
+                  {isPickingColor && renderColorPopover(dt.id, dt.color)}
+                </View>
+                {usage > 0 && (
+                  <Text style={styles.typeUsage}>
+                    {usage === 1
+                      ? t("typeUsedByOne")
+                      : t("typeUsedByMany", { count: usage })}
+                    {isStuck ? ` · ${t("cannotRemoveOnlyType")}` : ""}
+                  </Text>
+                )}
+              </React.Fragment>
+            );
+          })}
+          {/* Slug error messages */}
+          {draftTypes.map((dt) =>
+            slugErrors[dt.id] ? (
+              <Text key={`err-${dt.id}`} style={styles.slugError}>
+                {dt.slug || t("typeName")}: {slugErrors[dt.id]}
+              </Text>
+            ) : null,
+          )}
+
+          <Button
+            title={t("addPatternType")}
+            icon="plus"
+            variant="outline"
+            size="sm"
+            onPress={handleAddType}
+            style={styles.addTypeButton}
+          />
+        </FormSection>
 
         {/* ── Levels ────────────────────────────────────────────────────── */}
-        <View style={styles.sectionGap}>
+        <FormSection
+          title={t("listLevels")}
+          summary={
+            firstLevelError
+              ? t(
+                  firstLevelError === "empty"
+                    ? "emptyTypeSlug"
+                    : "duplicateTypeSlug",
+                )
+              : draftLevels.map((level) => level.name.trim()).join(", ")
+          }
+          initiallyOpen={!isEditMode}
+        >
           <LevelEditor
             levels={draftLevels}
             onChange={setDraftLevels}
@@ -573,12 +611,18 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
             moves={levelMoves}
             onChangeMoves={setLevelMoves}
           />
-        </View>
+        </FormSection>
 
         {/* ── Foundational Patterns ─────────────────────────────────────── */}
         {draftPatterns.length > 0 && (
-          <View style={styles.sectionGap}>
-            <Text style={styles.label}>{t("startingPatterns")}</Text>
+          <FormSection
+            title={t("startingPatterns")}
+            summary={draftPatterns
+              .filter((entry) => entry.included)
+              .map((entry) => entry.templatePattern.name)
+              .join(", ")}
+            initiallyOpen={!isEditMode}
+          >
             <Text style={styles.sectionHint}>{t("startingPatternsHint")}</Text>
             {draftPatterns.map((entry, idx) => {
               const color = getTypeColor(entry.templatePattern.typeSlug);
@@ -605,25 +649,25 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                 />
               );
             })}
-          </View>
+          </FormSection>
         )}
-
-        {/* ── Buttons ───────────────────────────────────────────────────── */}
-        <View style={[styles.buttonRow, styles.footerGap]}>
-          <Button
-            title={isEditMode ? t("cancel") : t("back")}
-            variant="secondary"
-            onPress={isEditMode ? handleClose : () => setStep("pick")}
-            style={styles.footerButton}
-          />
-          <Button
-            title={isEditMode ? t("saveChanges") : t("create")}
-            onPress={handleCreate}
-            disabled={!canCreate}
-            style={styles.footerButton}
-          />
-        </View>
       </RevealScrollView>
+
+      {/* ── Buttons ───────────────────────────────────────────────────── */}
+      <View style={[styles.buttonRow, styles.footerGap]}>
+        <Button
+          title={isEditMode ? t("cancel") : t("back")}
+          variant="secondary"
+          onPress={isEditMode ? handleClose : () => setStep("pick")}
+          style={styles.footerButton}
+        />
+        <Button
+          title={isEditMode ? t("saveChanges") : t("create")}
+          onPress={handleCreate}
+          disabled={!canCreate}
+          style={styles.footerButton}
+        />
+      </View>
       <MoveFiguresDialog
         removing={movingType ? movingType.slug || t("typeName") : undefined}
         count={movingType ? usageOf(movingType.id) : 0}
@@ -650,7 +694,7 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: theme.space.xl,
   },
   footerGap: {
-    marginTop: theme.space.xxl,
+    marginTop: theme.space.md,
   },
   modalContent: {
     ...getCommonDialogCard(theme),
