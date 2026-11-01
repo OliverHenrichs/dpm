@@ -208,7 +208,7 @@ export function calculateGraphLayout(
   // What remains is anything the DFS and deferred passes still cannot reach.
   // Keeping it costs nothing and the invariant it protects — every node given
   // to this function gets a position — is the one whose violation made
-  // patterns silently vanish (AGENT_TASKS.md B1/B2).
+  // patterns silently vanish (docs/history/AGENT_TASKS.md B1/B2).
   //
   // Neither is supposed to happen, and both are now prevented at the source,
   // but data written by older builds still contains them — and a node this

@@ -121,7 +121,7 @@ describe("graph layout invariants", () => {
 
     // ---------------------------------------------------------------------
     // Degenerate input. Cycles and dangling prerequisite ids are now prevented
-    // at the source (AGENT_TASKS.md B1/B2), but data written by older builds
+    // at the source (docs/history/AGENT_TASKS.md B1/B2), but data written by older builds
     // still contains them, so the layout has to cope rather than drop nodes.
     // ---------------------------------------------------------------------
 

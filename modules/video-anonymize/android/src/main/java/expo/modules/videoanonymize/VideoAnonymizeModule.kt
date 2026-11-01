@@ -45,7 +45,7 @@ class AnonymizeException(message: String, cause: Throwable? = null) :
   CodedException("ERR_ANONYMIZE", message, cause)
 
 /**
- * L3 (AGENT_TASKS.md): trim — and to anonymize, downscale — a clip with Media3 Transformer,
+ * L3 (docs/history/AGENT_TASKS.md): trim — and to anonymize, downscale — a clip with Media3 Transformer,
  * then optionally re-render it from tracked masks: as silhouettes (fail-closed), or as filmed
  * with the dancers' heads covered and the room blurred (FaceDrawer). The
  * tuning found on the Pixel (fp32 encoder, guided edges, 15 fps tracking) is fixed in the

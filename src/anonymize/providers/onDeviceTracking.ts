@@ -13,7 +13,7 @@ import {
  * EdgeTAM tracking on the device: the user taps each dancer on the first frame — a couple, or
  * one person dancing alone — and each is followed from memory through the clip, drawn in its
  * own colour. The native side sizes everything by the number of taps.
- * Nothing leaves the phone. ~0.5–0.75 s per frame on a Pixel 10a — see L3 in AGENT_TASKS.md.
+ * Nothing leaves the phone. ~0.5–0.75 s per frame on a Pixel 10a — see L3 in docs/history/AGENT_TASKS.md.
  */
 /**
  * The native side reports each stage from 0 to 1: a transcode that takes seconds, then the
