@@ -20,7 +20,10 @@ import EditPatternModal, {
 import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
 import PatternListTemplateModal from "@/src/pattern/list/PatternListTemplateModal";
-import { countPatternsByType } from "@/src/pattern/list/typeMoves";
+import {
+  countPatternsByLevel,
+  countPatternsByType,
+} from "@/src/pattern/list/typeMoves";
 import AppHeader from "@/src/common/components/AppHeader";
 import PageContainer from "@/src/common/components/PageContainer";
 import {
@@ -390,8 +393,9 @@ const PatternListManager = () => {
             onClose={() => setIsEditingList(false)}
             editList={activeList}
             typeUsage={countPatternsByType(patterns)}
-            onSaveList={async (list, typeMoves) => {
-              await saveList(list, typeMoves);
+            levelUsage={countPatternsByLevel(patterns)}
+            onSaveList={async (list, typeMoves, levelMoves) => {
+              await saveList(list, typeMoves, levelMoves);
               setIsEditingList(false);
             }}
           />

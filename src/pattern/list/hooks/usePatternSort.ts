@@ -9,10 +9,12 @@ export function usePatternSort(
   patterns: IPattern[],
   sortConfig: SortConfig,
   patternTypes?: PatternType[],
+  /** The list's levels in their order (`resolveLevelIds`); left out, the built-in three. */
+  levelIds?: readonly string[],
 ) {
   const sortedPatterns = useMemo(
-    () => sortPatterns(patterns, sortConfig, patternTypes),
-    [patterns, sortConfig, patternTypes],
+    () => sortPatterns(patterns, sortConfig, patternTypes, levelIds),
+    [patterns, sortConfig, patternTypes, levelIds],
   );
 
   return { sortedPatterns };

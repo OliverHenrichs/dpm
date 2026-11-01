@@ -8,7 +8,7 @@ import {
   IVideoReference,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
-import { PatternLevel } from "@/src/pattern/types/PatternLevel";
+import { resolveLevelIds } from "@/src/pattern/types/PatternLevel";
 
 /** The most suggestions a publisher can allow a day; `firestore.rules` holds the same bound. */
 export const MAX_SUGGESTIONS_PER_DAY = 100;
@@ -223,7 +223,8 @@ export function patternFromSuggestion(
           videoRefs: asVideoRefs(m.videoRefs),
         }))
     : [];
-  const levels: string[] = Object.values(PatternLevel);
+  // Any of the list's own levels; one it does not have (any more) is dropped.
+  const levels = resolveLevelIds(list.levels);
   const level =
     typeof raw.level === "string" && levels.includes(raw.level)
       ? raw.level

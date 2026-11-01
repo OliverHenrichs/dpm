@@ -13,7 +13,7 @@ import {
 import { setVideoTranscript } from "@/src/pattern/data/transcripts";
 import { rememberTranscriptEdit } from "@/src/transcribe/data/CorrectionStorage";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import { PatternLevel } from "@/src/pattern/types/PatternLevel";
+import { levelName } from "@/src/pattern/types/PatternLevel";
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import { persistPickedVideos } from "@/src/pattern/data/videoFiles";
@@ -26,7 +26,10 @@ import ModifierPillStrip from "./ModifierPillStrip";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import { generateVideoThumbnails } from "@/src/common/utils/YouTubeUtils";
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
-import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
+import {
+  useActiveListLevels,
+  useActivePatternList,
+} from "@/src/pattern/data/components/ActivePatternListContext";
 import {
   appendChainLink,
   appendRhythmStep,
@@ -110,8 +113,6 @@ type EditPatternFormProps = {
   nameMaxLength?: number;
 };
 
-const levels = Object.values(PatternLevel);
-
 const EditPatternForm: React.FC<EditPatternFormProps> = ({
   patterns,
   patternTypes,
@@ -166,6 +167,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   const [putOnlineTarget, setPutOnlineTarget] =
     useState<PutOnlineTarget | null>(null);
   const { activeList } = useActivePatternList();
+  // The list's own levels, easiest first; a figure on a level the list lacks shows none chosen.
+  const levels = useActiveListLevels();
   const { jobs } = useAnonymizeJobs();
   const startTranscription = useStartTranscription();
 
@@ -551,7 +554,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // The chosen type and level, for the folded section's one line.
   const typeLevelSummary = [
     selectedType?.slug,
-    newPattern.level && t(newPattern.level),
+    levelName(levels, newPattern.level, t),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -722,22 +725,20 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               </View>
               <View style={styles.input}>
                 <Text style={styles.label}>{t("level")}</Text>
-                {levels.map((level) => (
+                {levels.map(({ id, name }) => (
                   <Chip
-                    key={level}
-                    label={t(level)}
-                    selected={newPattern.level === level}
+                    key={id}
+                    label={name}
+                    selected={newPattern.level === id}
                     accessibilityHint={
-                      newPattern.level === level
-                        ? t("levelClearHint")
-                        : undefined
+                      newPattern.level === id ? t("levelClearHint") : undefined
                     }
                     onPress={() => {
                       // Tapping the chosen level clears it. The key goes, rather than holding
                       // `undefined`, which Firestore rejects when the list is published.
                       const { level: current, ...rest } = newPattern;
                       setNewPattern(
-                        current === level ? rest : { ...rest, level },
+                        current === id ? rest : { ...rest, level: id },
                       );
                     }}
                   />

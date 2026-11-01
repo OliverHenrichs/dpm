@@ -31,13 +31,21 @@ import {
 } from "@/src/pattern/types/PatternType";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import RevealScrollView from "@/src/common/components/RevealScrollView";
-import AppDialog from "@/src/common/components/AppDialog";
 import TypeColorSwatches from "@/src/pattern/list/TypeColorSwatches";
 import {
   addTypeMove,
   countAfterMoves,
+  LevelMoves,
   TypeMoves,
 } from "@/src/pattern/list/typeMoves";
+import MoveFiguresDialog from "@/src/pattern/list/MoveFiguresDialog";
+import LevelEditor from "@/src/pattern/list/LevelEditor";
+import {
+  IPatternLevel,
+  levelNameErrors,
+  resolveLevels,
+  storedLevels,
+} from "@/src/pattern/types/PatternLevel";
 
 interface PatternListTemplateModalProps {
   visible: boolean;
@@ -51,11 +59,17 @@ interface PatternListTemplateModalProps {
    * the only type cannot be removed while in use.
    */
   typeUsage?: Record<string, number>;
+  /** How many patterns are on each level, by id. Removing a level in use asks where they go. */
+  levelUsage?: Record<string, number>;
   /**
    * Called instead of onCreateList when editing an existing list, with where the figures of
-   * each removed type go (empty when none moved). The host reassigns them as it saves.
+   * each removed type and level go (empty when none moved). The host reassigns them as it saves.
    */
-  onSaveList?: (updatedList: IPatternList, typeMoves: TypeMoves) => void;
+  onSaveList?: (
+    updatedList: IPatternList,
+    typeMoves: TypeMoves,
+    levelMoves: LevelMoves,
+  ) => void;
 }
 
 interface Template {
@@ -72,20 +86,23 @@ interface DraftPatternEntry {
   included: boolean;
 }
 
-/** Applies the edited name/types to an existing list and re-stamps updatedAt. */
+/** Applies the edited name/types/levels to an existing list and re-stamps updatedAt. */
 function applyListEdits(
   list: IPatternList,
   name: string,
   patternTypes: PatternType[],
   dance: Dance | undefined,
+  levels: IPatternLevel[] | undefined,
 ): IPatternList {
-  // No dance removes the key rather than storing `undefined`, which Firestore rejects.
-  const { dance: _previous, ...rest } = list;
+  // No dance (or the built-in levels) removes the key rather than storing `undefined`, which
+  // Firestore rejects.
+  const { dance: _previous, levels: _previousLevels, ...rest } = list;
   return {
     ...rest,
     name,
     patternTypes,
     ...(dance && { dance }),
+    ...(levels && { levels }),
     updatedAt: Date.now(),
   };
 }
@@ -177,6 +194,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   onCreateList,
   editList,
   typeUsage,
+  levelUsage,
   onSaveList,
 }) => {
   const { t } = useTranslation();
@@ -208,6 +226,11 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     countAfterMoves(id, typeUsage ?? {}, typeMoves);
   const movingType = draftTypes.find((dt) => dt.id === movingTypeId);
   const moveTargets = draftTypes.filter((dt) => dt.id !== movingTypeId);
+  // The levels, easiest first, and where the figures of each level removed so far go.
+  const [draftLevels, setDraftLevels] = useState<IPatternLevel[]>(() =>
+    resolveLevels(editList?.levels, t),
+  );
+  const [levelMoves, setLevelMoves] = useState<LevelMoves>({});
 
   // ── Slug validation ────────────────────────────────────────────────────────
   const slugErrors: Record<string, string> = {};
@@ -220,7 +243,9 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     }
   });
   const canCreate =
-    draftName.trim().length > 0 && Object.keys(slugErrors).length === 0;
+    draftName.trim().length > 0 &&
+    Object.keys(slugErrors).length === 0 &&
+    Object.keys(levelNameErrors(draftLevels)).length === 0;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSelectTemplate = (template: Template) => {
@@ -243,12 +268,24 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       ...dt,
       slug: normalizeSlug(dt.slug),
     }));
+    // Absent when they are the built-in three as named in this language.
+    const finalLevels = storedLevels(
+      draftLevels.map((level) => ({ ...level, name: level.name.trim() })),
+      t,
+    );
 
     if (isEditMode && editList && onSaveList) {
       // ── Edit path ─────────────────────────────────────────────────────
       onSaveList(
-        applyListEdits(editList, draftName.trim(), finalTypes, draftDance),
+        applyListEdits(
+          editList,
+          draftName.trim(),
+          finalTypes,
+          draftDance,
+          finalLevels,
+        ),
         typeMoves,
+        levelMoves,
       );
     } else {
       // ── Create path ───────────────────────────────────────────────────
@@ -259,6 +296,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
       const created = {
         ...createPatternList(draftName.trim(), finalTypes),
         modifiers,
+        ...(finalLevels && { levels: finalLevels }),
       };
       const newList = draftDance ? { ...created, dance: draftDance } : created;
       const includedPatterns = draftPatterns
@@ -270,7 +308,16 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         draftDance,
         modifiers,
       );
-      onCreateList?.(newList, initialPatterns);
+      // A starter figure on a level the user removed starts without one.
+      const levelIds = new Set(draftLevels.map((level) => level.id));
+      onCreateList?.(
+        newList,
+        initialPatterns.map((pattern) => {
+          if (!pattern.level || levelIds.has(pattern.level)) return pattern;
+          const { level: _removed, ...rest } = pattern;
+          return rest;
+        }),
+      );
     }
     handleClose();
   };
@@ -517,6 +564,17 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           style={styles.addTypeButton}
         />
 
+        {/* ── Levels ────────────────────────────────────────────────────── */}
+        <View style={styles.sectionGap}>
+          <LevelEditor
+            levels={draftLevels}
+            onChange={setDraftLevels}
+            usage={levelUsage ?? {}}
+            moves={levelMoves}
+            onChangeMoves={setLevelMoves}
+          />
+        </View>
+
         {/* ── Foundational Patterns ─────────────────────────────────────── */}
         {draftPatterns.length > 0 && (
           <View style={styles.sectionGap}>
@@ -566,38 +624,19 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
           />
         </View>
       </RevealScrollView>
-      <AppDialog
-        visible={movingType !== undefined}
-        title={t("moveTypeTitle", {
-          type: movingType?.slug || t("typeName"),
-        })}
-        message={
-          movingType && usageOf(movingType.id) === 1
-            ? t("moveTypeMessageOne", {
-                type: movingType.slug || t("typeName"),
-              })
-            : t("moveTypeMessageMany", {
-                count: movingType ? usageOf(movingType.id) : 0,
-                type: movingType?.slug || t("typeName"),
-              })
-        }
-        closeLabel={t("cancel")}
+      <MoveFiguresDialog
+        removing={movingType ? movingType.slug || t("typeName") : undefined}
+        count={movingType ? usageOf(movingType.id) : 0}
+        targets={moveTargets.map((target) => ({
+          id: target.id,
+          title: target.slug || t("typeName"),
+          leading: <View style={styles.typeColorPip(target.color)} />,
+        }))}
+        selectedId={moveTargetId}
+        onSelect={setMoveTargetId}
         onClose={() => setMovingTypeId(null)}
-        confirmLabel={t("moveTypeConfirm")}
-        confirmDestructive
         onConfirm={confirmMoveType}
-      >
-        {moveTargets.map((target) => (
-          <ListRow
-            key={target.id}
-            title={target.slug || t("typeName")}
-            leading={<View style={styles.typeColorPip(target.color)} />}
-            selection="single"
-            selected={moveTargetId === target.id}
-            onPress={() => setMoveTargetId(target.id)}
-          />
-        ))}
-      </AppDialog>
+      />
     </Pressable>
   );
   return step === "pick" ? renderPickStep() : renderConfigureStep();

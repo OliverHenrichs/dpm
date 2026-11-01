@@ -33,8 +33,9 @@ most `MAX_VIDEOS` videos (`src/anonymize/jobs/replaceVideo.ts`).
 
 `SortConfig` (`SortBottomSheet.tsx`): `{ field, order }`, `SortField = "name" | "typeId" | "level" |
 "counts" | "id"`, applied by `usePatternSort` over the pure `sortPatterns` in
-`hooks/patternSections.ts`. Types sort in the list's own order, levels from beginner to advanced,
-and a pattern without a value goes last either way. Sorting by type, level or counts splits the list
+`hooks/patternSections.ts`. Types and levels sort in the list's own order (levels easiest
+first, `resolveLevelIds`), and a pattern without a value, or with a level or type the list does
+not have, goes last either way. Sorting by type, level or counts splits the list
 into sections (`buildListEntries`) under pinned `PatternSectionHeader`s with counts, and so does
 date added, a header per day (`IPattern.createdAt`; undated patterns under their own, and a list
 with no dates stays one list); name stays one list. `PatternList` renders the entries in one
@@ -87,9 +88,19 @@ nothing selected.
   Each type in use says how many figures use it (`typeUsage`). Its ✕ stays enabled: tapping it
   asks where those figures go (an `AppDialog` with the other types as choices), and the move is
   kept as `TypeMoves` (`typeMoves.ts`, removed type → target, chained when the target goes too)
-  until Save. `onSaveList(list, typeMoves)` hands them to the host, which reassigns the figures
-  before the list drops the type: `usePatternCrud.saveList` on the List tab, `handleSaveList`
-  on the Lists screen. The only type cannot be removed while in use, and says so on screen.
+  until Save. `onSaveList(list, typeMoves, levelMoves)` hands them to the host, which reassigns
+  the figures before the list drops the type or level: `usePatternCrud.saveList` on the List
+  tab, `handleSaveList` on the Lists screen. The only type cannot be removed while in use, and
+  says so on screen. The question is `MoveFiguresDialog`, shared by types and levels.
+- **Levels** are edited below the types (`LevelEditor`): rename, up/down, add (up to
+  `MAX_LEVELS`; a numbered list offers the next number), remove. A level in use asks where its
+  figures go, another level or _No level_ (`LevelMoves`, `NO_LEVEL` = `""`, chained like types;
+  `levelUsage` from `countPatternsByLevel`); the last level cannot go. The presets _Beginner /
+  Intermediate / Advanced_, _Numbers_ and _Own names_ rename the levels **in place** by position
+  (`applyLevelPreset`), so figures keep their rung and nothing is moved; levels past the preset
+  stay. Names must be non-empty and unique (ignoring case). Saving stores no `levels` when they
+  are the built-in three under their names in this language (`storedLevels`), so an untouched
+  list keeps following the app's language.
 - A type's colour is picked from `TypeColorSwatches`, in list settings and in the Map's legend
   (`setPatternTypeColor` in `usePatternCrud`).
 - `EditPatternForm`'s type picker ends in _New type_ when given `onAddType` (`addPatternType`

@@ -21,6 +21,21 @@ describe("collectReels", () => {
   });
   const push = list.patternTypes[0];
 
+  it("carries the list's own levels, to name a pattern's level", () => {
+    const levels = [{ id: "c1", name: "Course 1" }];
+    const pattern = createTestPattern(push.id, {
+      id: 1,
+      level: "c1",
+      videoRefs: [video("a.mp4")],
+    });
+    const [withLevels] = collectReels([
+      { list: { ...list, levels }, patterns: [pattern] },
+    ]);
+    expect(withLevels.levels).toEqual(levels);
+    const [builtIn] = collectReels([{ list, patterns: [pattern] }]);
+    expect(builtIn).not.toHaveProperty("levels");
+  });
+
   it("keeps only patterns with a video, by name", () => {
     const reels = collectReels([
       {

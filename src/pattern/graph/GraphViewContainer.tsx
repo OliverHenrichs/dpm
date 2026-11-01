@@ -10,6 +10,7 @@ import CycleWarning from "./CycleWarning";
 import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
+import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
 
 interface GraphViewContainerProps {
   viewMode: ViewMode;
@@ -48,6 +49,11 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   laneOrder,
   onReorderLanes,
 }) => {
+  // Shading needs explaining only when a figure has one of the list's levels.
+  const levels = useActiveListLevels();
+  const showLevels = model.patterns.some((p) =>
+    levels.some((level) => level.id === p.level),
+  );
   return (
     <>
       <CycleWarning cycles={model.cycles} />
@@ -78,7 +84,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
 
       <Legend
         patternTypes={patternTypes}
-        showLevels={model.patterns.some((p) => !!p.level)}
+        showLevels={showLevels}
         onChangeTypeColor={onChangeTypeColor}
       />
     </>

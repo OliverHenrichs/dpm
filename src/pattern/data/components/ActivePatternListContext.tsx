@@ -3,9 +3,11 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
+import { IPatternLevel, resolveLevels } from "@/src/pattern/types/PatternLevel";
 import {
   collectOrphanedPatternKeys,
   getActiveList,
@@ -48,6 +50,17 @@ export const useActivePatternList = () => {
     );
   }
   return context;
+};
+
+/**
+ * The active list's levels, easiest first, named (`resolveLevels`): what every chip, header and
+ * caption of a level shows. The built-in three without a list, and outside the provider, so a
+ * presentational component can call it wherever it is rendered.
+ */
+export const useActiveListLevels = (): IPatternLevel[] => {
+  const levels = useContext(ActivePatternListContext)?.activeList?.levels;
+  const { t } = useTranslation();
+  return useMemo(() => resolveLevels(levels, t), [levels, t]);
 };
 
 export const ActivePatternListProvider: React.FC<{

@@ -1,5 +1,8 @@
 import type { Dance } from "@/src/pattern/types/Dance";
 import { PatternType } from "./PatternType";
+import type { IPatternLevel } from "./PatternLevel";
+
+export type { IPatternLevel } from "./PatternLevel";
 
 /**
  * Where in the execution of a pattern a modifier applies.
@@ -83,6 +86,13 @@ export interface IPatternList {
    * list, so subscribers see the owner's lanes.
    */
   laneOrder?: string[];
+  /**
+   * The list's levels, easiest first (`resolveLevels`). Absent means the three built-in ones
+   * (Beginner, Intermediate, Advanced, named in the app's language). A figure's `level` holds a
+   * level's id; one the list does not have shows as no level. At most `MAX_LEVELS`. Published
+   * with the list, so subscribers see the owner's level names.
+   */
+  levels?: IPatternLevel[];
 }
 
 /** How many pattern suggestions a published list takes a day (UTC), counted for whom. */
@@ -106,7 +116,8 @@ export interface IPattern {
   name: string;
   typeId: string; // References PatternType.id
   counts: number;
-  level?: string; // Optional level (beginner, intermediate, advanced)
+  /** Optional: the id of one of the list's levels (`IPatternList.levels`). */
+  level?: string;
   /** How the steps fall on the counts ("1 2 3&4 5&6"); always matches `counts`. See src/pattern/rhythm/. */
   rhythm?: string;
   prerequisites: number[];

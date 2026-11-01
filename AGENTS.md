@@ -84,15 +84,24 @@ All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.
 
 | Type                  | Id          | Key detail                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `IPatternList`        | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark), `suggestions` (whether subscribers may suggest patterns, and how many a day), `membersOnly` (only subscribers let in may read the published list), `laneOrder` (the timeline's lanes as dragged; absent = automatic) |
+| `IPatternList`        | UUID string | Owns its `patternTypes` **and** `modifiers` (per list, not global). Optional `readonly` (subscribed or read-only import), `shareCode` (Firestore doc id), `shareKey` (publisher's secret, never published), `dance` (template rhythms, transcription glossary), `nextPatternId` (id high-water mark), `suggestions` (whether subscribers may suggest patterns, and how many a day), `membersOnly` (only subscribers let in may read the published list), `laneOrder` (the timeline's lanes as dragged; absent = automatic), `levels` (its own levels, easiest first; absent = Beginner / Intermediate / Advanced) |
 | `PatternType`         | UUID string | `slug` is the display name, `color` a hex; patterns point at it by `typeId`                                                                                                                                                                                                                                                                                                                                                                             |
-| `IPattern`            | integer     | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level`, `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs`                                                                                                                                                                                                                                                                              |
+| `IPattern`            | integer     | `prerequisites: number[]` drives both graph views; `typeId`; `counts`; `tags: string[]`; optional `level` (a level id of its list), `rhythm` (always matches `counts`); `videoRefs`; `modifierRefs`                                                                                                                                                                                                                                                     |
 | `IModifier`           | UUID string | `position: "prefix" \| "postfix" \| "amends"` (shown as Entry / Exit / During); `universal`; `videoRefs` used only when universal; optional `description`                                                                                                                                                                                                                                                                                               |
 | `IPatternModifierRef` | —           | `{ modifierId, videoRefs }`: a non-universal modifier attached to one pattern, with videos of that pattern danced with it                                                                                                                                                                                                                                                                                                                               |
 | `IVideoReference`     | —           | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it                                                                                                                                                                                                                                                                        |
 
 `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`. `PatternType.ts` also
 exports `PATTERN_TYPE_COLORS`, `generateUUID()`, `normalizeSlug()` and `isSlugUnique()`.
+
+**Levels are per list.** `IPatternLevel = { id, name }`; a figure's `level` holds the id.
+Without `levels` a list has the three built-in ones, whose ids are the strings figures always
+carried (`beginner`, `intermediate`, `advanced`, also their i18n keys), so nothing was migrated;
+a new level's id is a dashless UUID (`newLevelId`, 32 characters). Everything that shows, picks,
+sorts, filters or shades a level goes through `PatternLevel.ts` (`resolveLevels`, `levelName`,
+`resolveLevelIds`) or, in a component, `useActiveListLevels()` from the list context, never
+`t(pattern.level)`. A figure whose level the list does not have shows as no level. At most
+`MAX_LEVELS` (12).
 
 Modifiers are affixes ("with inside turn", "hesitation") that live on the list. **Universal** ones
 apply to every pattern and carry their own videos; **non-universal** ones are attached per pattern
@@ -158,7 +167,7 @@ Transcripts never go into a published list and leave in an export only on opt-in
 
 ## Filtering
 
-`PatternFilter` (`{ name, types, levels, counts?, tags }`, in
+`PatternFilter` (`{ name, types, levels, counts?, tags }`, levels by id, in
 `src/pattern/filter/components/PatternFilterBottomSheet.tsx`) is applied by `usePatternFilter`
 (`src/pattern/filter/hooks/`) and shared by the List and Map tabs. Sorting is in
 `src/pattern/list/`. **Never hand a filtered `patterns` array to a graph layout function**; see

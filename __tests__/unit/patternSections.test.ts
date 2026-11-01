@@ -198,3 +198,50 @@ describe("buildListEntries", () => {
     expect(entry).toEqual({ kind: "pattern", key: String(p.id), pattern: p });
   });
 });
+
+describe("a list's own levels", () => {
+  // Course numbers, whose ids are random: the order is the list's, not the ids'.
+  const course = [
+    { id: "zz", name: "1" },
+    { id: "aa", name: "2" },
+    { id: "mm", name: "3" },
+  ];
+  const ids = course.map((level) => level.id);
+  const courseLabels = {
+    ...labels,
+    level: (id: string) => course.find((level) => level.id === id)?.name,
+  };
+
+  it("sorts by the list's order of levels, both ways", () => {
+    const list = [
+      pattern("Third", { level: "mm" }),
+      pattern("First", { level: "zz" }),
+      pattern("Second", { level: "aa" }),
+      pattern("None", { level: undefined }),
+    ];
+    expect(
+      names(sortPatterns(list, { field: "level", order: "asc" }, types, ids)),
+    ).toEqual(["First", "Second", "Third", "None"]);
+    expect(
+      names(sortPatterns(list, { field: "level", order: "desc" }, types, ids)),
+    ).toEqual(["Third", "Second", "First", "None"]);
+  });
+
+  it("heads each level with its name, and puts a level the list lacks under no level", () => {
+    const sorted = sortPatterns(
+      [
+        pattern("A", { level: "aa" }),
+        pattern("B", { level: "beginner" }),
+        pattern("C", { level: "zz" }),
+        pattern("D", { level: undefined }),
+      ],
+      { field: "level", order: "asc" },
+      types,
+      ids,
+    );
+    expect(names(sorted)).toEqual(["C", "A", "B", "D"]);
+    expect(
+      headers(buildListEntries(sorted, "level", types, courseLabels)),
+    ).toEqual(["1 (1)", "2 (1)", "No level (2)"]);
+  });
+});
