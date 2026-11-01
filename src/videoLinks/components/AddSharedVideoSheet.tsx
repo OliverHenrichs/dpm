@@ -10,6 +10,7 @@ import { RevealTextInput } from "@/src/common/components/reveal";
 import { fuzzyFilter } from "@/src/common/utils/fuzzyMatch";
 import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
 import { persistVideo } from "@/src/pattern/data/videoFiles";
+import { offerNewVideo } from "@/src/videoLinks/newVideoHandoff";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
 
@@ -96,7 +97,7 @@ const AddSharedVideoBody: React.FC<{
       onClose();
       router.navigate({
         pathname: "/patterns",
-        params: { newVideo: ref.value, newVideoType: ref.type },
+        params: { newVideo: offerNewVideo(ref) },
       });
     });
 

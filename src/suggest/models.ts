@@ -1,7 +1,7 @@
 import { ModelSpec } from "@/src/transcribe/models";
 
 /**
- * The model behind suggestions (L4, AGENT_TASKS.md): Qwen3.5 2B instruct, 4-bit (Apache-2.0).
+ * The model behind suggestions (L4, docs/history/AGENT_TASKS.md): Qwen3.5 2B instruct, 4-bit (Apache-2.0).
  * The spike on the Pixel 10a chose it over Qwen3.5 0.8B, Gemma 3 1B and Gemma 4 E2B: right names,
  * summaries in its own words in English, German and Spanish, and nothing for clips that teach
  * nothing. Pinned to one commit of the repository, so the file cannot change under its hash.

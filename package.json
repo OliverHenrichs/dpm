@@ -22,6 +22,7 @@
     "ops:pki": "node tools/dashboard/pki.js",
     "reports:review": "node --env-file=.env tools/dashboard/server.js",
     "reports:demo": "node tools/dashboard/server.js --demo",
+    "docs:check": "node scripts/check-docs.js",
     "audit:check": "npm audit --json > audit.json; node scripts/check-audit.js audit.json",
     "assets:check": "node scripts/check-model-assets.js",
     "assets:fetch": "node scripts/check-model-assets.js --fetch",

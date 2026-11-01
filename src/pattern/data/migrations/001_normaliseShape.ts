@@ -15,7 +15,7 @@ import {
  *  - `modifiers` / `modifierRefs` defaulted to `[]` when written before
  *    modifiers existed;
  *  - a `patterns` array duplicated into the list record by the import and
- *    cloud-subscribe paths (AGENT_TASKS.md B10);
+ *    cloud-subscribe paths (docs/history/AGENT_TASKS.md B10);
  *  - prerequisite ids left pointing at deleted patterns, which made those
  *    patterns disappear from the network graph (B1).
  *

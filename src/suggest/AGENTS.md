@@ -3,7 +3,7 @@
 A suggested pattern name and description, drafted on the phone by a small language model
 (`llama.rn`) from a video's transcript and the list's vocabulary. Offered in the transcript sheet
 (`components/SuggestionPanel.tsx`). Design history, the model comparison and the prompt's evolution:
-`AGENT_TASKS.md` L4, "Suggestions". Unqualified paths are relative to `src/suggest/`.
+`docs/history/AGENT_TASKS.md` L4, "Suggestions". Unqualified paths are relative to `src/suggest/`.
 
 ## Rules
 

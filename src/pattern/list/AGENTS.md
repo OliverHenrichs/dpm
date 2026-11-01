@@ -81,7 +81,7 @@ nothing selected.
   (system camera). The video seeds the new pattern's form; after saving, the app offers to edit it
   (`src/anonymize/AGENTS.md`).
 - A local video's tile also offers _Put online_, and a video shared to DPM can open the add form
-  through `newVideo` route params (`src/videoLinks/AGENTS.md`).
+  through a `newVideo` token in the route (`src/videoLinks/AGENTS.md`).
 - `PatternListTemplateModal` creates and sets up a list: template, name, types, dance. The List
   tab opens it too, in edit mode (`saveList`), so types are edited where the patterns are.
   Each type in use says how many figures use it (`typeUsage`). Its ✕ stays enabled: tapping it

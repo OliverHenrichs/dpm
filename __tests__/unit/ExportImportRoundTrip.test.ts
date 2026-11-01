@@ -535,7 +535,7 @@ describe("export → import round trip", () => {
       // The exporter writes `readonly: undefined` when not exporting as
       // read-only, which JSON.stringify drops — so an already-read-only list
       // comes back editable. Recorded as observed behaviour, not endorsed;
-      // see AGENT_TASKS.md.
+      // see docs/history/AGENT_TASKS.md.
       expect(importResult.patternLists![0].readonly).toBeUndefined();
     });
   });

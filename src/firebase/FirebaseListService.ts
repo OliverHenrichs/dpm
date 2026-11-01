@@ -8,6 +8,7 @@ import {
   Unsubscribe,
   writeBatch,
 } from "firebase/firestore";
+import { validateSharedList } from "@/src/pattern/data/validation/validateSharedList";
 import {
   APP_TOKEN,
   db,
@@ -292,8 +293,10 @@ export async function fetchSharedList(
     snap = await read();
   }
   if (!snap.exists()) return null;
-  const data = snap.data() as SharedListDocument;
-  return { ...data.list, patterns: data.patterns };
+  // Anyone can publish whatever the rules' outline allows: checked like an import file. A list
+  // this build cannot read reads as not found.
+  const data = snap.data() as Partial<SharedListDocument>;
+  return validateSharedList(data.list, data.patterns, ref.id);
 }
 
 /**
@@ -330,8 +333,14 @@ export function subscribeToSharedList(
           onError(new Error("Shared list no longer exists."));
           return;
         }
-        const data = snap.data() as SharedListDocument;
-        onUpdate({ ...data.list, patterns: data.patterns });
+        const data = snap.data() as Partial<SharedListDocument>;
+        const list = validateSharedList(data.list, data.patterns, snap.id);
+        // An update this build cannot read is skipped: the subscriber keeps the copy it has.
+        if (!list) {
+          console.warn("subscribeToSharedList: unreadable update skipped");
+          return;
+        }
+        onUpdate(list);
       },
       (err) => {
         if (!isPermissionDenied(err)) {

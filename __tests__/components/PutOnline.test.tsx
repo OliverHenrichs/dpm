@@ -5,6 +5,7 @@ import { clearReplacements } from "@/src/anonymize/jobs/replaceVideo";
 import { loadPatterns } from "@/src/pattern/data/PatternListStorage";
 import { awaitingLink } from "@/src/videoLinks/awaitingLink";
 import { applyVideoLink } from "@/src/videoLinks/linkVideo";
+import { newVideoFor } from "@/src/videoLinks/newVideoHandoff";
 import AddSharedVideoSheet from "@/src/videoLinks/components/AddSharedVideoSheet";
 import {
   IPattern,
@@ -245,11 +246,10 @@ describe("a video shared to DPM", () => {
     renderSheet({ kind: "link", url: LINK });
     fireEvent.press(await screen.findByText("New figure"));
 
-    await waitFor(() =>
-      expect(router.navigate).toHaveBeenCalledWith({
-        pathname: "/patterns",
-        params: { newVideo: LINK, newVideoType: "url" },
-      }),
-    );
+    await waitFor(() => expect(router.navigate).toHaveBeenCalled());
+    // The route carries a token for the video, never the video itself.
+    const { params } = (router.navigate as jest.Mock).mock.calls[0][0];
+    expect(params.newVideo).not.toBe(LINK);
+    expect(newVideoFor(params.newVideo)).toEqual({ type: "url", value: LINK });
   });
 });

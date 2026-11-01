@@ -3,7 +3,7 @@
 The on-device video tools' shared machinery: the job queue every heavy task runs through, the
 review step, and the two video edits (_Shorten_, and _Anonymize_ into silhouettes or with only
 the faces covered). Android only for now. Transcription is in `src/transcribe/`, suggestions in `src/suggest/`, the native side in
-`modules/`. Design history and device measurements: `AGENT_TASKS.md` L3 (and L4 for speech).
+`modules/`. Design history and device measurements: `docs/history/AGENT_TASKS.md` L3 (and L4 for speech).
 Unqualified paths are relative to `src/anonymize/`.
 
 ## Where the user meets it

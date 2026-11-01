@@ -3,6 +3,9 @@ import {
   isVimeoUrl,
 } from "@/src/common/utils/VimeoUtils";
 
+/** YouTube ids are 11 of these; the length is left loose, the characters are not. */
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
 /**
  * Extracts a YouTube video ID from common URL formats:
  *  - https://www.youtube.com/watch?v=ID
@@ -11,9 +14,16 @@ import {
  *  - https://m.youtube.com/watch?v=ID
  *  - (with or without extra query params / timestamps)
  *
- * Returns null if the URL is not a recognised YouTube URL.
+ * Returns null if the URL is not a recognised YouTube URL, or its id has characters a YouTube id
+ * never has: the id goes into the player's page and into image addresses, and a link from a
+ * shared list or an import file can say anything.
  */
 export function extractYouTubeVideoId(url: string): string | null {
+  const id = rawYouTubeVideoId(url);
+  return id && YOUTUBE_ID.test(id) ? id : null;
+}
+
+function rawYouTubeVideoId(url: string): string | null {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.replace(/^www\./, "").replace(/^m\./, "");

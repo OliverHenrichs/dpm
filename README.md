@@ -8,106 +8,27 @@
 > **Status:** Work in Progress 🚧 · **Website:** [dancepatternmapper.com](https://dancepatternmapper.com/)
 
 A React Native / Expo mobile app for mapping partner-dance patterns as a prerequisite graph.  
-Organise patterns into dance-style-specific lists, visualise their dependencies in a swimlane timeline or a zoomable network graph, browse their videos as reels, and share your lists with other dancers via export/import or live cloud sync.
+Organise patterns into dance-style-specific lists, visualise their dependencies in a swimlane timeline or a zoomable network graph, browse their videos as reels, and share your lists with other dancers through live cloud sync.
 
 ---
 
 ## Features
 
-### Navigation
-- The **drawer** holds the places: **Lists** (all your pattern lists) and **Settings**
-- Inside the open list, **bottom tabs** switch between its views: **List** · **Map** · **Reels**
+The full description of what the app does, area by area, is in
+[`docs/product/`](docs/product/overview.md). In short:
 
-### Pattern Lists
-- Create pattern lists for any dance style — choose from **six built-in templates** (West Coast Swing, Salsa, Bachata, Brazilian Zouk, Argentine Tango, Lindy Hop) or start from a **blank list**
-- Templates come with preset pattern types *and* a handful of foundational starter patterns
-- Each list owns its own set of **custom pattern types** with individually assigned colours
-- A list can name its **dance** (West Coast Swing, Lindy Hop, Salsa, Bachata, Brazilian Zouk, Argentine Tango), which picks the rhythms suggested for its patterns; templates set it
-- Edit list name, dance and pattern types at any time (types with patterns cannot be removed)
-- Delete lists individually; the active list persists across sessions
-
-### Pattern Management
-- Full **CRUD** for patterns within a list
-- Per-pattern fields: name, type, counts, an optional **rhythm**, an optional level (Beginner / Intermediate / Advanced), description, free-form **tags**, **prerequisite links** to other patterns, one or more **videos** (local file or URL with optional start time), and attached **modifiers**
-- **Rhythm** is written the way dancers count it (`1 2 3&4 5&6` for a West Coast Swing six-count pattern, `a` for a swung triple, `(4)` for a beat without a weight change) and always matches the counts: typing a rhythm sets the counts, and changing the counts drops a rhythm that no longer fits. While the field is empty it suggests the dance's basic rhythms for those counts, then offers the next step to append
-- Rows show the type, the level when set and the number of videos; the counts are in the opened details
-- Supports **online videos** including YouTube links with in-app playback
-- Inline video thumbnails with a swipeable carousel in both the edit form and the detail view
-- Start a new pattern **from a video**, picked from the gallery or **recorded** with the system camera; the video seeds the form. Picked videos are copied into the app's own storage, so they survive the OS clearing its cache
-
-### Modifiers
-Modifiers are affixes that change how a pattern is danced ("with a spin", "slow", "hijacked"). They are defined per list, on their own tab next to the patterns:
-
-- Each modifier has a **position** — *prefix* (precedes), *postfix* (follows) or *within* (changes it from inside; stored as `amends`)
-- **Universal** modifiers apply to every pattern in the list and carry their own demo videos
-- **Non-universal** modifiers are attached to individual patterns, and each attachment can hold videos of *that* pattern danced with *that* modifier
-- A modifier's detail view lists every pattern it is attached to; deleting a modifier detaches it from all patterns
-
-### Video Tools (Android)
-**Edit Figure → Videos → Edit video** opens a sheet with the clip and a trim bar. Everything below runs **on the device**. No video, audio or transcript is uploaded, and each tool runs as a background job reported in a banner on the pattern list, with a phone notification when it finishes while the app is in the background.
-
-- **Shorten** cuts the selection out at the source's size, audio kept
-- **Anonymize** turns a 1–30 s selection into a **silhouette** video: tap each dancer (one, or a couple) on a frame and they are tracked through the clip. The result replaces the video in the pattern, with a *Silhouette* badge; the original stays in the gallery
-- **Transcribe speech** writes down what the teacher says ([whisper.cpp](https://github.com/ggerganov/whisper.cpp) via `whisper.rn`, after a one-time ~61 MB model download). The transcript view shows timestamped lines: tap one to seek there, tick lines and **Add to description**. Shortening a video keeps only the transcript lines inside the cut
-- **Suggest name and description** drafts both from the transcript and the list's vocabulary, using a small language model (Qwen3.5 2B via `llama.rn`, a one-time ~1.3 GB download, devices with ≥ 6 GB RAM). Nothing is written until you tap *Use suggestion*, which fills the name only when it is empty
-- Downloaded models are hash-checked, listed under **Settings → On-device models** with their size, and can be deleted there
-
-The native parts are local Expo modules in `modules/` (`video-anonymize`, `audio-extract`); on iOS and web these tools are hidden.
-
-### Map
-The **Map** tab shows the prerequisite graph in two switchable views:
-
-| View | Description |
-|---|---|
-| **Timeline** | Swimlane layout — one lane per pattern type, patterns flow left-to-right by dependency depth; skip-level edges rendered as curved arcs with collision avoidance |
-| **Network** | Force-free hierarchical graph with pan & pinch-zoom; nodes coloured by type and shaded by level |
-
-Both views render from a single graph model, so they cannot disagree about depth, edges or cycles.
-
-- Tap any node to open a **pattern details modal**
-- **Search and filter the graph**, showing not just the matches but the chains they belong to — the path *to* a match, or everything connected to it. Matches stay bright and the context around them dims
-- **Drag nodes in the network view** to arrange the graph by hand: long-press a node, then drag. The arrangement is saved per list, per device, and a pattern added later is seeded next to its prerequisites rather than triggering a re-layout
-- Nodes **badge what they carry** — a play mark for video, dots for attached modifiers
-- **Circular prerequisites are surfaced to the user** as a banner naming how many patterns are caught in a loop, not buried in a console warning
-- Collapsible **legend** explaining type colours, level shading and the badges
-
-### Reels
-The **Reels** tab pages through every pattern that has a video, for browsing before a social rather than looking something up:
-
-- An **overview** shows the patterns as stills, from the open list or from **every list** on the phone
-- Tapping one opens them **one per screen**: swipe up and down between patterns, sideways through a pattern's videos (its own first, then those danced with a modifier)
-- Only the video on screen holds a player, and leaving the tab stops it
-
-### Filtering & Sorting
-- Filter by **name** (substring), **type**, **level**, **exact counts**, and **tags**
-- The same filter works on the **pattern list** and on the **graph**, where it additionally decides how much of a match's chain to draw
-- Sort by name, type, level, counts, or id/date created (ascending / descending)
-- Sorting by type, level or counts splits the list into **sections** with pinned headers and counts; types follow the list's own order, levels run beginner to advanced, and patterns without a value come last
-- Both panels slide up as bottom sheets
-
-### Import & Export
-- Export selected pattern lists to a **JSON file** (format version `3.2.0`) shared via the native share sheet
-- **Transcripts** travel only when you opt in on the export sheet, and never in a published cloud list
-- Local videos — for patterns, universal modifiers and per-pattern modifier combinations — are **base64-embedded**, or left out entirely if you opt out (URL videos always survive)
-- Option to **export as read-only** to prevent recipients from editing the list
-- Import a previously exported file: lists that do not exist yet are added, and each conflicting list can be **skipped** or **replaced**
-- Imported files are **validated before anything is written**. Damage that can be repaired (a dangling prerequisite, an unknown modifier position) is fixed and reported as a warning; damage that cannot (a missing list id, a duplicate pattern id, a version from a newer build) refuses the import rather than half-applying it
-- Stored data carries a **schema version**, and migrations run once on start-up — forwards only, and idempotent
-
-### Cloud Sharing
-- **Publish** a list to the cloud — generates an 8-character **share code** and a **QR code**
-- Other users can **subscribe** by entering the code or scanning the QR code; their copy stays live-synced via Firestore
-- Subscribed copies are marked **read-only**; if the publisher stops sharing the list is detached and becomes fully editable
-- **Only the publisher can update or stop sharing a list.** Publishing signs in to Firebase anonymously (no account, no personal data), and each list carries a secret **share key** that stays on the publisher's phone; an editable export carries it, so the publisher keeps control on a new phone or after a reinstall. Subscribing never signs in
-- Requires optional Firebase configuration (see [Firebase Setup](#firebase-setup))
-
-### Settings
-- **Theme**: Light, Dark, or System default
-- **Style**: *After Hours* (the default, made for dancers) or *Clipboard* (dense and structured, made for running a course), each in light and dark with its own typefaces
-- **App icon**: the launcher icon in indigo (the default), amber or coral, independent of the style; offered where the platform supports alternate icons
-- **Language**: nine locales — English, 中文, हिन्दी, Español, Français, العربية, বাংলা, Português, Deutsch. A fresh install follows the device language; your pick is remembered from then on
-- **Data transfer**: export and import pattern lists
-- **On-device models**: the speech and suggestion models, with their size and a *Delete* button (Android)
+- **Lists and figures**: lists from six dance templates or blank; figures with prerequisites,
+  counts, a rhythm in dancers' notation, level, tags, videos and modifiers (variations with their
+  own videos). Sort, filter, compact mode.
+- **Map**: the prerequisite graph as a timeline of type lanes (reorderable) or a pannable network
+  (figures movable by hand), with filtering that keeps the chains around a match.
+- **Reels**: every figure with a video, one per screen.
+- **Video tools (Android)**: shorten, anonymize (silhouettes or faces only), transcribe speech and
+  draft a name and description, all on the phone; put a video online through your own apps.
+- **Sharing**: publish a list with a share code or QR code, follow it read-only, suggestions of
+  figures and changes, members-only lists, handing a list over, reports. No accounts.
+- **Settings**: two app styles in light and dark, nine languages, app icon colour, export and
+  import for backups and new phones, on-device models, what's new.
 
 ---
 
