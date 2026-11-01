@@ -75,4 +75,5 @@ the List tab (`src/pattern/list/AGENTS.md`).
 
 ## Decisions
 
-None recorded yet.
+- [0012](../decisions/0012-gesture-handler-for-the-map.md) The Map's gestures all live in Gesture Handler
+- [0005](../decisions/0005-figure-ids-are-never-reused.md) Figure ids are never reused (the manual layout relies on it)

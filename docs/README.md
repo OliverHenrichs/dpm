@@ -13,7 +13,7 @@ has one job.
 | `docs/history/`          | Frozen material, kept because code comments cite it                    | Never edited                                                          |
 | GitHub Issues            | The backlog: ideas, tester findings, known bugs                        | Closed by the PR that says `Closes #n`                                |
 
-The decision behind this layout is [0001](decisions/0001-living-specs-and-decision-records.md).
+The decision behind this layout is [0001](decisions/0001-living-specs-and-decision-records.md); all records are listed in [`decisions/README.md`](decisions/README.md).
 
 ## The rules, in every PR
 

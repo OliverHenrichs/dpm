@@ -51,3 +51,5 @@ using it, and never invent a figure.
 
 Other dances follow the same rule: only a verified standard term or rhythm goes into a template.
 Argentine tango has no basic rhythm on purpose.
+
+Why: [0006](../decisions/0006-figure-on-screen-pattern-in-code.md), [0010](../decisions/0010-variations-are-modifiers.md).

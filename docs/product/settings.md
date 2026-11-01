@@ -87,5 +87,5 @@ Links to the terms of use and the privacy policy on the website.
 
 ## Decisions
 
-None recorded yet. Candidate: export files are for backups and new phones, never for sharing
-(Oliver, 2026-10-25).
+- [0009](../decisions/0009-export-files-are-for-backups.md) Export files are for backups and moving phones
+- [0006](../decisions/0006-figure-on-screen-pattern-in-code.md) "Figure" on screen, `pattern` in code

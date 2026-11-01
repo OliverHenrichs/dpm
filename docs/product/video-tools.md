@@ -117,5 +117,5 @@ design history and device measurements are in `docs/history/AGENT_TASKS.md` L3 a
 
 ## Decisions
 
-None recorded yet. Candidates: everything on the phone, nothing uploaded by DPM; one job at a
-time; review before replace; upload through the user's own apps rather than an API.
+- [0003](../decisions/0003-dpm-uploads-no-video.md) DPM uploads no video; heavy work runs on the phone
+- [0004](../decisions/0004-one-heavy-job-at-a-time.md) One heavy job at a time
