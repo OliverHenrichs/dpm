@@ -18,6 +18,8 @@ module.exports = defineConfig([
       "*.config.js",
       // Operator tools, run by Node on the laptop.
       "tools/**/*.js",
+      // Repo checks and build helpers, run by Node in CI and on the laptop.
+      "scripts/**/*.js",
     ],
     languageOptions: {
       globals: { ...globals.node, ...globals.jest },

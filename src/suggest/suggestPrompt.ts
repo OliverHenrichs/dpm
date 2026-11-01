@@ -3,7 +3,7 @@ import { LANGUAGES } from "@/src/settings/types/Languages";
 
 /**
  * What the suggestion model is asked, and how its answer is read (L4 suggestions,
- * AGENT_TASKS.md). Kept pure so the prompt can be changed and tested apart from the engine.
+ * docs/history/AGENT_TASKS.md). Kept pure so the prompt can be changed and tested apart from the engine.
  *
  * The prompt is the spike's v2. v1 asked for a name and a description only, and the models
  * invented a pattern for a water break, primed by the list's vocabulary; v2 has them say first

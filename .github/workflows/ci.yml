@@ -43,6 +43,9 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      - name: Check docs
+        run: npm run docs:check
+
       - name: Test
         run: npx jest --coverage --ci --maxWorkers=2
 

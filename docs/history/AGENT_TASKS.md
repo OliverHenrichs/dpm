@@ -1,5 +1,11 @@
 # AGENT_TASKS.md
 
+> **Frozen on 2026-11-01.** This was the triaged backlog and design log up to mid-October 2026
+> (PRs up to about #72, plus the L5 plan). Work after that is not recorded here. It stays for the
+> history that code comments cite (`docs/history/AGENT_TASKS.md L3`, `B1`, …). Current behaviour
+> is in `docs/product/`, reasons in `docs/decisions/`, rules for the code in the `AGENTS.md` files,
+> and the backlog in GitHub Issues. See `docs/README.md`. Do not add to this file.
+
 Triaged backlog for DancePatternMapper. The raw idea list (previous revision of this file) has
 been categorised by size, with full writeups for the large items.
 

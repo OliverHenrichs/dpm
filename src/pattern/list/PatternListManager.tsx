@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
+import { clearNewVideo, newVideoFor } from "@/src/videoLinks/newVideoHandoff";
 import { Modal, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { IconButton, SegmentedControl } from "@/src/common/ui";
@@ -129,30 +130,28 @@ const PatternListManager = () => {
     (m) => m.membership === "requested",
   ).length;
 
-  // "New pattern" for a video shared to DPM from another app (src/videoLinks/): it arrives as
-  // route params and seeds the add form like "From a video". The params are cleared once read,
-  // so coming back to the tab does not open the form again.
-  const { newVideo, newVideoType } = useLocalSearchParams<{
-    newVideo?: string;
-    newVideoType?: string;
-  }>();
+  // "New pattern" for a video shared to DPM from another app (src/videoLinks/): the route carries
+  // a token for it (`newVideoHandoff.ts`), never the video itself, since any app or web page can
+  // open a route. It seeds the add form like "From a video". The param is cleared once read, so
+  // coming back to the tab does not open the form again.
+  const { newVideo } = useLocalSearchParams<{ newVideo?: string }>();
   // Read during render, as the form's state is adjusted to a prop; `seenVideo` keeps it to once.
   // Not before the list is loaded: whether it is read-only is not known until then.
   const { isLoading } = useActivePatternList();
   const [seenVideo, setSeenVideo] = useState<string>();
   if (!isLoading && newVideo !== seenVideo) {
     setSeenVideo(newVideo);
-    if (newVideo && !isReadonly) {
-      setInitialVideos([
-        { type: newVideoType === "url" ? "url" : "local", value: newVideo },
-      ]);
+    const offered = newVideoFor(newVideo);
+    if (offered && !isReadonly) {
+      setInitialVideos([offered]);
       setActiveTab("patterns");
       setIsAddingNew(true);
     }
   }
   useEffect(() => {
     if (newVideo && newVideo === seenVideo) {
-      router.setParams({ newVideo: undefined, newVideoType: undefined });
+      clearNewVideo(newVideo);
+      router.setParams({ newVideo: undefined });
     }
   }, [newVideo, seenVideo]);
 

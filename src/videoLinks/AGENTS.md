@@ -66,9 +66,11 @@ is in the build (`canReceiveShares`), so web, Jest and an older dev client are u
   an http(s) link (`findWebUrl`), since apps wrap links in words.
 - A link while a video awaits one: a dialog offers it for that video; declining places it
   elsewhere. Otherwise `components/AddSharedVideoSheet.tsx` puts it onto a pattern of the active
-  list (through `usePatternCrud`) or into a new one: it navigates to `/patterns` with
-  `newVideo` / `newVideoType` route params, which `PatternListManager` reads once to seed the add
-  form, as _From a video_ does.
+  list (through `usePatternCrud`) or into a new one: it hands the video to `newVideoHandoff.ts`
+  and navigates to `/patterns` with the token it gets back as the `newVideo` route param, which
+  `PatternListManager` reads once to seed the add form, as _From a video_ does. **Never put the
+  video itself in the route**: Expo Router makes every route a deep link, so any web page or app
+  could open the form with a file path of its choosing.
 - A shared file is copied into the app's storage (`persistVideo`) only once a place is chosen.
 - Each share is read once, during render, and then cleared in the native module, or it would be
   read again whenever the app returns to the front.

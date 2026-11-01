@@ -10,7 +10,7 @@
  * Keeping content out of the band is the free half of the fix. The other half
  * is `View.setSystemGestureExclusionRects`, which hands the band back to the
  * app; React Native exposes no JS API for it, so it would need a native
- * module, and it only works on Android 10+ (see AGENT_TASKS.md M1).
+ * module, and it only works on Android 10+ (see docs/history/AGENT_TASKS.md M1).
  *
  * Applied once, on `PageContainer`, so every screen inherits it rather than
  * each scroller remembering to pad itself.

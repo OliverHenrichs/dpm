@@ -57,7 +57,7 @@ otherwise reused. Keep the third-party licences (`LICENSE`, the scripts' headers
 
 Performance and memory matter more than anywhere else in the app: on a Pixel 10a a 7 s couple clip
 runs at ~0.75 s per frame and the Java heap sat at its 256 MB cap near 30 s clips. Dev builds log
-each run's per-frame stats. Measurements and the tuning history are in `AGENT_TASKS.md` L3.
+each run's per-frame stats. Measurements and the tuning history are in `docs/history/AGENT_TASKS.md` L3.
 
 ## audio-extract
 

@@ -23,7 +23,7 @@ class AudioExtractException(message: String, cause: Throwable? = null) :
   CodedException("ERR_AUDIO_EXTRACT", message, cause)
 
 /**
- * L4 (AGENT_TASKS.md): the speech in a video, as whisper.cpp wants it — 16 kHz mono 16-bit PCM
+ * L4 (docs/history/AGENT_TASKS.md): the speech in a video, as whisper.cpp wants it — 16 kHz mono 16-bit PCM
  * in a WAV file. whisper.cpp decodes nothing itself, and a pattern's video carries AAC or Opus.
  *
  * The audio track is decoded with MediaCodec, mixed down to mono and resampled while it streams,

@@ -33,10 +33,15 @@ in, so read the one listed below before you add code there.
 | `src/firebase/AGENTS.md`            | Firestore sharing, ownership, security rules, configuration                                                    |
 | `__tests__/AGENTS.md`               | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite                         |
 
-`AGENT_TASKS.md` is the design history (bugs B*, changes S*/M*/L*, foundation F*): why things are
-the way they are, with device findings. It is long; read the section a code comment cites
-(`AGENT_TASKS.md L3`), not the whole file. Rules that still hold have been lifted into the
-`AGENTS.md` files, which win where the two disagree.
+**Docs outside the code** (`docs/README.md`): `docs/product/` says what the app does,
+`docs/decisions/` why, `docs/plans/` what is being built. A PR that changes behaviour updates the
+matching spec; a choice between real alternatives gets a decision record. Rules and traps for the
+code stay in these `AGENTS.md` files. `npm run docs:check` checks links and size budgets.
+
+`docs/history/AGENT_TASKS.md` is the frozen design history up to mid-October 2026 (bugs B*,
+changes S*/M*/L*, foundation F*), with device findings. Nothing new goes in it. It is long; read
+the section a code comment cites (`docs/history/AGENT_TASKS.md L3`), not the whole file. Rules that
+still hold have been lifted into the `AGENTS.md` files, which win where the two disagree.
 
 ## Architecture
 
@@ -153,25 +158,12 @@ inherit a stranger's position.
 - **Verify both bundles** with `npx expo export --platform web` and `--platform android`. Web also
   builds an SSR bundle, so a bad import surfaces twice.
 
-## On-device video tools (Android only for now)
+## Features, by area
 
-Edit Figure → Videos → **Edit video** (`src/anonymize/components/VideoEditPanel.tsx`) offers
-_Shorten_, _Anonymize_ (a silhouette) and _Transcribe speech_; the transcript sheet offers _Suggest
-name and description_. Settings → _On-device models_ downloads and deletes the models. Everything
-heavy runs through one queue, `jobStore`, one job at a time, because the phone cannot hold two
-models. A shortened or anonymized video waits for the user's review before the pattern changes,
-and nothing is written into a description without an explicit tap. A local video goes online
-through the user's own apps and comes back as a link (_Put online_, `src/videoLinks/`).
-Transcripts never go into a published list and leave in an export only on opt-in. Details in `src/anonymize/`,
-`src/transcribe/`, `src/suggest/` and `modules/` (their `AGENTS.md`).
-
-## Filtering
-
-`PatternFilter` (`{ name, types, levels, counts?, tags }`, levels by id, in
-`src/pattern/filter/components/PatternFilterBottomSheet.tsx`) is applied by `usePatternFilter`
-(`src/pattern/filter/hooks/`) and shared by the List and Map tabs. Sorting is in
-`src/pattern/list/`. **Never hand a filtered `patterns` array to a graph layout function**; see
-`src/pattern/graph/AGENTS.md`.
+What each area does for the user is in `docs/product/` (start at `overview.md`); the rules for its
+code are in the nested `AGENTS.md` listed above. Two cross-cutting traps: **never hand a filtered
+`patterns` array to a graph layout function** (`src/pattern/graph/AGENTS.md`), and **heavy video
+work goes through `jobStore`, one job at a time** (`src/anonymize/AGENTS.md`).
 
 ## Developer workflows
 
@@ -187,6 +179,7 @@ npm run test:coverage    # coverage over all of src/, thresholds enforced
 npm run lint             # ESLint over the whole project (expo lint .)
 npm run format:check     # Prettier, same glob CI uses (npm run format writes)
 npm run typecheck        # tsc --noEmit
+npm run docs:check       # doc links, paths named in specs, AGENTS.md index and size budgets
 npm run data -- find …   # find and remove published data, operator only (tools/data-removal/)
 npm run ops              # operations dashboard (reports, data removal), operator only (tools/dashboard/)
 ```
@@ -248,7 +241,7 @@ variables. Copy `.env.example` to `.env` (gitignored); without the Firebase vari
 `.github/workflows/ci.yml` runs on every push to `master` and every PR (and the audit job alone
 every Monday):
 
-- **verify**: lint, format check, typecheck, `npx jest --coverage --ci`. Lint and format cover
+- **verify**: lint, format check, typecheck, `npm run docs:check`, `npx jest --coverage --ci`. Lint and format cover
   tests, mocks and root config too.
 - **bundle**: `npx expo export` for `web` and `android`, the gate for platform-split faults.
 - **rules**: `firestore.rules` in the emulator.
