@@ -122,9 +122,9 @@ sharing control is hidden. Nobody needs an account.
 
 ## Not built yet
 
-- Feature requests and votes across the app (L5, planned 2026-10-16, not started; in
-  `docs/history/AGENT_TASKS.md`).
-- Remembering a pending join request and adding the list on its own once accepted.
+- Feature requests and votes across the app ([#137](https://github.com/OliverHenrichs/dpm/issues/137)).
+- Remembering a pending join request and adding the list on its own once accepted
+  ([#139](https://github.com/OliverHenrichs/dpm/issues/139)).
 - Reporting a single suggestion.
 - Videos hosted by DPM itself (an idea in the project files: `ideas/hosting-videos-ourselves.md`).
 

@@ -101,9 +101,11 @@ works offline and stays on the phone unless the user shares it.
 
 ## Not built yet
 
-- Own levels per list, tag management, slow/quick notation and sequences (from tester review 2,
-  2026-10-31; Oliver's decisions are in project memory until each is planned in `docs/plans/`).
-- Counts and rhythm per variant (decided: only on attached modifiers).
+- Own levels per list (PR #126, from tester review 2).
+- Tag management ([#133](https://github.com/OliverHenrichs/dpm/issues/133)).
+- Counts and rhythm per variant, on attached modifiers only ([#134](https://github.com/OliverHenrichs/dpm/issues/134)).
+- Slow/quick notation, `S Q Q` ([#135](https://github.com/OliverHenrichs/dpm/issues/135)).
+- Sequences ([#136](https://github.com/OliverHenrichs/dpm/issues/136), design in [`docs/plans/sequences.md`](../plans/sequences.md)).
 - Argentine tango has no basic rhythm on purpose.
 
 ## Code
