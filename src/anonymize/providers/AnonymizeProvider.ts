@@ -47,7 +47,7 @@ export interface AnonymizeProvider {
   readonly maxSeconds: number;
   /**
    * True when footage leaves the device. The caller must then obtain explicit, recorded consent
-   * before calling `run` (Apple 5.1.2(i), GDPR — see L3 in AGENT_TASKS.md); on-device providers
+   * before calling `run` (Apple 5.1.2(i), GDPR — see L3 in docs/history/AGENT_TASKS.md); on-device providers
    * need none.
    */
   readonly sendsFootageOffDevice: boolean;

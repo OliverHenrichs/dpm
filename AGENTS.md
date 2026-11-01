@@ -33,10 +33,17 @@ in, so read the one listed below before you add code there.
 | `src/firebase/AGENTS.md`            | Firestore sharing, ownership, security rules, configuration                                                    |
 | `__tests__/AGENTS.md`               | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite                         |
 
-`AGENT_TASKS.md` is the design history (bugs B*, changes S*/M*/L*, foundation F*): why things are
-the way they are, with device findings. It is long; read the section a code comment cites
-(`AGENT_TASKS.md L3`), not the whole file. Rules that still hold have been lifted into the
-`AGENTS.md` files, which win where the two disagree.
+**Docs outside the code** live in `docs/` (`docs/README.md` explains the layout):
+`docs/product/` is what the app does for the user, one living spec per area; `docs/decisions/`
+is why, as short numbered records that are superseded, never edited; `docs/plans/` holds designs
+for work in flight, folded into the specs and deleted when the PR merges. A PR that changes
+behaviour updates the matching spec in the same PR, and a choice between real alternatives gets a
+decision record. Rules and traps for the code stay in these `AGENTS.md` files.
+
+`docs/history/AGENT_TASKS.md` is the frozen design history up to mid-October 2026 (bugs B*,
+changes S*/M*/L*, foundation F*), with device findings. Nothing new goes in it. It is long; read
+the section a code comment cites (`docs/history/AGENT_TASKS.md L3`), not the whole file. Rules that
+still hold have been lifted into the `AGENTS.md` files, which win where the two disagree.
 
 ## Architecture
 

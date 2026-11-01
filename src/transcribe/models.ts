@@ -1,5 +1,5 @@
 /**
- * The models transcription needs, downloaded on first use (AGENT_TASKS.md, L4). Hashes are the
+ * The models transcription needs, downloaded on first use (docs/history/AGENT_TASKS.md, L4). Hashes are the
  * SHA-256 values Hugging Face publishes for the files (the LFS objects' etags).
  */
 export type ModelSpec = {

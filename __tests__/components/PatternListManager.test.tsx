@@ -179,7 +179,7 @@ describe("PatternListManager", () => {
 
   describe("deleting a pattern", () => {
     it("removes it and scrubs it from prerequisites", async () => {
-      // End-to-end cover for AGENT_TASKS.md B1, through the real screen.
+      // End-to-end cover for docs/history/AGENT_TASKS.md B1, through the real screen.
       const { list } = await renderManager([
         pattern(1, "Sugar Push"),
         pattern(2, "Whip", { prerequisites: [1] }),
@@ -586,7 +586,7 @@ describe("PatternListManager", () => {
         );
       });
 
-      // AGENT_TASKS.md B12: this used to wipe the form and strand the user.
+      // docs/history/AGENT_TASKS.md B12: this used to wipe the form and strand the user.
       await waitFor(() =>
         expect(screen.getByPlaceholderText("Counts").props.value).toBe("6"),
       );

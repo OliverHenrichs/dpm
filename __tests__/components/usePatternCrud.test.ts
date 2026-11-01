@@ -284,7 +284,7 @@ describe("usePatternCrud", () => {
     });
 
     it("scrubs the deleted id from every prerequisite list", async () => {
-      // The whole point of AGENT_TASKS.md B1: a left-behind id makes the
+      // The whole point of docs/history/AGENT_TASKS.md B1: a left-behind id makes the
       // dependent vanish from the network graph.
       const { result, list } = await mountCrud([
         pattern(1),

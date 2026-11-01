@@ -3,7 +3,7 @@
 What a teacher says in a pattern's video, transcribed on the phone with Whisper (`whisper.rn`) and
 stored on the video reference (`IVideoReference.transcript`). Android only for now: it needs
 `modules/audio-extract`. Runs as a `"transcribe"` job in `jobStore` (`src/anonymize/AGENTS.md`).
-Design history and device numbers: `AGENT_TASKS.md` L4. Unqualified paths are relative to
+Design history and device numbers: `docs/history/AGENT_TASKS.md` L4. Unqualified paths are relative to
 `src/transcribe/`.
 
 ## Pipeline (`transcribeVideo.ts`)

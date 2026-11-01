@@ -73,7 +73,7 @@ module.exports = {
   // current line fails the build. Raise these as suites land; never lower them.
   //
   // The global numbers are low because most of src/ is UI that has no tests
-  // yet. That is the backlog (see AGENT_TASKS.md F1), not the target.
+  // yet. That is the backlog (see docs/history/AGENT_TASKS.md F1), not the target.
   coverageThreshold: {
     // NB: these are keyed off the numbers jest reports when a threshold is
     // *missed*, which differ from the summary table's percentages — the two
