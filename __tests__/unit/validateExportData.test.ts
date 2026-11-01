@@ -126,6 +126,30 @@ describe("validateExportData", () => {
     });
   });
 
+  describe("the pattern id high-water mark", () => {
+    it("is kept, so a deleted figure's id is not handed out again", () => {
+      const result = validateExportData(
+        fileWithList(baseList({ nextPatternId: 9 })),
+      );
+
+      expect(result.data!.patternLists[0].nextPatternId).toBe(9);
+    });
+
+    it.each([
+      ["a string", "9"],
+      ["a fraction", 2.5],
+      ["zero", 0],
+      ["a negative number", -3],
+    ])("is dropped when it is %s", (_label, value) => {
+      const result = validateExportData(
+        fileWithList(baseList({ nextPatternId: value })),
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.data!.patternLists[0]).not.toHaveProperty("nextPatternId");
+    });
+  });
+
   describe("files that are rejected outright", () => {
     it.each([
       ["null", null],

@@ -500,6 +500,12 @@ function normalizeList(
     // 3.7. Anything but `true` means the list is open to anyone with its code.
     ...(raw.membersOnly === true && { membersOnly: true as const }),
     ...(laneOrder && { laneOrder }),
+    // The id high-water mark: exports always carried it, but import used to drop it, so the id
+    // of a figure deleted from the end could be handed out again. A bad value is dropped and
+    // `nextPatternId()` falls back to the figures present.
+    ...(typeof raw.nextPatternId === "number" &&
+      Number.isInteger(raw.nextPatternId) &&
+      raw.nextPatternId > 0 && { nextPatternId: raw.nextPatternId }),
     patterns,
   };
 }
