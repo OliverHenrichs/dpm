@@ -16,11 +16,46 @@ import {
  */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
-/** Shared by the foundational ring and the unanchored-node fallback. */
-function getEllipseRadii(width: number, height: number) {
+/**
+ * Centre-to-centre distance wanted between neighbouring roots on the ellipse.
+ * The same as a prerequisite → figure step, so the ring is no looser than the
+ * branches growing out of it.
+ */
+const ROOT_SPACING = DEPTH_SPACING;
+
+/**
+ * Smallest ring radius. Two or three roots would otherwise sit close enough
+ * for their branches, which leave at 180° or 120° apart, to crowd each other.
+ */
+const MIN_RING_RADIUS = DEPTH_SPACING * 0.75;
+
+/**
+ * Radii of the foundational ellipse. Shared by the ring and the
+ * unanchored-node fallback.
+ *
+ * The screen sets the largest size, and the number of roots shrinks it: the
+ * ring only needs to be long enough to give each root `ROOT_SPACING`, so a
+ * small list such as the six-figure West Coast Swing template no longer has
+ * its four roots spread across the whole canvas. Shrinking keeps the screen's
+ * aspect ratio. From about a dozen roots the screen limit takes over, which is
+ * the size every list used to get.
+ */
+export function getEllipseRadii(
+  width: number,
+  height: number,
+  rootCount: number,
+) {
+  const maxRadiusX = Math.min(width * 0.3, 500);
+  const maxRadiusY = Math.min(height * 0.3, 400);
+  const largest = Math.max(maxRadiusX, maxRadiusY);
+  const needed = Math.max(
+    MIN_RING_RADIUS,
+    (rootCount * ROOT_SPACING) / (2 * Math.PI),
+  );
+  const scale = largest > 0 ? Math.min(1, needed / largest) : 1;
   return {
-    ellipseRadiusX: Math.min(width * 0.3, 500),
-    ellipseRadiusY: Math.min(height * 0.3, 400),
+    ellipseRadiusX: maxRadiusX * scale,
+    ellipseRadiusY: maxRadiusY * scale,
   };
 }
 
@@ -151,7 +186,11 @@ export function calculateGraphLayout(
     unanchoredIndex: number,
   ): number {
     if (anchors.length === 0) {
-      const { ellipseRadiusX, ellipseRadiusY } = getEllipseRadii(width, height);
+      const { ellipseRadiusX, ellipseRadiusY } = getEllipseRadii(
+        width,
+        height,
+        foundationalPatterns.length,
+      );
       const angle = (unanchoredIndex * GOLDEN_ANGLE) % (2 * Math.PI);
       const radius =
         Math.max(ellipseRadiusX, ellipseRadiusY) + DEPTH_SPACING * 2;
@@ -239,8 +278,11 @@ function calculateFoundationalPatternPositions(
   height: number,
   foundationalPatterns: IPattern[],
 ): { positions: Map<number, LayoutPosition>; foundationalAngles: number[] } {
-  // Larger ellipse radii so the ring isn't cramped
-  const { ellipseRadiusX, ellipseRadiusY } = getEllipseRadii(width, height);
+  const { ellipseRadiusX, ellipseRadiusY } = getEllipseRadii(
+    width,
+    height,
+    foundationalPatterns.length,
+  );
 
   const positions = new Map<number, LayoutPosition>();
   const foundationalAngles: number[] = [];
