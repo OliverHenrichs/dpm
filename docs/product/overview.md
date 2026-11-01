@@ -13,15 +13,15 @@ It works without an account or a network. Sharing is optional and anonymous.
 The drawer holds **Lists** and **Settings**. Inside the open list, bottom tabs switch between
 **List**, **Map** and **Reels**.
 
-| Area                                           | In one line                                                                                    |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [Lists and figures](lists-and-figures.md)      | Lists from templates, figures with prerequisites, counts, rhythm, tags, videos and modifiers   |
-| [Map](map.md)                                  | The prerequisite graph as a timeline of lanes or a movable network, filterable                 |
-| [Reels](reels.md)                              | Every figure with a video, one per screen, for watching before a social                        |
-| [Video tools](video-tools.md)                  | Shorten, anonymize, transcribe and draft a description on the phone; put a video online        |
-| [Sharing](sharing.md)                          | Publish a list, follow it by code, suggestions, members-only lists, handover, reports          |
-| [Settings, import and export](settings.md)     | Styles, languages, backups and moving phones, models, what's new                               |
-| [Glossary](glossary.md)                        | The app's words and the dance terms it uses                                                    |
+| Area                                       | In one line                                                                                  |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| [Lists and figures](lists-and-figures.md)  | Lists from templates, figures with prerequisites, counts, rhythm, tags, videos and modifiers |
+| [Map](map.md)                              | The prerequisite graph as a timeline of lanes or a movable network, filterable               |
+| [Reels](reels.md)                          | Every figure with a video, one per screen, for watching before a social                      |
+| [Video tools](video-tools.md)              | Shorten, anonymize, transcribe and draft a description on the phone; put a video online      |
+| [Sharing](sharing.md)                      | Publish a list, follow it by code, suggestions, members-only lists, handover, reports        |
+| [Settings, import and export](settings.md) | Styles, languages, backups and moving phones, models, what's new                             |
+| [Glossary](glossary.md)                    | The app's words and the dance terms it uses                                                  |
 
 ## Principles that run through every area
 
@@ -41,7 +41,7 @@ The drawer holds **Lists** and **Settings**. Inside the open list, bottom tabs s
 ## Not built yet, across areas
 
 - iOS.
-- Sequences, own levels, tag management, slow/quick notation (see
+- Sequences, tag management, slow/quick notation (see
   [lists and figures](lists-and-figures.md)).
 - Feature requests and votes ([#137](https://github.com/OliverHenrichs/dpm/issues/137)).
 

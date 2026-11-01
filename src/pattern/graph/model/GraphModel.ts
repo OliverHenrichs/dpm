@@ -6,6 +6,7 @@ import {
   buildDepthMap,
   findCycles,
 } from "./adjacency";
+import { levelTint } from "./nodeFrame";
 
 /** A pattern together with everything the views need to draw it. */
 export interface GraphNode {
@@ -16,6 +17,11 @@ export interface GraphNode {
   foundational: boolean;
   /** Its type's colour, already resolved. */
   color?: string;
+  /**
+   * How much of the type colour fills the box, from its level among the list's levels
+   * (`levelTint`). Absent draws like the easiest level.
+   */
+  tint?: number;
   /** True when the pattern sits in a prerequisite cycle. */
   inCycle: boolean;
   /** Matched the active filter directly. True throughout an unfiltered model. */
@@ -58,12 +64,14 @@ export interface GraphModel {
  * passing around. Centralising it means the layout functions, the renderers
  * and (next) the filter all agree on one description of the graph.
  *
- * Pure and cheap: O(V + E). Memoise it on `(patterns, patternTypes)` at the
- * screen and hand the result down.
+ * Pure and cheap: O(V + E). Memoise it on `(patterns, patternTypes, levelIds)`
+ * at the screen and hand the result down. `levelIds` are the list's levels in
+ * their order (`resolveLevelIds`); left out, the built-in three.
  */
 export function buildGraphModel(
   patterns: IPattern[],
   patternTypes: PatternType[],
+  levelIds?: readonly string[],
 ): GraphModel {
   const adjacency = buildAdjacency(patterns);
   const depthMap = buildDepthMap(adjacency);
@@ -81,6 +89,7 @@ export function buildGraphModel(
     // not here does not make this one depend on anything drawable.
     foundational: (adjacency.prereqsOf.get(pattern.id) ?? []).length === 0,
     color: typeColorMap.get(pattern.typeId),
+    tint: levelTint(pattern.level, levelIds),
     inCycle: cyclicIds.has(pattern.id),
     isMatch: true,
     isContext: false,

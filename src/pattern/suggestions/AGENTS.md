@@ -53,7 +53,8 @@ Under `sharedLists/{code}`:
   rules' bounds) and `patternFromSuggestion`. **A suggestion is untrusted input**: another phone
   wrote it. `patternFromSuggestion` drops types, prerequisites and modifiers the list does not have
   (any more), keeps URL videos only and a rhythm only if it matches the counts, the same spirit as
-  import validation.
+  import validation. A level is kept only if it is one of the list's (`resolveLevelIds`); the
+  rules bound it at 32 characters, which a `newLevelId` fits.
 - The List tab's header shows a lightbulb (`SuggestionsButton`): _Suggest a figure_ on a
   subscribed list (`SuggestPatternModal`), or the review with a count on the publisher's own
   (`SuggestionsModal`, shown while suggestions are on or any are left). `useListSuggestions`
@@ -91,7 +92,8 @@ pattern, current, …)` turns the two snapshots into one line per change: a scal
   a change it already has is left out, one where the list owner has since changed the same thing
   differently is marked `changedSince` and starts unticked, and anything referring to what the
   list no longer has (a type, a figure, a modifier, a prerequisite that would close a loop) is
-  dropped. _Apply selected_ saves `applyFigureChanges(current, ticked)` through
+  dropped. So is a level the list does not have (clearing the level is always offered).
+  _Apply selected_ saves `applyFigureChanges(current, ticked)` through
   `usePatternCrud.editPattern`; _Edit, then apply_ opens the form on that first. Either answers
   the suggestion (it is deleted), as does _Reject_. A change to a figure that is gone can only
   be dismissed.

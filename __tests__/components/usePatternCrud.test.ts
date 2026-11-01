@@ -403,6 +403,31 @@ describe("usePatternCrud", () => {
       );
     });
 
+    it("moves the figures of a removed level to the one chosen, or to none", async () => {
+      const { result, list } = await mountCrud([
+        pattern(1, { level: "c1" }),
+        pattern(2, { level: "c2" }),
+        pattern(3, { level: "c3" }),
+      ]);
+      const levels = [{ id: "c3", name: "3" }];
+
+      await act(async () => {
+        await result.current.saveList(
+          { ...list, levels },
+          {},
+          {
+            c1: "c3",
+            c2: "",
+          },
+        );
+      });
+
+      const stored = await storedPatterns(list.id);
+      expect(stored.map((p) => p.level)).toEqual(["c3", undefined, "c3"]);
+      expect(stored[1]).not.toHaveProperty("level");
+      expect((await storedList(list.id)).levels).toEqual(levels);
+    });
+
     it("recolours one type, and refuses an unknown type or a read-only list", async () => {
       const { result, list } = await mountCrud([]);
       const [push, pass] = list.patternTypes;

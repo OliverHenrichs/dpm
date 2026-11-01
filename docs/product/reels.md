@@ -17,11 +17,11 @@ than looking something up.
 
 ## Rules that must always hold
 
-| Rule                                                                   | Guarded by                                   |
-| ---------------------------------------------------------------------- | -------------------------------------------- |
-| Only the video on screen holds a player, and only while Reels is open | No test yet                                  |
-| Order: lists, then figures by name, own videos before variants'        | `__tests__/unit/reels.test.ts`               |
-| A variant's video still shows after its modifier is deleted            | No test yet                                  |
+| Rule                                                                  | Guarded by                     |
+| --------------------------------------------------------------------- | ------------------------------ |
+| Only the video on screen holds a player, and only while Reels is open | No test yet                    |
+| Order: lists, then figures by name, own videos before variants'       | `__tests__/unit/reels.test.ts` |
+| A variant's video still shows after its modifier is deleted           | No test yet                    |
 
 ## Not built yet
 

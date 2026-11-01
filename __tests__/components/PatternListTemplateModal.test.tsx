@@ -20,7 +20,10 @@ function renderModal(
   > = {},
 ) {
   const onCreateList = jest.fn<void, [IPatternList, NewPattern[]]>();
-  const onSaveList = jest.fn<void, [IPatternList, Record<string, string>]>();
+  const onSaveList = jest.fn<
+    void,
+    [IPatternList, Record<string, string>, Record<string, string>]
+  >();
   const onClose = jest.fn();
   renderWithProviders(
     <PatternListTemplateModal
@@ -32,11 +35,20 @@ function renderModal(
     />,
     { activeListId: null },
   );
+  // Editing a list opens on its name with the sections folded; open them for the tests below.
+  if (overrides.editList) openSections();
   const created = (): Created => ({
     list: onCreateList.mock.calls.at(-1)![0],
     patterns: onCreateList.mock.calls.at(-1)![1],
   });
   return { onCreateList, onSaveList, onClose, created };
+}
+
+/** Unfold every folded section of list settings. */
+function openSections() {
+  for (const title of ["Dance", "Figure Types", "Levels"]) {
+    fireEvent.press(screen.getByText(title));
+  }
 }
 
 /** Walk from the template picker into the configure step. */
@@ -47,6 +59,9 @@ function pickTemplate(name: string) {
 const nameInput = () => screen.getByLabelText("List Name");
 /** Uses queryAll: a blank list legitimately starts with no types at all. */
 const typeInputs = () => screen.queryAllByPlaceholderText("Type name");
+const levelInputs = () => screen.queryAllByPlaceholderText("Level name");
+const levelNames = () => levelInputs().map((input) => input.props.value);
+const removeLevelButtons = () => screen.getAllByLabelText(/^Remove level: /);
 
 /**
  * The row <View> a type is edited in. Nothing on it is queryable by text or
@@ -503,6 +518,42 @@ describe("PatternListTemplateModal", () => {
     });
   });
 
+  describe("sections", () => {
+    it("opens every section for a new list", () => {
+      renderModal();
+      pickTemplate("West Coast Swing");
+
+      expect(typeInputs().length).toBeGreaterThan(0);
+      expect(levelInputs()).toHaveLength(3);
+    });
+
+    it("folds them when editing, says what each holds, and opens on a tap", () => {
+      const list = createTestPatternList({ name: "Salsa", dance: "wcs" });
+      renderWithProviders(
+        <PatternListTemplateModal
+          visible
+          editList={list}
+          onClose={jest.fn()}
+          onCreateList={jest.fn()}
+          onSaveList={jest.fn()}
+        />,
+        { activeListId: null },
+      );
+
+      expect(typeInputs()).toHaveLength(0);
+      expect(levelInputs()).toHaveLength(0);
+      expect(
+        screen.getByText("Beginner · Intermediate · Advanced"),
+      ).toBeOnTheScreen();
+      expect(screen.getByText("West Coast Swing")).toBeOnTheScreen();
+
+      fireEvent.press(screen.getByText("Levels"));
+      expect(levelInputs()).toHaveLength(3);
+      // Save and Cancel are there with every section folded.
+      expect(screen.getByText("Save")).toBeOnTheScreen();
+    });
+  });
+
   describe("edit mode", () => {
     const editable = () =>
       createTestPatternList({
@@ -537,6 +588,7 @@ describe("PatternListTemplateModal", () => {
       expect(onCreateList).not.toHaveBeenCalled();
       expect(onSaveList).toHaveBeenCalledWith(
         expect.objectContaining({ id: list.id, name: "Renamed" }),
+        {},
         {},
       );
     });
@@ -667,6 +719,217 @@ describe("PatternListTemplateModal", () => {
 
       expect(removeTypeButtons()[0]).toBeDisabled();
       expect(screen.getByText(/The only type: add another/)).toBeOnTheScreen();
+    });
+  });
+
+  describe("editing the levels", () => {
+    const course = () =>
+      createTestPatternList({
+        levels: [
+          { id: "c1", name: "1" },
+          { id: "c2", name: "2" },
+          { id: "c3", name: "3" },
+        ],
+      });
+
+    it("starts a list on the built-in levels and stores none for them", () => {
+      const { created } = renderModal();
+      pickTemplate("West Coast Swing");
+
+      expect(levelNames()).toEqual(["Beginner", "Intermediate", "Advanced"]);
+      fireEvent.press(screen.getByText("Create"));
+      expect(created().list).not.toHaveProperty("levels");
+    });
+
+    it("creates a list on course numbers from the preset, adding the next number", () => {
+      const { created } = renderModal();
+      pickTemplate("West Coast Swing");
+
+      fireEvent.press(screen.getByText("Numbers 1, 2, 3 …"));
+      expect(levelNames()).toEqual(["1", "2", "3"]);
+      fireEvent.press(screen.getByText("Add level"));
+      expect(levelNames()).toEqual(["1", "2", "3", "4"]);
+      fireEvent.press(screen.getByText("Create"));
+
+      expect(created().list.levels!.map((l) => l.name)).toEqual([
+        "1",
+        "2",
+        "3",
+        "4",
+      ]);
+    });
+
+    it("starts the starter figures on a removed level without one", () => {
+      const { created } = renderModal();
+      pickTemplate("West Coast Swing");
+
+      fireEvent.press(removeLevelButtons()[0]);
+      fireEvent.press(screen.getByText("Create"));
+
+      const { list, patterns } = created();
+      expect(list.levels!.map((l) => l.id)).toEqual([
+        "intermediate",
+        "advanced",
+      ]);
+      expect(patterns.length).toBeGreaterThan(0);
+      expect(patterns.some((p) => p.level === "beginner")).toBe(false);
+    });
+
+    it("pre-fills the levels of the list being edited, and saves renames by id", () => {
+      const list = course();
+      const { onSaveList } = renderModal({ editList: list });
+
+      expect(levelNames()).toEqual(["1", "2", "3"]);
+      fireEvent.changeText(levelInputs()[1], "  Two  ");
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(onSaveList.mock.calls[0][0].levels).toEqual([
+        { id: "c1", name: "1" },
+        { id: "c2", name: "Two" },
+        { id: "c3", name: "3" },
+      ]);
+    });
+
+    it("reorders with up and down, and cannot move past either end", () => {
+      const { onSaveList } = renderModal({ editList: course() });
+
+      expect(screen.getByLabelText("Move 1 up")).toBeDisabled();
+      expect(screen.getByLabelText("Move 3 down")).toBeDisabled();
+      fireEvent.press(screen.getByLabelText("Move 3 up"));
+      expect(levelNames()).toEqual(["1", "3", "2"]);
+      fireEvent.press(screen.getByLabelText("Move 1 down"));
+      expect(levelNames()).toEqual(["3", "1", "2"]);
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(onSaveList.mock.calls[0][0].levels!.map((l) => l.id)).toEqual([
+        "c3",
+        "c1",
+        "c2",
+      ]);
+    });
+
+    it("goes back to storing nothing when the built-ins are restored", () => {
+      const list = createTestPatternList({ levels: undefined });
+      const { onSaveList } = renderModal({ editList: list });
+
+      fireEvent.press(screen.getByText("Numbers 1, 2, 3 …"));
+      fireEvent.press(screen.getByText("Beginner / Intermediate / Advanced"));
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(onSaveList.mock.calls[0][0]).not.toHaveProperty("levels");
+    });
+
+    it("blanks the names for own names, and will not save a blank or repeated one", () => {
+      const { onSaveList } = renderModal({ editList: course() });
+
+      fireEvent.press(screen.getByText("Own names"));
+      expect(levelNames()).toEqual(["", "", ""]);
+      fireEvent.press(screen.getByText("Save"));
+      expect(onSaveList).not.toHaveBeenCalled();
+      expect(screen.getAllByText("Name cannot be empty")).toHaveLength(3);
+
+      fireEvent.changeText(levelInputs()[0], "Basics");
+      fireEvent.changeText(levelInputs()[1], "basics");
+      fireEvent.changeText(levelInputs()[2], "Social");
+      expect(screen.getByText("basics: Name already used")).toBeOnTheScreen();
+      fireEvent.press(screen.getByText("Save"));
+      expect(onSaveList).not.toHaveBeenCalled();
+
+      fireEvent.changeText(levelInputs()[1], "Styling");
+      fireEvent.press(screen.getByText("Save"));
+      expect(onSaveList.mock.calls[0][0].levels!.map((l) => l.name)).toEqual([
+        "Basics",
+        "Styling",
+        "Social",
+      ]);
+    });
+
+    it("stops at twelve levels and says so", () => {
+      renderModal({ editList: course() });
+
+      for (let i = 0; i < 12; i++)
+        fireEvent.press(screen.getByText("Add level"));
+
+      expect(levelInputs()).toHaveLength(12);
+      expect(screen.getByText("Add level")).toBeDisabled();
+      expect(
+        screen.getByText("A list can have up to 12 levels"),
+      ).toBeOnTheScreen();
+    });
+
+    it("removes a level no figure uses without asking, but never the last one", () => {
+      renderModal({
+        editList: createTestPatternList({
+          levels: [
+            { id: "a", name: "A" },
+            { id: "b", name: "B" },
+          ],
+        }),
+      });
+
+      fireEvent.press(removeLevelButtons()[0]);
+      expect(levelNames()).toEqual(["B"]);
+      expect(screen.queryByText("Move and remove")).toBeNull();
+      expect(removeLevelButtons()[0]).toBeDisabled();
+    });
+
+    it("asks where the figures of a level in use go, no level by default", () => {
+      const { onSaveList } = renderModal({
+        editList: course(),
+        levelUsage: { c1: 2, c2: 1 },
+      });
+
+      expect(screen.getByText("Used by 2 figures")).toBeOnTheScreen();
+      fireEvent.press(removeLevelButtons()[0]);
+      expect(
+        screen.getByText("2 figures use 1. Move them to:"),
+      ).toBeOnTheScreen();
+      expect(screen.getByRole("radio", { name: "No level" })).toBeSelected();
+      expect(screen.getByRole("radio", { name: "2" })).toBeOnTheScreen();
+      fireEvent.press(screen.getByText("Move and remove"));
+      expect(levelNames()).toEqual(["2", "3"]);
+      fireEvent.press(screen.getByText("Save"));
+
+      const [saved, typeMoves, levelMoves] = onSaveList.mock.calls[0];
+      expect(saved.levels!.map((l) => l.id)).toEqual(["c2", "c3"]);
+      expect(typeMoves).toEqual({});
+      expect(levelMoves).toEqual({ c1: "" });
+    });
+
+    it("moves them to the level picked, following it when that one goes too", () => {
+      const { onSaveList } = renderModal({
+        editList: course(),
+        levelUsage: { c1: 2, c2: 1 },
+      });
+
+      fireEvent.press(removeLevelButtons()[0]);
+      fireEvent.press(screen.getByRole("radio", { name: "2" }));
+      fireEvent.press(screen.getByText("Move and remove"));
+      expect(screen.getByText("Used by 3 figures")).toBeOnTheScreen();
+
+      fireEvent.press(removeLevelButtons()[0]);
+      fireEvent.press(screen.getByRole("radio", { name: "3" }));
+      fireEvent.press(screen.getByText("Move and remove"));
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(onSaveList.mock.calls[0][2]).toEqual({ c1: "c3", c2: "c3" });
+    });
+
+    it("keeps the level when the question is cancelled", () => {
+      const { onSaveList } = renderModal({
+        editList: course(),
+        levelUsage: { c1: 1 },
+      });
+
+      fireEvent.press(removeLevelButtons()[0]);
+      expect(
+        screen.getByText("1 figure uses 1. Move it to:"),
+      ).toBeOnTheScreen();
+      fireEvent.press(screen.getAllByText("Cancel").at(-1)!);
+      fireEvent.press(screen.getByText("Save"));
+
+      expect(levelNames()).toEqual(["1", "2", "3"]);
+      expect(onSaveList.mock.calls[0][2]).toEqual({});
     });
   });
 });

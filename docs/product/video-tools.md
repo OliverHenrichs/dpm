@@ -109,8 +109,8 @@ these tools.
 
 - iOS: none of the on-device tools, and no share-in.
 - Remote anonymize providers (planned with a consent step, never built).
-- Put online for a universal modifier's videos.
-- Figure recognition from a video (an idea in the project files: `ideas/figure-recognition.md`).
+- Put online for a universal modifier's videos, and an end time on links ([#145](https://github.com/OliverHenrichs/dpm/issues/145)).
+- Figure recognition from a video (idea, [#142](https://github.com/OliverHenrichs/dpm/issues/142)).
 
 ## Code
 

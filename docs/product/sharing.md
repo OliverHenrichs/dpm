@@ -63,6 +63,8 @@ sharing control is hidden. Nobody needs an account.
     _Reject_. A change to a figure that no longer exists can only be dismissed.
   - Any suggestion can be dismissed. **Mute** stops a sender; muted senders are listed and can
     be unmuted.
+- Subscribers see the list owner's level names. A suggested change to a level the list doesn't
+  have is left out.
 - A suggestion is treated as untrusted: anything that refers to types, figures or modifiers the
   list doesn't have is dropped, and only link videos are kept.
 
@@ -100,7 +102,7 @@ sharing control is hidden. Nobody needs an account.
 ### Reports and terms
 
 - _Report list_ on a subscribed list takes a reason (no consent, endangers a child, copyright,
-  hateful or illegal, spam, other), optional details and an optional email for a reply. Sending
+  hateful or illegal, spam, other), optional details and an optional email for a reply. Its buttons stay pinned below the form, as do the sharing sheet's. Sending
   again replaces the earlier report. The owner is never told who reported.
 - Settings → Legal links to the terms of use and the privacy policy on the website.
 - The operator reviews reports and removes content with tools outside the app
@@ -132,7 +134,8 @@ sharing control is hidden. Nobody needs an account.
 - Remembering a pending join request and adding the list on its own once accepted
   ([#139](https://github.com/OliverHenrichs/dpm/issues/139)).
 - Reporting a single suggestion.
-- Videos hosted by DPM itself (an idea in the project files: `ideas/hosting-videos-ourselves.md`).
+- Videos hosted by DPM itself (idea, [#143](https://github.com/OliverHenrichs/dpm/issues/143)), and links that don't play when forwarded
+  (idea, [#144](https://github.com/OliverHenrichs/dpm/issues/144)).
 
 ## Code
 

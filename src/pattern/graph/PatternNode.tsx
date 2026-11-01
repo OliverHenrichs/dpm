@@ -8,7 +8,7 @@ import { GraphNode } from "@/src/pattern/graph/model/GraphModel";
 import { nodeBadges } from "@/src/pattern/graph/model/nodeBadges";
 import NodeBadges from "@/src/pattern/graph/render/NodeBadges";
 import NodeFrame from "@/src/pattern/graph/render/NodeFrame";
-import { levelTint } from "@/src/pattern/graph/model/nodeFrame";
+import { LEVEL_TINTS } from "@/src/pattern/graph/model/nodeFrame";
 
 interface PatternNodeProps {
   node: GraphNode;
@@ -35,7 +35,7 @@ const CONTEXT_OPACITY = 0.45;
  */
 const PatternNode: React.FC<PatternNodeProps> = ({ node, x, y, onPress }) => {
   const { theme } = useUnistyles();
-  const { pattern, color, foundational, isContext } = node;
+  const { pattern, color, tint, foundational, isContext } = node;
   const typeColor = color ?? theme.colors.primary;
   const badges = nodeBadges(pattern);
   const { nodeTitle, nodeMeta } = theme.typography;
@@ -60,7 +60,7 @@ const PatternNode: React.FC<PatternNodeProps> = ({ node, x, y, onPress }) => {
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
         color={typeColor}
-        tint={levelTint(pattern.level)}
+        tint={tint ?? LEVEL_TINTS.beginner}
         foundational={foundational}
       />
 

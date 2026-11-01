@@ -4,7 +4,6 @@ import { Button } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { IPattern } from "@/src/pattern/types/IPatternList";
-import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import NameFilter from "./NameFilter";
@@ -17,7 +16,8 @@ import RevealScrollView from "@/src/common/components/RevealScrollView";
 export interface PatternFilter {
   name: string;
   types: string[];
-  levels: PatternLevel[];
+  /** Level ids of the list's levels (`IPatternList.levels`). */
+  levels: string[];
   counts?: number;
   tags: string[];
 }
@@ -69,7 +69,7 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
     }));
   };
 
-  const toggleLevel = (level: PatternLevel) => {
+  const toggleLevel = (level: string) => {
     setFilter((prev) => ({
       ...prev,
       levels: prev.levels.includes(level)

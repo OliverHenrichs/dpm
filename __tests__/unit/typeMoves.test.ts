@@ -2,7 +2,10 @@ import {
   addTypeMove,
   applyTypeMoves,
   countAfterMoves,
+  countPatternsByLevel,
   countPatternsByType,
+  applyLevelMoves,
+  NO_LEVEL,
 } from "@/src/pattern/list/typeMoves";
 import { createTestPattern } from "@/utils/testFactories";
 
@@ -57,5 +60,50 @@ describe("type moves", () => {
   it("hands back the same array when nothing moves, so nothing is written", () => {
     expect(applyTypeMoves(patterns, {})).toBe(patterns);
     expect(applyTypeMoves(patterns, { gone: "pass" })).toBe(patterns);
+  });
+});
+
+describe("level moves", () => {
+  const onLevels = [
+    createTestPattern("push", { id: 1, level: "c1" }),
+    createTestPattern("push", { id: 2, level: "c1" }),
+    createTestPattern("push", { id: 3, level: "c2" }),
+    createTestPattern("push", { id: 4, level: undefined }),
+  ];
+
+  it("counts the patterns on each level, leaving out those on none", () => {
+    expect(countPatternsByLevel(onLevels)).toEqual({ c1: 2, c2: 1 });
+  });
+
+  it("moves a level's figures to another level", () => {
+    const moved = applyLevelMoves(onLevels, { c1: "c2" });
+    expect(moved.map((p) => p.level)).toEqual(["c2", "c2", "c2", undefined]);
+    expect(moved[2]).toBe(onLevels[2]);
+  });
+
+  it("leaves them without a level by removing the key, not setting undefined", () => {
+    const moved = applyLevelMoves(onLevels, { c1: NO_LEVEL });
+    expect(moved[0]).not.toHaveProperty("level");
+    expect(moved[1]).not.toHaveProperty("level");
+    expect(moved[2].level).toBe("c2");
+  });
+
+  it("chains like types, also into no level", () => {
+    const moves = addTypeMove(addTypeMove({}, "c1", "c2"), "c2", NO_LEVEL);
+    expect(moves).toEqual({ c1: NO_LEVEL, c2: NO_LEVEL });
+    expect(
+      applyLevelMoves(onLevels, moves).every((p) => p.level === undefined),
+    ).toBe(true);
+  });
+
+  it("counts a level emptied into no level as empty", () => {
+    const usage = countPatternsByLevel(onLevels);
+    expect(countAfterMoves("c1", usage, { c1: NO_LEVEL })).toBe(0);
+    expect(countAfterMoves("c2", usage, { c1: "c2" })).toBe(3);
+  });
+
+  it("hands back the same array when nothing moves", () => {
+    expect(applyLevelMoves(onLevels, {})).toBe(onLevels);
+    expect(applyLevelMoves(onLevels, { gone: "c1" })).toBe(onLevels);
   });
 });
