@@ -79,6 +79,8 @@ Because the node tap is a Gesture Handler tap now, **the canvas has no double-ta
 - **The gesture has no affordance**, so `components/GraphDragHint.tsx` says so in words. It was reported as "how would I move the graph items?" the first time it reached a device. Do not remove it without replacing the cue with something else.
 - **The canvas is measured from the positions actually drawn** (`model/canvasMetrics.ts`), not from the automatic layout — a node dragged beyond the automatic bounds would fall outside the SVG and stop being drawn. Those positions are deliberately _not_ re-normalised: that would shift every node whenever one was dragged past an edge. Positions are clamped at both ends (`MIN_GRAPH_COORDINATE`/`MAX_GRAPH_COORDINATE`) for the same reason.
 
+**No arrow functions inside a gesture or animated-style worklet.** The app builds with the React Compiler, which hoists an inline function that captures nothing (`bands.map((b) => b.y + b.height / 2)`) out to module scope as `_tempN`. There it is a plain JS function, and calling it on the UI thread crashes with "Tried to synchronously call a Remote Function" on device. Jest runs neither the compiler nor the worklet runtime, so tests pass. Work such values out on the JS thread before building the gesture and capture them as data (`useLaneDrag` does), or call a `"worklet"` helper.
+
 **`generateOrthogonalPath` and the helpers it calls are worklets, and their position in `utils/GraphUtils.ts` is load-bearing.** The worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a factory that closes over its helpers _by value at the point the declaration appears_. Declared above its helpers, such a function captures `undefined` and throws `getConnectionPoint is not a function` the first time an edge is drawn — on device as well as under test, and function hoisting does not save it because there is no longer a declaration to hoist. If you add a helper there, mark it `"worklet"` and define it above its callers.
 
 ## The focus preview
@@ -168,7 +170,7 @@ only while there is a manual order) removes the key.
   target (`laneIndexAt`, a worklet) does not shift as the lanes reflow. React hears of the drag
   once per lane passed, never per frame.
 - **The column stops short of the first node column** (`LANE_HANDLE_WIDTH` < `LEFT_MARGIN -
-  NODE_WIDTH / 2`), so it never takes a node's tap; it scrolls sideways with the lanes.
+NODE_WIDTH / 2`), so it never takes a node's tap; it scrolls sideways with the lanes.
 - **Arbitration:** the timeline's two scroll views are Gesture Handler's, so the long-press pan
   and the scrolling negotiate in one system (a swipe moves before the long press and scrolls; a
   held press picks up), and both scroll views stop scrolling while a lane is held. Long press is

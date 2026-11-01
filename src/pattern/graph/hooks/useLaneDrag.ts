@@ -97,7 +97,12 @@ export function useLaneDrag(
     setTarget(null);
   }, []);
 
+  // Worked out here, on the JS thread, and captured by the gesture as plain data. An arrow
+  // function inside the worklet below is not safe: the React Compiler hoists one that captures
+  // nothing out to module scope, where it is an ordinary JS function, and calling it on the UI
+  // thread crashes ("Tried to synchronously call a Remote Function").
   const bands = lanes.map((lane) => ({ y: lane.y, height: lane.height }));
+  const bandCentres = lanes.map((lane) => lane.y + lane.height / 2);
 
   const gesture = Gesture.Pan()
     .enabled(enabled)
@@ -106,7 +111,7 @@ export function useLaneDrag(
       const index = laneAt(bands, event.y);
       activeIndex.set(index);
       if (index < 0) return;
-      centres.set(bands.map((band) => band.y + band.height / 2));
+      centres.set(bandCentres);
       dragOffset.set(0);
       lastTarget.set(index);
       scheduleOnRN(begin, index);
