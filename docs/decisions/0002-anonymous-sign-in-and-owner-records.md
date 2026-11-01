@@ -17,7 +17,7 @@ publisher out of their own list.
 - Each published list has an owner record, readable by nobody, holding the owner's id and the
   list's secret **share key**. Presenting the key moves ownership to the caller.
 - The key lives only on the publisher's phone and in their editable exports, never in the
-  published document. It changes only on a handover ([0007](0007-handover-keeps-the-share-code.md)).
+  published document. It changes only on a handover ([0006](0006-handover-keeps-the-share-code.md)).
 - The Firestore rules, not the app, decide who may write.
 
 ## Alternatives considered

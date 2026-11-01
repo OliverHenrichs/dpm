@@ -1,4 +1,4 @@
-# 0008: Members-only lists keep strangers with the code out, nothing more
+# 0007: Members-only lists keep strangers with the code out, nothing more
 
 - **Status:** accepted
 - **Date:** 2026-10-17

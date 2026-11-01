@@ -1,4 +1,4 @@
-# 0010: A variation of a figure is a modifier on it, not a new figure
+# 0009: A variation of a figure is a modifier on it, not a new figure
 
 - **Status:** accepted
 - **Date:** 2026-10-03

@@ -137,6 +137,6 @@ tools in `tools/data-removal/README.md` and `tools/dashboard/README.md`.
 ## Decisions
 
 - [0002](../decisions/0002-anonymous-sign-in-and-owner-records.md) Anonymous sign-in and owner records
-- [0007](../decisions/0007-handover-keeps-the-share-code.md) Handover keeps the share code
-- [0008](../decisions/0008-members-only-through-subscriber-records.md) Members-only lists
+- [0006](../decisions/0006-handover-keeps-the-share-code.md) Handover keeps the share code
+- [0007](../decisions/0007-members-only-through-subscriber-records.md) Members-only lists
 - [0003](../decisions/0003-dpm-uploads-no-video.md) DPM uploads no video

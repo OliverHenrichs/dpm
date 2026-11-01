@@ -115,5 +115,4 @@ model).
 ## Decisions
 
 - [0005](../decisions/0005-figure-ids-are-never-reused.md) Figure ids are never reused
-- [0010](../decisions/0010-variations-are-modifiers.md) Variations are modifiers
-- [0006](../decisions/0006-figure-on-screen-pattern-in-code.md) "Figure" on screen, `pattern` in code
+- [0009](../decisions/0009-variations-are-modifiers.md) Variations are modifiers

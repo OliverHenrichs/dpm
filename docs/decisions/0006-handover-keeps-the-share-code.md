@@ -1,4 +1,4 @@
-# 0007: Handing a list over keeps its share code
+# 0006: Handing a list over keeps its share code
 
 - **Status:** accepted
 - **Date:** 2026-10-18

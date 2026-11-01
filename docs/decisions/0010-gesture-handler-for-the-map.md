@@ -1,4 +1,4 @@
-# 0012: The Map's gestures all live in Gesture Handler
+# 0010: The Map's gestures all live in Gesture Handler
 
 - **Status:** accepted
 - **Date:** recorded 2026-11-01

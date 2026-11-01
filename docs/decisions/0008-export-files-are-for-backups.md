@@ -1,4 +1,4 @@
-# 0009: Export files are for backups and moving phones, not for sharing
+# 0008: Export files are for backups and moving phones, not for sharing
 
 - **Status:** accepted
 - **Date:** 2026-10-25
