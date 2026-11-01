@@ -20,6 +20,12 @@ import AppDialog from "@/src/common/components/AppDialog";
 import { useGraphPositions } from "@/src/pattern/graph/hooks/useGraphPositions";
 import { useGraphLayout } from "@/src/pattern/graph/hooks/useGraphLayout";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
+import EditPatternModal, {
+  usePatternEditing,
+} from "@/src/pattern/list/EditPatternModal";
+import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
+import { canSuggestEditsTo } from "@/src/pattern/suggestions/suggestions";
+import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 
 const PatternGraphScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -29,9 +35,20 @@ const PatternGraphScreen: React.FC = () => {
   const { isReadonly, setPatternTypeColor } = usePatternCrud();
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
-  const [selectedPattern, setSelectedPattern] = useState<IPattern | undefined>(
-    undefined,
-  );
+  // By id, so the details show the figure as it is now: after an edit from here, the change
+  // is in place when the details come back.
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selectedPattern =
+    selectedId === null
+      ? undefined
+      : patterns.find((pattern) => pattern.id === selectedId);
+  // Editing the figure from its details, in the List tab's form (`EditPatternModal`). The
+  // details step aside while the form is open and come back when it closes.
+  const { editing, startEditing, stopEditing } = usePatternEditing();
+  // A subscriber's counterpart: suggesting a change to the figure, when the list owner takes them.
+  const [suggestingEdit, setSuggestingEdit] = useState<IPattern | null>(null);
+  const mayBeSuggestedEditsTo =
+    firebaseAvailable && canSuggestEditsTo(activeList);
   const [resetKey, setResetKey] = useState(0);
   const [filterVisible, setFilterVisible] = useState(false);
   const [resetLayoutVisible, setResetLayoutVisible] = useState(false);
@@ -42,11 +59,11 @@ const PatternGraphScreen: React.FC = () => {
   };
 
   const handleNodeTap = (pattern: IPattern) => {
-    setSelectedPattern(pattern);
+    setSelectedId(pattern.id);
   };
 
   const handleCloseModal = () => {
-    setSelectedPattern(undefined);
+    setSelectedId(null);
   };
 
   // Get pattern types / modifiers from active list or empty array
@@ -152,13 +169,41 @@ const PatternGraphScreen: React.FC = () => {
         />
 
         <PatternDetailsModal
-          visible={selectedPattern !== undefined}
+          visible={
+            selectedPattern !== undefined &&
+            editing === null &&
+            suggestingEdit === null
+          }
           pattern={selectedPattern}
           allPatterns={patterns}
           patternTypes={patternTypes}
           modifiers={modifiers}
           onClose={handleCloseModal}
+          onEdit={
+            activeList && !isReadonly && selectedPattern
+              ? () => startEditing(selectedPattern)
+              : undefined
+          }
+          onSuggestEdit={
+            mayBeSuggestedEditsTo && selectedPattern
+              ? () => setSuggestingEdit(selectedPattern)
+              : undefined
+          }
         />
+
+        <EditPatternModal pattern={editing} onClose={stopEditing} />
+
+        {mayBeSuggestedEditsTo && activeList && (
+          <SuggestPatternModal
+            visible={suggestingEdit !== null}
+            list={activeList}
+            patterns={patterns}
+            patternTypes={patternTypes}
+            modifiers={modifiers}
+            editing={suggestingEdit ?? undefined}
+            onClose={() => setSuggestingEdit(null)}
+          />
+        )}
       </PageContainer>
     </View>
   );

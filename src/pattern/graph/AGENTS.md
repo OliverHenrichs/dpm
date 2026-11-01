@@ -192,6 +192,14 @@ degenerate input: imports, shared lists and old devices still supply both kinds 
 
 ## The pattern details view
 
+**Editing from the Map.** On a list the user may edit, the details' header has _Edit Figure_,
+which opens the List tab's form (`EditPatternModal`, `src/pattern/list/`) over the Map; on a
+subscribed list whose owner takes changes (`canSuggestEditsTo`) it has _Suggest a change_
+(`SuggestPatternModal` with `editing`) instead, and otherwise nothing. The details step aside
+while either is open (two React Native modals at once is not something to rely on) and come
+back when it closes; `PatternGraphScreen` holds the open figure by id, so they show the figure as
+saved.
+
 `PatternDetails` is shared by two hosts: `PatternListItem`, where it expands directly under a row, and `PatternDetailsModal`, which the graph opens on a node tap. That is why the top rule is a prop (`showTopSeparator`) — it separates the row from its detail in the list, and duplicates the modal header's rule in the modal.
 
 - **The modal's card is sized to its content**, capped at 80% of the screen rather than fixed at it. React Native puts `flexGrow: 1` on a ScrollView's content container, so both the ScrollView's own style _and_ its `contentContainerStyle` need `flexGrow: 0` or the card fills its whole allowance however little is in it.
