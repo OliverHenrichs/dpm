@@ -126,7 +126,8 @@ sharing control is hidden. Nobody needs an account.
 - Remembering a pending join request and adding the list on its own once accepted
   ([#139](https://github.com/OliverHenrichs/dpm/issues/139)).
 - Reporting a single suggestion.
-- Videos hosted by DPM itself (an idea in the project files: `ideas/hosting-videos-ourselves.md`).
+- Videos hosted by DPM itself (idea, [#143](https://github.com/OliverHenrichs/dpm/issues/143)), and links that don't play when forwarded
+  (idea, [#144](https://github.com/OliverHenrichs/dpm/issues/144)).
 
 ## Code
 
