@@ -169,8 +169,9 @@ only while there is a manual order) removes the key.
   the moved view. The lanes' centres are captured at pick-up for the same reason, so the drop
   target (`laneIndexAt`, a worklet) does not shift as the lanes reflow. React hears of the drag
   once per lane passed, never per frame.
-- **The column stops short of the first node column** (`LANE_HANDLE_WIDTH` < `LEFT_MARGIN -
-NODE_WIDTH / 2`), so it never takes a node's tap; it scrolls sideways with the lanes.
+- **The column stops short of the first node column**
+  (`LANE_HANDLE_WIDTH` < `LEFT_MARGIN - NODE_WIDTH / 2`), so it never takes a node's tap; it
+  scrolls sideways with the lanes.
 - **Arbitration:** the timeline's two scroll views are Gesture Handler's, so the long-press pan
   and the scrolling negotiate in one system (a swipe moves before the long press and scrolls; a
   held press picks up), and both scroll views stop scrolling while a lane is held. Long press is
