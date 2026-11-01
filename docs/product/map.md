@@ -39,7 +39,9 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 
 ### Network
 
-- A hierarchical layout with pan and pinch zoom. It opens fitted to what is drawn. There is no
+- A hierarchical layout with pan and pinch zoom. Figures without prerequisites go round a ring
+  sized to how many there are, so a small list sits close together. It opens fitted to what is
+  drawn. There is no
   double-tap zoom, so a single tap opens a figure at once.
 - **Figures can be moved**: hold one for a moment, then drag. It lifts to show it was picked up.
   A hint says how until dismissed. The arrangement is saved per list and per phone, also on
@@ -58,6 +60,7 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 | Filtering never makes a shown figure or its subtree vanish                | `__tests__/unit/filterGraphModel.test.ts`        |
 | Both views agree on depth, edges and loops (one graph model)              | `__tests__/unit/GraphModel.test.ts`              |
 | A figure added to a manual arrangement is placed near its prerequisites   | `__tests__/unit/resolveLayout.test.ts`           |
+| The network ring shrinks for few roots, and boxes on it never touch       | `__tests__/unit/networkRing.test.ts`             |
 | Stored positions of deleted figures are pruned on save                    | `__tests__/components/useGraphPositions.test.ts` |
 | Lanes not named in the manual order follow it in automatic order          | `__tests__/unit/laneOrder.test.ts`               |
 | Node text keeps 4.5:1 contrast on every type colour in every theme        | `__tests__/unit/nodeFrame.test.ts`               |
