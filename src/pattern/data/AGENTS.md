@@ -69,6 +69,13 @@ share keys existed get one.
 
 ## Import validation
 
+Shared lists read from Firestore are just as untrusted (anyone can publish what the rules' outline
+allows): `fetchSharedList` and `subscribeToSharedList` pass them through
+`validation/validateSharedList.ts`, which runs the same `normalizeList`, keeps only `http(s)`
+videos, and takes `readonly`, the share key and the share code from this phone, not the document.
+`useSharedList` writes an update only onto the list it follows (its `listId` and share code),
+never onto whatever list id the document names.
+
 **Never trust an import file**: it comes from a document picker, and everything downstream writes
 it to storage and the screen. `validateExportData` (`validation/`) is the only gate, and
 `ImportPatterns` calls it before touching anything.

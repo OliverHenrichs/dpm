@@ -8,6 +8,7 @@ import { jobStore } from "@/src/anonymize/jobs/jobStore";
 import { AnonymizeJobsProvider } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import { shortenVideo } from "@/src/anonymize/shortenVideo";
 import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
+import { offerNewVideo } from "@/src/videoLinks/newVideoHandoff";
 import PatternListManager from "@/src/pattern/list/PatternListManager";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import {
@@ -508,7 +509,9 @@ describe("PatternListManager", () => {
       typeof useLocalSearchParams
     >;
     beforeEach(() =>
-      mockedParams.mockReturnValue({ newVideo: LINK, newVideoType: "url" }),
+      mockedParams.mockReturnValue({
+        newVideo: offerNewVideo({ type: "url", value: LINK }),
+      }),
     );
     afterEach(() => mockedParams.mockReturnValue({}));
 
@@ -525,10 +528,7 @@ describe("PatternListManager", () => {
         const [saved] = await storedPatterns(list.id);
         expect(saved.videoRefs).toEqual([{ type: "url", value: LINK }]);
       });
-      expect(router.setParams).toHaveBeenCalledWith({
-        newVideo: undefined,
-        newVideoType: undefined,
-      });
+      expect(router.setParams).toHaveBeenCalledWith({ newVideo: undefined });
       // A link cannot be shortened or anonymized: no offer to edit it.
       expect(screen.queryByText("Edit the video?")).toBeNull();
     });
@@ -538,6 +538,17 @@ describe("PatternListManager", () => {
 
       expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
       expect(router.setParams).toHaveBeenCalled();
+    });
+
+    it("opens nothing for a video named in the route itself", async () => {
+      // Any web page or app can open a route: only a token this app offered counts.
+      mockedParams.mockReturnValue({
+        newVideo: "file:///data/user/0/somewhere/secret.db",
+        newVideoType: "local",
+      });
+      await renderManager([]);
+
+      expect(screen.queryByPlaceholderText("Figure Name")).toBeNull();
     });
   });
 

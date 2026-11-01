@@ -445,7 +445,7 @@ function normalizeLaneOrder(
   return order.length > 0 ? order : undefined;
 }
 
-function normalizeList(
+export function normalizeList(
   raw: unknown,
   index: number,
   errors: ImportMessage[],

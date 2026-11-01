@@ -59,12 +59,16 @@ export function useSharedList(
       shareCode,
       async (updated: PatternListWithPatterns) => {
         try {
-          const existing = await getPatternListById(updated.id);
+          // The update lands on the list this subscription belongs to, never on whichever list
+          // the published document names: a publisher could otherwise copy another shared
+          // list's id into theirs and overwrite that list on every phone following both.
+          if (!listId || updated.id !== listId) return;
+          const existing = await getPatternListById(listId);
           // Only a subscriber takes the cloud's copy. On the publisher's own
           // device the local list is the source of truth, and what comes back
           // may be an echo of an older push — writing it over local storage
           // lost patterns added since.
-          if (!existing?.readonly) return;
+          if (!existing?.readonly || existing.shareCode !== shareCode) return;
           const listToSave = { ...updated, readonly: existing.readonly };
           await savePatternList(listToSave);
           await savePatterns(updated.id, updated.patterns);
