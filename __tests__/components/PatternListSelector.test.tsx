@@ -340,6 +340,42 @@ describe("PatternListSelector", () => {
     });
   });
 
+  describe("editing a list's tags", () => {
+    it("renames, merges and deletes them on every figure when saved", async () => {
+      const list = createTestPatternList({ name: "Salsa" });
+      const type = list.patternTypes[0].id;
+      seedAsyncStorage({
+        [`@patterns_${list.id}`]: JSON.stringify([
+          createTestPattern(type, { id: 1, tags: ["Spin", "Basic"] }),
+          createTestPattern(type, { id: 2, tags: ["Dip", "basic"] }),
+        ]),
+      });
+      await renderSelector([list]);
+
+      fireEvent(screen.getByText("Salsa"), "longPress");
+      fireEvent.press(screen.getByText("Edit Figure List"));
+      fireEvent.press(await screen.findByText("Tags"));
+      // Spin into Basic, then Dip away.
+      fireEvent.press(await screen.findByLabelText("Rename Spin"));
+      fireEvent.changeText(screen.getByLabelText("Tag name"), "BASIC");
+      fireEvent.press(screen.getByText("Rename"));
+      fireEvent.press(screen.getByText("Merge"));
+      fireEvent.press(screen.getByLabelText("Delete Dip"));
+      fireEvent.press(screen.getByText("Delete"));
+      fireEvent.press(screen.getByText("Save"));
+
+      await waitFor(async () => {
+        const stored = JSON.parse(
+          (await AsyncStorage.getItem(`@patterns_${list.id}`)) ?? "[]",
+        );
+        expect(stored.map((p: { tags: string[] }) => p.tags)).toEqual([
+          ["Basic"],
+          ["basic"],
+        ]);
+      });
+    });
+  });
+
   describe("editing a list's types", () => {
     it("moves the figures of a removed type to the one chosen", async () => {
       const list = createTestPatternList({ name: "Salsa" });

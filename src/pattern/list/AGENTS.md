@@ -88,9 +88,9 @@ nothing selected.
   Each type in use says how many figures use it (`typeUsage`). Its ✕ stays enabled: tapping it
   asks where those figures go (an `AppDialog` with the other types as choices), and the move is
   kept as `TypeMoves` (`typeMoves.ts`, removed type → target, chained when the target goes too)
-  until Save. `onSaveList(list, typeMoves, levelMoves)` hands them to the host, which reassigns
-  the figures before the list drops the type or level: `usePatternCrud.saveList` on the List
-  tab, `handleSaveList` on the Lists screen. The only type cannot be removed while in use, and
+  until Save. `onSaveList(list, typeMoves, levelMoves, tagEdits)` hands them to the host, which
+  reassigns the figures before the list drops the type or level: `usePatternCrud.saveList` on
+  the List tab, `handleSaveList` on the Lists screen. The only type cannot be removed while in use, and
   says so on screen. The question is `MoveFiguresDialog`, shared by types and levels.
 - **Levels** are edited below the types (`LevelEditor`): rename, up/down, add (up to
   `MAX_LEVELS`; a numbered list offers the next number), remove. A level in use asks where its
@@ -101,6 +101,12 @@ nothing selected.
   stay. Names must be non-empty and unique (ignoring case). Saving stores no `levels` when they
   are the built-in three under their names in this language (`storedLevels`), so an untouched
   list keeps following the app's language.
+- **Tags** follow the levels (`TagEditor`, editing only, from the host's `figureTags`): rename,
+  merge (a rename onto another tag, compared ignoring case as `pickerOptions.ts` does) and
+  delete, kept as `TagEdits` (`tagEdits.ts`, a `Map` keyed by lower case, since a tag may be
+  called "constructor"; chained like moves) and handed over as `onSaveList`'s fourth argument.
+  `applyTagEdits` keeps each figure's tag order and never leaves a tag twice. `openTags` opens
+  the section, for the List tab's filter sheet _Manage_ link.
 - A type's colour is picked from `TypeColorSwatches`, in list settings and in the Map's legend
   (`setPatternTypeColor` in `usePatternCrud`).
 - `EditPatternForm`'s type picker ends in _New type_ when given `onAddType` (`addPatternType`
@@ -118,8 +124,8 @@ footer outside it, so a host gives them a sheet and no scroller. Type and level 
 
 Every form in a modal does the same: Save/Cancel (or Send, Publish, Done) sit outside the
 scroller. List settings, the Report form and the sharing sheet follow it. List settings fold
-Dance, Figure types, Levels and Starting figures into `FormSection`s, open for a new list and
-closed when editing one. Never wrap a scroller in a `Pressable` to catch taps outside a popover:
+Dance, Figure types, Levels, Tags (editing only) and Starting figures into `FormSection`s, open
+for a new list and closed when editing one. Never wrap a scroller in a `Pressable` to catch taps outside a popover:
 the Pressable takes the touch, so dragging on a label no longer scrolls. List settings put a
 responder `View` inside the scroller instead (`onStartShouldSetResponder`, closing on release),
 which hands the touch to the scroller once it moves.

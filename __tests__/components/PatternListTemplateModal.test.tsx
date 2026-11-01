@@ -590,6 +590,7 @@ describe("PatternListTemplateModal", () => {
         expect.objectContaining({ id: list.id, name: "Renamed" }),
         {},
         {},
+        new Map(),
       );
     });
 

@@ -428,6 +428,35 @@ describe("usePatternCrud", () => {
       expect((await storedList(list.id)).levels).toEqual(levels);
     });
 
+    it("renames, merges and deletes tags on every figure, keeping their order", async () => {
+      const { result, list } = await mountCrud(
+        [
+          pattern(1, { tags: ["Spin", "Dip", "Basic"] }),
+          pattern(2, { tags: ["Dip"] }),
+          pattern(3, { tags: ["Other"] }),
+        ],
+        { shareCode: "ABCD1234" },
+      );
+      const edits = new Map<string, string | null>([
+        ["spin", "Basic"],
+        ["dip", null],
+      ]);
+
+      await act(async () => {
+        await result.current.saveList(list, {}, {}, edits);
+      });
+
+      const tags = (await storedPatterns(list.id)).map((p) => p.tags);
+      expect(tags).toEqual([["Basic"], [], ["Other"]]);
+      expect(result.current.patterns.map((p) => p.tags)).toEqual(tags);
+      expect(mockedSync).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.arrayContaining([
+          expect.objectContaining({ id: 1, tags: ["Basic"] }),
+        ]),
+      );
+    });
+
     it("recolours one type, and refuses an unknown type or a read-only list", async () => {
       const { result, list } = await mountCrud([]);
       const [push, pass] = list.patternTypes;

@@ -21,17 +21,26 @@ works offline and stays on the phone unless the user shares it.
 - The name field is not focused on its own, so the keyboard doesn't hide the setup.
 - A list's **dance** picks the basic rhythms the form suggests and the dance terms transcription
   listens for. It can be _None_.
-- **Editing a list** (from the Lists screen or the List tab) changes its name, dance, types and
-  levels. Dance, Figure Types, Levels and Starting Figures fold: open for a new list, closed with
-  a one-line summary when editing one (a folded section with a problem shows the problem). Save
-  and Cancel stay pinned below. Each type in use says how many figures use it. Removing a type in
-  use asks which type its figures move to. The only type cannot be removed while figures use it.
+- **Editing a list** (from the Lists screen or the List tab) changes its name, dance, types,
+  levels and tags. Dance, Figure Types, Levels, Tags and Starting Figures fold: open for a new
+  list, closed with a one-line summary when editing one (a folded section with a problem shows
+  the problem). Save and Cancel stay pinned below. Each type in use says how many figures use
+  it. Removing a type in use asks which type its figures move to. The only type cannot be
+  removed while figures use it.
 - A list has its own **levels**, easiest first, up to 12. A new list has Beginner, Intermediate
   and Advanced. The presets _Beginner / Intermediate / Advanced_, _Numbers_ (1, 2, 3 …) and _Own
   names_ rename the levels in place by position, so figures keep their step. Levels can be
   renamed (non-empty, unique ignoring case), moved up or down, added and removed. Removing a level
   in use asks where its figures go: another level or _No level_. The last level cannot go. An
   untouched list keeps the built-in names in the app's language.
+- A list's **tags** are listed in its settings (editing only), by name, each with how many
+  figures carry it; folded, the section says how many tags there are. Tags are one tag whatever
+  their case ("Basic" and "basic"). A tag can be **renamed**; renaming it to another tag's name
+  asks first, then **merges** the two, and a figure that had both keeps the tag once. Changing
+  only the case renames without asking. **Deleting** a tag asks first, naming how many figures
+  lose it. Like moving types and levels, nothing changes on the figures until Save, and each
+  figure keeps its tags in their order. The filter sheet's Tags section on the List tab has a
+  _Manage_ link that opens the list settings on the Tags section. A read-only list has neither.
 - A type's **colour** comes from a fixed palette, picked in the list settings or from the Map's
   legend.
 - **Deleting a list** asks first. A read-only list cannot be edited or deleted, only unsubscribed
@@ -107,6 +116,9 @@ works offline and stays on the phone unless the user shares it.
 | Removing a type moves its figures first                                   | `__tests__/unit/typeMoves.test.ts`                                            |
 | Removing a level moves its figures first, to a level or to none           | `__tests__/unit/typeMoves.test.ts`, `PatternListTemplateModal.test.tsx`       |
 | A list has at most 12 levels, with non-empty unique names                 | `__tests__/unit/patternLevels.test.ts`                                        |
+| A renamed or merged tag is on a figure once, in the figure's order        | `__tests__/unit/tagEdits.test.ts`                                             |
+| Renaming onto another tag (ignoring case) merges only after a confirm     | `__tests__/components/TagEditor.test.tsx`                                     |
+| Deleting a tag asks first and removes it from every figure on Save        | `__tests__/components/TagEditor.test.tsx`, `usePatternCrud.test.ts`           |
 | Presets rename levels in place, so no figure changes level                | `__tests__/unit/patternLevels.test.ts`                                        |
 | A level id a list doesn't have shows as no level                          | `__tests__/unit/patternLevels.test.ts`                                        |
 | A figure and each of its variants hold at most 10 videos                  | `__tests__/unit/replaceVideo.test.ts`                                         |
@@ -114,7 +126,6 @@ works offline and stays on the phone unless the user shares it.
 
 ## Not built yet
 
-- Tag management ([#133](https://github.com/OliverHenrichs/dpm/issues/133)).
 - Counts and rhythm per variant, on attached modifiers only ([#134](https://github.com/OliverHenrichs/dpm/issues/134)).
 - Slow/quick notation, `S Q Q` ([#135](https://github.com/OliverHenrichs/dpm/issues/135)).
 - Sequences ([#136](https://github.com/OliverHenrichs/dpm/issues/136), design in [`docs/plans/sequences.md`](../plans/sequences.md)).

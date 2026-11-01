@@ -55,6 +55,8 @@ type PatternListProps = {
   onSuggestEdit?: (pattern: IPattern) => void;
   /** More actions in the header, before the lock or '+' (pattern suggestions). */
   headerActions?: React.ReactNode;
+  /** The filter sheet's _Manage_ link for tags: list settings on the Tags section. */
+  onManageTags?: () => void;
 };
 
 const PatternList: React.FC<PatternListProps> = (props) => {
@@ -247,6 +249,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         currentFilter={filter}
         allPatterns={props.patterns}
         patternTypes={props.patternTypes}
+        onManageTags={props.onManageTags}
       />
 
       {props.onAddFromVideo && (
