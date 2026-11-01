@@ -39,6 +39,9 @@ sharing control is hidden. Nobody needs an account.
 - A subscribed list's ⋮ menu offers _Unsubscribe from List_ (the copy is removed; the code works
   again later) and _Report list_.
 - Subscribing to one's own list, or to a list already followed, is refused with a reason.
+- A followed list is checked like an import file each time it arrives: a list the app cannot read
+  reads as not found (or the update is skipped and the copy stays as it was), only web video links
+  are kept, and an update only ever changes the list it belongs to.
 
 ### Suggestions
 
@@ -106,19 +109,22 @@ sharing control is hidden. Nobody needs an account.
 
 ## Rules that must always hold
 
-| Rule                                                                                 | Guarded by                                              |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| Only the owner on record can change or delete a published list                       | `__tests__/rules/firestore.rules.test.ts`               |
-| The share key is never in a published document                                       | `__tests__/rules/firestore.rules.test.ts`, `shareKey.test.ts` |
-| Local videos, transcripts and the date a figure was added are never published        | `__tests__/unit/publishedContent.test.ts`               |
-| The daily suggestion limit is enforced by the rules, not the app                     | `__tests__/rules/firestore.rules.test.ts` ("suggesting") |
+| Rule                                                                                 | Guarded by                                                       |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| Only the owner on record can change or delete a published list                       | `__tests__/rules/firestore.rules.test.ts`                        |
+| A published list keeps its id; its id and name have size limits                      | `__tests__/rules/firestore.rules.test.ts` ("publishing")         |
+| An update changes only the followed list, never another list with the same id        | `__tests__/components/useSharedList.test.ts`                     |
+| A followed list keeps only web video links, and its code comes from the phone        | `__tests__/unit/validateSharedList.test.ts`                      |
+| The share key is never in a published document                                       | `__tests__/rules/firestore.rules.test.ts`, `shareKey.test.ts`    |
+| Local videos, transcripts and the date a figure was added are never published        | `__tests__/unit/publishedContent.test.ts`                        |
+| The daily suggestion limit is enforced by the rules, not the app                     | `__tests__/rules/firestore.rules.test.ts` ("suggesting")         |
 | A members-only list is readable only by members and the owner                        | `__tests__/rules/firestore.rules.test.ts` ("members-only lists") |
-| A handover code works once, within 7 days, and moves the key                         | `__tests__/rules/firestore.rules.test.ts` ("handing over") |
-| A list taken down by the operator cannot come back                                   | `__tests__/rules/firestore.rules.test.ts`               |
-| Nobody, the owner included, can read a report                                        | `__tests__/rules/firestore.rules.test.ts`               |
-| A follower's copy that loses access is kept and made editable                        | `__tests__/components/MembersOnly.test.tsx`             |
-| Suggested changes skip what the figure already has and untick what the owner changed | `__tests__/unit/figureEdits.test.ts`                    |
-| Sharing is refused until the terms are agreed                                        | `__tests__/components/TermsConsent.test.tsx`            |
+| A handover code works once, within 7 days, and moves the key                         | `__tests__/rules/firestore.rules.test.ts` ("handing over")       |
+| A list taken down by the operator cannot come back                                   | `__tests__/rules/firestore.rules.test.ts`                        |
+| Nobody, the owner included, can read a report                                        | `__tests__/rules/firestore.rules.test.ts`                        |
+| A follower's copy that loses access is kept and made editable                        | `__tests__/components/MembersOnly.test.tsx`                      |
+| Suggested changes skip what the figure already has and untick what the owner changed | `__tests__/unit/figureEdits.test.ts`                             |
+| Sharing is refused until the terms are agreed                                        | `__tests__/components/TermsConsent.test.tsx`                     |
 
 ## Not built yet
 
