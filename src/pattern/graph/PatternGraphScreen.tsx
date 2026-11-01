@@ -20,18 +20,38 @@ import AppDialog from "@/src/common/components/AppDialog";
 import { useGraphPositions } from "@/src/pattern/graph/hooks/useGraphPositions";
 import { useGraphLayout } from "@/src/pattern/graph/hooks/useGraphLayout";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
+import EditPatternModal, {
+  usePatternEditing,
+} from "@/src/pattern/list/EditPatternModal";
+import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
+import { canSuggestEditsTo } from "@/src/pattern/suggestions/suggestions";
+import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
+import { reorderLanes } from "@/src/pattern/graph/utils/laneOrder";
 
 const PatternGraphScreen: React.FC = () => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   const { activeList, patterns } = useActivePatternList();
-  // Recolouring a type from the legend: owners only, through the same mutation path as edits.
-  const { isReadonly, setPatternTypeColor } = usePatternCrud();
+  // Recolouring a type from the legend and reordering the lanes: owners only, through the same
+  // mutation path as edits.
+  const { isReadonly, setPatternTypeColor, setLaneOrder } = usePatternCrud();
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
-  const [selectedPattern, setSelectedPattern] = useState<IPattern | undefined>(
-    undefined,
-  );
+  // By id, so the details show the figure as it is now: after an edit from here, the change
+  // is in place when the details come back.
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selectedPattern =
+    selectedId === null
+      ? undefined
+      : patterns.find((pattern) => pattern.id === selectedId);
+  // Editing the figure from its details, in the List tab's form (`EditPatternModal`). The
+  // details step aside while the form is open and come back when it closes.
+  const { editing, startEditing, stopEditing } = usePatternEditing();
+  // A subscriber's counterpart: suggesting a change to the figure, when the list owner takes them.
+  const [suggestingEdit, setSuggestingEdit] = useState<IPattern | null>(null);
+  const mayBeSuggestedEditsTo =
+    firebaseAvailable && canSuggestEditsTo(activeList);
+  const [resetLaneOrderVisible, setResetLaneOrderVisible] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [filterVisible, setFilterVisible] = useState(false);
   const [resetLayoutVisible, setResetLayoutVisible] = useState(false);
@@ -42,11 +62,11 @@ const PatternGraphScreen: React.FC = () => {
   };
 
   const handleNodeTap = (pattern: IPattern) => {
-    setSelectedPattern(pattern);
+    setSelectedId(pattern.id);
   };
 
   const handleCloseModal = () => {
-    setSelectedPattern(undefined);
+    setSelectedId(null);
   };
 
   // Get pattern types / modifiers from active list or empty array
@@ -81,6 +101,19 @@ const PatternGraphScreen: React.FC = () => {
   const { positions, hasManualLayout, moveNode, resetLayout } =
     useGraphPositions(activeList?.id, patterns, autoPositions);
 
+  // The timeline's lanes as the user dragged them. Saved over every type of the list, so lanes a
+  // filter hides keep their places (`reorderLanes`).
+  const laneOrder = activeList?.laneOrder;
+  const handleReorderLanes = (shownOrder: string[]) => {
+    void setLaneOrder(
+      reorderLanes(patternTypes, patterns, laneOrder, shownOrder),
+    );
+  };
+  const handleResetLaneOrder = async () => {
+    setResetLaneOrderVisible(false);
+    await setLaneOrder(undefined);
+  };
+
   const handleResetLayout = async () => {
     setResetLayoutVisible(false);
     await resetLayout();
@@ -100,6 +133,8 @@ const PatternGraphScreen: React.FC = () => {
             onFilter={() => setFilterVisible(true)}
             canResetLayout={hasManualLayout}
             onResetLayout={() => setResetLayoutVisible(true)}
+            canResetLaneOrder={!isReadonly && !!laneOrder?.length}
+            onResetLaneOrder={() => setResetLaneOrderVisible(true)}
           />
 
           <GraphDragHint
@@ -126,6 +161,10 @@ const PatternGraphScreen: React.FC = () => {
             onChangeTypeColor={
               activeList && !isReadonly ? setPatternTypeColor : undefined
             }
+            laneOrder={laneOrder}
+            onReorderLanes={
+              activeList && !isReadonly ? handleReorderLanes : undefined
+            }
           />
         </View>
 
@@ -151,14 +190,52 @@ const PatternGraphScreen: React.FC = () => {
           onClose={() => setResetLayoutVisible(false)}
         />
 
+        <AppDialog
+          visible={resetLaneOrderVisible}
+          title={t("resetLaneOrder")}
+          message={t("resetLaneOrderConfirm")}
+          closeLabel={t("cancel")}
+          confirmLabel={t("reset")}
+          onConfirm={handleResetLaneOrder}
+          onClose={() => setResetLaneOrderVisible(false)}
+        />
+
         <PatternDetailsModal
-          visible={selectedPattern !== undefined}
+          visible={
+            selectedPattern !== undefined &&
+            editing === null &&
+            suggestingEdit === null
+          }
           pattern={selectedPattern}
           allPatterns={patterns}
           patternTypes={patternTypes}
           modifiers={modifiers}
           onClose={handleCloseModal}
+          onEdit={
+            activeList && !isReadonly && selectedPattern
+              ? () => startEditing(selectedPattern)
+              : undefined
+          }
+          onSuggestEdit={
+            mayBeSuggestedEditsTo && selectedPattern
+              ? () => setSuggestingEdit(selectedPattern)
+              : undefined
+          }
         />
+
+        <EditPatternModal pattern={editing} onClose={stopEditing} />
+
+        {mayBeSuggestedEditsTo && activeList && (
+          <SuggestPatternModal
+            visible={suggestingEdit !== null}
+            list={activeList}
+            patterns={patterns}
+            patternTypes={patternTypes}
+            modifiers={modifiers}
+            editing={suggestingEdit ?? undefined}
+            onClose={() => setSuggestingEdit(null)}
+          />
+        )}
       </PageContainer>
     </View>
   );

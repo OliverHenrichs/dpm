@@ -432,6 +432,34 @@ describe("usePatternCrud", () => {
       expect(ok).toBe(false);
     });
 
+    it("saves a manual lane order, and removes the key to go back to automatic", async () => {
+      const { result, list } = await mountCrud([]);
+      const ids = list.patternTypes.map((type) => type.id).reverse();
+      let ok: unknown;
+
+      await act(async () => {
+        ok = await result.current.setLaneOrder(ids);
+      });
+      expect(ok).toBe(true);
+      expect((await storedList(list.id)).laneOrder).toEqual(ids);
+
+      await act(async () => {
+        ok = await result.current.setLaneOrder(undefined);
+      });
+      expect(ok).toBe(true);
+      // Absent, not `undefined`: the list is published as it is, and Firestore refuses that.
+      expect(await storedList(list.id)).not.toHaveProperty("laneOrder");
+      expect(Object.keys(result.current.activeList!)).not.toContain(
+        "laneOrder",
+      );
+
+      const readonly = await mountCrud([], { readonly: true });
+      await act(async () => {
+        ok = await readonly.result.current.setLaneOrder(ids);
+      });
+      expect(ok).toBe(false);
+    });
+
     it("refuses another list, a read-only one, and a blank type name", async () => {
       const { result, list } = await mountCrud([]);
       let ok: unknown;

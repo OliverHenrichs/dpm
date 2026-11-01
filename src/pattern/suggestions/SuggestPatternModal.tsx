@@ -3,7 +3,6 @@ import { ActivityIndicator, Modal, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import RevealScrollView from "@/src/common/components/RevealScrollView";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import AppDialog from "@/src/common/components/AppDialog";
 import { Button } from "@/src/common/ui";
@@ -177,47 +176,42 @@ const SuggestPatternBody: React.FC<SuggestPatternModalProps> = ({
       <Modal visible animationType="slide" transparent onRequestClose={onClose}>
         <ModalOverlay padding="none">
           <View style={styles.formContent}>
-            <RevealScrollView
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ flexGrow: 1 }}
-            >
-              <EditPatternForm
-                patterns={patterns}
-                patternTypes={patternTypes}
-                modifiers={modifiers}
-                existing={editing}
-                onAccepted={handleSubmit}
-                onCancel={onClose}
-                title={title}
-                saveLabel={t("suggestSend")}
-                nameMaxLength={MAX_SUGGESTED_NAME_LENGTH}
-                header={
-                  <View style={styles.header}>
-                    <Text style={styles.hint}>
-                      {t(editing ? "suggestEditIntro" : "suggestIntro", {
-                        list: list.name,
-                      })}
-                    </Text>
-                    <Text style={styles.label}>{t("suggestYourName")}</Text>
-                    <RevealTextInput
-                      value={name}
-                      onChangeText={setName}
-                      placeholder={t("suggestYourNamePlaceholder")}
-                      placeholderTextColor={theme.colors.textMuted}
-                      accessibilityLabel={t("suggestYourName")}
-                      maxLength={MAX_AUTHOR_NAME_LENGTH}
-                      autoCorrect={false}
-                      style={styles.input}
-                    />
-                    <Text style={styles.hint}>
-                      {t("suggestRemaining", { count: phase.remaining })}
-                    </Text>
-                    <Text style={styles.hint}>{t("suggestVideosHint")}</Text>
-                    {error && <Text style={styles.error}>{error}</Text>}
-                  </View>
-                }
-              />
-            </RevealScrollView>
+            <EditPatternForm
+              patterns={patterns}
+              patternTypes={patternTypes}
+              modifiers={modifiers}
+              existing={editing}
+              onAccepted={handleSubmit}
+              onCancel={onClose}
+              title={title}
+              saveLabel={t("suggestSend")}
+              nameMaxLength={MAX_SUGGESTED_NAME_LENGTH}
+              header={
+                <View style={styles.header}>
+                  <Text style={styles.hint}>
+                    {t(editing ? "suggestEditIntro" : "suggestIntro", {
+                      list: list.name,
+                    })}
+                  </Text>
+                  <Text style={styles.label}>{t("suggestYourName")}</Text>
+                  <RevealTextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder={t("suggestYourNamePlaceholder")}
+                    placeholderTextColor={theme.colors.textMuted}
+                    accessibilityLabel={t("suggestYourName")}
+                    maxLength={MAX_AUTHOR_NAME_LENGTH}
+                    autoCorrect={false}
+                    style={styles.input}
+                  />
+                  <Text style={styles.hint}>
+                    {t("suggestRemaining", { count: phase.remaining })}
+                  </Text>
+                  <Text style={styles.hint}>{t("suggestVideosHint")}</Text>
+                  {error && <Text style={styles.error}>{error}</Text>}
+                </View>
+              }
+            />
           </View>
         </ModalOverlay>
       </Modal>

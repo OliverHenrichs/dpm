@@ -62,6 +62,11 @@ nothing selected.
 
 ## Forms
 
+- **Editing a figure** is `EditPatternModal` with `usePatternEditing` (`EditPatternModal.tsx`):
+  which figure is open, and the form in its sheet (`PatternFormModal`, also the add form's),
+  saved through `usePatternCrud.editPattern`. The List tab's row and the Map's details
+  (`src/pattern/graph/AGENTS.md`) both open it; a third host uses it too rather than another
+  copy. The form offers no delete; deleting stays on the List tab's row.
 - `EditPatternForm` keeps `rhythm` and `counts` in step; the rules are in
   `src/pattern/rhythm/AGENTS.md`. Its scroll views set `keyboardShouldPersistTaps` so taps on
   suggestions keep the keyboard up.
@@ -93,3 +98,9 @@ nothing selected.
   its optional `description` shows in the Modifiers tab and under the variant strip when picked.
   With no variant picked, `PatternDetails` says what a variant is.
 - `ShareListModal` / `SubscribeListModal` are the sharing UI (`src/firebase/AGENTS.md`).
+
+## The figure and modifier forms scroll themselves
+
+`EditPatternForm` and `EditModifierForm` each own their `RevealScrollView`, with Save and Cancel in a
+footer outside it, so a host gives them a sheet and no scroller. Type and level fold into a
+`FormSection`: open on a new figure, closed on a seeded one.

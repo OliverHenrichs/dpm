@@ -79,6 +79,8 @@ Because the node tap is a Gesture Handler tap now, **the canvas has no double-ta
 - **The gesture has no affordance**, so `components/GraphDragHint.tsx` says so in words. It was reported as "how would I move the graph items?" the first time it reached a device. Do not remove it without replacing the cue with something else.
 - **The canvas is measured from the positions actually drawn** (`model/canvasMetrics.ts`), not from the automatic layout — a node dragged beyond the automatic bounds would fall outside the SVG and stop being drawn. Those positions are deliberately _not_ re-normalised: that would shift every node whenever one was dragged past an edge. Positions are clamped at both ends (`MIN_GRAPH_COORDINATE`/`MAX_GRAPH_COORDINATE`) for the same reason.
 
+**No arrow functions inside a gesture or animated-style worklet.** The app builds with the React Compiler, which hoists an inline function that captures nothing (`bands.map((b) => b.y + b.height / 2)`) out to module scope as `_tempN`. There it is a plain JS function, and calling it on the UI thread crashes with "Tried to synchronously call a Remote Function" on device. Jest runs neither the compiler nor the worklet runtime, so tests pass. Work such values out on the JS thread before building the gesture and capture them as data (`useLaneDrag` does), or call a `"worklet"` helper.
+
 **`generateOrthogonalPath` and the helpers it calls are worklets, and their position in `utils/GraphUtils.ts` is load-bearing.** The worklets Babel plugin rewrites a `"worklet"` function declaration into a `var` assigned from a factory that closes over its helpers _by value at the point the declaration appears_. Declared above its helpers, such a function captures `undefined` and throws `getConnectionPoint is not a function` the first time an edge is drawn — on device as well as under test, and function hoisting does not save it because there is no longer a declaration to hoist. If you add a helper there, mark it `"worklet"` and define it above its callers.
 
 ## The focus preview
@@ -145,9 +147,45 @@ A node marks what it has: a play triangle when the pattern (or one of its modifi
 - **Dot spacing is set by what survives being zoomed out**, not by what looks right at 1:1. At 1.5px apart the dots merged into one blob at the zoom the graph actually opens at; they now have a full dot's width of clear space. Anything drawn here has the same constraint — the network view fits a whole list on screen by default.
 - Only _attached_ modifiers are counted. A universal modifier applies to every pattern in the list, so badging one would mark every node and say nothing.
 
+## Reordering the timeline's lanes
+
+Long-press a lane's grip (left of its name) and drag it up or down; the lanes reflow as it passes
+them, and the drop saves the order on the list as `IPatternList.laneOrder` (Oliver's call on
+tester review 2, point 9). The header's _Reset lanes to automatic order_ (timeline only, shown
+only while there is a manual order) removes the key.
+
+- **A field, not a reordered `patternTypes`.** The list's type order is also the legend's, the
+  filter chips' and the List tab's section order, and the automatic lane order breaks ties by it;
+  a drag in the timeline must not reshuffle those, and "back to automatic" needs to know that
+  there is a manual order at all. Absent means automatic. It is published with the list (the
+  owner's lanes are the subscribers' lanes) and exported since 3.10.
+- **What `orderLanes` does with it:** the types it names first, in its order; types it does not
+  name (added since) after them, in their automatic order; ids of types gone are ignored. A type
+  with nothing shown still gets no lane. `reorderLanes` turns the dropped order of the lanes
+  _shown_ into one over every type, so lanes a filter hides keep their places.
+- **One pan over a column that never moves** (`hooks/useLaneDrag.ts`,
+  `components/LaneHandles.tsx`), hit-testing which lane it picked up, rather than a gesture per
+  grip: the grips move with the reflow, and a gesture whose view moves mid-drag measures against
+  the moved view. The lanes' centres are captured at pick-up for the same reason, so the drop
+  target (`laneIndexAt`, a worklet) does not shift as the lanes reflow. React hears of the drag
+  once per lane passed, never per frame.
+- **The column stops short of the first node column**
+  (`LANE_HANDLE_WIDTH` < `LEFT_MARGIN - NODE_WIDTH / 2`), so it never takes a node's tap; it
+  scrolls sideways with the lanes.
+- **Arbitration:** the timeline's two scroll views are Gesture Handler's, so the long-press pan
+  and the scrolling negotiate in one system (a swipe moves before the long press and scrolls; a
+  held press picks up), and both scroll views stop scrolling while a lane is held. Long press is
+  `DRAG_ACTIVATION_MS`, as for a node. There is no canvas gesture here to race.
+- Haptics as for a node (Medium on pick-up, Light on drop); the lifted name is the cue that does
+  not need hardware. Screen readers move a lane one place with the grip's _Move up_ / _Move
+  down_ actions.
+- **Read-only lists get no grips** and no reset: the order is part of the list, unlike the
+  network view's manual layout, so dragging it is an edit.
+- No auto-scroll at the edges yet: a lane is moved past the screen in steps.
+
 ## The views
 
-- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `utils/TimelineGraphUtils.ts`); skip-level edge routing handled by `utils/CollisionAvoidanceUtils.ts`. Lanes come from `orderLanes` (`utils/laneOrder.ts`): only types with a pattern shown get one (a filtered-out type left an empty band), ordered to keep linked types adjacent (every order up to seven lanes, a barycentre pass and single moves above), ties in the list's own order.
+- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `utils/TimelineGraphUtils.ts`); skip-level edge routing handled by `utils/CollisionAvoidanceUtils.ts`. Lanes come from `orderLanes` (`utils/laneOrder.ts`): only types with a pattern shown get one (a filtered-out type left an empty band), in the user's order when the list has one (below), otherwise ordered to keep linked types adjacent (every order up to seven lanes, a barycentre pass and single moves above), ties in the list's own order.
 - **Network roots** go round the ellipse grouped by type (`getFoundationalPatterns`), so unlinked patterns of one type sit together. Only the automatic layout; a stored manual one is untouched.
 - **The legend opens by itself the first time** the Map is shown (`isLegendSeen` in `data/GraphHintStorage.ts`, app-wide like the drag hint); the dots and triangle mean nothing to someone who never presses "Legend".
 - **The legend recolours types** on a list the user may edit: each type row opens the palette list settings use (`TypeColorSwatches` from `src/pattern/list/`) and saves through `usePatternCrud.setPatternTypeColor`. `PatternGraphScreen` passes `onChangeTypeColor` only when the list is not read-only, so a subscribed list's legend stays a plain key. The tester of review 2 never found the colour dot in list settings.
@@ -191,6 +229,14 @@ a ring outside the ellipse — is retained as the deeper net for what the model 
 degenerate input: imports, shared lists and old devices still supply both kinds of bad data.
 
 ## The pattern details view
+
+**Editing from the Map.** On a list the user may edit, the details' header has _Edit Figure_,
+which opens the List tab's form (`EditPatternModal`, `src/pattern/list/`) over the Map; on a
+subscribed list whose owner takes changes (`canSuggestEditsTo`) it has _Suggest a change_
+(`SuggestPatternModal` with `editing`) instead, and otherwise nothing. The details step aside
+while either is open (two React Native modals at once is not something to rely on) and come
+back when it closes; `PatternGraphScreen` holds the open figure by id, so they show the figure as
+saved.
 
 `PatternDetails` is shared by two hosts: `PatternListItem`, where it expands directly under a row, and `PatternDetailsModal`, which the graph opens on a node tap. That is why the top rule is a prop (`showTopSeparator`) — it separates the row from its detail in the list, and duplicates the modal header's rule in the modal.
 

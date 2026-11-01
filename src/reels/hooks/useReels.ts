@@ -51,7 +51,13 @@ export function useReels(scope: ReelScope): {
       ? [{ list: activeList, patterns }]
       : [];
     if (scope === "list") return collectReels(open);
-    return collectReels([...open, ...(otherLists ?? [])]);
+    // The other lists were read for the list open then. Right after another list is opened
+    // they still hold it until the read for the new one lands, and its reels came twice
+    // (React's duplicate keys).
+    const others = (otherLists ?? []).filter(
+      ({ list }) => list.id !== activeList?.id,
+    );
+    return collectReels([...open, ...others]);
   }, [scope, activeList, patterns, otherLists]);
 
   return { reels, isLoading: scope === "all" && otherLists === null };

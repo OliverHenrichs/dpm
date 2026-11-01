@@ -1,4 +1,5 @@
 import React from "react";
+import { Image, StyleSheet } from "react-native";
 import PatternVideos from "@/src/pattern/list/PatternVideos";
 import {
   IGeneratedVideo,
@@ -125,5 +126,23 @@ describe("PatternVideos", () => {
     const disabled = renderVideos({ disabled: true });
     fireEvent.press(screen.getByLabelText("Add"));
     expect(disabled.onAddVideo).not.toHaveBeenCalled();
+  });
+
+  it("gives a thumbnail a parent with a width of its own", () => {
+    renderVideos({
+      videoRefs: [url("https://x.test/v")],
+      thumbnails: ["t.jpg"],
+    });
+
+    // Centred, the parent is sized by its content, and the picture's percentage width is zero.
+    let node = screen.UNSAFE_getByType(Image).parent;
+    while (node) {
+      expect(StyleSheet.flatten(node.props.style)?.alignItems).not.toBe(
+        "center",
+      );
+      if (StyleSheet.flatten(node.props.style)?.position === "relative") break;
+      node = node.parent;
+    }
+    expect(node).not.toBeNull();
   });
 });

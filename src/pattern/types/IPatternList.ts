@@ -76,6 +76,13 @@ export interface IPatternList {
    * list; the security rules enforce it.
    */
   membersOnly?: true;
+  /**
+   * The timeline's lanes as the user dragged them, top to bottom, as type ids (`orderLanes`).
+   * Absent means the automatic order, which keeps linked types together; _Reset to automatic_
+   * removes the key. Types it does not name follow in their automatic place. Published with the
+   * list, so subscribers see the owner's lanes.
+   */
+  laneOrder?: string[];
 }
 
 /** How many pattern suggestions a published list takes a day (UTC), counted for whom. */

@@ -29,6 +29,10 @@ interface GraphViewContainerProps {
   onNodeTap: (pattern: IPattern) => void;
   /** Recolours a type from the legend; absent for a read-only list. */
   onChangeTypeColor?: (typeId: string, color: string) => void;
+  /** The list's manual lane order for the timeline; absent for the automatic one. */
+  laneOrder?: string[];
+  /** Saves the timeline's lanes as dragged (shown type ids, top to bottom); absent when read-only. */
+  onReorderLanes?: (shownOrder: string[]) => void;
 }
 
 const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
@@ -41,6 +45,8 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   onMoveNode,
   onNodeTap,
   onChangeTypeColor,
+  laneOrder,
+  onReorderLanes,
 }) => {
   return (
     <>
@@ -54,6 +60,8 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
             patternTypes={patternTypes}
             hasActiveFilter={hasActiveFilter}
             onNodeTap={onNodeTap}
+            laneOrder={laneOrder}
+            onReorderLanes={onReorderLanes}
           />
         ) : (
           <NetworkGraphView

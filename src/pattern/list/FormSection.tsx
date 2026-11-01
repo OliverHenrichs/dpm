@@ -14,7 +14,7 @@ type FormSectionProps = {
 
 /**
  * A part of a form that folds away behind a header row, so the fields used on every pattern
- * (name, counts, videos, type) fit on about one screen and the rest is a tap away. Closed, the
+ * (name, counts, videos) fit on about one screen and the rest is a tap away. Closed, the
  * header says what is inside, so nothing is hidden without a trace.
  */
 const FormSection: React.FC<FormSectionProps> = ({

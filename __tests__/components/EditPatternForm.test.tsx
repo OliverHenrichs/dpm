@@ -1,6 +1,8 @@
 import React from "react";
+import { ScrollView } from "react-native";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import { IPattern } from "@/src/pattern/types/IPatternList";
+import { PatternLevel } from "@/src/pattern/types/PatternLevel";
 import {
   createTestPattern,
   createTestPatternList,
@@ -11,6 +13,7 @@ import {
   renderWithProviders,
   screen,
   waitFor,
+  within,
 } from "@/utils/renderWithProviders";
 
 const TYPE = createTestPatternType({ slug: "push" });
@@ -561,5 +564,36 @@ describe("EditPatternForm layout", () => {
     expect(screen.queryByPlaceholderText("Description")).toBeNull();
     expect(screen.getByText("Turn on 3")).toBeOnTheScreen();
     expect(screen.getAllByText("None").length).toBeGreaterThan(0);
+  });
+
+  it("folds type and level away on an existing figure, naming them", () => {
+    const figure = createTestPattern(TYPE.id, {
+      id: 1,
+      name: "Whip",
+      level: PatternLevel.BEGINNER,
+    });
+    renderForm([figure], figure);
+
+    expect(screen.queryByText("PUSH")).toBeNull();
+    expect(screen.getByText("push · Beginner")).toBeTruthy();
+
+    fireEvent.press(screen.getByRole("button", { name: /Type and level/ }));
+
+    expect(screen.getByText("PUSH")).toBeTruthy();
+  });
+
+  it("opens type and level on a new figure, where the type is a choice to make", () => {
+    renderForm([]);
+
+    expect(screen.getByText("PUSH")).toBeTruthy();
+  });
+
+  it("keeps Save and Cancel out of the scroller, always in sight", () => {
+    renderForm([]);
+
+    const scroller = screen.UNSAFE_getByType(ScrollView);
+    expect(within(scroller).getByText("Name", { exact: false })).toBeTruthy();
+    expect(within(scroller).queryByText("Cancel")).toBeNull();
+    expect(screen.getByText("Cancel")).toBeTruthy();
   });
 });

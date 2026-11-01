@@ -13,7 +13,10 @@ import {
 } from "@/src/pattern/types/IPatternList";
 import PatternList, { VideoSource } from "@/src/pattern/list/PatternList";
 import EditPatternForm from "@/src/pattern/list/EditPatternForm";
-import RevealScrollView from "@/src/common/components/RevealScrollView";
+import EditPatternModal, {
+  PatternFormModal,
+  usePatternEditing,
+} from "@/src/pattern/list/EditPatternModal";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import EditModifierForm from "@/src/pattern/list/EditModifierForm";
 import PatternListTemplateModal from "@/src/pattern/list/PatternListTemplateModal";
@@ -77,7 +80,8 @@ const PatternListManager = () => {
     undefined,
   );
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  // Editing a figure: shared with the Map's details (`EditPatternModal`).
+  const { editing, startEditing, stopEditing } = usePatternEditing();
   const [activeTab, setActiveTab] = useState<"patterns" | "modifiers">(
     "patterns",
   );
@@ -225,12 +229,6 @@ const PatternListManager = () => {
     setIsAddingNew(true);
   };
 
-  const handleSavePattern = async (pattern: NewPattern | IPattern) => {
-    const accepted = await editPattern(pattern);
-    if (accepted) setIsEditing(false);
-    return accepted;
-  };
-
   const handleDeletePattern = async (id?: number) => {
     if (await deletePattern(id)) {
       if (selectedPattern?.id === id) setSelectedPattern(undefined);
@@ -239,7 +237,7 @@ const PatternListManager = () => {
 
   const handleEditPattern = (pattern: IPattern) => {
     setSelectedPattern(pattern);
-    setIsEditing(true);
+    startEditing(pattern);
   };
 
   const handleAddModifier = async (modifier: NewModifier | IModifier) => {
@@ -278,60 +276,20 @@ const PatternListManager = () => {
         <AppHeader />
 
         {/* Add / Edit Pattern modals */}
-        <Modal
-          visible={isAddingNew}
-          animationType="slide"
-          transparent
-          onRequestClose={closeAddForm}
-        >
-          <ModalOverlay padding="none">
-            <View style={styles.modalContent}>
-              <RevealScrollView
-                // Tapping a rhythm step keeps the keyboard up, so typing can go on.
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ flexGrow: 1 }}
-              >
-                <EditPatternForm
-                  // Remount when a picked video seeds the form: it reads initialVideos once.
-                  key={initialVideos?.[0]?.value ?? "new"}
-                  patterns={patterns}
-                  patternTypes={patternTypes}
-                  modifiers={modifiers}
-                  onAccepted={handleAddPattern}
-                  onCancel={closeAddForm}
-                  onAddType={addPatternType}
-                  initialVideos={initialVideos}
-                />
-              </RevealScrollView>
-            </View>
-          </ModalOverlay>
-        </Modal>
-        <Modal
-          visible={isEditing && selectedPattern != null}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setIsEditing(false)}
-        >
-          <ModalOverlay padding="none">
-            <View style={styles.modalContent}>
-              <RevealScrollView
-                // Tapping a rhythm step keeps the keyboard up, so typing can go on.
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ flexGrow: 1 }}
-              >
-                <EditPatternForm
-                  patterns={patterns}
-                  patternTypes={patternTypes}
-                  modifiers={modifiers}
-                  onAccepted={handleSavePattern}
-                  onCancel={() => setIsEditing(false)}
-                  onAddType={addPatternType}
-                  existing={selectedPattern}
-                />
-              </RevealScrollView>
-            </View>
-          </ModalOverlay>
-        </Modal>
+        <PatternFormModal visible={isAddingNew} onRequestClose={closeAddForm}>
+          <EditPatternForm
+            // Remount when a picked video seeds the form: it reads initialVideos once.
+            key={initialVideos?.[0]?.value ?? "new"}
+            patterns={patterns}
+            patternTypes={patternTypes}
+            modifiers={modifiers}
+            onAccepted={handleAddPattern}
+            onCancel={closeAddForm}
+            onAddType={addPatternType}
+            initialVideos={initialVideos}
+          />
+        </PatternFormModal>
+        <EditPatternModal pattern={editing} onClose={stopEditing} />
 
         {/* Add / Edit Modifier modals */}
         <Modal

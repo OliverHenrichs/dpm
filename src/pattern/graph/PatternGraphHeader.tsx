@@ -12,6 +12,9 @@ interface PatternGraphHeaderProps {
   /** Only offered once there is a manual layout to discard. */
   canResetLayout: boolean;
   onResetLayout: () => void;
+  /** Only offered on a list the user may edit, once its lanes have been dragged. */
+  canResetLaneOrder?: boolean;
+  onResetLaneOrder?: () => void;
 }
 
 const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
@@ -21,6 +24,8 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
   onFilter,
   canResetLayout,
   onResetLayout,
+  canResetLaneOrder = false,
+  onResetLaneOrder,
 }) => {
   const { t } = useTranslation();
 
@@ -33,6 +38,14 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
           icon="backup-restore"
           onPress={onResetLayout}
           accessibilityLabel={t("resetLayout")}
+        />
+      )}
+      {/* The timeline's counterpart: back to the lane order that keeps linked types together. */}
+      {canResetLaneOrder && viewMode === "timeline" && onResetLaneOrder && (
+        <IconButton
+          icon="backup-restore"
+          onPress={onResetLaneOrder}
+          accessibilityLabel={t("resetLaneOrder")}
         />
       )}
       {/* Same icon/colour convention as PatternListHeader, so an active

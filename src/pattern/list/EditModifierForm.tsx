@@ -105,108 +105,112 @@ const EditModifierForm: React.FC<EditModifierFormProps> = ({
     onAccepted(trimmed ? { ...rest, description: trimmed } : rest);
   };
 
+  // Save and Cancel stay outside the scroller, so they are in sight however long the form is.
   return (
-    <RevealScrollView>
-      <View style={styles.container}>
-        <Text style={styles.sectionTitle}>
-          {existing ? t("editModifier") : t("addModifier")}
-        </Text>
+    <View style={styles.form}>
+      <RevealScrollView>
+        <View style={styles.container}>
+          <Text style={styles.sectionTitle}>
+            {existing ? t("editModifier") : t("addModifier")}
+          </Text>
 
-        {/* Name */}
-        <Text style={styles.label}>{t("modifierName")}</Text>
-        <RevealTextInput
-          placeholder={t("modifierName")}
-          value={modifier.name}
-          onChangeText={(text) => setModifier({ ...modifier, name: text })}
-          style={styles.input}
-          placeholderTextColor={theme.colors.textMuted}
-        />
+          {/* Name */}
+          <Text style={styles.label}>{t("modifierName")}</Text>
+          <RevealTextInput
+            placeholder={t("modifierName")}
+            value={modifier.name}
+            onChangeText={(text) => setModifier({ ...modifier, name: text })}
+            style={styles.input}
+            placeholderTextColor={theme.colors.textMuted}
+          />
 
-        {/* Description */}
-        <Text style={styles.label}>{t("modifierDescription")}</Text>
-        <RevealTextInput
-          placeholder={t("modifierDescriptionPlaceholder")}
-          value={modifier.description ?? ""}
-          onChangeText={(text) =>
-            setModifier({ ...modifier, description: text })
-          }
-          multiline
-          style={styles.input}
-          placeholderTextColor={theme.colors.textMuted}
-          accessibilityLabel={t("modifierDescription")}
-        />
+          {/* Description */}
+          <Text style={styles.label}>{t("modifierDescription")}</Text>
+          <RevealTextInput
+            placeholder={t("modifierDescriptionPlaceholder")}
+            value={modifier.description ?? ""}
+            onChangeText={(text) =>
+              setModifier({ ...modifier, description: text })
+            }
+            multiline
+            style={styles.input}
+            placeholderTextColor={theme.colors.textMuted}
+            accessibilityLabel={t("modifierDescription")}
+          />
 
-        {/* Position */}
-        <View style={styles.prereqContainer}>
-          <Text style={styles.label}>{t("modifierPosition")}</Text>
-          <View style={styles.row}>
-            {POSITIONS.map((pos) => (
-              <Chip
-                key={pos}
-                label={t(
-                  `modifierPosition${pos.charAt(0).toUpperCase()}${pos.slice(1)}`,
-                )}
-                selected={modifier.position === pos}
-                onPress={() => setModifier({ ...modifier, position: pos })}
-              />
-            ))}
+          {/* Position */}
+          <View style={styles.prereqContainer}>
+            <Text style={styles.label}>{t("modifierPosition")}</Text>
+            <View style={styles.row}>
+              {POSITIONS.map((pos) => (
+                <Chip
+                  key={pos}
+                  label={t(
+                    `modifierPosition${pos.charAt(0).toUpperCase()}${pos.slice(1)}`,
+                  )}
+                  selected={modifier.position === pos}
+                  onPress={() => setModifier({ ...modifier, position: pos })}
+                />
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Universal toggle */}
-        <SwitchRow
-          title={t("universalModifier")}
-          value={modifier.universal}
-          onValueChange={(val) => setModifier({ ...modifier, universal: val })}
-          style={styles.switchRow}
+          {/* Universal toggle */}
+          <SwitchRow
+            title={t("universalModifier")}
+            value={modifier.universal}
+            onValueChange={(val) =>
+              setModifier({ ...modifier, universal: val })
+            }
+            style={styles.switchRow}
+          />
+
+          {/* Videos — only for universal modifiers */}
+          {modifier.universal && (
+            <>
+              <PatternVideos
+                videoRefs={modifier.videoRefs ?? []}
+                thumbnails={thumbnails}
+                onAddVideo={() => setShowAddVideoModal(true)}
+                onRemoveVideo={handleRemoveVideo}
+                disabled={(modifier.videoRefs?.length ?? 0) >= MAX_VIDEOS}
+                full={(modifier.videoRefs?.length ?? 0) >= MAX_VIDEOS}
+              />
+              <AddVideoModal
+                visible={showAddVideoModal}
+                onClose={() => setShowAddVideoModal(false)}
+                onPickFromLibrary={handlePickFromLibrary}
+                onAddUrl={handleAddUrlVideo}
+              />
+            </>
+          )}
+        </View>
+      </RevealScrollView>
+      {/* Buttons */}
+      <View style={styles.buttonRow}>
+        <Button
+          title={t("cancel")}
+          variant="secondary"
+          onPress={onCancel}
+          style={styles.footerButton}
         />
-
-        {/* Videos — only for universal modifiers */}
-        {modifier.universal && (
-          <>
-            <PatternVideos
-              videoRefs={modifier.videoRefs ?? []}
-              thumbnails={thumbnails}
-              onAddVideo={() => setShowAddVideoModal(true)}
-              onRemoveVideo={handleRemoveVideo}
-              disabled={(modifier.videoRefs?.length ?? 0) >= MAX_VIDEOS}
-              full={(modifier.videoRefs?.length ?? 0) >= MAX_VIDEOS}
-            />
-            <AddVideoModal
-              visible={showAddVideoModal}
-              onClose={() => setShowAddVideoModal(false)}
-              onPickFromLibrary={handlePickFromLibrary}
-              onAddUrl={handleAddUrlVideo}
-            />
-          </>
-        )}
-
-        {/* Buttons */}
-        <View style={styles.buttonRow}>
-          <Button
-            title={t("cancel")}
-            variant="secondary"
-            onPress={onCancel}
-            style={styles.footerButton}
-          />
-          <Button
-            title={t("saveModifier")}
-            onPress={handleFinish}
-            style={styles.footerButton}
-          />
-        </View>
+        <Button
+          title={t("saveModifier")}
+          onPress={handleFinish}
+          style={styles.footerButton}
+        />
       </View>
-    </RevealScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create((theme) => {
   const baseInput = getCommonInput(theme);
   return {
+    form: { flexShrink: 1 },
     container: {
       ...getCommonBorder(theme),
       padding: theme.space.sm,
-      marginBottom: theme.space.lg,
       backgroundColor: theme.colors.surface,
     },
     sectionTitle: {

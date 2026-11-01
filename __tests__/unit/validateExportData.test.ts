@@ -75,7 +75,7 @@ describe("canImport", () => {
   it("refuses a newer minor rather than guessing at it", () => {
     // The writer added something this build cannot carry; parsing it anyway
     // would silently drop that data on the next save.
-    expect(canImport("3.10.0")).toEqual({
+    expect(canImport("3.11.0")).toEqual({
       supported: false,
       reason: "tooNew",
     });
@@ -123,6 +123,30 @@ describe("validateExportData", () => {
         readonly: true,
         shareCode: "ABCD1234",
       });
+    });
+  });
+
+  describe("the pattern id high-water mark", () => {
+    it("is kept, so a deleted figure's id is not handed out again", () => {
+      const result = validateExportData(
+        fileWithList(baseList({ nextPatternId: 9 })),
+      );
+
+      expect(result.data!.patternLists[0].nextPatternId).toBe(9);
+    });
+
+    it.each([
+      ["a string", "9"],
+      ["a fraction", 2.5],
+      ["zero", 0],
+      ["a negative number", -3],
+    ])("is dropped when it is %s", (_label, value) => {
+      const result = validateExportData(
+        fileWithList(baseList({ nextPatternId: value })),
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.data!.patternLists[0]).not.toHaveProperty("nextPatternId");
     });
   });
 

@@ -429,6 +429,22 @@ function isSuggestionPolicy(v: unknown): v is ISuggestionPolicy {
   );
 }
 
+/**
+ * 3.10. The type ids of a manual lane order, kept only for types the list has, each once. Nothing
+ * left (or not a list) means the automatic order.
+ */
+function normalizeLaneOrder(
+  raw: unknown,
+  patternTypes: PatternType[],
+): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const known = new Set(patternTypes.map((type) => type.id));
+  const order = [
+    ...new Set(raw.filter((id): id is string => typeof id === "string")),
+  ].filter((id) => known.has(id));
+  return order.length > 0 ? order : undefined;
+}
+
 function normalizeList(
   raw: unknown,
   index: number,
@@ -456,6 +472,7 @@ function normalizeList(
     warnings,
   );
 
+  const laneOrder = normalizeLaneOrder(raw.laneOrder, patternTypes);
   const now = Date.now();
   return {
     id: raw.id,
@@ -482,6 +499,13 @@ function normalizeList(
     }),
     // 3.7. Anything but `true` means the list is open to anyone with its code.
     ...(raw.membersOnly === true && { membersOnly: true as const }),
+    ...(laneOrder && { laneOrder }),
+    // The id high-water mark: exports always carried it, but import used to drop it, so the id
+    // of a figure deleted from the end could be handed out again. A bad value is dropped and
+    // `nextPatternId()` falls back to the figures present.
+    ...(typeof raw.nextPatternId === "number" &&
+      Number.isInteger(raw.nextPatternId) &&
+      raw.nextPatternId > 0 && { nextPatternId: raw.nextPatternId }),
     patterns,
   };
 }

@@ -15,6 +15,13 @@ interface PatternDetailsModalProps {
   patternTypes?: PatternType[];
   modifiers?: IModifier[];
   onClose: () => void;
+  /** Opens the figure form on this figure; absent on a list the user may not edit. */
+  onEdit?: () => void;
+  /**
+   * Opens _Suggest a change_ on this figure, for a subscriber whose list owner takes changes
+   * (`canSuggestEditsTo`). Ignored when `onEdit` is given.
+   */
+  onSuggestEdit?: () => void;
 }
 
 const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
@@ -24,6 +31,8 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
   patternTypes,
   modifiers,
   onClose,
+  onEdit,
+  onSuggestEdit,
 }) => {
   const { t } = useTranslation();
 
@@ -49,6 +58,22 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{pattern?.name || ""}</Text>
+            {/* The same buttons, and labels, as the figure's row in the List tab. */}
+            {onEdit ? (
+              <IconButton
+                icon="pencil"
+                color="text"
+                onPress={onEdit}
+                accessibilityLabel={t("editPattern")}
+              />
+            ) : onSuggestEdit ? (
+              <IconButton
+                icon="pencil-plus-outline"
+                color="text"
+                onPress={onSuggestEdit}
+                accessibilityLabel={t("suggestEdit")}
+              />
+            ) : null}
             <IconButton
               icon="close"
               color="text"
@@ -92,6 +117,8 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    // Room between Edit and Close, whose touch targets reach past their glyphs.
+    gap: theme.space.lg,
     paddingHorizontal: theme.space.xl,
     paddingVertical: theme.space.lg,
     borderBottomWidth: 2,

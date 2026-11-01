@@ -632,6 +632,50 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("manual lane order (3.10)", () => {
+    const second = createTestPatternType({ slug: "second" });
+
+    it("keeps the lanes as the user dragged them", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], {
+          patternTypes: [TYPE, second],
+          laneOrder: [second.id, TYPE.id],
+        }),
+      ]);
+
+      expect(importResult.patternLists![0].laneOrder).toEqual([
+        second.id,
+        TYPE.id,
+      ]);
+    });
+
+    it("drops ids of types the list does not have, and repeats", async () => {
+      const { importResult } = await roundTrip([
+        listWith([], {
+          patternTypes: [TYPE, second],
+          laneOrder: [second.id, "gone", second.id, 7 as never, TYPE.id],
+        }),
+      ]);
+
+      expect(importResult.patternLists![0].laneOrder).toEqual([
+        second.id,
+        TYPE.id,
+      ]);
+    });
+
+    it("leaves a list without one, or with nothing usable, on the automatic order", async () => {
+      const { importResult } = await roundTrip([
+        listWith([]),
+        listWith([], { laneOrder: ["gone"] }),
+        listWith([], { laneOrder: "first" as never }),
+      ]);
+
+      importResult.patternLists!.forEach((list) =>
+        expect(list).not.toHaveProperty("laneOrder"),
+      );
+    });
+  });
+
   describe("members-only lists (3.7)", () => {
     it("keeps that only members may read the published list", async () => {
       const { importResult } = await roundTrip([

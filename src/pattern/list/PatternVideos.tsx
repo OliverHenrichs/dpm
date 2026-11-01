@@ -249,7 +249,8 @@ const styles = StyleSheet.create((theme) => ({
   thumbnailWrapper: {
     position: "relative",
     justifyContent: "center",
-    alignItems: "center",
+    // Children stretch, never `alignItems: "center"`: the picture's width is a percentage, which
+    // comes to nothing in a parent sized by its content, and the thumbnail vanishes.
     width: "100%",
     height: THUMB_HEIGHT,
   },
