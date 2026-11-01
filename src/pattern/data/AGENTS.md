@@ -69,6 +69,13 @@ share keys existed get one.
 
 ## Import validation
 
+Shared lists read from Firestore are just as untrusted (anyone can publish what the rules' outline
+allows): `fetchSharedList` and `subscribeToSharedList` pass them through
+`validation/validateSharedList.ts`, which runs the same `normalizeList` (`validation/normalizeList.ts`), keeps only `http(s)`
+videos, and takes `readonly`, the share key and the share code from this phone, not the document.
+`useSharedList` writes an update only onto the list it follows (its `listId` and share code),
+never onto whatever list id the document names.
+
 **Never trust an import file**: it comes from a document picker, and everything downstream writes
 it to storage and the screen. `validateExportData` (`validation/`) is the only gate, and
 `ImportPatterns` calls it before touching anything.
@@ -154,10 +161,8 @@ Version history (what each minor added):
 - **3.10** `IPatternList.laneOrder`, the timeline's lanes as the user dragged them (type ids, top
   to bottom; `src/pattern/graph/`). Only ids of the list's types are kept, each once; nothing
   left drops the key, which means the automatic order.
-- **3.11** `IPatternList.levels`, the list's own levels, easiest first (`{ id, name }`). Entries
-  need a non-empty string id not seen before and a name that is not blank (trimmed); at most
-  `MAX_LEVELS` are kept, the rest dropped quietly; nothing left drops the key, which means the
-  built-in three. A figure's `level` is kept as it is, even one the list lacks (it shows as none).
+- **3.11** `IPatternList.levels` (`{ id, name }`). Kept: unique ids with a non-blank name, at
+  most `MAX_LEVELS`; nothing left drops the key.
 
 ## Shared list context
 

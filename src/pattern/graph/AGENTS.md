@@ -128,14 +128,11 @@ muted rule in Clipboard; lane labels take the list's section style. Node text us
 `nodeTitle` / `nodeMeta` text styles.
 
 - **Level is a tint of the type colour mixed into the surface** (`model/nodeFrame.ts`), one solid
-  fill so edges don't show through. `levelTints(n)` spreads the list's levels from the lightest
-  to the darkest built-in tint (three levels keep 0.1 / 0.22 / 0.36 exactly, one level takes the
-  middle); the model resolves each node's `tint` from the list's level ids (`buildGraphModel`'s
-  third argument), and no level or one the list lacks draws as the lightest. The tints are capped by `__tests__/unit/nodeFrame.test.ts`:
+  fill so edges don't show through. `levelTints(n)` spreads the list's levels over 0.1 to 0.36;
+  `buildGraphModel`'s third argument (level ids) sets each node's `tint`. The tints are capped by `__tests__/unit/nodeFrame.test.ts`:
   the node text must hold 4.5:1 over every palette type colour in every theme. That is also why
   the counts are in `text`, not `textMuted`.
-- `Legend` draws its samples with `NodeFrame` itself, so it matches whatever the style draws, one
-  level row per level of the active list.
+- `Legend` draws its samples with `NodeFrame` itself, so it matches whatever the style draws.
 
 ## Node badges
 
