@@ -20,8 +20,16 @@ const KB = 1024;
 
 const BUDGETS = [
   { test: (f) => f === "AGENTS.md", bytes: 24 * KB, why: "root AGENTS.md" },
-  { test: (f) => f.endsWith("/AGENTS.md"), bytes: 10 * KB, why: "nested AGENTS.md" },
-  { test: (f) => f.startsWith("docs/product/"), bytes: 15 * KB, why: "product spec" },
+  {
+    test: (f) => f.endsWith("/AGENTS.md"),
+    bytes: 10 * KB,
+    why: "nested AGENTS.md",
+  },
+  {
+    test: (f) => f.startsWith("docs/product/"),
+    bytes: 15 * KB,
+    why: "product spec",
+  },
 ];
 
 const OVER_BUDGET = {
@@ -30,10 +38,20 @@ const OVER_BUDGET = {
   "src/firebase/AGENTS.md": 12000,
 };
 
-const SKIP_DIRS = new Set(["node_modules", ".git", "android", "ios", "dist", "coverage", ".expo"]);
+const SKIP_DIRS = new Set([
+  "node_modules",
+  ".git",
+  "android",
+  "ios",
+  "dist",
+  "coverage",
+  ".expo",
+]);
 
 function walk(dir, out = []) {
-  for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+  for (const entry of fs.readdirSync(path.join(ROOT, dir), {
+    withFileTypes: true,
+  })) {
     if (SKIP_DIRS.has(entry.name)) continue;
     const rel = dir ? `${dir}/${entry.name}` : entry.name;
     if (entry.isDirectory()) walk(rel, out);
@@ -59,20 +77,26 @@ for (const file of files) {
   for (const [, target] of text.matchAll(/\]\(([^)\s]+)\)/g)) {
     if (/^[a-z]+:/i.test(target) || target.startsWith("#")) continue;
     const clean = decodeURI(target.split("#")[0]);
-    const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(file), clean));
-    if (!exists(resolved)) errors.push(`${file}: link to ${target} points at nothing`);
+    const resolved = path.posix.normalize(
+      path.posix.join(path.posix.dirname(file), clean),
+    );
+    if (!exists(resolved))
+      errors.push(`${file}: link to ${target} points at nothing`);
   }
 
   if (file.startsWith("docs/product/")) {
-    for (const [, named] of text.matchAll(/`((?:src|__tests__|tools|modules|docs)\/[^`\s*<>]+)`/g)) {
+    for (const [, named] of text.matchAll(
+      /`((?:src|__tests__|tools|modules|docs)\/[^`\s*<>]+)`/g,
+    )) {
       const clean = named.replace(/[.,:;)]+$/, "").replace(/\/$/, "");
-      if (!exists(clean)) errors.push(`${file}: names ${named}, which does not exist`);
+      if (!exists(clean))
+        errors.push(`${file}: names ${named}, which does not exist`);
     }
   }
 
   const budget = BUDGETS.find((b) => b.test(file));
   if (budget) {
-    const size = Buffer.byteLength(read(file));
+    const size = fs.statSync(path.join(ROOT, file)).size;
     const cap = OVER_BUDGET[file] ?? budget.bytes;
     if (size > cap) {
       errors.push(
@@ -83,9 +107,12 @@ for (const file of files) {
 }
 
 for (const [file, cap] of Object.entries(OVER_BUDGET)) {
-  if (!exists(file)) errors.push(`OVER_BUDGET names ${file}, which no longer exists`);
-  else if (Buffer.byteLength(read(file)) <= BUDGETS[1].bytes) {
-    errors.push(`${file} is within budget now: drop it from OVER_BUDGET (cap ${cap})`);
+  if (!exists(file))
+    errors.push(`OVER_BUDGET names ${file}, which no longer exists`);
+  else if (fs.statSync(path.join(ROOT, file)).size <= BUDGETS[1].bytes) {
+    errors.push(
+      `${file} is within budget now: drop it from OVER_BUDGET (cap ${cap})`,
+    );
   }
 }
 
@@ -97,7 +124,9 @@ for (const file of files) {
 }
 
 if (errors.length) {
-  console.error(`check-docs: ${errors.length} problem(s)\n- ${errors.join("\n- ")}`);
+  console.error(
+    `check-docs: ${errors.length} problem(s)\n- ${errors.join("\n- ")}`,
+  );
   process.exit(1);
 }
 console.log(`check-docs: ${files.length} files OK`);
