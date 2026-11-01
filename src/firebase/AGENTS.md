@@ -59,7 +59,8 @@ owner's offer; the old key then stops working.
 `firestore.rules` at the repository root is the deployed rule set, wired up by `firebase.json`.
 Change it together with `FirebaseListService`: the rules accept exactly the document
 `publishList()` writes (the five `SharedListDocument` keys, stored under its own 8-character
-code, no `readonly` or `shareKey` on the stored list, a well-formed `suggestions` setting if any),
+code, no `readonly` or `shareKey` on the stored list, a well-formed `suggestions` setting if any,
+a `list.id` that never changes once published),
 allow `get` by code (members and the owner only, for a members-only list) but never `list`, and deny everything outside the two collections, the
 three suggestion subcollections, `handovers`, `subscriptions` and `reports`.
 

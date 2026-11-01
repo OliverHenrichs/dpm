@@ -39,6 +39,9 @@ sharing control is hidden. Nobody needs an account.
 - A subscribed list's ⋮ menu offers _Unsubscribe from List_ (the copy is removed; the code works
   again later) and _Report list_.
 - Subscribing to one's own list, or to a list already followed, is refused with a reason.
+- A followed list is checked like an import file each time it arrives: a list the app cannot read
+  reads as not found (or the update is skipped and the copy stays as it was), only web video links
+  are kept, and an update only ever changes the list it belongs to.
 
 ### Suggestions
 
@@ -111,6 +114,9 @@ sharing control is hidden. Nobody needs an account.
 | Rule                                                                                 | Guarded by                                                       |
 | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
 | Only the owner on record can change or delete a published list                       | `__tests__/rules/firestore.rules.test.ts`                        |
+| A published list keeps its id; its id and name have size limits                      | `__tests__/rules/firestore.rules.test.ts` ("publishing")         |
+| An update changes only the followed list, never another list with the same id        | `__tests__/components/useSharedList.test.ts`                     |
+| A followed list keeps only web video links, and its code comes from the phone        | `__tests__/unit/validateSharedList.test.ts`                      |
 | The share key is never in a published document                                       | `__tests__/rules/firestore.rules.test.ts`, `shareKey.test.ts`    |
 | Local videos, transcripts and the date a figure was added are never published        | `__tests__/unit/publishedContent.test.ts`                        |
 | The daily suggestion limit is enforced by the rules, not the app                     | `__tests__/rules/firestore.rules.test.ts` ("suggesting")         |

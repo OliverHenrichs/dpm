@@ -82,6 +82,8 @@ these tools.
 - Another app can share a video or a link to DPM. If a video is waiting for its link, DPM offers
   the link for it. Otherwise it offers to add the video to a figure of the open list or start a
   new figure with it. The open list must be the user's own.
+- Only a video shared this way opens the new figure form: a link into the app (a web page or
+  another app opening DPM) cannot hand it a video or a file.
 
 ### Models
 
@@ -90,17 +92,18 @@ these tools.
 
 ## Rules that must always hold
 
-| Rule                                                                 | Guarded by                                           |
-| -------------------------------------------------------------------- | ---------------------------------------------------- |
-| One heavy job at a time; nothing heavy runs beside a job             | No test yet                                          |
-| A cut result replaces nothing until the user keeps it                | `__tests__/components/AnonymizeJobsContext.test.tsx` |
-| Keeping a result merges with edits made while the job ran            | `__tests__/unit/videoUpdates.test.ts`                |
-| The selection stays within the tool's minimum and maximum length     | `__tests__/unit/trimWindow.test.ts`                  |
-| Nothing from a suggestion is written without _Use suggestion_        | `__tests__/components/Suggestion.test.tsx`           |
-| Only changed words are learned, not case, punctuation or added words | `__tests__/unit/learnedCorrections.test.ts`          |
-| A swapped-in link keeps the video's transcript and provenance        | `__tests__/unit/videoLinks.test.ts`                  |
-| Which links play in DPM                                              | `__tests__/unit/videoHosts.test.ts`                  |
-| A corrupt or incomplete model download is never installed            | `__tests__/components/modelStore.test.ts`            |
+| Rule                                                                        | Guarded by                                           |
+| --------------------------------------------------------------------------- | ---------------------------------------------------- |
+| One heavy job at a time; nothing heavy runs beside a job                    | No test yet                                          |
+| A cut result replaces nothing until the user keeps it                       | `__tests__/components/AnonymizeJobsContext.test.tsx` |
+| Keeping a result merges with edits made while the job ran                   | `__tests__/unit/videoUpdates.test.ts`                |
+| The selection stays within the tool's minimum and maximum length            | `__tests__/unit/trimWindow.test.ts`                  |
+| Nothing from a suggestion is written without _Use suggestion_               | `__tests__/components/Suggestion.test.tsx`           |
+| Only changed words are learned, not case, punctuation or added words        | `__tests__/unit/learnedCorrections.test.ts`          |
+| A swapped-in link keeps the video's transcript and provenance               | `__tests__/unit/videoLinks.test.ts`                  |
+| Which links play in DPM                                                     | `__tests__/unit/videoHosts.test.ts`                  |
+| A link into the app cannot open the new figure form with a video of its own | `__tests__/components/PatternListManager.test.tsx`   |
+| A corrupt or incomplete model download is never installed                   | `__tests__/components/modelStore.test.ts`            |
 
 ## Not built yet
 
