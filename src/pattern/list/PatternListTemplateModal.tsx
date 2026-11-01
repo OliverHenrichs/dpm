@@ -41,6 +41,13 @@ import {
 } from "@/src/pattern/list/typeMoves";
 import MoveFiguresDialog from "@/src/pattern/list/MoveFiguresDialog";
 import LevelEditor from "@/src/pattern/list/LevelEditor";
+import TagEditor from "@/src/pattern/list/TagEditor";
+import {
+  countTags,
+  editTags,
+  NO_TAG_EDITS,
+  TagEdits,
+} from "@/src/pattern/list/tagEdits";
 import {
   IPatternLevel,
   levelNameErrors,
@@ -62,14 +69,20 @@ interface PatternListTemplateModalProps {
   typeUsage?: Record<string, number>;
   /** How many patterns are on each level, by id. Removing a level in use asks where they go. */
   levelUsage?: Record<string, number>;
+  /** Editing only: each figure's tags, for the Tags section (rename, merge, delete). */
+  figureTags?: string[][];
+  /** Editing only: open on the Tags section (the filter sheet's _Manage_). */
+  openTags?: boolean;
   /**
    * Called instead of onCreateList when editing an existing list, with where the figures of
-   * each removed type and level go (empty when none moved). The host reassigns them as it saves.
+   * each removed type and level go (empty when none moved) and the tag renames, merges and
+   * deletes. The host applies them to the figures as it saves.
    */
   onSaveList?: (
     updatedList: IPatternList,
     typeMoves: TypeMoves,
     levelMoves: LevelMoves,
+    tagEdits: TagEdits,
   ) => void;
 }
 
@@ -196,6 +209,8 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   editList,
   typeUsage,
   levelUsage,
+  figureTags,
+  openTags = false,
   onSaveList,
 }) => {
   const { t } = useTranslation();
@@ -232,6 +247,11 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
     resolveLevels(editList?.levels, t),
   );
   const [levelMoves, setLevelMoves] = useState<LevelMoves>({});
+  // The tag renames, merges and deletes so far, and the tags as they leave them.
+  const [tagEdits, setTagEdits] = useState<TagEdits>(NO_TAG_EDITS);
+  const draftTags = countTags(
+    (figureTags ?? []).map((tags) => editTags(tags, tagEdits)),
+  );
 
   // ── Slug validation ────────────────────────────────────────────────────────
   const slugErrors: Record<string, string> = {};
@@ -288,6 +308,7 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
         ),
         typeMoves,
         levelMoves,
+        tagEdits,
       );
     } else {
       // ── Create path ───────────────────────────────────────────────────
@@ -454,6 +475,12 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
   const patternsSummary = `${
     draftPatterns.filter((entry) => entry.included).length
   }/${draftPatterns.length}`;
+  const tagsSummary =
+    draftTags.length === 0
+      ? t("listTagsNone")
+      : draftTags.length === 1
+        ? t("listTagsOne")
+        : t("listTagsMany", { count: draftTags.length });
   // A new list shows everything; editing one opens on the name, the rest a tap away.
   const sectionsOpen = !isEditMode;
 
@@ -622,6 +649,21 @@ const TemplateModalBody: React.FC<TemplateModalBodyProps> = ({
                 onChangeMoves={setLevelMoves}
               />
             </FormSection>
+
+            {/* ── Tags: only an existing list has figures to carry them ─── */}
+            {isEditMode && (
+              <FormSection
+                title={t("tags")}
+                summary={tagsSummary}
+                initiallyOpen={openTags}
+              >
+                <TagEditor
+                  tags={draftTags}
+                  edits={tagEdits}
+                  onChangeEdits={setTagEdits}
+                />
+              </FormSection>
+            )}
 
             {/* ── Starting figures ──────────────────────────────────────── */}
             {draftPatterns.length > 0 && (

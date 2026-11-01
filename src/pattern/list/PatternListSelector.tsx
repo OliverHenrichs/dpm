@@ -28,6 +28,7 @@ import {
   LevelMoves,
   TypeMoves,
 } from "@/src/pattern/list/typeMoves";
+import { applyTagEdits, TagEdits } from "@/src/pattern/list/tagEdits";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import ShareListModal from "@/src/pattern/list/ShareListModal";
 import SubscribeListModal from "@/src/pattern/list/SubscribeListModal";
@@ -59,6 +60,7 @@ const PatternListSelector: React.FC = () => {
   const [editingList, setEditingList] = useState<IPatternList | null>(null);
   const [typeUsage, setTypeUsage] = useState<Record<string, number>>({});
   const [levelUsage, setLevelUsage] = useState<Record<string, number>>({});
+  const [figureTags, setFigureTags] = useState<string[][]>([]);
 
   // Cloud sharing state
   const [shareTarget, setShareTarget] = useState<IPatternList | null>(null);
@@ -163,6 +165,7 @@ const PatternListSelector: React.FC = () => {
       const patterns = await loadPatterns(list.id);
       setTypeUsage(countPatternsByType(patterns));
       setLevelUsage(countPatternsByLevel(patterns));
+      setFigureTags(patterns.map((pattern) => pattern.tags));
       setEditingList(list);
     } catch (error) {
       console.error("Error loading patterns for edit:", error);
@@ -173,13 +176,15 @@ const PatternListSelector: React.FC = () => {
     updatedList: IPatternList,
     typeMoves: TypeMoves,
     levelMoves: LevelMoves,
+    tagEdits: TagEdits,
   ) => {
     try {
-      // Figures of a removed type or level go where the user chose, before the list drops it.
+      // Figures of a removed type or level go where the user chose, before the list drops it,
+      // and the tags are renamed, merged and deleted with them.
       const patterns = await loadPatterns(updatedList.id);
-      const moved = applyLevelMoves(
-        applyTypeMoves(patterns, typeMoves),
-        levelMoves,
+      const moved = applyTagEdits(
+        applyLevelMoves(applyTypeMoves(patterns, typeMoves), levelMoves),
+        tagEdits,
       );
       if (moved !== patterns) await savePatterns(updatedList.id, moved);
       await savePatternList(updatedList);
@@ -421,6 +426,7 @@ const PatternListSelector: React.FC = () => {
           editList={editingList ?? undefined}
           typeUsage={typeUsage}
           levelUsage={levelUsage}
+          figureTags={figureTags}
           onSaveList={handleSaveList}
         />
 

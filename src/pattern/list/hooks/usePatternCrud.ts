@@ -24,6 +24,11 @@ import {
   LevelMoves,
   TypeMoves,
 } from "@/src/pattern/list/typeMoves";
+import {
+  applyTagEdits,
+  NO_TAG_EDITS,
+  TagEdits,
+} from "@/src/pattern/list/tagEdits";
 
 /**
  * Every mutation returns whether it was applied, so callers can keep a form
@@ -55,12 +60,14 @@ export interface PatternCrud {
   /**
    * Saves the list's own settings (name, types, dance, levels), edited where its patterns are.
    * `typeMoves` reassigns the figures of each removed type to the type that takes them, and
-   * `levelMoves` those of each removed level to another level or none.
+   * `levelMoves` those of each removed level to another level or none; `tagEdits` renames,
+   * merges and deletes tags on every figure.
    */
   saveList: (
     list: IPatternList,
     typeMoves?: TypeMoves,
     levelMoves?: LevelMoves,
+    tagEdits?: TagEdits,
   ) => Promise<boolean>;
 }
 
@@ -292,13 +299,14 @@ export function usePatternCrud(): PatternCrud {
       list: IPatternList,
       typeMoves: TypeMoves = {},
       levelMoves: LevelMoves = {},
+      tagEdits: TagEdits = NO_TAG_EDITS,
     ) => {
       if (!activeList || isReadonly || list.id !== activeList.id) return false;
       // Figures first, so none is left on a removed type or level if the list write is what
       // fails; the list's push to Firestore then carries the moved figures with it.
-      const moved = applyLevelMoves(
-        applyTypeMoves(patterns, typeMoves),
-        levelMoves,
+      const moved = applyTagEdits(
+        applyLevelMoves(applyTypeMoves(patterns, typeMoves), levelMoves),
+        tagEdits,
       );
       if (moved !== patterns) await updatePatterns(moved);
       await updateActiveList(list, moved);

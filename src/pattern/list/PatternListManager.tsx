@@ -79,6 +79,12 @@ const PatternListManager = () => {
   // The list's own settings (types above all), opened from here so adding a type does not
   // mean leaving the list for the Lists screen (tester review 1).
   const [isEditingList, setIsEditingList] = useState(false);
+  // Opened from the filter sheet's Manage link: on the Tags section.
+  const [listSettingsOnTags, setListSettingsOnTags] = useState(false);
+  const openListSettings = (onTags: boolean) => {
+    setListSettingsOnTags(onTags);
+    setIsEditingList(true);
+  };
 
   const [selectedPattern, setSelectedPattern] = useState<IPattern | undefined>(
     undefined,
@@ -391,10 +397,12 @@ const PatternListManager = () => {
             visible={isEditingList}
             onClose={() => setIsEditingList(false)}
             editList={activeList}
+            openTags={listSettingsOnTags}
             typeUsage={countPatternsByType(patterns)}
             levelUsage={countPatternsByLevel(patterns)}
-            onSaveList={async (list, typeMoves, levelMoves) => {
-              await saveList(list, typeMoves, levelMoves);
+            figureTags={patterns.map((pattern) => pattern.tags)}
+            onSaveList={async (list, typeMoves, levelMoves, tagEdits) => {
+              await saveList(list, typeMoves, levelMoves, tagEdits);
               setIsEditingList(false);
             }}
           />
@@ -428,6 +436,9 @@ const PatternListManager = () => {
               patternTypes={patternTypes}
               modifiers={modifiers}
               isReadonly={isReadonly}
+              onManageTags={
+                isReadonly ? undefined : () => openListSettings(true)
+              }
               onSelect={(p) => setSelectedPattern(p as IPattern | undefined)}
               onDelete={handleDeletePattern}
               onAdd={() => setIsAddingNew(!isAddingNew)}
@@ -443,7 +454,7 @@ const PatternListManager = () => {
                   {!isReadonly && (
                     <IconButton
                       icon="shape-outline"
-                      onPress={() => setIsEditingList(true)}
+                      onPress={() => openListSettings(false)}
                       accessibilityLabel={t("editTypes")}
                     />
                   )}

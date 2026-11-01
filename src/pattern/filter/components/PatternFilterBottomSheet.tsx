@@ -34,6 +34,11 @@ interface PatternFilterBottomSheetProps {
    * here rather than the sheet growing a graph concept the list has no use for.
    */
   headerSection?: React.ReactNode;
+  /**
+   * Opens list settings on the Tags section, after closing the sheet. The List tab passes it
+   * for a list the user may edit; without it the Tags section has no _Manage_ link.
+   */
+  onManageTags?: () => void;
 }
 
 const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
@@ -44,6 +49,7 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
   allPatterns,
   patternTypes = [],
   headerSection,
+  onManageTags,
 }) => {
   const { t } = useTranslation();
 
@@ -145,6 +151,13 @@ const PatternFilterBottomSheet: React.FC<PatternFilterBottomSheetProps> = ({
           allTags={allTags}
           selectedTags={filter.tags}
           onToggle={toggleTag}
+          onManage={
+            onManageTags &&
+            (() => {
+              handleClose();
+              onManageTags();
+            })
+          }
         />
       </RevealScrollView>
 

@@ -861,4 +861,35 @@ describe("PatternListManager pattern types", () => {
 
     expect(screen.queryByLabelText("Edit the list and its types")).toBeNull();
   });
+
+  it("opens the list's tags from the filter sheet, and saves a rename to the figures", async () => {
+    const { list } = await renderManager([
+      pattern(1, "Sugar Push", { tags: ["Spin", "Basic"] }),
+    ]);
+
+    fireEvent.press(screen.getByLabelText("Filter Figures"));
+    fireEvent.press(screen.getByText("Manage"));
+    // Open on the Tags section.
+    fireEvent.press(await screen.findByLabelText("Rename Spin"));
+    fireEvent.changeText(screen.getByLabelText("Tag name"), "Turn");
+    fireEvent.press(screen.getByText("Rename"));
+    fireEvent.press(screen.getByText("Save"));
+
+    await waitFor(async () =>
+      expect((await storedPatterns(list.id))[0].tags).toEqual([
+        "Turn",
+        "Basic",
+      ]),
+    );
+  });
+
+  it("offers no tag management from the filter sheet of a read-only list", async () => {
+    await renderManager([pattern(1, "Sugar Push", { tags: ["Spin"] })], {
+      readonly: true,
+    });
+
+    fireEvent.press(screen.getByLabelText("Filter Figures"));
+
+    expect(screen.queryByText("Manage")).toBeNull();
+  });
 });
