@@ -121,8 +121,8 @@ describe("the figure form switched to a variant by the variant strip", () => {
     fireEvent.press(screen.getByLabelText("Remove 8"));
     fireEvent.press(screen.getByLabelText("Remove &"));
     fireEvent.press(screen.getByLabelText("Add &"));
-    fireEvent.press(screen.getByRole("togglebutton", { name: "Hold" }));
-    fireEvent.press(screen.getByLabelText("Add a, held"));
+    fireEvent.press(screen.getByRole("togglebutton", { name: "Pause" }));
+    fireEvent.press(screen.getByLabelText("Add a as a pause"));
     fireEvent.press(screen.getByLabelText("Add 8"));
 
     expect(rhythm().props.value).toBe("1 2 3&4 5 6 7&(a)8");
@@ -321,10 +321,10 @@ describe("writing a rhythm in slows and quicks", () => {
     const onAccepted = renderNew();
 
     fireEvent.press(screen.getByLabelText("Add S"));
-    // After a slow or a quick: no beat, no & or a, no Hold.
+    // After a slow or a quick: no beat, no & or a, no Pause.
     expect(screen.queryByLabelText("Add 1")).toBeNull();
     expect(screen.queryByLabelText("Add &")).toBeNull();
-    expect(screen.queryByRole("togglebutton", { name: "Hold" })).toBeNull();
+    expect(screen.queryByRole("togglebutton", { name: "Pause" })).toBeNull();
     fireEvent.press(screen.getByLabelText("Add Q"));
     fireEvent.press(screen.getByLabelText("Add Q"));
 

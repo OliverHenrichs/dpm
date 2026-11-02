@@ -12,6 +12,9 @@ import type { Dance } from "@/src/pattern/types/Dance";
  * - `1 2 3&` — only the last token may end on a subdivision (a step on the & of 3). Elsewhere a
  *   subdivision always chains on to the next beat (`3&4`, never `3& 4`), so a rhythm has one
  *   spelling.
+ * - `&a1 2 3&4` — a pickup: the rhythm may start on `&`, `a` or `&a` before beat 1. Those steps
+ *   fall at the end of the bar before, so they add no count (Oliver, 2026-11-02). Only the first
+ *   token starts this way; later ones chain on to their beat (`2&a3`).
  * - `(4)`, `3(&)4`, `3&(a)4`, `3&(4)` — any single beat or subdivision held: no change of
  *   weight, a tap or a pause, as on 4 and 8 in salsa and bachata.
  *
@@ -67,8 +70,10 @@ export function isSlowQuickRhythm(rhythm: string): boolean {
 
 /**
  * The elements of a rhythm written in counts, in order, or null when it is not one (slows and
- * quicks included). Each beat is the next one from 1; `&` and `a` follow a beat, `&` first and
- * each once; a token starts on a beat, and only the last one may end on a subdivision.
+ * quicks included). Each beat is the next one from 1; `&` and `a` follow a beat (or open the
+ * rhythm as a pickup), `&` first and each once; every other token starts on a beat, and only the
+ * last one may end on a subdivision. A pickup alone (`&a`) reads as elements, so it can be
+ * composed, but has no beat yet: `rhythmCounts` does not take it as a rhythm.
  */
 export function rhythmElements(rhythm: string): RhythmElement[] | null {
   const tokens = tokensOf(rhythm);
@@ -86,7 +91,7 @@ export function rhythmElements(rhythm: string): RhythmElement[] | null {
         if (typeof previous === "number" || value !== beat + 1) return null;
         beat = value;
       } else if (
-        previous === undefined ||
+        (previous === undefined && (index > 0 || beat > 0)) ||
         previous === "a" ||
         (value === "&" && previous === "&")
       ) {
@@ -129,8 +134,15 @@ export function rhythmCounts(rhythm: string): number | null {
     );
   }
   const elements = rhythmElements(rhythm);
-  return elements ? lastBeat(elements) : null;
+  const counts = elements ? lastBeat(elements) : 0;
+  return counts > 0 ? counts : null;
 }
+
+/** Whether `text` is only a pickup so far (`&`, `&a`): on its way to a rhythm, not wrong. */
+const isPickupOnly = (text: string) => {
+  const elements = rhythmElements(text);
+  return !!elements && lastBeat(elements) === 0;
+};
 
 export function rhythmMatchesCounts(rhythm: string, counts: number): boolean {
   return rhythmCounts(rhythm) === counts;
@@ -154,12 +166,14 @@ export function normalizeRhythm(rhythm: string): string {
  * slows and quicks, `slowQuickJoin` when it joins slows and quicks with `&` or `a` (`Q&Q` is
  * not verified), `markOrder` when a beat's `&` and `a` come out of order or twice (`3a&4`),
  * `markSplit` when a subdivision is spaced off the beat it leads to (`3& 4`, written `3&4`),
- * else `invalid`. Null when it is a rhythm, or nothing is written.
+ * else `invalid`. Null when it is a rhythm, only a pickup so far, or nothing is written.
  */
 export type RhythmProblem =
   "mixed" | "slowQuickJoin" | "markOrder" | "markSplit" | "invalid";
 export function rhythmProblem(text: string): RhythmProblem | null {
-  if (!text.trim() || rhythmCounts(text) !== null) return null;
+  if (!text.trim() || rhythmCounts(text) !== null || isPickupOnly(text)) {
+    return null;
+  }
   const slowQuick = /[sq]/i.test(text);
   if (slowQuick && /\d/.test(text)) return "mixed";
   if (slowQuick && /[&a]/i.test(text)) return "slowQuickJoin";
@@ -272,16 +286,16 @@ export function rhythmElementText(
 
 /**
  * What can be added next, one element at a time, for composing a rhythm with taps: the next
- * beat, then `&` after a beat and `a` after a beat or its `&`, in that order. `[1]` while
- * nothing is written; nothing after slows and quicks or what is not a rhythm, since no next
- * beat follows from it.
+ * beat, then `&` after a beat and `a` after a beat or its `&`, in that order. While nothing is
+ * written, 1 and a pickup's `&` and `a`; nothing after slows and quicks or what is not a rhythm,
+ * since no next beat follows from it.
  */
 export function nextRhythmElements(written: string): RhythmElement["value"][] {
   const elements = written.trim() ? rhythmElements(written) : [];
   if (!elements) return [];
   const last = elements[elements.length - 1]?.value;
   const marks: RhythmMark[] =
-    last === undefined || last === "a" ? [] : last === "&" ? ["a"] : ["&", "a"];
+    last === "a" ? [] : last === "&" ? ["a"] : ["&", "a"];
   return [lastBeat(elements) + 1, ...marks];
 }
 

@@ -130,6 +130,11 @@ describe("subdivisions and holds (2026-11-02)", () => {
     ["1 2 (3)(&)(a)(4)", 4],
     ["1 2 3(a)", 3],
     ["1 2 3&4 (5)", 5],
+    // A pickup before beat 1 belongs to the bar before and adds no count.
+    ["&a1 2 3&4 5&6", 6],
+    ["a1 2", 2],
+    ["&1", 1],
+    ["(&)a1", 1],
   ])("reads %s as %i counts", (rhythm, counts) => {
     expect(rhythmCounts(rhythm)).toBe(counts);
     expect(rhythmMatchesCounts(rhythm, counts)).toBe(true);
@@ -152,6 +157,11 @@ describe("subdivisions and holds (2026-11-02)", () => {
     ["an e", "1 2 3e&a4"],
     ["a capital A", "1 2 3A4"],
     ["a chain with a gap", "1 2 3&a5"],
+    ["a pickup out of order", "a&1"],
+    ["a pickup spaced off beat 1", "&a 1"],
+    ["a pickup with no beat", "&a"],
+    ["a pickup after the first token", "1 &a2"],
+    ["a pickup onto beat 2", "&a2"],
   ])("refuses %s", (_, rhythm) => {
     expect(rhythmCounts(rhythm)).toBeNull();
   });
@@ -209,9 +219,30 @@ describe("subdivisions and holds (2026-11-02)", () => {
   });
 });
 
+describe("a pickup (2026-11-02)", () => {
+  it("is on its way to a rhythm, not wrong, until beat 1 comes", () => {
+    expect(rhythmCounts("&a")).toBeNull();
+    expect(rhythmProblem("&")).toBeNull();
+    expect(rhythmProblem("&a")).toBeNull();
+    expect(rhythmProblem("&a 1")).toBe("markSplit");
+  });
+
+  it("is composed and undone like any other element", () => {
+    expect(appendRhythmElement("", "&")).toBe("&");
+    expect(appendRhythmElement("&", "a")).toBe("&a");
+    expect(appendRhythmElement("&a", 1)).toBe("&a1");
+    expect(removeLastRhythmStep("&a1")).toBe("&a");
+    expect(lastRhythmStep("&")).toBe("&");
+    expect(normalizeRhythm("&a1  2")).toBe("&a1 2");
+  });
+});
+
 describe("composing a rhythm an element at a time", () => {
   it("offers the next beat, then & after a beat and a after a beat or its &", () => {
-    expect(nextRhythmElements("")).toEqual([1]);
+    expect(nextRhythmElements("")).toEqual([1, "&", "a"]);
+    expect(nextRhythmElements("&")).toEqual([1, "a"]);
+    expect(nextRhythmElements("&a")).toEqual([1]);
+    expect(nextRhythmElements("a")).toEqual([1]);
     expect(nextRhythmElements("1 2")).toEqual([3, "&", "a"]);
     expect(nextRhythmElements("1 2&")).toEqual([3, "a"]);
     expect(nextRhythmElements("1 2&a")).toEqual([3]);

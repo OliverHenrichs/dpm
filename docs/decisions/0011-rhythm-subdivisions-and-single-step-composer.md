@@ -18,7 +18,11 @@ so it could not build them either.
   Any single beat or subdivision can be held: `(4)`, `3(&)4`, `3&(4)`. Counts stay the whole
   beats spanned, so a rhythm still always matches its counts. Slows and quicks are unchanged.
 - No `e`, for now.
-- The composer's pills add one element each: the next beat, `&`, `a`, with a one-shot _Hold_.
+- A rhythm may open on a pickup before beat 1: `&1`, `a1`, `&a1` (Oliver, after trying it on the
+  phone). Those steps belong to the bar before, so they add no count.
+- The composer's pills add one element each: the next beat, `&`, `a`, with a one-shot pause
+  toggle. Oliver found "Hold" odd and suggested a pause sign alone, pinned to the right so it
+  stays put while the pills change.
 - Only the last token may end on a subdivision (`1 2 3&`); elsewhere a subdivision chains on to
   the next beat (`3&4`, never `3& 4`), so every rhythm has one spelling. This part was the
   building agent's choice, since Oliver asked only that there be one spelling.

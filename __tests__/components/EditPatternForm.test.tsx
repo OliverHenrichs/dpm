@@ -446,7 +446,7 @@ describe("EditPatternForm composing a rhythm", () => {
     for (const step of steps)
       fireEvent.press(screen.getByLabelText(`Add ${step}`));
   };
-  const hold = () => screen.getByRole("togglebutton", { name: "Hold" });
+  const hold = () => screen.getByRole("togglebutton", { name: "Pause" });
 
   it("builds a rhythm one element at a time", async () => {
     const onAccepted = renderNew();
@@ -466,8 +466,9 @@ describe("EditPatternForm composing a rhythm", () => {
   it("offers +1 on an empty field, then the next beat, & and a where they may follow", () => {
     renderNew();
     expect(screen.getByLabelText("Add 1")).toBeOnTheScreen();
-    expect(screen.queryByLabelText("Add &")).toBeNull();
-    expect(screen.queryByLabelText("Add a")).toBeNull();
+    // A pickup: & and a before beat 1.
+    expect(screen.getByLabelText("Add &")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Add a")).toBeOnTheScreen();
 
     tap("1", "2", "3");
     expect(screen.getByLabelText("Add 4")).toBeOnTheScreen();
@@ -491,11 +492,11 @@ describe("EditPatternForm composing a rhythm", () => {
     tap("1", "2", "3");
     fireEvent.press(hold());
     expect(hold().props.accessibilityState).toMatchObject({ checked: true });
-    tap("4, held");
+    tap("4 as a pause");
     expect(hold().props.accessibilityState).toMatchObject({ checked: false });
     tap("5", "&");
     fireEvent.press(hold());
-    tap("a, held", "6");
+    tap("a as a pause", "6");
 
     expect(rhythmInput().props.value).toBe("1 2 3 (4) 5&(a)6");
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("6");
@@ -507,7 +508,24 @@ describe("EditPatternForm composing a rhythm", () => {
     );
   });
 
-  it("turns Hold off again on a second tap", () => {
+  it("starts a rhythm on a pickup, without an error on the way", async () => {
+    const onAccepted = renderNew("Basic");
+
+    tap("&", "a");
+    expect(screen.queryByText(/Not a rhythm yet/)).toBeNull();
+    tap("1", "2");
+
+    expect(rhythmInput().props.value).toBe("&a1 2");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("2");
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(onAccepted).toHaveBeenCalledWith(
+        expect.objectContaining({ counts: 2, rhythm: "&a1 2" }),
+      ),
+    );
+  });
+
+  it("turns Pause off again on a second tap", () => {
     renderNew();
 
     fireEvent.press(hold());
@@ -531,7 +549,7 @@ describe("EditPatternForm composing a rhythm", () => {
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("3");
 
     fireEvent.press(hold());
-    tap("4, held");
+    tap("4 as a pause");
     fireEvent.press(screen.getByLabelText("Remove (4)"));
     expect(rhythmInput().props.value).toBe("1 2 3");
   });

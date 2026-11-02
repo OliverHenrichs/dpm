@@ -37,7 +37,7 @@ const PROBLEM_KEYS = {
 
 /**
  * The rhythm field with its bubbles: the dance's basic rhythms while empty, then one element at
- * a time (the next beat, `&`, `a`), a one-shot _Hold_ that adds the next one held, and an undo
+ * a time (the next beat, `&`, `a`), a one-shot _Pause_ that adds the next one held, and an undo
  * (src/pattern/rhythm/AGENTS.md). Slows and quicks are offered while nothing is written and
  * after slows and quicks, never beside beat numbers. Shared by a figure's rhythm and a
  * variant's own.
@@ -52,7 +52,7 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   // Like a phone's shift key: it holds the next element tapped, then turns itself off.
-  const [hold, setHold] = useState(false);
+  const [pause, setPause] = useState(false);
 
   const problem = rhythmProblem(value);
   const suggested = value.trim() ? [] : basicRhythms;
@@ -61,10 +61,10 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
   // The last element, for the undo chip beside the next ones: a mistap is fixed without the
   // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
   const lastStep = lastRhythmStep(value);
-  const held = hold && nextElements.length > 0;
+  const held = pause && nextElements.length > 0;
 
   const add = (text: string) => {
-    setHold(false);
+    setPause(false);
     onChange(text);
   };
 
@@ -95,50 +95,54 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
         </View>
       )}
       {(nextElements.length > 0 || slowQuick.length > 0 || lastStep) && (
-        <View style={styles.bubbles}>
-          {nextElements.map((element) => {
-            const step = rhythmElementText(element);
-            return (
+        <View style={styles.composeRow}>
+          <View style={[styles.bubbles, styles.steps]}>
+            {nextElements.map((element) => {
+              const step = rhythmElementText(element);
+              return (
+                <Chip
+                  key={step}
+                  label={rhythmElementText(element, held)}
+                  icon="plus"
+                  accessibilityLabel={t(
+                    held ? "rhythmAddPausedStep" : "rhythmAddStep",
+                    { step },
+                  )}
+                  onPress={() => add(appendRhythmElement(value, element, held))}
+                />
+              );
+            })}
+            {slowQuick.map((step) => (
               <Chip
                 key={step}
-                label={rhythmElementText(element, held)}
+                label={step}
                 icon="plus"
-                accessibilityLabel={t(
-                  held ? "rhythmAddHeldStep" : "rhythmAddStep",
-                  { step },
+                accessibilityLabel={t("rhythmAddStep", { step })}
+                accessibilityHint={t(
+                  step === "S" ? "rhythmSlowHint" : "rhythmQuickHint",
                 )}
-                onPress={() => add(appendRhythmElement(value, element, held))}
+                onPress={() => add(appendRhythmStep(value, step))}
               />
-            );
-          })}
+            ))}
+            {lastStep && (
+              <Chip
+                label={t("rhythmUndoStep")}
+                icon="backspace-outline"
+                accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
+                onPress={() => onChange(removeLastRhythmStep(value))}
+              />
+            )}
+          </View>
+          {/* Pinned to the right, so it stays put while the pills before it change. */}
           {nextElements.length > 0 && (
             <Chip
-              label={t("rhythmHold")}
+              label={t("rhythmPause")}
               icon="pause"
+              iconOnly
               toggle
               selected={held}
-              accessibilityHint={t("rhythmHoldHint")}
-              onPress={() => setHold(!held)}
-            />
-          )}
-          {slowQuick.map((step) => (
-            <Chip
-              key={step}
-              label={step}
-              icon="plus"
-              accessibilityLabel={t("rhythmAddStep", { step })}
-              accessibilityHint={t(
-                step === "S" ? "rhythmSlowHint" : "rhythmQuickHint",
-              )}
-              onPress={() => add(appendRhythmStep(value, step))}
-            />
-          ))}
-          {lastStep && (
-            <Chip
-              label={t("rhythmUndoStep")}
-              icon="backspace-outline"
-              accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
-              onPress={() => onChange(removeLastRhythmStep(value))}
+              accessibilityHint={t("rhythmPauseHint")}
+              onPress={() => setPause(!held)}
             />
           )}
         </View>
@@ -155,6 +159,13 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.danger,
     marginTop: theme.space.xxs,
   },
+  composeRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: theme.space.xs,
+    marginTop: theme.space.xs,
+  },
+  steps: { flex: 1, marginTop: 0 },
   bubbles: {
     flexDirection: "row",
     flexWrap: "wrap",
