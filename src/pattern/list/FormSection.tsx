@@ -9,6 +9,11 @@ type FormSectionProps = {
   summary: string;
   /** Whether it starts open; the pattern editor opens the sections that hold something. */
   initiallyOpen: boolean;
+  /**
+   * Why the section cannot be edited here ("Same for every variant"): it then shows only its
+   * summary, with this beside the title, and does not open.
+   */
+  lockedNote?: string;
   children: React.ReactNode;
 };
 
@@ -21,9 +26,23 @@ const FormSection: React.FC<FormSectionProps> = ({
   title,
   summary,
   initiallyOpen,
+  lockedNote,
   children,
 }) => {
   const [open, setOpen] = useState(initiallyOpen);
+  if (lockedNote) {
+    return (
+      <View style={styles.section}>
+        <ListRow
+          title={title}
+          meta={lockedNote}
+          subtitle={summary}
+          disabled
+          style={styles.header}
+        />
+      </View>
+    );
+  }
   return (
     <View style={styles.section}>
       <ListRow

@@ -319,3 +319,82 @@ describe("patternFromSuggestion", () => {
     });
   });
 });
+
+describe("a variant's overrides in a suggestion (#134)", () => {
+  const list = createTestPatternList({
+    modifiers: [
+      {
+        id: "telemark",
+        name: "with Telemark",
+        position: "amends",
+        universal: false,
+        videoRefs: [],
+      },
+    ],
+  });
+  const [push] = list.patternTypes;
+  const whip = (modifierRefs: unknown[]) => ({
+    name: "Basic Whip",
+    typeId: push.id,
+    counts: 8,
+    rhythm: "s q q s q q",
+    prerequisites: [],
+    description: "",
+    tags: [],
+    videoRefs: [],
+    modifierRefs,
+  });
+  const ref = (overrides: unknown) => ({
+    modifierId: "telemark",
+    videoRefs: [],
+    overrides,
+  });
+
+  it("sends and takes a variant's overrides, and slows and quicks in capitals", () => {
+    const overrides = {
+      counts: 6,
+      rhythm: "1 2 3&4&5 6",
+      level: "advanced",
+      description: "With a Telemark.",
+    };
+    const sent = suggestedPattern(whip([ref(overrides)]) as NewPattern);
+    expect(sent.modifierRefs[0]).toEqual(ref(overrides));
+
+    const taken = patternFromSuggestion(sent, list, []);
+    expect(taken?.modifierRefs[0]).toEqual(sent.modifierRefs[0]);
+    expect(patternFromSuggestion(whip([]), list, [])?.rhythm).toBe(
+      "S Q Q S Q Q",
+    );
+  });
+
+  it("sends no undefined, and no overrides when none are left", () => {
+    const sent = suggestedPattern(
+      whip([
+        ref({ counts: undefined, description: "x".repeat(3000) }),
+        { ...ref({ level: undefined }), modifierId: "other" },
+      ]) as NewPattern,
+    );
+    expect(sent.modifierRefs[0].overrides).toEqual({
+      description: "x".repeat(2000),
+    });
+    expect(sent.modifierRefs[1]).not.toHaveProperty("overrides");
+  });
+
+  it("drops a rhythm without counts it matches, bad counts, and a level the list lacks", () => {
+    const taken = patternFromSuggestion(
+      whip([ref({ counts: 8, rhythm: "S Q Q", level: "nope" })]),
+      list,
+      [],
+    );
+    expect(taken?.modifierRefs[0]).toEqual(ref({ counts: 8 }));
+    const bad = patternFromSuggestion(
+      whip([ref({ counts: -2, rhythm: "1 2" })]),
+      list,
+      [],
+    );
+    expect(bad?.modifierRefs[0]).toEqual({
+      modifierId: "telemark",
+      videoRefs: [],
+    });
+  });
+});

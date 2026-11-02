@@ -1,12 +1,22 @@
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
-import { rhythmMatchesCounts } from "@/src/pattern/rhythm/rhythm";
+import {
+  normalizeRhythm,
+  rhythmMatchesCounts,
+} from "@/src/pattern/rhythm/rhythm";
 import {
   IPattern,
   IPatternList,
   IPatternModifierRef,
+  IVariantOverrides,
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
 import { resolveLevelIds } from "@/src/pattern/types/PatternLevel";
+import {
+  OverrideField,
+  parseOverrides,
+  prunedVariantOverrides,
+  withOverrides,
+} from "@/src/pattern/types/VariantOverrides";
 import { asVideoRefs, isObject } from "@/src/pattern/suggestions/suggestions";
 
 /**
@@ -31,7 +41,26 @@ export type FigureChange =
   | { kind: "description"; from: string; to: string; now?: string }
   | { kind: "tag"; op: Op; tag: string }
   | { kind: "prerequisite"; op: Op; patternId: number }
-  | { kind: "modifier"; op: Op; modifierId: string; videos: IVideoReference[] }
+  | {
+      kind: "modifier";
+      op: Op;
+      modifierId: string;
+      videos: IVideoReference[];
+      /** An added variant's own values, when it has any. */
+      overrides?: IVariantOverrides;
+    }
+  /**
+   * One of a variant's own values (#134): its counts and rhythm, level or description. `from`,
+   * `to` and `now` hold only that field's keys; empty means the variant follows the figure.
+   */
+  | {
+      kind: "variant";
+      field: OverrideField;
+      modifierId: string;
+      from: IVariantOverrides;
+      to: IVariantOverrides;
+      now?: IVariantOverrides;
+    }
   | { kind: "video"; op: Op; modifierId?: string; video: IVideoReference }
   | {
       kind: "videoStart";
@@ -100,7 +129,9 @@ function snapshot(raw: unknown): Snapshot | null {
     ...(typeof raw.level === "string" &&
       raw.level !== "" && { level: raw.level }),
     ...(typeof raw.rhythm === "string" &&
-      rhythmMatchesCounts(raw.rhythm, counts) && { rhythm: raw.rhythm }),
+      rhythmMatchesCounts(raw.rhythm, counts) && {
+        rhythm: normalizeRhythm(raw.rhythm),
+      }),
     description: typeof raw.description === "string" ? raw.description : "",
     tags: strings(raw.tags),
     prerequisites: Array.isArray(raw.prerequisites)
@@ -122,10 +153,15 @@ function snapshot(raw: unknown): Snapshot | null {
               !seen.has(m.modifierId) &&
               !!seen.add(m.modifierId),
           )
-          .map((m) => ({
-            modifierId: m.modifierId as string,
-            videoRefs: uniqueByLink(asVideoRefs(m.videoRefs)),
-          }))
+          .map((m) => {
+            // Levels are checked against the list in `figureChanges`, as the figure's is.
+            const { overrides } = parseOverrides(m.overrides);
+            return {
+              modifierId: m.modifierId as string,
+              videoRefs: uniqueByLink(asVideoRefs(m.videoRefs)),
+              ...(overrides && { overrides }),
+            };
+          })
       : [],
   };
 }
@@ -144,6 +180,34 @@ function byLink(refs: IVideoReference[] | undefined) {
 
 const sameCounts = (a: CountsAndRhythm, b: CountsAndRhythm) =>
   a.counts === b.counts && (a.rhythm ?? "") === (b.rhythm ?? "");
+
+/** The keys of one overridable field: counts and rhythm go together. */
+const FIELD_KEYS: Record<OverrideField, (keyof IVariantOverrides)[]> = {
+  timing: ["counts", "rhythm"],
+  level: ["level"],
+  description: ["description"],
+};
+const OVERRIDE_FIELDS: OverrideField[] = ["timing", "level", "description"];
+
+/** A variant's own value for `field` alone; empty when it follows the figure. */
+function fieldOf(
+  ref: IPatternModifierRef | undefined,
+  field: OverrideField,
+): IVariantOverrides {
+  const own = ref?.overrides ?? {};
+  if (field === "timing" && own.counts === undefined) return {};
+  return Object.fromEntries(
+    FIELD_KEYS[field]
+      .filter((key) => own[key] !== undefined)
+      .map((key) => [key, own[key]]),
+  );
+}
+
+const sameField = (a: IVariantOverrides, b: IVariantOverrides) =>
+  a.counts === b.counts &&
+  (a.rhythm ?? "") === (b.rhythm ?? "") &&
+  a.level === b.level &&
+  a.description === b.description;
 
 /**
  * The lines of a suggested change to `current`, in the order the review shows them. A change
@@ -300,15 +364,39 @@ export function figureChanges(
     if (!attachable.has(modifierId)) continue;
     const had = baseMods.get(modifierId);
     const has = currentMods.get(modifierId);
+    // A level the list does not have (any more) is left out, as on the figure.
+    const known = (o: IVariantOverrides) =>
+      o.level === undefined || levelIds.includes(o.level);
     if (!had && !has) {
+      const { level, ...rest } = ref.overrides ?? {};
+      const overrides: IVariantOverrides = {
+        ...rest,
+        ...(level !== undefined && levelIds.includes(level) && { level }),
+      };
       lines.push({
         id: `modifier:add:${modifierId}`,
         kind: "modifier",
         op: "add",
         modifierId,
         videos: ref.videoRefs,
+        ...(Object.keys(overrides).length > 0 && { overrides }),
       });
     } else if (has) {
+      for (const field of OVERRIDE_FIELDS) {
+        const from = fieldOf(had, field);
+        const to = fieldOf(ref, field);
+        const now = fieldOf(has, field);
+        if (!known(to)) continue;
+        scalar(from, to, now, sameField, (changedSince) => ({
+          id: `variant:${field}:${modifierId}`,
+          kind: "variant",
+          field,
+          modifierId,
+          from,
+          to,
+          ...(changedSince && { changedSince, now }),
+        }));
+      }
       videoLines(
         had?.videoRefs ?? [],
         ref.videoRefs,
@@ -461,10 +549,31 @@ export function applyFigureChanges(
         ) {
           figure.modifierRefs = [
             ...figure.modifierRefs,
-            { modifierId: line.modifierId, videoRefs: line.videos },
+            {
+              modifierId: line.modifierId,
+              videoRefs: line.videos,
+              ...(line.overrides && { overrides: line.overrides }),
+            },
           ];
         }
         break;
+      case "variant": {
+        const keys = FIELD_KEYS[line.field];
+        figure.modifierRefs = figure.modifierRefs.map((m) => {
+          if (m.modifierId !== line.modifierId) return m;
+          const kept = Object.fromEntries(
+            Object.entries(m.overrides ?? {}).filter(
+              ([key]) => !keys.includes(key as keyof IVariantOverrides),
+            ),
+          );
+          const next = { ...kept, ...line.to };
+          return withOverrides(
+            m,
+            Object.keys(next).length > 0 ? next : undefined,
+          );
+        });
+        break;
+      }
       case "video":
         withVideos(line.modifierId, (refs) =>
           line.op === "add"
@@ -489,5 +598,6 @@ export function applyFigureChanges(
         break;
     }
   }
-  return figure;
+  // An override the figure now matches (its own value changed too) follows the figure again.
+  return prunedVariantOverrides(figure);
 }

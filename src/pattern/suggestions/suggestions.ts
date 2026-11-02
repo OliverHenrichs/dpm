@@ -1,4 +1,8 @@
-import { rhythmMatchesCounts } from "@/src/pattern/rhythm/rhythm";
+import {
+  normalizeRhythm,
+  rhythmMatchesCounts,
+} from "@/src/pattern/rhythm/rhythm";
+import { parseOverrides } from "@/src/pattern/types/VariantOverrides";
 import {
   IPattern,
   IPatternList,
@@ -111,10 +115,15 @@ export function suggestedPattern(pattern: NewPattern): NewPattern {
     videoRefs: onlineVideos(pattern.videoRefs).slice(0, MAX_VIDEOS),
     modifierRefs: (pattern.modifierRefs ?? [])
       .slice(0, MAX_MODIFIER_REFS)
-      .map(({ modifierId, videoRefs }) => ({
-        modifierId,
-        videoRefs: onlineVideos(videoRefs).slice(0, MAX_VIDEOS),
-      })),
+      .map(({ modifierId, videoRefs, overrides: own }) => {
+        // Within the rules' bounds and without `undefined`, like the figure's own fields.
+        const { overrides } = parseOverrides(own);
+        return {
+          modifierId,
+          videoRefs: onlineVideos(videoRefs).slice(0, MAX_VIDEOS),
+          ...(overrides && { overrides }),
+        };
+      }),
   };
 }
 
@@ -208,6 +217,8 @@ export function patternFromSuggestion(
     (list.modifiers ?? []).filter((m) => !m.universal).map((m) => m.id),
   );
   const seenModifiers = new Set<string>();
+  // Any of the list's own levels; one it does not have (any more) is dropped.
+  const levels = resolveLevelIds(list.levels);
   const modifierRefs: IPatternModifierRef[] = Array.isArray(raw.modifierRefs)
     ? raw.modifierRefs
         .filter(
@@ -218,20 +229,23 @@ export function patternFromSuggestion(
             !seenModifiers.has(m.modifierId) &&
             !!seenModifiers.add(m.modifierId),
         )
-        .map((m) => ({
-          modifierId: m.modifierId as string,
-          videoRefs: asVideoRefs(m.videoRefs),
-        }))
+        .map((m) => {
+          // A variant's own values (#134), as an import keeps them; a level of the list's.
+          const { overrides } = parseOverrides(m.overrides, levels);
+          return {
+            modifierId: m.modifierId as string,
+            videoRefs: asVideoRefs(m.videoRefs),
+            ...(overrides && { overrides }),
+          };
+        })
     : [];
-  // Any of the list's own levels; one it does not have (any more) is dropped.
-  const levels = resolveLevelIds(list.levels);
   const level =
     typeof raw.level === "string" && levels.includes(raw.level)
       ? raw.level
       : undefined;
   const rhythm =
     typeof raw.rhythm === "string" && rhythmMatchesCounts(raw.rhythm, counts)
-      ? raw.rhythm
+      ? normalizeRhythm(raw.rhythm)
       : undefined;
 
   return {

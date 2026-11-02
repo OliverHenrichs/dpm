@@ -22,6 +22,7 @@ import {
 import VideoCarousel from "@/src/common/components/VideoCarousel";
 import ModifierPillStrip from "@/src/pattern/list/ModifierPillStrip";
 import TranscriptSheet from "@/src/transcribe/components/TranscriptSheet";
+import { effectiveVariant } from "@/src/pattern/types/VariantOverrides";
 
 type PatternDetailsProps = {
   selectedPattern: IPattern;
@@ -47,8 +48,6 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
 }) => {
   const { t } = useTranslation();
   const levels = useActiveListLevels();
-  // A level the list does not have shows as none.
-  const selectedLevel = levelName(levels, selectedPattern.level, t);
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
     null,
   );
@@ -79,6 +78,20 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
     return ref?.videoRefs ?? [];
   })();
 
+  // The picked variant's own counts, rhythm, level and description where it has them (#134),
+  // else the figure's. Only an attached modifier's variant has its own.
+  const selectedModifier = modifiers.find((m) => m.id === selectedModifierId);
+  const shown = effectiveVariant(
+    selectedPattern,
+    selectedModifier && !selectedModifier.universal
+      ? (selectedPattern.modifierRefs ?? []).find(
+          (r) => r.modifierId === selectedModifierId,
+        )
+      : undefined,
+  );
+  // A level the list does not have shows as none.
+  const selectedLevel = levelName(levels, shown.level, t);
+
   // When any variant has videos, the video slot keeps its height for one without: the content
   // below no longer jumps up and back as the variant changes. A pattern with no videos at all
   // spends no room on it.
@@ -101,10 +114,8 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
     <View
       style={[styles.detailsContainer, !showTopSeparator && styles.unseparated]}
     >
-      {!!selectedPattern.description && (
-        <Text style={styles.patternDetailsDesc}>
-          {selectedPattern.description}
-        </Text>
+      {!!shown.description && (
+        <Text style={styles.patternDetailsDesc}>{shown.description}</Text>
       )}
       {/* Modifier pill strip + contextual video carousel */}
       <ModifierPillStrip
@@ -144,9 +155,7 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
       <View style={styles.patternDetailsRow}>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("counts")}:</Text>
-          <Text style={styles.patternDetailsValue}>
-            {selectedPattern.counts}
-          </Text>
+          <Text style={styles.patternDetailsValue}>{shown.counts}</Text>
         </View>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("type")}:</Text>
@@ -161,13 +170,11 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
         )}
       </View>
       {/* A row of its own: a long rhythm wraps, and would push the labels beside it out of line. */}
-      {!!selectedPattern.rhythm && (
+      {!!shown.rhythm && (
         <View style={styles.patternDetailsRow}>
           <View style={styles.patternDetailsCol}>
             <Text style={styles.label}>{t("rhythm")}:</Text>
-            <Text style={styles.patternDetailsValue}>
-              {selectedPattern.rhythm}
-            </Text>
+            <Text style={styles.patternDetailsValue}>{shown.rhythm}</Text>
           </View>
         </View>
       )}
