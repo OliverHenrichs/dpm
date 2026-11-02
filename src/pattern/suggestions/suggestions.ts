@@ -1,8 +1,8 @@
 import {
   normalizeRhythm,
   rhythmMatchesCounts,
-  Timing,
 } from "@/src/pattern/rhythm/rhythm";
+import { parseOverrides } from "@/src/pattern/types/VariantOverrides";
 import {
   IPattern,
   IPatternList,
@@ -115,32 +115,16 @@ export function suggestedPattern(pattern: NewPattern): NewPattern {
     videoRefs: onlineVideos(pattern.videoRefs).slice(0, MAX_VIDEOS),
     modifierRefs: (pattern.modifierRefs ?? [])
       .slice(0, MAX_MODIFIER_REFS)
-      .map(({ modifierId, videoRefs, counts, rhythm }) => ({
-        modifierId,
-        videoRefs: onlineVideos(videoRefs).slice(0, MAX_VIDEOS),
-        ...(counts !== undefined && { counts }),
-        ...(rhythm && rhythm.length <= MAX_RHYTHM && { rhythm }),
-      })),
+      .map(({ modifierId, videoRefs, overrides: own }) => {
+        // Within the rules' bounds and without `undefined`, like the figure's own fields.
+        const { overrides } = parseOverrides(own);
+        return {
+          modifierId,
+          videoRefs: onlineVideos(videoRefs).slice(0, MAX_VIDEOS),
+          ...(overrides && { overrides }),
+        };
+      }),
   };
-}
-
-/**
- * A variant's own counts and rhythm from another phone (#134): counts a positive whole number,
- * a rhythm only with counts it matches. Anything else is left out, and the variant follows
- * its figure.
- */
-export function asVariantTiming(raw: Record<string, unknown>): Timing {
-  const counts =
-    typeof raw.counts === "number" &&
-    Number.isInteger(raw.counts) &&
-    raw.counts > 0
-      ? raw.counts
-      : undefined;
-  if (counts === undefined) return {};
-  return typeof raw.rhythm === "string" &&
-    rhythmMatchesCounts(raw.rhythm, counts)
-    ? { counts, rhythm: normalizeRhythm(raw.rhythm) }
-    : { counts };
 }
 
 export const isObject = (v: unknown): v is Record<string, unknown> =>
@@ -233,6 +217,8 @@ export function patternFromSuggestion(
     (list.modifiers ?? []).filter((m) => !m.universal).map((m) => m.id),
   );
   const seenModifiers = new Set<string>();
+  // Any of the list's own levels; one it does not have (any more) is dropped.
+  const levels = resolveLevelIds(list.levels);
   const modifierRefs: IPatternModifierRef[] = Array.isArray(raw.modifierRefs)
     ? raw.modifierRefs
         .filter(
@@ -243,14 +229,16 @@ export function patternFromSuggestion(
             !seenModifiers.has(m.modifierId) &&
             !!seenModifiers.add(m.modifierId),
         )
-        .map((m) => ({
-          modifierId: m.modifierId as string,
-          videoRefs: asVideoRefs(m.videoRefs),
-          ...asVariantTiming(m),
-        }))
+        .map((m) => {
+          // A variant's own values (#134), as an import keeps them; a level of the list's.
+          const { overrides } = parseOverrides(m.overrides, levels);
+          return {
+            modifierId: m.modifierId as string,
+            videoRefs: asVideoRefs(m.videoRefs),
+            ...(overrides && { overrides }),
+          };
+        })
     : [];
-  // Any of the list's own levels; one it does not have (any more) is dropped.
-  const levels = resolveLevelIds(list.levels);
   const level =
     typeof raw.level === "string" && levels.includes(raw.level)
       ? raw.level

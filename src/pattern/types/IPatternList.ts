@@ -32,13 +32,23 @@ export interface IPatternModifierRef {
   modifierId: string; // References IModifier.id
   videoRefs: IVideoReference[];
   /**
-   * The variant's own counts, when it is danced to other counts than its figure (#134; the
-   * tester's example is a whip with a Telemark). Absent means it follows its figure's counts and
-   * rhythm. Only an attached (non-universal) modifier's variant has its own.
+   * What this variant has of its own in place of its figure's (`VariantOverrides.ts`). Only the
+   * fields that differ; absent when none do. Only an attached (non-universal) modifier's
+   * variant has any.
    */
+  overrides?: IVariantOverrides;
+}
+
+/**
+ * A variant's own values (#134): counts and rhythm (a rhythm only with counts it matches; with
+ * counts, the variant's timing is its own, rhythm or none), level (a level id) and description.
+ * A field left out follows the figure. Never holds `undefined`, which Firestore refuses.
+ */
+export interface IVariantOverrides {
   counts?: number;
-  /** The variant's own rhythm; only with `counts`, and always matches them (src/pattern/rhythm/). */
   rhythm?: string;
+  level?: string;
+  description?: string;
 }
 
 /** Type for creating a new modifier (without id) */

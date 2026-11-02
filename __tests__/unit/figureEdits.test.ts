@@ -4,7 +4,11 @@ import {
   figureChanges,
 } from "@/src/pattern/suggestions/figureEdits";
 import { suggestedPattern } from "@/src/pattern/suggestions/suggestions";
-import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
+import {
+  IPattern,
+  IVariantOverrides,
+  IVideoReference,
+} from "@/src/pattern/types/IPatternList";
 import {
   createTestPattern,
   createTestPatternList,
@@ -341,25 +345,34 @@ describe("applyFigureChanges", () => {
   });
 });
 
-describe("a variant's own counts and rhythm (#134)", () => {
-  const attached = (timing: { counts?: number; rhythm?: string } = {}) => ({
+describe("a variant's overrides (#134)", () => {
+  const attached = (overrides?: IVariantOverrides) => ({
     ...sugarTuck,
-    modifierRefs: [{ modifierId: "inside-turn", videoRefs: [], ...timing }],
+    modifierRefs: [
+      {
+        modifierId: "inside-turn",
+        videoRefs: [],
+        ...(overrides && { overrides }),
+      },
+    ],
   });
-
-  it("suggests a variant's counts and rhythm, and applies them", () => {
-    const current = attached();
-    const lines = figureChanges(
-      suggestedPattern(current),
-      suggestedPattern(attached({ counts: 4, rhythm: "S Q Q" })),
+  const suggest = (current: IPattern, next: IPattern, seen = current) =>
+    figureChanges(
+      suggestedPattern(seen),
+      suggestedPattern(next),
       current,
       list,
       patterns,
     );
+
+  it("suggests a variant's counts and rhythm, and applies them", () => {
+    const current = attached();
+    const lines = suggest(current, attached({ counts: 4, rhythm: "S Q Q" }));
     expect(lines).toEqual([
       {
-        id: "variantCounts:inside-turn",
-        kind: "variantCounts",
+        id: "variant:timing:inside-turn",
+        kind: "variant",
+        field: "timing",
         modifierId: "inside-turn",
         from: {},
         to: { counts: 4, rhythm: "S Q Q" },
@@ -368,59 +381,68 @@ describe("a variant's own counts and rhythm (#134)", () => {
     expect(applyFigureChanges(current, lines).modifierRefs[0]).toEqual({
       modifierId: "inside-turn",
       videoRefs: [],
-      counts: 4,
-      rhythm: "S Q Q",
+      overrides: { counts: 4, rhythm: "S Q Q" },
     });
+  });
+
+  it("gives each overridden field a line of its own, applied alone", () => {
+    const current = attached({ counts: 4 });
+    const lines = suggest(
+      current,
+      attached({
+        counts: 4,
+        level: "advanced",
+        description: "Turned on 3&4.",
+      }),
+    );
+    expect(ids(lines)).toEqual([
+      "variant:level:inside-turn",
+      "variant:description:inside-turn",
+    ]);
+    // Only the level is picked: the variant keeps its counts and gets no description.
+    expect(
+      applyFigureChanges(current, [lines[0]]).modifierRefs[0].overrides,
+    ).toEqual({ counts: 4, level: "advanced" });
+  });
+
+  it("leaves out a level the list does not have", () => {
+    expect(suggest(attached(), attached({ level: "nope" }))).toEqual([]);
   });
 
   it("suggests taking them off again, and marks one the list owner changed since", () => {
     const seen = attached({ counts: 4, rhythm: "S Q Q" });
-    const back = figureChanges(
-      suggestedPattern(seen),
-      suggestedPattern(attached()),
-      seen,
-      list,
-      patterns,
-    );
+    const back = suggest(seen, attached());
     expect(applyFigureChanges(seen, back).modifierRefs[0]).toEqual({
       modifierId: "inside-turn",
       videoRefs: [],
     });
 
-    const [clash] = figureChanges(
-      suggestedPattern(seen),
-      suggestedPattern(attached()),
-      attached({ counts: 6 }),
-      list,
-      patterns,
-    );
-    expect(clash).toMatchObject({ changedSince: true, now: { counts: 6 } });
+    const [clash] = suggest(attached({ counts: 8 }), attached(), seen);
+    expect(clash).toMatchObject({ changedSince: true, now: { counts: 8 } });
   });
 
-  it("adds a variation with its own counts and rhythm", () => {
+  it("drops an override the figure now matches", () => {
+    const current = attached({ level: "advanced" });
+    const lines = changes({ level: "advanced" }, current, base);
+    expect(
+      applyFigureChanges(current, lines).modifierRefs[0],
+    ).not.toHaveProperty("overrides");
+  });
+
+  it("adds a variation with its own values", () => {
+    const overrides = {
+      counts: 6,
+      rhythm: "1 2 3&4&5 6",
+      description: "Turned on 3&4&5.",
+    };
     const lines = changes({
-      modifierRefs: [
-        {
-          modifierId: "inside-turn",
-          videoRefs: [],
-          counts: 6,
-          rhythm: "1 2 3&4&5 6",
-        },
-      ],
+      modifierRefs: [{ modifierId: "inside-turn", videoRefs: [], overrides }],
     });
     expect(lines).toEqual([
-      expect.objectContaining({
-        id: "modifier:add:inside-turn",
-        timing: { counts: 6, rhythm: "1 2 3&4&5 6" },
-      }),
+      expect.objectContaining({ id: "modifier:add:inside-turn", overrides }),
     ]);
     expect(applyFigureChanges(sugarTuck, lines).modifierRefs).toEqual([
-      {
-        modifierId: "inside-turn",
-        videoRefs: [],
-        counts: 6,
-        rhythm: "1 2 3&4&5 6",
-      },
+      { modifierId: "inside-turn", videoRefs: [], overrides },
     ]);
   });
 });

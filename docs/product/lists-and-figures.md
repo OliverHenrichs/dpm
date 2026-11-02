@@ -96,13 +96,19 @@ works offline and stays on the phone unless the user shares it.
   Modifiers tab.
 - A **non-universal** modifier is attached to single figures. Each attachment is a _variant_ with
   its own videos of that figure danced with that modifier.
-- A variant of an attached modifier can have its **own counts and rhythm** (a whip with a
-  Telemark may be danced to another rhythm than the plain whip). They are set in the figure form:
-  pick the variant, then _Counts and rhythm of this variant_. They follow the same matching rule
-  as the figure's. Empty counts mean the variant follows the figure. Universal modifiers have
-  none. A figure with more than one timing (such as a Slingshot) keeps each timing as a variant.
-- In the details, picking a variant shows its videos and description, and its own counts and
-  rhythm in place of the figure's when it has them. A modifier's own details
+- A variant of an attached modifier can have its **own counts, rhythm, level and description**
+  (a whip with a Telemark may be danced to another rhythm than the plain whip). In the figure
+  form, picking the variant in the variant strip switches those fields to it. Each shows the
+  figure's value until it is changed; a changed field is marked _Own value_ with a _Reset_ that
+  brings back the figure's. Counts and rhythm are one: they follow the same matching rule as the
+  figure's, and a reset of either brings back both. A field changed back to the figure's value
+  follows the figure again. Picking _Base_ edits the figure.
+- Name, type, prerequisites and tags are the same for every variant: while a variant is picked
+  they show the figure's, read-only, marked _Same for every variant_. Universal modifiers have
+  no values of their own, and picking one leaves the form on the figure. A figure with more than
+  one timing (such as a Slingshot) keeps each timing as a variant.
+- In the details, picking a variant shows its videos, and its counts, rhythm, level and
+  description: its own where it has them, else the figure's. A modifier's own details
   list every figure it's attached to. Deleting a modifier detaches it everywhere.
 - A variation of a figure is a modifier on it, not a new figure.
 
@@ -123,9 +129,10 @@ works offline and stays on the phone unless the user shares it.
 | Deleting a figure leaves no dangling prerequisite anywhere                | `__tests__/unit/PrerequisiteIntegrity.test.ts`, `PatternListManager.test.tsx` |
 | Prerequisites can never form a loop through the editor                    | `__tests__/components/EditPatternForm.test.tsx`                               |
 | A stored rhythm always matches its counts                                 | `__tests__/unit/rhythm.test.ts`                                               |
-| A variant's rhythm matches its own counts; no counts means the figure's   | `__tests__/unit/rhythm.test.ts`, `VariantTiming.test.tsx`                     |
-| Import and suggestions keep a variant's timing only when it matches       | `__tests__/unit/ExportImportRoundTrip.test.ts`, `suggestions.test.ts`         |
-| S/Q counts in quicks, never mixes with numbers, takes no `&`              | `__tests__/unit/rhythm.test.ts`, `VariantTiming.test.tsx`                     |
+| A variant keeps only the values that differ from its figure's             | `__tests__/unit/variantOverrides.test.ts`, `VariantOverrides.test.tsx`        |
+| A variant's rhythm matches its own counts; no counts means the figure's   | `__tests__/unit/variantOverrides.test.ts`, `VariantOverrides.test.tsx`        |
+| Import and suggestions keep a variant's values only when they are valid   | `__tests__/unit/ExportImportRoundTrip.test.ts`, `suggestions.test.ts`         |
+| S/Q counts in quicks, never mixes with numbers, takes no `&`              | `__tests__/unit/rhythm.test.ts`, `VariantOverrides.test.tsx`                  |
 | Every mutation is refused on a read-only list                             | `__tests__/components/usePatternCrud.test.ts`                                 |
 | A refused save keeps the form as the user left it                         | `__tests__/components/PatternListManager.test.tsx`                            |
 | Removing a type moves its figures first                                   | `__tests__/unit/typeMoves.test.ts`                                            |

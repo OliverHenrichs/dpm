@@ -161,7 +161,7 @@ Version history (what each minor added):
   left drops the key, which means the automatic order.
 - **3.11** `IPatternList.levels` (`{ id, name }`). Kept: unique ids with a non-blank name, at
   most `MAX_LEVELS`; nothing left drops the key.
-- **3.12** `IPatternModifierRef.counts`/`rhythm`, a variant's own; bad counts dropped quietly, a
+- **3.12** `IPatternModifierRef.overrides` (`parseOverrides`); bad fields dropped quietly, a
   rhythm as on a figure. Rhythms may be `S Q Q`.
 
 ## Shared list context

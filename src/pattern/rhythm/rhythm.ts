@@ -87,15 +87,15 @@ export function rhythmProblem(text: string): RhythmProblem | null {
   return "invalid";
 }
 
-/** Counts and a rhythm that go together: a figure's, or a variant's own (`IPatternModifierRef`). */
+/** Counts and a rhythm that go together: a figure's, or a variant's own (`IVariantOverrides`). */
 export interface Timing {
   counts?: number;
   rhythm?: string;
 }
 
 /**
- * `timing` with new counts (none: a variant that follows its figure), dropping a rhythm that
- * no longer fits. Keys go rather than hold `undefined`, which Firestore refuses.
+ * `timing` with new counts (or none), dropping a rhythm that no longer fits. Keys go rather
+ * than hold `undefined`, which Firestore refuses.
  */
 export function withTimingCounts<T extends Timing>(
   timing: T,
@@ -121,26 +121,6 @@ export function withTimingRhythm<T extends Timing>(timing: T, text: string): T {
   return (
     counts === null ? rest : { ...rest, counts, rhythm: normalizeRhythm(text) }
   ) as T;
-}
-
-/**
- * What a variant is danced to: its own counts and rhythm when it has counts, else its figure's.
- * Only an attached (non-universal) modifier's variant has its own.
- */
-export function variantTiming(
-  figure: { counts: number; rhythm?: string },
-  variant: Timing | undefined,
-): { counts: number; rhythm?: string } {
-  if (variant?.counts === undefined) {
-    return {
-      counts: figure.counts,
-      ...(figure.rhythm && { rhythm: figure.rhythm }),
-    };
-  }
-  return {
-    counts: variant.counts,
-    ...(variant.rhythm && { rhythm: variant.rhythm }),
-  };
 }
 
 /**

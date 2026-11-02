@@ -13,7 +13,7 @@ import {
   waitFor,
 } from "@/utils/renderWithProviders";
 
-// Issues #134 (a variant's own counts and rhythm) and #135 (slows and quicks).
+// Issues #134 (a variant's own values, edited in the figure form) and #135 (slows and quicks).
 
 const TYPE = createTestPatternType({ slug: "whip" });
 const TELEMARK: IModifier = {
@@ -67,56 +67,98 @@ const save = async (onAccepted: jest.Mock) => {
   return onAccepted.mock.calls[0][0] as IPattern;
 };
 
-describe("a variant's own counts and rhythm, in the figure form", () => {
-  it("sets the variant's counts from its rhythm, and leaves the figure's alone", async () => {
-    const onAccepted = renderForm(whip());
+describe("the figure form switched to a variant by the variant strip", () => {
+  const counts = () => screen.getByLabelText("Counts");
+  const rhythm = () => screen.getByPlaceholderText("e.g. 1 2 3&4 5&6");
+  const description = () => screen.getByPlaceholderText("Description");
+  const ownMarks = () => screen.queryAllByText("Own value");
+
+  it("shows the figure's values, inherited, until one is changed", () => {
+    renderForm(whip({ description: "Pulls the follower through." }));
+    openSection("Rhythm");
+    openSection("Description");
 
     fireEvent.press(screen.getByLabelText("with Telemark"));
-    openSection("Counts and rhythm of this variant");
-    fireEvent.changeText(
-      screen.getByLabelText("Rhythm of this variant"),
-      "1 2 3&4&5 6",
-    );
 
-    expect(screen.getByLabelText("Counts of this variant").props.value).toBe(
-      "6",
-    );
+    expect(counts().props.value).toBe("8");
+    expect(rhythm().props.value).toBe("1 2 3&4 5 6 7&8");
+    expect(description().props.value).toBe("Pulls the follower through.");
+    expect(ownMarks()).toHaveLength(0);
+    expect(screen.getByText(/You're editing this variant/)).toBeOnTheScreen();
+  });
+
+  it("keeps an edit as the variant's own, marked, and leaves the figure alone", async () => {
+    const onAccepted = renderForm(whip());
+    openSection("Rhythm");
+
+    fireEvent.press(screen.getByLabelText("with Telemark"));
+    fireEvent.changeText(rhythm(), "1 2 3&4&5 6");
+
+    expect(counts().props.value).toBe("6");
+    // The counts and the rhythm both differ from the figure's.
+    expect(ownMarks()).toHaveLength(2);
+
+    fireEvent.press(screen.getByText("Base"));
+    expect(counts().props.value).toBe("8");
+    expect(rhythm().props.value).toBe("1 2 3&4 5 6 7&8");
+    expect(ownMarks()).toHaveLength(0);
+
     const saved = await save(onAccepted);
     expect(saved).toMatchObject({ counts: 8, rhythm: "1 2 3&4 5 6 7&8" });
     expect(saved.modifierRefs[0]).toEqual({
       modifierId: TELEMARK.id,
       videoRefs: [],
-      counts: 6,
-      rhythm: "1 2 3&4&5 6",
+      overrides: { counts: 6, rhythm: "1 2 3&4&5 6" },
     });
   });
 
-  it("drops the variant's rhythm when its counts change, and follows the figure with none", async () => {
+  it("drops a variant's rhythm its new counts don't fit", async () => {
+    const onAccepted = renderForm(whip());
+    openSection("Rhythm");
+
+    fireEvent.press(screen.getByLabelText("with Telemark"));
+    fireEvent.changeText(counts(), "");
+    // Nothing yet: the field waits for counts, and the variant still follows the figure.
+    expect(counts().props.value).toBe("");
+    expect(ownMarks()).toHaveLength(0);
+    fireEvent.changeText(counts(), "6");
+
+    expect(rhythm().props.value).toBe("");
+    expect((await save(onAccepted)).modifierRefs[0].overrides).toEqual({
+      counts: 6,
+    });
+  });
+
+  it("resets a field to the figure's value, removing the override", async () => {
     const onAccepted = renderForm(
       whip({
+        description: "Pulls the follower through.",
         modifierRefs: [
           {
             modifierId: TELEMARK.id,
             videoRefs: [],
-            counts: 6,
-            rhythm: "1 2 3&4&5 6",
+            overrides: {
+              counts: 6,
+              rhythm: "1 2 3&4&5 6",
+              description: "With a Telemark on 3&4&5.",
+            },
           },
         ],
       }),
     );
+    openSection("Description");
 
     fireEvent.press(screen.getByLabelText("with Telemark"));
-    // A variant with counts of its own opens on them.
-    const counts = screen.getByLabelText("Counts of this variant");
-    expect(screen.getByLabelText("Rhythm of this variant").props.value).toBe(
-      "1 2 3&4&5 6",
-    );
+    expect(description().props.value).toBe("With a Telemark on 3&4&5.");
 
-    fireEvent.changeText(counts, "8");
-    expect(screen.getByLabelText("Rhythm of this variant").props.value).toBe(
-      "",
+    fireEvent.press(
+      // Marked on the counts and on the rhythm; either resets both.
+      screen.getAllByLabelText("Use the figure's counts and rhythm")[1],
     );
-    fireEvent.changeText(screen.getByLabelText("Counts of this variant"), "");
+    expect(counts().props.value).toBe("8");
+    fireEvent.press(screen.getByLabelText("Use the figure's description"));
+    expect(description().props.value).toBe("Pulls the follower through.");
+    expect(ownMarks()).toHaveLength(0);
 
     expect((await save(onAccepted)).modifierRefs[0]).toEqual({
       modifierId: TELEMARK.id,
@@ -124,16 +166,47 @@ describe("a variant's own counts and rhythm, in the figure form", () => {
     });
   });
 
-  it("offers no counts or rhythm for a universal modifier", () => {
-    renderForm(whip());
+  it("gives a variant its own level, and typing the figure's value back follows the figure", async () => {
+    const onAccepted = renderForm(whip({ description: "Plain." }));
+    openSection("Type and level");
+    openSection("Description");
+
+    fireEvent.press(screen.getByLabelText("with Telemark"));
+    fireEvent.press(screen.getByLabelText("Advanced"));
+    expect(screen.getByLabelText("Use the figure's level")).toBeOnTheScreen();
+    fireEvent.changeText(description(), "Plain!");
+    fireEvent.changeText(description(), "Plain.");
+
+    const saved = await save(onAccepted);
+    expect(saved.level).toBe("beginner");
+    expect(saved.modifierRefs[0].overrides).toEqual({ level: "advanced" });
+  });
+
+  it("shows name, type, prerequisites and tags as the figure's, read-only", () => {
+    renderForm(whip({ tags: ["classic"] }));
+    openSection("Type and level");
+
+    fireEvent.press(screen.getByLabelText("with Telemark"));
+
+    expect(screen.getByPlaceholderText("Figure Name").props.editable).toBe(
+      false,
+    );
+    expect(screen.getAllByText("Same for every variant").length).toBe(4);
+    // Locked: the section shows what the figure has, and does not open.
+    expect(screen.queryByRole("button", { name: /^Tags/ })).toBeNull();
+    expect(screen.getByText("classic")).toBeOnTheScreen();
+  });
+
+  it("leaves the form on the figure for a universal modifier", async () => {
+    const onAccepted = renderForm(whip());
 
     fireEvent.press(screen.getByLabelText("Hesitation"));
+    fireEvent.changeText(counts(), "6");
 
-    expect(
-      screen.queryByRole("button", {
-        name: "Counts and rhythm of this variant",
-      }),
-    ).toBeNull();
+    expect(screen.queryByText("Same for every variant")).toBeNull();
+    const saved = await save(onAccepted);
+    expect(saved.counts).toBe(6);
+    expect(saved.modifierRefs[0]).not.toHaveProperty("overrides");
   });
 });
 
@@ -149,36 +222,59 @@ describe("the figure details with a variant picked", () => {
     );
   }
 
-  it("shows the variant's counts and rhythm instead of the figure's", () => {
+  it("shows the variant's own counts, rhythm, level and description", () => {
     renderDetails(
       whip({
+        description: "Pulls the follower through.",
         modifierRefs: [
           {
             modifierId: TELEMARK.id,
             videoRefs: [],
-            counts: 6,
-            rhythm: "1 2 3&4&5 6",
+            overrides: {
+              counts: 6,
+              rhythm: "1 2 3&4&5 6",
+              level: "advanced",
+              description: "With a Telemark on 3&4&5.",
+            },
           },
         ],
       }),
     );
     expect(screen.getByText("1 2 3&4 5 6 7&8")).toBeOnTheScreen();
+    expect(screen.getByText("Beginner")).toBeOnTheScreen();
 
     fireEvent.press(screen.getByLabelText("with Telemark"));
 
     expect(screen.getByText("1 2 3&4&5 6")).toBeOnTheScreen();
     expect(screen.getByText("6")).toBeOnTheScreen();
+    expect(screen.getByText("Advanced")).toBeOnTheScreen();
+    expect(screen.getByText("With a Telemark on 3&4&5.")).toBeOnTheScreen();
     expect(screen.queryByText("1 2 3&4 5 6 7&8")).toBeNull();
+    expect(screen.queryByText("Pulls the follower through.")).toBeNull();
   });
 
-  it("shows the figure's own for a variant without any, and for a universal one", () => {
-    renderDetails(whip());
+  it("shows the figure's where the variant has none of its own, and for a universal one", () => {
+    renderDetails(
+      whip({
+        description: "Pulls the follower through.",
+        modifierRefs: [
+          {
+            modifierId: TELEMARK.id,
+            videoRefs: [],
+            overrides: { level: "advanced" },
+          },
+        ],
+      }),
+    );
 
     fireEvent.press(screen.getByLabelText("with Telemark"));
     expect(screen.getByText("1 2 3&4 5 6 7&8")).toBeOnTheScreen();
+    expect(screen.getByText("Pulls the follower through.")).toBeOnTheScreen();
+    expect(screen.getByText("Advanced")).toBeOnTheScreen();
     fireEvent.press(screen.getByLabelText("Hesitation"));
     expect(screen.getByText("1 2 3&4 5 6 7&8")).toBeOnTheScreen();
     expect(screen.getByText("8")).toBeOnTheScreen();
+    expect(screen.getByText("Beginner")).toBeOnTheScreen();
   });
 });
 

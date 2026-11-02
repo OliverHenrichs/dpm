@@ -36,6 +36,16 @@ import {
   withTimingRhythm,
 } from "@/src/pattern/rhythm/rhythm";
 import RhythmComposer from "./RhythmComposer";
+import VariantOwnValue from "./VariantOwnValue";
+import {
+  editOverrides,
+  effectiveVariant,
+  OverrideField,
+  overrideTiming,
+  ownFields,
+  prunedVariantOverrides,
+  resetOverride,
+} from "@/src/pattern/types/VariantOverrides";
 import AppDialog from "@/src/common/components/AppDialog";
 import AnonymizeModal, {
   AnonymizeTarget,
@@ -144,11 +154,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // What is typed in the rhythm field. The pattern carries it only once it is a rhythm, and
   // then its counts follow it; until then the field says what is wrong.
   const [rhythmDraft, setRhythmDraft] = useState(seed?.rhythm ?? "");
-  // The same for each variant's own rhythm (#134), by modifier id; a variant not in it shows
-  // the rhythm it has.
-  const [variantDrafts, setVariantDrafts] = useState<Record<string, string>>(
-    {},
-  );
+  // The same for a variant's counts and rhythm (#134), by modifier id: what is typed while it
+  // is not (yet) a value. A field not in it shows the variant's value.
+  const [variantDrafts, setVariantDrafts] = useState<
+    Record<string, { counts?: string; rhythm?: string }>
+  >({});
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
@@ -249,7 +259,8 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     // videos and — fatally — its id all gone. Saving again then failed with
     // "Cannot edit pattern without id", so the form could not be escaped
     // except by cancelling.
-    const accepted = await onAccepted(newPattern);
+    // A variant's override the figure now matches follows the figure again.
+    const accepted = await onAccepted(prunedVariantOverrides(newPattern));
     if (accepted !== false) {
       setNewPattern(createDefaultPattern());
       setRhythmDraft("");
@@ -507,57 +518,151 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       !(newPattern.modifierRefs ?? []).some((r) => r.modifierId === m.id),
   );
 
-  // Counts and rhythm stay matched both ways (withTimingCounts, withTimingRhythm). New counts
-  // drop a rhythm that no longer fits; a rhythm sets the counts it takes. The key goes rather
-  // than holding `undefined`, which Firestore rejects when the list is published.
-  const changeCounts = (counts: number) => {
-    const next = withTimingCounts(newPattern, counts);
+  // The picked attached variant (#134): the form's counts, rhythm, level and description then
+  // show and edit its values, its own where it overrides the figure's, else the figure's. A
+  // universal modifier has none, and leaves the form on the figure.
+  const variantRef = isActiveVideoReadonly
+    ? undefined
+    : (newPattern.modifierRefs ?? []).find(
+        (r) => r.modifierId === selectedModifierId,
+      );
+  const shown = effectiveVariant(newPattern, variantRef);
+  const own = ownFields(newPattern, variantRef);
+  const variantDraft = variantRef
+    ? variantDrafts[variantRef.modifierId]
+    : undefined;
+  const countsText = variantRef
+    ? (variantDraft?.counts ?? String(shown.counts))
+    : newPattern.counts.toString();
+  const rhythmText = variantRef
+    ? (variantDraft?.rhythm ?? shown.rhythm ?? "")
+    : rhythmDraft;
+  const setVariantDraft = (
+    modifierId: string,
+    draft: { counts?: string; rhythm?: string } | undefined,
+  ) =>
+    setVariantDrafts((prev) => {
+      const { [modifierId]: _old, ...rest } = prev;
+      return draft ? { ...rest, [modifierId]: draft } : rest;
+    });
+  // Edits the variant against the figure as it is then, keeping only what differs from it.
+  const editVariant = (
+    modifierId: string,
+    edit: (figure: NewPattern, ref: IPatternModifierRef) => IPatternModifierRef,
+  ) =>
+    setNewPattern((prev) => ({
+      ...prev,
+      modifierRefs: (prev.modifierRefs ?? []).map((ref) =>
+        ref.modifierId === modifierId ? edit(prev, ref) : ref,
+      ),
+    }));
+
+  // Counts and rhythm stay matched both ways (withTimingCounts, withTimingRhythm), a variant's
+  // as a figure's. New counts drop a rhythm that no longer fits; a rhythm sets the counts it
+  // takes. The key goes rather than holding `undefined`, which Firestore rejects when the list
+  // is published.
+  const changeCounts = (text: string) => {
+    if (variantRef) {
+      const { modifierId } = variantRef;
+      const counts = parseInt(text, 10);
+      // Counts that are not a positive number yet stay in the field; the variant keeps its own.
+      if (!(counts > 0)) {
+        setVariantDraft(modifierId, { ...variantDraft, counts: text });
+        return;
+      }
+      const timing = withTimingCounts(
+        { counts: shown.counts, rhythm: shown.rhythm },
+        counts,
+      );
+      setVariantDraft(
+        modifierId,
+        !timing.rhythm && shown.rhythm ? { rhythm: "" } : undefined,
+      );
+      editVariant(modifierId, (figure, ref) =>
+        overrideTiming(figure, ref, timing),
+      );
+      return;
+    }
+    const next = withTimingCounts(newPattern, parseInt(text) || 0);
     if (!next.rhythm && newPattern.rhythm) setRhythmDraft("");
     setNewPattern(next);
   };
 
   const changeRhythm = (text: string) => {
+    if (variantRef) {
+      const { modifierId } = variantRef;
+      setVariantDraft(modifierId, { rhythm: text });
+      const timing = withTimingRhythm(
+        { counts: shown.counts, rhythm: shown.rhythm },
+        text,
+      );
+      editVariant(modifierId, (figure, ref) =>
+        overrideTiming(figure, ref, timing),
+      );
+      return;
+    }
     setRhythmDraft(text);
     setNewPattern(withTimingRhythm(newPattern, text));
   };
 
-  // The picked variant's own counts and rhythm (#134): only an attached modifier's, never a
-  // universal one's. Empty counts mean the variant follows the figure.
-  const selectedRef = isActiveVideoReadonly
-    ? undefined
-    : (newPattern.modifierRefs ?? []).find(
-        (r) => r.modifierId === selectedModifierId,
+  // Tapping the chosen level clears it: on the figure, the key goes (rather than holding
+  // `undefined`, which Firestore rejects); on a variant, its own goes and it follows the figure.
+  const changeLevel = (id: string) => {
+    if (variantRef) {
+      editVariant(variantRef.modifierId, (figure, ref) =>
+        editOverrides(figure, ref, ({ level, ...rest }) =>
+          level === id ? rest : { ...rest, level: id },
+        ),
       );
-  const variantDraft = selectedRef
-    ? (variantDrafts[selectedRef.modifierId] ?? selectedRef.rhythm ?? "")
-    : "";
-  const updateRef = (
-    modifierId: string,
-    edit: (ref: IPatternModifierRef) => IPatternModifierRef,
-  ) =>
+      return;
+    }
+    const { level: current, ...rest } = newPattern;
+    setNewPattern(current === id ? rest : { ...rest, level: id });
+  };
+
+  const changeDescription = (text: string) => {
+    if (variantRef) {
+      editVariant(variantRef.modifierId, (figure, ref) =>
+        editOverrides(figure, ref, (o) => ({ ...o, description: text })),
+      );
+      return;
+    }
+    setNewPattern((prev) => ({ ...prev, description: text }));
+  };
+  // Text added to the description from a video's transcript: the picked variant's, whose video
+  // it is, or the figure's.
+  const appendDescription = (append: (description: string) => string) => {
+    if (variantRef) {
+      editVariant(variantRef.modifierId, (figure, ref) =>
+        editOverrides(figure, ref, (o) => ({
+          ...o,
+          description: append(effectiveVariant(figure, ref).description),
+        })),
+      );
+      return;
+    }
     setNewPattern((prev) => ({
       ...prev,
-      modifierRefs: (prev.modifierRefs ?? []).map((ref) =>
-        ref.modifierId === modifierId ? edit(ref) : ref,
-      ),
+      description: append(prev.description ?? ""),
     }));
-  const changeVariantCounts = (modifierId: string, text: string) => {
-    const parsed = parseInt(text, 10);
-    const counts = parsed > 0 ? parsed : undefined;
-    const ref = newPattern.modifierRefs.find(
-      (r) => r.modifierId === modifierId,
-    );
-    if (!ref) return;
-    const next = withTimingCounts(ref, counts);
-    if (!next.rhythm && ref.rhythm) {
-      setVariantDrafts((prev) => ({ ...prev, [modifierId]: "" }));
-    }
-    updateRef(modifierId, () => next);
   };
-  const changeVariantRhythm = (modifierId: string, text: string) => {
-    setVariantDrafts((prev) => ({ ...prev, [modifierId]: text }));
-    updateRef(modifierId, (ref) => withTimingRhythm(ref, text));
+
+  const resetVariant = (field: OverrideField) => {
+    if (!variantRef) return;
+    const { modifierId } = variantRef;
+    if (field === "timing") setVariantDraft(modifierId, undefined);
+    editVariant(modifierId, (figure, ref) => resetOverride(figure, ref, field));
   };
+  const ownMark = (field: OverrideField, resetKey: string) => (
+    <VariantOwnValue
+      resetLabel={t(resetKey)}
+      onReset={() => resetVariant(field)}
+    />
+  );
+  // Name, type, prerequisites and tags are the figure's for every variant.
+  const sameForAll = variantRef ? t("variantSameForAll") : undefined;
+  const withOwnMark = (summary: string, isOwn: boolean) =>
+    isOwn ? `${summary} · ${t("variantOwnValue")}` : summary;
   // The chosen prerequisites by name, for the folded section's one line.
   const prerequisiteSummary = newPattern.prerequisites
     .map((id) => patterns.find((p) => p.id === id)?.name)
@@ -568,7 +673,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // The chosen type and level, for the folded section's one line.
   const typeLevelSummary = [
     selectedType?.slug,
-    levelName(levels, newPattern.level, t),
+    levelName(levels, shown.level, t),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -595,21 +700,27 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 onChangeText={(text) =>
                   setNewPattern({ ...newPattern, name: text })
                 }
+                editable={!variantRef}
                 maxLength={nameMaxLength}
-                style={styles.input}
+                style={[styles.input, !!variantRef && styles.lockedInput]}
                 placeholderTextColor={theme.colors.textMuted}
               />
+              {sameForAll && (
+                <Text style={styles.readonlyHint}>{sameForAll}</Text>
+              )}
             </View>
             <View style={styles.input}>
               <Text style={styles.label}>{t("counts")}</Text>
               <RevealTextInput
-                placeholder={t("counts")}
-                value={newPattern.counts.toString()}
-                onChangeText={(text) => changeCounts(parseInt(text) || 0)}
+                placeholder={variantRef ? String(shown.counts) : t("counts")}
+                value={countsText}
+                onChangeText={changeCounts}
+                accessibilityLabel={t("counts")}
                 keyboardType="numeric"
                 style={styles.input}
                 placeholderTextColor={theme.colors.textMuted}
               />
+              {own.counts && ownMark("timing", "variantResetTiming")}
             </View>
           </View>
 
@@ -635,52 +746,10 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                   {t("universalVideosReadonly")}
                 </Text>
               )}
-              {selectedRef && (
-                // Keyed by the variant, so each opens on whether it has counts of its own.
-                <FormSection
-                  key={selectedRef.modifierId}
-                  title={t("variantTiming")}
-                  summary={
-                    selectedRef.counts !== undefined
-                      ? [selectedRef.counts, selectedRef.rhythm]
-                          .filter(Boolean)
-                          .join(" · ")
-                      : t("variantTimingAsFigure")
-                  }
-                  initiallyOpen={selectedRef.counts !== undefined}
-                >
-                  <Text style={styles.label}>{t("counts")}</Text>
-                  <RevealTextInput
-                    placeholder={String(newPattern.counts)}
-                    value={selectedRef.counts?.toString() ?? ""}
-                    onChangeText={(text) =>
-                      changeVariantCounts(selectedRef.modifierId, text)
-                    }
-                    accessibilityLabel={t("variantCounts")}
-                    keyboardType="numeric"
-                    style={styles.rhythmInput}
-                    placeholderTextColor={theme.colors.textMuted}
-                  />
-                  <Text style={styles.readonlyHint}>
-                    {t("variantTimingHint")}
-                  </Text>
-                  <Text style={[styles.label, styles.variantRhythmLabel]}>
-                    {t("rhythm")}
-                  </Text>
-                  <RhythmComposer
-                    value={variantDraft}
-                    onChange={(text) =>
-                      changeVariantRhythm(selectedRef.modifierId, text)
-                    }
-                    basicRhythms={
-                      selectedRef.counts !== undefined
-                        ? basicRhythms(activeList?.dance, selectedRef.counts)
-                        : []
-                    }
-                    placeholder={t("variantRhythmPlaceholder")}
-                    accessibilityLabel={t("variantRhythm")}
-                  />
-                </FormSection>
+              {variantRef && (
+                <Text style={styles.readonlyHint}>
+                  {t("variantEditingHint")}
+                </Text>
               )}
             </View>
           )}
@@ -768,12 +837,16 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                     label={type.slug.toUpperCase()}
                     swatch={type.color}
                     selected={newPattern.typeId === type.id}
+                    disabled={!!variantRef}
                     onPress={() =>
                       setNewPattern({ ...newPattern, typeId: type.id })
                     }
                   />
                 ))}
-                {onAddType && (
+                {sameForAll && (
+                  <Text style={styles.readonlyHint}>{sameForAll}</Text>
+                )}
+                {onAddType && !variantRef && (
                   <Chip
                     label={t("newType")}
                     icon="plus"
@@ -786,22 +859,18 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               </View>
               <View style={styles.input}>
                 <Text style={styles.label}>{t("level")}</Text>
+                {own.level && ownMark("level", "variantResetLevel")}
                 {levels.map(({ id, name }) => (
                   <Chip
                     key={id}
                     label={name}
-                    selected={newPattern.level === id}
+                    selected={shown.level === id}
                     accessibilityHint={
-                      newPattern.level === id ? t("levelClearHint") : undefined
+                      shown.level === id && (!variantRef || own.level)
+                        ? t(variantRef ? "variantResetLevel" : "levelClearHint")
+                        : undefined
                     }
-                    onPress={() => {
-                      // Tapping the chosen level clears it. The key goes, rather than holding
-                      // `undefined`, which Firestore rejects when the list is published.
-                      const { level: current, ...rest } = newPattern;
-                      setNewPattern(
-                        current === id ? rest : { ...rest, level: id },
-                      );
-                    }}
+                    onPress={() => changeLevel(id)}
                   />
                 ))}
               </View>
@@ -809,28 +878,35 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           </FormSection>
           <FormSection
             title={t("rhythm")}
-            summary={rhythmDraft.trim() || t("formSectionEmpty")}
+            summary={withOwnMark(
+              rhythmText.trim() || t("formSectionEmpty"),
+              own.rhythm,
+            )}
             initiallyOpen={!!seed?.rhythm}
           >
+            {own.rhythm && ownMark("timing", "variantResetTiming")}
             <RhythmComposer
-              value={rhythmDraft}
+              value={rhythmText}
               onChange={changeRhythm}
-              basicRhythms={basicRhythms(activeList?.dance, newPattern.counts)}
+              basicRhythms={basicRhythms(activeList?.dance, shown.counts)}
               placeholder={t("rhythmPlaceholder")}
               accessibilityLabel={t("rhythm")}
             />
           </FormSection>
           <FormSection
             title={t("description")}
-            summary={newPattern.description.trim() || t("formSectionEmpty")}
+            summary={withOwnMark(
+              shown.description.trim() || t("formSectionEmpty"),
+              own.description,
+            )}
             initiallyOpen={!!seed?.description.trim()}
           >
+            {own.description &&
+              ownMark("description", "variantResetDescription")}
             <RevealTextInput
               placeholder={t("description")}
-              value={newPattern.description}
-              onChangeText={(text) =>
-                setNewPattern({ ...newPattern, description: text })
-              }
+              value={shown.description}
+              onChangeText={changeDescription}
               style={styles.textarea}
               multiline
               placeholderTextColor={theme.colors.textMuted}
@@ -840,6 +916,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             title={t("prerequisites")}
             summary={prerequisiteSummary || t("formSectionEmpty")}
             initiallyOpen={!!seed?.prerequisites.length}
+            lockedNote={sameForAll}
           >
             <PatternPrerequisites
               patterns={patterns}
@@ -855,6 +932,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             title={t("tags")}
             summary={newPattern.tags.join(", ") || t("formSectionEmpty")}
             initiallyOpen={!!seed?.tags.length}
+            lockedNote={sameForAll}
           >
             <PatternTags
               tags={newPattern.tags}
@@ -926,12 +1004,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
           <TranscriptSheet
             target={transcriptTarget}
             onClose={() => setTranscriptTarget(null)}
-            onDescriptionChange={(append) =>
-              setNewPattern((prev) => ({
-                ...prev,
-                description: append(prev.description ?? ""),
-              }))
-            }
+            onDescriptionChange={appendDescription}
             onApplySuggestion={applySuggestion}
             onTranscriptChange={
               canCorrectTranscripts && transcriptTarget
@@ -1081,7 +1154,7 @@ const styles = StyleSheet.create((theme) => {
       color: theme.colors.danger,
       marginTop: theme.space.xxs,
     },
-    variantRhythmLabel: { marginTop: theme.space.sm },
+    lockedInput: { color: theme.colors.textMuted },
     label: { ...getCommonLabel(theme) },
     nameHint: {
       ...theme.typography.caption,

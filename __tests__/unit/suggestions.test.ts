@@ -320,7 +320,7 @@ describe("patternFromSuggestion", () => {
   });
 });
 
-describe("a variant's own counts and rhythm in a suggestion (#134)", () => {
+describe("a variant's overrides in a suggestion (#134)", () => {
   const list = createTestPatternList({
     modifiers: [
       {
@@ -344,25 +344,21 @@ describe("a variant's own counts and rhythm in a suggestion (#134)", () => {
     videoRefs: [],
     modifierRefs,
   });
+  const ref = (overrides: unknown) => ({
+    modifierId: "telemark",
+    videoRefs: [],
+    overrides,
+  });
 
-  it("sends and takes a variant's counts and rhythm, and slows and quicks in capitals", () => {
-    const sent = suggestedPattern({
-      ...whip([]),
-      modifierRefs: [
-        {
-          modifierId: "telemark",
-          videoRefs: [],
-          counts: 6,
-          rhythm: "1 2 3&4&5 6",
-        },
-      ],
-    } as NewPattern);
-    expect(sent.modifierRefs[0]).toEqual({
-      modifierId: "telemark",
-      videoRefs: [],
+  it("sends and takes a variant's overrides, and slows and quicks in capitals", () => {
+    const overrides = {
       counts: 6,
       rhythm: "1 2 3&4&5 6",
-    });
+      level: "advanced",
+      description: "With a Telemark.",
+    };
+    const sent = suggestedPattern(whip([ref(overrides)]) as NewPattern);
+    expect(sent.modifierRefs[0]).toEqual(ref(overrides));
 
     const taken = patternFromSuggestion(sent, list, []);
     expect(taken?.modifierRefs[0]).toEqual(sent.modifierRefs[0]);
@@ -371,23 +367,28 @@ describe("a variant's own counts and rhythm in a suggestion (#134)", () => {
     );
   });
 
-  it("drops a variant's rhythm that does not match its counts, and bad counts", () => {
-    const taken = patternFromSuggestion(
+  it("sends no undefined, and no overrides when none are left", () => {
+    const sent = suggestedPattern(
       whip([
-        { modifierId: "telemark", videoRefs: [], counts: 8, rhythm: "S Q Q" },
-      ]),
+        ref({ counts: undefined, description: "x".repeat(3000) }),
+        { ...ref({ level: undefined }), modifierId: "other" },
+      ]) as NewPattern,
+    );
+    expect(sent.modifierRefs[0].overrides).toEqual({
+      description: "x".repeat(2000),
+    });
+    expect(sent.modifierRefs[1]).not.toHaveProperty("overrides");
+  });
+
+  it("drops a rhythm without counts it matches, bad counts, and a level the list lacks", () => {
+    const taken = patternFromSuggestion(
+      whip([ref({ counts: 8, rhythm: "S Q Q", level: "nope" })]),
       list,
       [],
     );
-    expect(taken?.modifierRefs[0]).toEqual({
-      modifierId: "telemark",
-      videoRefs: [],
-      counts: 8,
-    });
+    expect(taken?.modifierRefs[0]).toEqual(ref({ counts: 8 }));
     const bad = patternFromSuggestion(
-      whip([
-        { modifierId: "telemark", videoRefs: [], counts: -2, rhythm: "1 2" },
-      ]),
+      whip([ref({ counts: -2, rhythm: "1 2" })]),
       list,
       [],
     );

@@ -737,7 +737,7 @@ describe("export → import round trip", () => {
     });
   });
 
-  describe("a variant's own counts and rhythm (3.12)", () => {
+  describe("a variant's overrides (3.12)", () => {
     const telemark: IModifier = {
       id: "m1",
       name: "with Telemark",
@@ -745,7 +745,14 @@ describe("export → import round trip", () => {
       universal: false,
       videoRefs: [],
     };
-    const whipWith = (refs: Record<string, unknown>[]) =>
+    const hesitation: IModifier = {
+      id: "m2",
+      name: "Hesitation",
+      position: "amends",
+      universal: true,
+      videoRefs: [],
+    };
+    const whipWith = (overrides: unknown[], modifierId = "m1") =>
       listWith(
         [
           createTestPattern(TYPE.id, {
@@ -753,44 +760,62 @@ describe("export → import round trip", () => {
             name: "Basic Whip",
             counts: 8,
             rhythm: "1 2 3&4 5 6 7&8",
-            modifierRefs: refs.map((ref) => ({
-              modifierId: "m1",
+            level: "beginner",
+            description: "Pulls the follower through.",
+            modifierRefs: overrides.map((o) => ({
+              modifierId,
               videoRefs: [],
-              ...ref,
+              ...(o !== undefined && { overrides: o }),
             })) as never,
           }),
         ],
-        { modifiers: [telemark] },
+        { modifiers: [telemark, hesitation] },
       );
+    const refOf = (
+      result: { patternLists?: PatternListWithPatterns[] },
+      i = 0,
+    ) => result.patternLists![i].patterns[0].modifierRefs[0];
 
-    it("keeps a variant's counts and rhythm, beside the figure's own", async () => {
-      const { importResult } = await roundTrip([
-        whipWith([{ counts: 6, rhythm: "1 2 3&4&5 6" }]),
-      ]);
-
-      const figure = importResult.patternLists![0].patterns[0];
-      expect(figure).toMatchObject({ counts: 8, rhythm: "1 2 3&4 5 6 7&8" });
-      expect(figure.modifierRefs[0]).toEqual({
-        modifierId: "m1",
-        videoRefs: [],
+    it("keeps every override, beside the figure's own values", async () => {
+      const overrides = {
         counts: 6,
         rhythm: "1 2 3&4&5 6",
+        level: "advanced",
+        description: "With a Telemark on 3&4&5.",
+      };
+      const { importResult } = await roundTrip([whipWith([overrides])]);
+
+      const figure = importResult.patternLists![0].patterns[0];
+      expect(figure).toMatchObject({
+        counts: 8,
+        rhythm: "1 2 3&4 5 6 7&8",
+        level: "beginner",
+        description: "Pulls the follower through.",
+      });
+      expect(refOf(importResult)).toEqual({
+        modifierId: "m1",
+        videoRefs: [],
+        overrides,
       });
       expect(importResult.warnings).toEqual([]);
     });
 
-    it("keeps counts alone, and a variant without either follows the figure", async () => {
+    it("keeps counts alone, and a variant without overrides follows the figure", async () => {
       const { importResult } = await roundTrip([
         whipWith([{ counts: 6 }]),
+        whipWith([undefined]),
         whipWith([{}]),
       ]);
 
-      expect(importResult.patternLists![0].patterns[0].modifierRefs[0]).toEqual(
-        { modifierId: "m1", videoRefs: [], counts: 6 },
-      );
-      expect(importResult.patternLists![1].patterns[0].modifierRefs[0]).toEqual(
-        { modifierId: "m1", videoRefs: [] },
-      );
+      expect(refOf(importResult, 0).overrides).toEqual({ counts: 6 });
+      expect(refOf(importResult, 1)).toEqual({
+        modifierId: "m1",
+        videoRefs: [],
+      });
+      expect(refOf(importResult, 2)).toEqual({
+        modifierId: "m1",
+        videoRefs: [],
+      });
     });
 
     it("normalises a slow-quick rhythm, written in lower case", async () => {
@@ -798,26 +823,61 @@ describe("export → import round trip", () => {
         whipWith([{ counts: 4, rhythm: " s  q q " }]),
       ]);
 
-      expect(
-        importResult.patternLists![0].patterns[0].modifierRefs[0].rhythm,
-      ).toBe("S Q Q");
+      expect(refOf(importResult).overrides?.rhythm).toBe("S Q Q");
     });
 
     it("drops a rhythm that does not match, or has no counts, and says so", async () => {
       const { importResult } = await roundTrip([
-        whipWith([{ counts: 8, rhythm: "1 2 3&4&5 6" }]),
-        whipWith([{ rhythm: "S Q Q" }]),
+        whipWith([{ counts: 6, rhythm: "1 2 3&4 5 6 7&8" }]),
+        whipWith([{ rhythm: "S Q Q", level: "advanced" }]),
       ]);
 
-      expect(importResult.patternLists![0].patterns[0].modifierRefs[0]).toEqual(
-        { modifierId: "m1", videoRefs: [], counts: 8 },
-      );
-      expect(importResult.patternLists![1].patterns[0].modifierRefs[0]).toEqual(
-        { modifierId: "m1", videoRefs: [] },
-      );
+      expect(refOf(importResult, 0).overrides).toEqual({ counts: 6 });
+      expect(refOf(importResult, 1).overrides).toEqual({ level: "advanced" });
       expect(importText(importResult.warnings)).toContain(
         "Its rhythm did not match its counts",
       );
+    });
+
+    it("drops what is malformed, quietly, and the whole when nothing is left", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ counts: 0 }]),
+        whipWith([{ counts: 2.5, level: "" }]),
+        whipWith([{ counts: "6", level: 3, description: 7 }]),
+        whipWith(["nonsense"]),
+      ]);
+
+      importResult.patternLists!.forEach((list) =>
+        expect(list.patterns[0].modifierRefs[0]).not.toHaveProperty(
+          "overrides",
+        ),
+      );
+      expect(importResult.warnings).toEqual([]);
+    });
+
+    it("cuts a long description, and drops what equals the figure's", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ description: "x".repeat(5000) }]),
+        whipWith([
+          {
+            counts: 8,
+            rhythm: "1 2 3&4 5 6 7&8",
+            level: "beginner",
+            description: "Pulls the follower through.",
+          },
+        ]),
+      ]);
+
+      expect(refOf(importResult, 0).overrides?.description).toHaveLength(2000);
+      expect(refOf(importResult, 1)).not.toHaveProperty("overrides");
+    });
+
+    it("keeps none on a universal modifier's attachment", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ counts: 6 }], "m2"),
+      ]);
+
+      expect(refOf(importResult)).not.toHaveProperty("overrides");
     });
 
     it("keeps a figure's rhythm in slows and quicks", async () => {
@@ -831,19 +891,6 @@ describe("export → import round trip", () => {
       const [kept, dropped] = importResult.patternLists![0].patterns;
       expect(kept).toMatchObject({ counts: 6, rhythm: "S S Q Q" });
       expect(dropped).not.toHaveProperty("rhythm");
-    });
-
-    it("drops counts that are not a positive whole number, quietly", async () => {
-      const { importResult } = await roundTrip([
-        whipWith([{ counts: 0 }]),
-        whipWith([{ counts: 2.5 }]),
-        whipWith([{ counts: "6" }]),
-      ]);
-
-      importResult.patternLists!.forEach((list) =>
-        expect(list.patterns[0].modifierRefs[0]).not.toHaveProperty("counts"),
-      );
-      expect(importResult.warnings).toEqual([]);
     });
   });
 

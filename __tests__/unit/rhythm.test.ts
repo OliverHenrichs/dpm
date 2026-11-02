@@ -12,7 +12,6 @@ import {
   isSlowQuickRhythm,
   rhythmProblem,
   slowQuickSteps,
-  variantTiming,
   withTimingCounts,
   withTimingRhythm,
 } from "@/src/pattern/rhythm/rhythm";
@@ -242,16 +241,5 @@ describe("timing: counts and a rhythm kept matched", () => {
       counts: 8,
     });
     expect(withTimingCounts(telemark, undefined)).toEqual({ modifierId: "m" });
-  });
-
-  it("shows a variant's own timing when it has counts, else the figure's", () => {
-    const whip = { counts: 8, rhythm: "1 2 3&4 5 6 7&8" };
-    expect(variantTiming(whip, undefined)).toEqual(whip);
-    expect(variantTiming(whip, {})).toEqual(whip);
-    expect(variantTiming(whip, { counts: 6 })).toEqual({ counts: 6 });
-    expect(variantTiming(whip, { counts: 4, rhythm: "S Q Q" })).toEqual({
-      counts: 4,
-      rhythm: "S Q Q",
-    });
   });
 });

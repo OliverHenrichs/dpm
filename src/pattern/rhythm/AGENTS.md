@@ -33,8 +33,8 @@ quicks and are still shown.
 
 Both ways, in `EditPatternForm` through `withTimingCounts` / `withTimingRhythm`: typing a valid
 rhythm sets `counts`, and changing `counts` drops a rhythm that no longer fits. The same holds for
-a variant's own `counts` and `rhythm` (`IPatternModifierRef`, #134; attached modifiers only), where
-no counts means the variant follows its figure (`variantTiming`). Text that is not yet a rhythm stays in the field with an explanation and
+a variant's own (`IVariantOverrides`, #134), where counts and rhythm are overridden together and
+no counts means the variant follows its figure (`effectiveVariant`). Text that is not yet a rhythm stays in the field with an explanation and
 is not saved. Import enforces the same (`importWarnRhythmMismatch`); a stored rhythm that does not
 match its counts is a bug.
 

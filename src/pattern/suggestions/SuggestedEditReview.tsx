@@ -14,6 +14,7 @@ import EditPatternForm from "@/src/pattern/list/EditPatternForm";
 import {
   IModifier,
   IPattern,
+  IVariantOverrides,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -24,7 +25,6 @@ import {
   ChangeLine,
   CountsAndRhythm,
 } from "@/src/pattern/suggestions/figureEdits";
-import { Timing } from "@/src/pattern/rhythm/rhythm";
 
 interface SuggestedEditReviewProps {
   /** The figure as it is now in the list owner's list. */
@@ -190,9 +190,28 @@ const countsText = (c: CountsAndRhythm) =>
   c.rhythm ? `${c.counts} (${c.rhythm})` : String(c.counts);
 
 /** A variant's own counts and rhythm, or that it follows the figure. */
-const timingText = (t: TFunction, timing: Timing | undefined) =>
-  timing?.counts !== undefined
-    ? countsText({ counts: timing.counts, rhythm: timing.rhythm })
+const timingText = (t: TFunction, own: IVariantOverrides | undefined) =>
+  own?.counts !== undefined
+    ? countsText({ counts: own.counts, rhythm: own.rhythm })
+    : t("suggestionEditAsFigure");
+
+/** A variant's own level, or that it follows the figure. */
+const variantLevelText = (
+  t: TFunction,
+  levels: IPatternLevel[],
+  own: IVariantOverrides | undefined,
+) =>
+  own?.level !== undefined
+    ? levelText(t, levels, own.level)
+    : t("suggestionEditAsFigure");
+
+/** A variant's own description, or that it follows the figure. */
+const variantDescriptionText = (
+  t: TFunction,
+  own: IVariantOverrides | undefined,
+) =>
+  own?.description !== undefined
+    ? own.description.trim() || t("suggestionEditEmpty")
     : t("suggestionEditAsFigure");
 
 const startText = (t: TFunction, seconds: number | null | undefined) =>
@@ -267,9 +286,17 @@ function describe(
         detail:
           line.op === "add"
             ? [
-                line.timing &&
+                line.overrides?.counts !== undefined &&
                   t("suggestionEditVariantTiming", {
-                    timing: timingText(t, line.timing),
+                    timing: timingText(t, line.overrides),
+                  }),
+                line.overrides?.level !== undefined &&
+                  t("suggestionEditVariantOwnLevel", {
+                    level: variantLevelText(t, levels, line.overrides),
+                  }),
+                line.overrides?.description !== undefined &&
+                  t("suggestionEditVariantOwnDescription", {
+                    description: variantDescriptionText(t, line.overrides),
                   }),
                 ...line.videos.map((v) => v.value),
               ]
@@ -277,14 +304,31 @@ function describe(
                 .join("\n") || undefined
             : undefined,
       };
-    case "variantCounts":
+    case "variant": {
+      const name = modifierName(line.modifierId);
+      if (line.field === "timing") {
+        return {
+          title: t("suggestionEditVariantCounts", {
+            name,
+            from: timingText(t, line.from),
+            to: timingText(t, line.to),
+          }),
+        };
+      }
+      if (line.field === "level") {
+        return {
+          title: t("suggestionEditVariantLevel", {
+            name,
+            from: variantLevelText(t, levels, line.from),
+            to: variantLevelText(t, levels, line.to),
+          }),
+        };
+      }
       return {
-        title: t("suggestionEditVariantCounts", {
-          name: modifierName(line.modifierId),
-          from: timingText(t, line.from),
-          to: timingText(t, line.to),
-        }),
+        title: t("suggestionEditVariantDescription", { name }),
+        detail: variantDescriptionText(t, line.to),
       };
+    }
     case "video": {
       const under = modifierName(line.modifierId);
       return {
@@ -340,8 +384,12 @@ function describeNow(
       return levelText(t, levels, line.now);
     case "counts":
       return line.now ? countsText(line.now) : "";
-    case "variantCounts":
-      return timingText(t, line.now);
+    case "variant":
+      return line.field === "timing"
+        ? timingText(t, line.now)
+        : line.field === "level"
+          ? variantLevelText(t, levels, line.now)
+          : variantDescriptionText(t, line.now);
     case "videoStart":
       return startText(t, line.now);
     default:

@@ -21,8 +21,8 @@ export const SUPPORTED_MAJOR = 3;
  * 9: a list's `suggestions` may carry `edits` (subscribers may suggest changes to figures).
  * 10: lists may carry `laneOrder` (the timeline's lanes as the user dragged them).
  * 11: lists may carry `levels` (their own levels, easiest first).
- * 12: a figure's `modifierRefs` may carry `counts` and `rhythm` (a variant's own); rhythms may
- *     be written in slows and quicks (`S Q Q`).
+ * 12: a figure's `modifierRefs` may carry `overrides` (a variant's own counts, rhythm, level and
+ *     description); rhythms may be written in slows and quicks (`S Q Q`).
  */
 export const SUPPORTED_MINOR = 12;
 

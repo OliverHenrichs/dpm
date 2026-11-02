@@ -3,8 +3,11 @@ import { MAX_SUGGESTIONS_PER_DAY } from "@/src/pattern/suggestions/suggestions";
 import {
   normalizeRhythm,
   rhythmMatchesCounts,
-  Timing,
 } from "@/src/pattern/rhythm/rhythm";
+import {
+  parseOverrides,
+  prunedVariantOverrides,
+} from "@/src/pattern/types/VariantOverrides";
 import {
   IModifier,
   IPattern,
@@ -13,6 +16,7 @@ import {
   ITranscriptSegment,
   IVideoReference,
   IVideoTranscript,
+  IVariantOverrides,
   ModifierPosition,
 } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
@@ -237,31 +241,28 @@ function normalizeModifiers(
 }
 
 /**
- * 3.12. A variant's own counts (a positive whole number; anything else is dropped quietly, and
- * the variant follows its figure) and rhythm, kept only when it matches them, as on a figure.
+ * 3.12. A variant's overrides (`parseOverrides`): counts a positive whole number, a rhythm only
+ * alongside counts it matches (else `importWarnRhythmMismatch`), a level id, a description.
+ * Anything else is dropped quietly; a universal modifier's attachment keeps none.
  */
-function normalizeVariantTiming(
+function normalizeOverrides(
   entry: Record<string, unknown>,
+  universal: boolean,
   where: ImportMessageContext,
   warnings: ImportMessage[],
-): Timing {
-  const counts =
-    isInteger(entry.counts) && entry.counts > 0 ? entry.counts : undefined;
-  if (entry.rhythm === undefined) return counts ? { counts } : {};
-  if (
-    counts &&
-    typeof entry.rhythm === "string" &&
-    rhythmMatchesCounts(entry.rhythm, counts)
-  ) {
-    return { counts, rhythm: normalizeRhythm(entry.rhythm) };
+): { overrides?: IVariantOverrides } {
+  if (universal || entry.overrides === undefined) return {};
+  const { overrides, rhythmDropped } = parseOverrides(entry.overrides);
+  if (rhythmDropped) {
+    warnings.push(msg("importWarnRhythmMismatch", undefined, where));
   }
-  warnings.push(msg("importWarnRhythmMismatch", undefined, where));
-  return counts ? { counts } : {};
+  return overrides ? { overrides } : {};
 }
 
 function normalizeModifierRefs(
   raw: unknown,
   knownModifierIds: Set<string>,
+  universalIds: Set<string>,
   where: ImportMessageContext,
   warnings: ImportMessage[],
 ): IPatternModifierRef[] {
@@ -289,7 +290,12 @@ function normalizeModifierRefs(
     refs.push({
       modifierId: entry.modifierId,
       videoRefs: normalizeVideoRefs(entry.videoRefs, where, warnings),
-      ...normalizeVariantTiming(entry, where, warnings),
+      ...normalizeOverrides(
+        entry,
+        universalIds.has(entry.modifierId),
+        where,
+        warnings,
+      ),
     });
   }
   return refs;
@@ -316,6 +322,9 @@ function normalizePatterns(
 
   const knownTypeIds = new Set(types.map((t) => t.id));
   const knownModifierIds = new Set(modifiers.map((m) => m.id));
+  const universalIds = new Set(
+    modifiers.filter((m) => m.universal).map((m) => m.id),
+  );
   const fallbackTypeId = types[0]?.id ?? "";
 
   const firstPass: IPattern[] = [];
@@ -371,25 +380,29 @@ function normalizePatterns(
       }
     }
 
-    firstPass.push({
-      id: entry.id,
-      name: asString(entry.name, ""),
-      typeId,
-      counts,
-      ...(typeof entry.level === "string" && { level: entry.level }),
-      ...(rhythm && { rhythm }),
-      ...(isTimestamp(entry.createdAt) && { createdAt: entry.createdAt }),
-      prerequisites,
-      description: asString(entry.description, ""),
-      tags: asStringArray(entry.tags),
-      videoRefs: normalizeVideoRefs(entry.videoRefs, label, warnings),
-      modifierRefs: normalizeModifierRefs(
-        entry.modifierRefs,
-        knownModifierIds,
-        label,
-        warnings,
-      ),
-    });
+    // An override equal to the figure's value is dropped: the variant follows the figure.
+    firstPass.push(
+      prunedVariantOverrides({
+        id: entry.id,
+        name: asString(entry.name, ""),
+        typeId,
+        counts,
+        ...(typeof entry.level === "string" && { level: entry.level }),
+        ...(rhythm && { rhythm }),
+        ...(isTimestamp(entry.createdAt) && { createdAt: entry.createdAt }),
+        prerequisites,
+        description: asString(entry.description, ""),
+        tags: asStringArray(entry.tags),
+        videoRefs: normalizeVideoRefs(entry.videoRefs, label, warnings),
+        modifierRefs: normalizeModifierRefs(
+          entry.modifierRefs,
+          knownModifierIds,
+          universalIds,
+          label,
+          warnings,
+        ),
+      }),
+    );
   }
 
   // Second pass: a prerequisite can only be checked against the survivors.
