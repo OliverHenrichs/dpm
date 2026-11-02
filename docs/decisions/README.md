@@ -19,3 +19,4 @@ memory. Each names its source.
 | [0008](0008-export-files-are-for-backups.md) | Export files are for backups and moving phones, not for sharing |
 | [0009](0009-variations-are-modifiers.md) | A variation of a figure is a modifier on it, not a new figure |
 | [0010](0010-gesture-handler-for-the-map.md) | The Map's gestures all live in Gesture Handler |
+| [0011](0011-rhythm-subdivisions-and-single-step-composer.md) | Rhythms take & and a after any beat; the composer adds one element a tap |

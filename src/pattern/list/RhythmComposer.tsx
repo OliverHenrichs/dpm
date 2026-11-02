@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -6,12 +6,12 @@ import { Chip } from "@/src/common/ui";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import { getCommonInput } from "@/src/common/utils/CommonStyles";
 import {
-  appendChainLink,
+  appendRhythmElement,
   appendRhythmStep,
   lastRhythmStep,
-  nextChainLink,
-  nextRhythmSteps,
+  nextRhythmElements,
   removeLastRhythmStep,
+  rhythmElementText,
   rhythmProblem,
   slowQuickSteps,
 } from "@/src/pattern/rhythm/rhythm";
@@ -31,13 +31,16 @@ const PROBLEM_KEYS = {
   invalid: "rhythmInvalid",
   mixed: "rhythmMixedNotation",
   slowQuickJoin: "rhythmSlowQuickJoin",
+  markOrder: "rhythmMarkOrder",
+  markSplit: "rhythmMarkSplit",
 } as const;
 
 /**
- * The rhythm field with its bubbles: the dance's basic rhythms while empty, then the next
- * steps, one more beat rolled onto a chain, and an undo (src/pattern/rhythm/AGENTS.md). Slows
- * and quicks are offered while nothing is written and after slows and quicks, never beside
- * beat numbers. Shared by a figure's rhythm and a variant's own.
+ * The rhythm field with its bubbles: the dance's basic rhythms while empty, then one element at
+ * a time (the next beat, `&`, `a`), a one-shot _Hold_ that adds the next one held, and an undo
+ * (src/pattern/rhythm/AGENTS.md). Slows and quicks are offered while nothing is written and
+ * after slows and quicks, never beside beat numbers. Shared by a figure's rhythm and a
+ * variant's own.
  */
 const RhythmComposer: React.FC<RhythmComposerProps> = ({
   value,
@@ -48,16 +51,22 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
+  // Like a phone's shift key: it holds the next element tapped, then turns itself off.
+  const [hold, setHold] = useState(false);
 
   const problem = rhythmProblem(value);
   const suggested = value.trim() ? [] : basicRhythms;
-  const nextSteps = nextRhythmSteps(value);
+  const nextElements = nextRhythmElements(value);
   const slowQuick = slowQuickSteps(value);
-  // After a triple, one more beat rolled onto it (3&4 → 3&4&5): a rolling count.
-  const chainLink = nextChainLink(value);
-  // The last step, for the undo chip beside the next steps: a mistap is fixed without the
+  // The last element, for the undo chip beside the next ones: a mistap is fixed without the
   // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
   const lastStep = lastRhythmStep(value);
+  const held = hold && nextElements.length > 0;
+
+  const add = (text: string) => {
+    setHold(false);
+    onChange(text);
+  };
 
   return (
     <View style={styles.block}>
@@ -85,26 +94,31 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
           ))}
         </View>
       )}
-      {(nextSteps.length > 0 ||
-        slowQuick.length > 0 ||
-        chainLink ||
-        lastStep) && (
+      {(nextElements.length > 0 || slowQuick.length > 0 || lastStep) && (
         <View style={styles.bubbles}>
-          {nextSteps.map((step) => (
+          {nextElements.map((element) => {
+            const step = rhythmElementText(element);
+            return (
+              <Chip
+                key={step}
+                label={rhythmElementText(element, held)}
+                icon="plus"
+                accessibilityLabel={t(
+                  held ? "rhythmAddHeldStep" : "rhythmAddStep",
+                  { step },
+                )}
+                onPress={() => add(appendRhythmElement(value, element, held))}
+              />
+            );
+          })}
+          {nextElements.length > 0 && (
             <Chip
-              key={step}
-              label={step}
-              icon="plus"
-              accessibilityLabel={t("rhythmAddStep", { step })}
-              onPress={() => onChange(appendRhythmStep(value, step))}
-            />
-          ))}
-          {chainLink && (
-            <Chip
-              label={chainLink}
-              icon="plus"
-              accessibilityLabel={t("rhythmExtendStep", { link: chainLink })}
-              onPress={() => onChange(appendChainLink(value, chainLink))}
+              label={t("rhythmHold")}
+              icon="pause"
+              toggle
+              selected={held}
+              accessibilityHint={t("rhythmHoldHint")}
+              onPress={() => setHold(!held)}
             />
           )}
           {slowQuick.map((step) => (
@@ -116,7 +130,7 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
               accessibilityHint={t(
                 step === "S" ? "rhythmSlowHint" : "rhythmQuickHint",
               )}
-              onPress={() => onChange(appendRhythmStep(value, step))}
+              onPress={() => add(appendRhythmStep(value, step))}
             />
           ))}
           {lastStep && (

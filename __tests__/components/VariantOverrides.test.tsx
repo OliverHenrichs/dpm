@@ -112,6 +112,27 @@ describe("the figure form switched to a variant by the variant strip", () => {
     });
   });
 
+  it("composes a variant's own rhythm with the same bubbles, held elements too", async () => {
+    const onAccepted = renderForm(whip());
+    openSection("Rhythm");
+
+    fireEvent.press(screen.getByLabelText("with Telemark"));
+    // Back to the 7 of the figure's 7&8, then a quick 7&a8 with the a held.
+    fireEvent.press(screen.getByLabelText("Remove 8"));
+    fireEvent.press(screen.getByLabelText("Remove &"));
+    fireEvent.press(screen.getByLabelText("Add &"));
+    fireEvent.press(screen.getByRole("togglebutton", { name: "Hold" }));
+    fireEvent.press(screen.getByLabelText("Add a, held"));
+    fireEvent.press(screen.getByLabelText("Add 8"));
+
+    expect(rhythm().props.value).toBe("1 2 3&4 5 6 7&(a)8");
+    expect(counts().props.value).toBe("8");
+    expect((await save(onAccepted)).modifierRefs[0].overrides).toEqual({
+      counts: 8,
+      rhythm: "1 2 3&4 5 6 7&(a)8",
+    });
+  });
+
   it("drops a variant's rhythm its new counts don't fit", async () => {
     const onAccepted = renderForm(whip());
     openSection("Rhythm");
@@ -300,7 +321,10 @@ describe("writing a rhythm in slows and quicks", () => {
     const onAccepted = renderNew();
 
     fireEvent.press(screen.getByLabelText("Add S"));
-    expect(screen.queryByLabelText("Add 2")).toBeNull();
+    // After a slow or a quick: no beat, no & or a, no Hold.
+    expect(screen.queryByLabelText("Add 1")).toBeNull();
+    expect(screen.queryByLabelText("Add &")).toBeNull();
+    expect(screen.queryByRole("togglebutton", { name: "Hold" })).toBeNull();
     fireEvent.press(screen.getByLabelText("Add Q"));
     fireEvent.press(screen.getByLabelText("Add Q"));
 
@@ -319,6 +343,7 @@ describe("writing a rhythm in slows and quicks", () => {
 
     expect(screen.queryByLabelText("Add S")).toBeNull();
     expect(screen.getByLabelText("Add 2")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Add &")).toBeOnTheScreen();
   });
 
   it("reads lower case, and saves it in capitals", async () => {

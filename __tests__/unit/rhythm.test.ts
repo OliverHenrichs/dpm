@@ -1,11 +1,12 @@
 import {
-  appendChainLink,
+  appendRhythmElement,
   appendRhythmStep,
   defaultRhythm,
   lastRhythmStep,
-  nextChainLink,
-  nextRhythmSteps,
+  nextRhythmElements,
   removeLastRhythmStep,
+  rhythmElements,
+  rhythmElementText,
   normalizeRhythm,
   rhythmCounts,
   rhythmMatchesCounts,
@@ -48,7 +49,7 @@ describe("rhythmCounts", () => {
     ["an unclosed hold", "1 (2"],
     ["a chain out of step", "1 2 3&5&6"],
     ["a chain running backwards", "1 2 3&4&3"],
-    ["a chain with a dangling link", "1 2 3&4&"],
+    ["a dangling link before another step", "1 2 3&4& 5"],
     ["a chain starting with a link", "1 &2"],
     ["a doubled link", "1 2&&3"],
     ["a held chain", "1 (2&3)"],
@@ -107,62 +108,200 @@ describe("template rhythms", () => {
   });
 });
 
-describe("composing a rhythm a step at a time", () => {
-  it("offers a step, a triple, a swung triple and a held beat on the next beat", () => {
-    expect(nextRhythmSteps("1 2")).toEqual(["3", "3&4", "3a4", "(3)"]);
-    expect(nextRhythmSteps("")).toEqual(["1", "1&2", "1a2", "(1)"]);
+describe("subdivisions and holds (2026-11-02)", () => {
+  it.each([
+    ["1 2 3&a4", 4],
+    ["1 2 3a4", 4],
+    ["1 2 3&4", 4],
+    ["1 2 3&4&5", 5],
+    ["1 2 3 4 5a6a7", 7],
+    ["1&a2&a3", 3],
+    ["1 2 3&a4&a5 6", 6],
+    // Only the last token may end on a subdivision, and counts go by whole beats.
+    ["1 2 3&", 3],
+    ["1 2 3&a", 3],
+    ["1 2 3a", 3],
+    ["1&", 1],
+    // Any single element held.
+    ["1 2 3(&)4", 4],
+    ["1 2 3&(a)4", 4],
+    ["1 2 3&(4)", 4],
+    ["1 2 (3)&4", 4],
+    ["1 2 (3)(&)(a)(4)", 4],
+    ["1 2 3(a)", 3],
+    ["1 2 3&4 (5)", 5],
+  ])("reads %s as %i counts", (rhythm, counts) => {
+    expect(rhythmCounts(rhythm)).toBe(counts);
+    expect(rhythmMatchesCounts(rhythm, counts)).toBe(true);
   });
 
-  it("goes on after a triple", () => {
-    expect(nextRhythmSteps("1 2 3&4")[0]).toBe("5");
+  it.each([
+    ["a out of order", "1 2 3a&4"],
+    ["a doubled &", "1 2 3&&4"],
+    ["a doubled a", "1 2 3aa4"],
+    ["a doubled held &", "1 2 3&(&)4"],
+    ["a subdivision with no beat", "1 2 &"],
+    ["a token starting on a subdivision", "1 2 3 &4"],
+    ["a subdivision spaced off its beat", "1 2 3& 4"],
+    ["a held subdivision spaced off its beat", "1 2 3(&) 4"],
+    ["a beat run onto a beat", "1 2 3(4)"],
+    ["a held beat run onto a beat", "1 2 (3)4"],
+    ["a held pair", "1 2 (3&)4"],
+    ["an empty hold", "1 2 ()"],
+    ["a doubled hold", "1 2 ((3))"],
+    ["an e", "1 2 3e&a4"],
+    ["a capital A", "1 2 3A4"],
+    ["a chain with a gap", "1 2 3&a5"],
+  ])("refuses %s", (_, rhythm) => {
+    expect(rhythmCounts(rhythm)).toBeNull();
   });
 
-  it("offers nothing after something that is not a rhythm", () => {
-    expect(nextRhythmSteps("1 3")).toEqual([]);
+  it("explains a subdivision out of order or spaced off its beat", () => {
+    expect(rhythmProblem("1 2 3a&4")).toBe("markOrder");
+    expect(rhythmProblem("1 2 3&&4")).toBe("markOrder");
+    expect(rhythmProblem("1 2 3&(&)4")).toBe("markOrder");
+    expect(rhythmProblem("1 2 3& 4")).toBe("markSplit");
+    expect(rhythmProblem("1 2 3(&) 4")).toBe("markSplit");
+    // Joining would not make it a rhythm, so the general explanation stays.
+    expect(rhythmProblem("1 2 3& 5")).toBe("invalid");
+    expect(rhythmProblem("1 2 3&")).toBeNull();
   });
 
-  it("appends with a single space", () => {
-    expect(appendRhythmStep("1 2 ", "3&4")).toBe("1 2 3&4");
-    expect(appendRhythmStep("", "1")).toBe("1");
+  it("reads the elements in order, held or not", () => {
+    expect(rhythmElements("1 2&(a)3")).toEqual([
+      { value: 1, held: false },
+      { value: 2, held: false },
+      { value: "&", held: false },
+      { value: "a", held: true },
+      { value: 3, held: false },
+    ]);
+    expect(rhythmElements("S Q Q")).toBeNull();
+    expect(rhythmElements("")).toBeNull();
   });
 
-  it("takes the last step off again", () => {
-    expect(removeLastRhythmStep("1 2 3&4 ")).toBe("1 2");
+  it("writes one spelling", () => {
+    expect(normalizeRhythm("  1  2 3&a4  ")).toBe("1 2 3&a4");
+    expect(normalizeRhythm("01 2 3")).toBe("1 2 3");
+    expect(normalizeRhythm("1 2 3(&)4 (5)")).toBe("1 2 3(&)4 (5)");
+    // Text that is not a rhythm only has its spacing tidied.
+    expect(normalizeRhythm(" 1  2 3& 4")).toBe("1 2 3& 4");
+  });
+
+  it("keeps every rhythm the old notation took, with the same counts and spelling", () => {
+    const old: [string, number][] = [
+      ["1 2 3&4 5&6", 6],
+      ["1 2 3a4 5a6", 6],
+      ["1 2 3&4 5 6 7&8", 8],
+      ["1 2 3a4 5 6 7a8", 8],
+      ["1 2 3 (4) 5 6 7 (8)", 8],
+      ["1 2 3 (4) 5 6 7 (8) 9 10 11 (12) 13 14 15 (16)", 16],
+      ["1 (2) 3 4 5 (6) 7 8", 8],
+      ["1 2 3&4&5 6", 6],
+      ["1&2&3&4", 4],
+      ["1 2 3&4a5 6", 6],
+      ["1 2 (3) 4&5&6", 6],
+      ["1 2 3 4 5a6a7 8", 8],
+    ];
+    for (const [rhythm, counts] of old) {
+      expect(rhythmCounts(rhythm)).toBe(counts);
+      expect(normalizeRhythm(rhythm)).toBe(rhythm);
+    }
+  });
+});
+
+describe("composing a rhythm an element at a time", () => {
+  it("offers the next beat, then & after a beat and a after a beat or its &", () => {
+    expect(nextRhythmElements("")).toEqual([1]);
+    expect(nextRhythmElements("1 2")).toEqual([3, "&", "a"]);
+    expect(nextRhythmElements("1 2&")).toEqual([3, "a"]);
+    expect(nextRhythmElements("1 2&a")).toEqual([3]);
+    expect(nextRhythmElements("1 2a")).toEqual([3]);
+    expect(nextRhythmElements("1 (2)")).toEqual([3, "&", "a"]);
+    expect(nextRhythmElements("1 2(&)")).toEqual([3, "a"]);
+  });
+
+  it("offers nothing after slows and quicks or what is not a rhythm", () => {
+    expect(nextRhythmElements("1 3")).toEqual([]);
+    expect(nextRhythmElements("S Q")).toEqual([]);
+    expect(nextRhythmElements("1 2 walk")).toEqual([]);
+  });
+
+  it("appends in the one spelling: a beat chains after a subdivision, else starts a token", () => {
+    expect(appendRhythmElement("", 1)).toBe("1");
+    expect(appendRhythmElement("1 2 3", 4)).toBe("1 2 3 4");
+    expect(appendRhythmElement("1 2 3", "&")).toBe("1 2 3&");
+    expect(appendRhythmElement("1 2 3&", "a")).toBe("1 2 3&a");
+    expect(appendRhythmElement("1 2 3&a", 4)).toBe("1 2 3&a4");
+    expect(appendRhythmElement(" 1  2 ", 3)).toBe("1 2 3");
+  });
+
+  it("appends an element held", () => {
+    expect(appendRhythmElement("", 1, true)).toBe("(1)");
+    expect(appendRhythmElement("1 2 3", 4, true)).toBe("1 2 3 (4)");
+    expect(appendRhythmElement("1 2 3", "&", true)).toBe("1 2 3(&)");
+    expect(appendRhythmElement("1 2 3&", "a", true)).toBe("1 2 3&(a)");
+    expect(appendRhythmElement("1 2 3&", 4, true)).toBe("1 2 3&(4)");
+    expect(appendRhythmElement("1 2 3(&)", 4)).toBe("1 2 3(&)4");
+  });
+
+  it("leaves what is not a rhythm in counts as it is", () => {
+    expect(appendRhythmElement("1 3", 4)).toBe("1 3");
+    expect(appendRhythmElement("S Q", 4)).toBe("S Q");
+  });
+
+  it("writes an element, held or not", () => {
+    expect(rhythmElementText(5)).toBe("5");
+    expect(rhythmElementText("&", true)).toBe("(&)");
+  });
+
+  it("undoes exactly the last element", () => {
+    let written = "1 2 3&a4";
+    const seen = [written];
+    while (written) {
+      written = removeLastRhythmStep(written);
+      seen.push(written);
+    }
+    expect(seen).toEqual([
+      "1 2 3&a4",
+      "1 2 3&a",
+      "1 2 3&",
+      "1 2 3",
+      "1 2",
+      "1",
+      "",
+    ]);
+    expect(lastRhythmStep("1 2 3&a4")).toBe("4");
+    expect(lastRhythmStep("1 2 3&a")).toBe("a");
+  });
+
+  it("undoes a held element, and the chain it closed", () => {
+    expect(lastRhythmStep("1 2 3&(4)")).toBe("(4)");
+    expect(removeLastRhythmStep("1 2 3&(4)")).toBe("1 2 3&");
+    expect(lastRhythmStep("1 2 3(&)")).toBe("(&)");
+    expect(removeLastRhythmStep("1 2 3(&)4")).toBe("1 2 3(&)");
+    expect(removeLastRhythmStep("1 2 3&4&5")).toBe("1 2 3&4&");
+    expect(removeLastRhythmStep("1 (2)")).toBe("1");
+  });
+
+  it("undoes a word at a time in text that is not a rhythm yet", () => {
+    expect(lastRhythmStep("1 2 4")).toBe("4");
+    expect(removeLastRhythmStep(" 1 2 4 ")).toBe("1 2");
     expect(removeLastRhythmStep("1")).toBe("");
     expect(removeLastRhythmStep("")).toBe("");
-    expect(lastRhythmStep(" 1 2 3a4 ")).toBe("3a4");
     expect(lastRhythmStep("  ")).toBeUndefined();
-  });
-
-  it("rolls a triple on by one beat, in its own spelling", () => {
-    expect(nextChainLink("1 2 3&4")).toBe("&5");
-    expect(nextChainLink("1 2 3a4")).toBe("a5");
-    expect(nextChainLink("1 2 3&4&5")).toBe("&6");
-    expect(appendChainLink("1 2 3&4 ", "&5")).toBe("1 2 3&4&5");
-    expect(rhythmCounts(appendChainLink("1 2 3&4", "&5"))).toBe(5);
-  });
-
-  it("does not roll on a single step, a held beat or what is not a rhythm", () => {
-    expect(nextChainLink("1 2")).toBeUndefined();
-    expect(nextChainLink("1 (2)")).toBeUndefined();
-    expect(nextChainLink("")).toBeUndefined();
-    expect(nextChainLink("1 3&4")).toBeUndefined();
-  });
-
-  it("undoes a rolled-on beat before the triple it rolled on from", () => {
-    expect(lastRhythmStep("1 2 3&4&5")).toBe("&5");
-    expect(removeLastRhythmStep("1 2 3&4&5")).toBe("1 2 3&4");
-    expect(removeLastRhythmStep("1 2 3a4a5a6")).toBe("1 2 3a4a5");
-    expect(lastRhythmStep("1 2 3&4")).toBe("3&4");
-    expect(removeLastRhythmStep("1 2 3&4")).toBe("1 2");
   });
 
   it("only ever composes rhythms", () => {
     let written = "";
-    for (let i = 0; i < 6; i++) {
-      const steps = nextRhythmSteps(written);
-      written = appendRhythmStep(written, steps[i % steps.length]);
+    for (let i = 0; i < 12; i++) {
+      const next = nextRhythmElements(written);
+      written = appendRhythmElement(
+        written,
+        next[i % next.length],
+        i % 3 === 0,
+      );
       expect(rhythmCounts(written)).not.toBeNull();
+      expect(normalizeRhythm(written)).toBe(written);
     }
   });
 });
@@ -212,13 +351,13 @@ describe("slows and quicks (#135)", () => {
     expect(slowQuickSteps("1 2")).toEqual([]);
     expect(slowQuickSteps("S 2")).toEqual([]);
     // Beat numbers do not follow slows and quicks, nor does a rolled-on link.
-    expect(nextRhythmSteps("S Q")).toEqual([]);
-    expect(nextChainLink("S Q")).toBeUndefined();
+    expect(nextRhythmElements("S Q")).toEqual([]);
   });
 
   it("undoes the last slow or quick", () => {
     expect(lastRhythmStep("S Q Q")).toBe("Q");
     expect(removeLastRhythmStep("S Q Q")).toBe("S Q");
+    expect(appendRhythmStep("S Q ", "Q")).toBe("S Q Q");
   });
 });
 

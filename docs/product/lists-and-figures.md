@@ -72,8 +72,12 @@ works offline and stays on the phone unless the user shares it.
 
 ### Rhythm and counts
 
-- A rhythm is written the way dancers count: `1 2 3&4 5&6`. `3&4` is a triple, `3a4` a swung
-  triple, `3&4&5` a rolling count, `(4)` a beat with no weight change.
+- A rhythm is written the way dancers count: `1 2 3&4 5&6`. After any beat, `&` (the half) and
+  `a` (the late offbeat) may follow before the next beat, `&` first and each once: `3&4` is a
+  triple, `3a4` a swung triple, `3&a4` a quick step on both, `3&4&5` a rolling count. Only the
+  last step may end on one (`1 2 3&`); elsewhere it joins the next beat (`3&4`, not `3& 4`).
+  Any single beat or subdivision in parentheses is held, with no weight change: `(4)`, `3(&)4`,
+  `3&(4)`. Counts are the whole beats: `1 2 3&` is 3. There is no `e`.
 - A rhythm can also be written in **slows and quicks**: `S Q Q`, `S S Q Q S`. The app tells the
   two apart from what is typed; there is no setting. Counts are in quicks (S = 2, Q = 1), so
   `S Q Q` is 4 counts. Lower case is accepted and saved in capitals. Numbers and S/Q in one
@@ -82,10 +86,12 @@ works offline and stays on the phone unless the user shares it.
   counts drops a rhythm that no longer fits. Text that isn't a rhythm yet is explained and not
   saved.
 - While the rhythm is empty, the form offers the dance's basic rhythms for those counts. Bubbles
-  add the next step, extend the last triple, or undo, so a rhythm can be built without the
-  keyboard. While the field is empty there are also S and Q bubbles, which start a rhythm in slows
-  and quicks; after an S or Q only S and Q are offered, after a number only numbers. There are no
-  S/Q basic rhythms. The rhythm section is folded by default.
+  add one element at a time, so a rhythm can be built without the keyboard: the next beat (+1 on
+  an empty field, then +5 after 4), and + & and + a where they may follow. _Hold_ adds the next
+  element tapped held, then turns itself off. _Undo_ takes off exactly the last element
+  (`3&a4` → `3&a` → `3&` → `3`). While the field is empty there are also S and Q bubbles, which
+  start a rhythm in slows and quicks; after an S or Q only S and Q are offered, after a number
+  only numbers. There are no S/Q basic rhythms. The rhythm section is folded by default.
 
 ### Modifiers
 
@@ -129,6 +135,10 @@ works offline and stays on the phone unless the user shares it.
 | Deleting a figure leaves no dangling prerequisite anywhere                | `__tests__/unit/PrerequisiteIntegrity.test.ts`, `PatternListManager.test.tsx` |
 | Prerequisites can never form a loop through the editor                    | `__tests__/components/EditPatternForm.test.tsx`                               |
 | A stored rhythm always matches its counts                                 | `__tests__/unit/rhythm.test.ts`                                               |
+| Every rhythm has one spelling; old ones keep theirs and their counts      | `__tests__/unit/rhythm.test.ts`                                               |
+| Import and shared lists read `&`, `a` and holds                           | `__tests__/unit/validateExportData.test.ts`, `validateSharedList.test.ts`     |
+| Suggestions and variants read `&`, `a` and holds                          | `__tests__/unit/suggestions.test.ts`, `variantOverrides.test.ts`              |
+| Hold applies to one tap; Undo takes off exactly one element               | `__tests__/components/EditPatternForm.test.tsx`, `VariantOverrides.test.tsx`  |
 | A variant keeps only the values that differ from its figure's             | `__tests__/unit/variantOverrides.test.ts`, `VariantOverrides.test.tsx`        |
 | A variant's rhythm matches its own counts; no counts means the figure's   | `__tests__/unit/variantOverrides.test.ts`, `VariantOverrides.test.tsx`        |
 | Import and suggestions keep a variant's values only when they are valid   | `__tests__/unit/ExportImportRoundTrip.test.ts`, `suggestions.test.ts`         |
@@ -152,6 +162,7 @@ works offline and stays on the phone unless the user shares it.
   offers them to every list while the field is empty.
 - Sequences ([#136](https://github.com/OliverHenrichs/dpm/issues/136), design in [`docs/plans/sequences.md`](../plans/sequences.md)).
 - Argentine tango has no basic rhythm on purpose.
+- No `e` subdivision (`1e&a`), and no locked _Hold_ for several taps.
 
 ## Code
 
@@ -163,3 +174,5 @@ model).
 
 - [0005](../decisions/0005-figure-ids-are-never-reused.md) Figure ids are never reused
 - [0009](../decisions/0009-variations-are-modifiers.md) Variations are modifiers
+- [0011](../decisions/0011-rhythm-subdivisions-and-single-step-composer.md) Rhythm subdivisions
+  and the one-element composer

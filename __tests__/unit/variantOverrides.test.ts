@@ -217,6 +217,17 @@ describe("parseOverrides", () => {
     expect(parseOverrides(raw)).toEqual({ rhythmDropped: false });
   });
 
+  it("keeps a rhythm with quick subdivisions and holds, counted by whole beats", () => {
+    expect(parseOverrides({ counts: 3, rhythm: "1 2  3&(a)" })).toEqual({
+      overrides: { counts: 3, rhythm: "1 2 3&(a)" },
+      rhythmDropped: false,
+    });
+    expect(parseOverrides({ counts: 4, rhythm: "1 2 3& 4" })).toEqual({
+      overrides: { counts: 4 },
+      rhythmDropped: true,
+    });
+  });
+
   it("drops a rhythm without counts it matches, and says so", () => {
     expect(parseOverrides({ counts: 6, rhythm: "S Q Q" })).toEqual({
       overrides: { counts: 6 },

@@ -37,6 +37,11 @@ export interface ChipProps {
   removeLabel?: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  /**
+   * An on/off switch rather than one of several options (the rhythm composer's _Hold_): it is
+   * announced as a toggle button, `selected` as checked.
+   */
+  toggle?: boolean;
   testID?: string;
   style?: StyleProp<ViewStyle>;
 }
@@ -59,6 +64,7 @@ const Chip: React.FC<ChipProps> = ({
   removeLabel,
   accessibilityLabel,
   accessibilityHint,
+  toggle = false,
   testID,
   style,
 }) => {
@@ -74,10 +80,12 @@ const Chip: React.FC<ChipProps> = ({
       }}
       disabled={disabled}
       hitSlop={4}
-      accessibilityRole="button"
+      accessibilityRole={toggle ? "togglebutton" : "button"}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ selected, disabled }}
+      accessibilityState={
+        toggle ? { checked: selected, disabled } : { selected, disabled }
+      }
       testID={testID}
       android_ripple={{ color: alpha(fg, 0.2), foreground: true }}
       style={({ pressed }) => [
