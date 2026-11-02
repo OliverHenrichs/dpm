@@ -104,13 +104,12 @@ editable name prefilled with the next free "Name (2)", and no `shareCode` / `sha
 unpublishing (`readonly` stays what the file says). Pattern, type and modifier ids are scoped to
 their list, so they come along unchanged. A new id whose name another list already has shows the
 name field too, keeping the name by default, so two lists never share a name unseen. Each
-`ImportDecision` carries the `name` to save under. It once snapshotted defaults in a lazy `useState`, which
-ran while the always-mounted modal still had empty data, so every conflicting list was silently
-replaced. See "Always-mounted modals" in `src/pattern/list/AGENTS.md`.
+`ImportDecision` carries the `name` to save under. Never snapshot the defaults: see "Always-mounted
+modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.11.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.12.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -127,8 +126,7 @@ Version `"3.11.0"`: `exportDataVersion` and `IPatternListExportData` in `types/I
   are keyed by their **original local path**: pattern, universal-modifier and modifier-combination
   videos alike.
 - `importPatternLists()` (`ImportPatterns.ts`) picks a file, validates it, decodes the videos back
-  into the document directory, and warns (never fails) on a missing or unreadable video. A relocated
-  ref is spread, so its other fields survive.
+  into the document directory, and warns (never fails) on a missing or unreadable video.
 - Picked videos go through `persistVideo` / `persistPickedVideos` (`videoFiles.ts`), which copy them
   into the document directory: the picker hands out cache URIs the OS may clear.
 - The UI is `components/PatternListExportModal` and `PatternListImportModal` with their row
@@ -163,6 +161,8 @@ Version history (what each minor added):
   left drops the key, which means the automatic order.
 - **3.11** `IPatternList.levels` (`{ id, name }`). Kept: unique ids with a non-blank name, at
   most `MAX_LEVELS`; nothing left drops the key.
+- **3.12** `IPatternModifierRef.counts`/`rhythm`, a variant's own; bad counts dropped quietly, a
+  rhythm as on a figure. Rhythms may be `S Q Q`.
 
 ## Shared list context
 

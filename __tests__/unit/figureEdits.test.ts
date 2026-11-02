@@ -340,3 +340,87 @@ describe("applyFigureChanges", () => {
     expect(applied).not.toHaveProperty("rhythm");
   });
 });
+
+describe("a variant's own counts and rhythm (#134)", () => {
+  const attached = (timing: { counts?: number; rhythm?: string } = {}) => ({
+    ...sugarTuck,
+    modifierRefs: [{ modifierId: "inside-turn", videoRefs: [], ...timing }],
+  });
+
+  it("suggests a variant's counts and rhythm, and applies them", () => {
+    const current = attached();
+    const lines = figureChanges(
+      suggestedPattern(current),
+      suggestedPattern(attached({ counts: 4, rhythm: "S Q Q" })),
+      current,
+      list,
+      patterns,
+    );
+    expect(lines).toEqual([
+      {
+        id: "variantCounts:inside-turn",
+        kind: "variantCounts",
+        modifierId: "inside-turn",
+        from: {},
+        to: { counts: 4, rhythm: "S Q Q" },
+      },
+    ]);
+    expect(applyFigureChanges(current, lines).modifierRefs[0]).toEqual({
+      modifierId: "inside-turn",
+      videoRefs: [],
+      counts: 4,
+      rhythm: "S Q Q",
+    });
+  });
+
+  it("suggests taking them off again, and marks one the list owner changed since", () => {
+    const seen = attached({ counts: 4, rhythm: "S Q Q" });
+    const back = figureChanges(
+      suggestedPattern(seen),
+      suggestedPattern(attached()),
+      seen,
+      list,
+      patterns,
+    );
+    expect(applyFigureChanges(seen, back).modifierRefs[0]).toEqual({
+      modifierId: "inside-turn",
+      videoRefs: [],
+    });
+
+    const [clash] = figureChanges(
+      suggestedPattern(seen),
+      suggestedPattern(attached()),
+      attached({ counts: 6 }),
+      list,
+      patterns,
+    );
+    expect(clash).toMatchObject({ changedSince: true, now: { counts: 6 } });
+  });
+
+  it("adds a variation with its own counts and rhythm", () => {
+    const lines = changes({
+      modifierRefs: [
+        {
+          modifierId: "inside-turn",
+          videoRefs: [],
+          counts: 6,
+          rhythm: "1 2 3&4&5 6",
+        },
+      ],
+    });
+    expect(lines).toEqual([
+      expect.objectContaining({
+        id: "modifier:add:inside-turn",
+        timing: { counts: 6, rhythm: "1 2 3&4&5 6" },
+      }),
+    ]);
+    expect(applyFigureChanges(sugarTuck, lines).modifierRefs).toEqual([
+      {
+        modifierId: "inside-turn",
+        videoRefs: [],
+        counts: 6,
+        rhythm: "1 2 3&4&5 6",
+      },
+    ]);
+  });
+});

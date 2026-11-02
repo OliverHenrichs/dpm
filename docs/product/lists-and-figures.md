@@ -74,12 +74,18 @@ works offline and stays on the phone unless the user shares it.
 
 - A rhythm is written the way dancers count: `1 2 3&4 5&6`. `3&4` is a triple, `3a4` a swung
   triple, `3&4&5` a rolling count, `(4)` a beat with no weight change.
+- A rhythm can also be written in **slows and quicks**: `S Q Q`, `S S Q Q S`. The app tells the
+  two apart from what is typed; there is no setting. Counts are in quicks (S = 2, Q = 1), so
+  `S Q Q` is 4 counts. Lower case is accepted and saved in capitals. Numbers and S/Q in one
+  rhythm, and `&` or `a` between slows and quicks, are explained and not saved.
 - **A rhythm always matches its counts.** Typing a valid rhythm sets the counts. Changing the
   counts drops a rhythm that no longer fits. Text that isn't a rhythm yet is explained and not
   saved.
 - While the rhythm is empty, the form offers the dance's basic rhythms for those counts. Bubbles
   add the next step, extend the last triple, or undo, so a rhythm can be built without the
-  keyboard. The rhythm section is folded by default.
+  keyboard. While the field is empty there are also S and Q bubbles, which start a rhythm in slows
+  and quicks; after an S or Q only S and Q are offered, after a number only numbers. There are no
+  S/Q basic rhythms. The rhythm section is folded by default.
 
 ### Modifiers
 
@@ -90,7 +96,13 @@ works offline and stays on the phone unless the user shares it.
   Modifiers tab.
 - A **non-universal** modifier is attached to single figures. Each attachment is a _variant_ with
   its own videos of that figure danced with that modifier.
-- In the details, picking a variant shows its videos and description. A modifier's own details
+- A variant of an attached modifier can have its **own counts and rhythm** (a whip with a
+  Telemark may be danced to another rhythm than the plain whip). They are set in the figure form:
+  pick the variant, then _Counts and rhythm of this variant_. They follow the same matching rule
+  as the figure's. Empty counts mean the variant follows the figure. Universal modifiers have
+  none. A figure with more than one timing (such as a Slingshot) keeps each timing as a variant.
+- In the details, picking a variant shows its videos and description, and its own counts and
+  rhythm in place of the figure's when it has them. A modifier's own details
   list every figure it's attached to. Deleting a modifier detaches it everywhere.
 - A variation of a figure is a modifier on it, not a new figure.
 
@@ -111,6 +123,9 @@ works offline and stays on the phone unless the user shares it.
 | Deleting a figure leaves no dangling prerequisite anywhere                | `__tests__/unit/PrerequisiteIntegrity.test.ts`, `PatternListManager.test.tsx` |
 | Prerequisites can never form a loop through the editor                    | `__tests__/components/EditPatternForm.test.tsx`                               |
 | A stored rhythm always matches its counts                                 | `__tests__/unit/rhythm.test.ts`                                               |
+| A variant's rhythm matches its own counts; no counts means the figure's   | `__tests__/unit/rhythm.test.ts`, `VariantTiming.test.tsx`                     |
+| Import and suggestions keep a variant's timing only when it matches       | `__tests__/unit/ExportImportRoundTrip.test.ts`, `suggestions.test.ts`         |
+| S/Q counts in quicks, never mixes with numbers, takes no `&`              | `__tests__/unit/rhythm.test.ts`, `VariantTiming.test.tsx`                     |
 | Every mutation is refused on a read-only list                             | `__tests__/components/usePatternCrud.test.ts`                                 |
 | A refused save keeps the form as the user left it                         | `__tests__/components/PatternListManager.test.tsx`                            |
 | Removing a type moves its figures first                                   | `__tests__/unit/typeMoves.test.ts`                                            |
@@ -126,8 +141,8 @@ works offline and stays on the phone unless the user shares it.
 
 ## Not built yet
 
-- Counts and rhythm per variant, on attached modifiers only ([#134](https://github.com/OliverHenrichs/dpm/issues/134)).
-- Slow/quick notation, `S Q Q` ([#135](https://github.com/OliverHenrichs/dpm/issues/135)).
+- S and Q bubbles by the list's dance: no ballroom dance can be picked yet, so the composer
+  offers them to every list while the field is empty.
 - Sequences ([#136](https://github.com/OliverHenrichs/dpm/issues/136), design in [`docs/plans/sequences.md`](../plans/sequences.md)).
 - Argentine tango has no basic rhythm on purpose.
 

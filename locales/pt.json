@@ -502,7 +502,7 @@
   "rhythm": "Ritmo",
   "formSectionEmpty": "Nenhum",
   "rhythmPlaceholder": "ex.: 1 2 3&4 5&6",
-  "rhythmInvalid": "Ainda não é um ritmo. Conte cada tempo a partir de 1: 3&4 é um triplo, (4) um toque ou pausa. É guardado quando estiver válido.",
+  "rhythmInvalid": "Ainda não é um ritmo. Conte cada tempo a partir de 1: 3&4 é um triplo, (4) um toque ou pausa. Ou escreva lentos e rápidos: S Q Q. É guardado quando estiver válido.",
   "dance": "Dança",
   "danceHint": "Sugere os ritmos básicos da dança e ajuda a transcrição a reconhecer os seus termos.",
   "danceNone": "Nenhuma",
@@ -781,5 +781,18 @@
   "reportFailed": "Não foi possível enviar a denúncia. Verifique sua conexão e tente de novo.",
   "legal": "Jurídico",
   "termsOfUse": "Termos de uso",
-  "privacyPolicy": "Política de privacidade"
+  "privacyPolicy": "Política de privacidade",
+  "rhythmMixedNotation": "Números e S/Q não se misturam: escreva o ritmo em tempos (1 2 3&4) ou em lentos e rápidos (S Q Q).",
+  "rhythmSlowQuickJoin": "Lentos e rápidos não levam & nem a: escreva cada passo como S ou Q, separados por espaços.",
+  "rhythmSlowHint": "Lento (S): dois tempos",
+  "rhythmQuickHint": "Rápido (Q): um tempo",
+  "variantTiming": "Tempos e ritmo desta variação",
+  "variantTimingAsFigure": "Como a figura",
+  "variantTimingHint": "Deixe os tempos vazios e esta variação segue os tempos e o ritmo da figura.",
+  "variantCounts": "Tempos desta variação",
+  "variantRhythm": "Ritmo desta variação",
+  "variantRhythmPlaceholder": "p. ex. 1 2 3&4&5 6 ou S Q Q",
+  "suggestionEditAsFigure": "como a figura",
+  "suggestionEditVariantCounts": "{{name}}: tempos {{from}} → {{to}}",
+  "suggestionEditVariantTiming": "Tempos: {{timing}}"
 }

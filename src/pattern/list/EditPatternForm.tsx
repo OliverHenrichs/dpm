@@ -31,17 +31,11 @@ import {
   useActivePatternList,
 } from "@/src/pattern/data/components/ActivePatternListContext";
 import {
-  appendChainLink,
-  appendRhythmStep,
-  lastRhythmStep,
-  nextChainLink,
-  nextRhythmSteps,
-  normalizeRhythm,
   basicRhythms,
-  rhythmCounts,
-  rhythmMatchesCounts,
-  removeLastRhythmStep,
+  withTimingCounts,
+  withTimingRhythm,
 } from "@/src/pattern/rhythm/rhythm";
+import RhythmComposer from "./RhythmComposer";
 import AppDialog from "@/src/common/components/AppDialog";
 import AnonymizeModal, {
   AnonymizeTarget,
@@ -150,6 +144,11 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
   // What is typed in the rhythm field. The pattern carries it only once it is a rhythm, and
   // then its counts follow it; until then the field says what is wrong.
   const [rhythmDraft, setRhythmDraft] = useState(seed?.rhythm ?? "");
+  // The same for each variant's own rhythm (#134), by modifier id; a variant not in it shows
+  // the rhythm it has.
+  const [variantDrafts, setVariantDrafts] = useState<Record<string, string>>(
+    {},
+  );
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
   const [selectedModifierId, setSelectedModifierId] = useState<string | null>(
@@ -254,6 +253,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
     if (accepted !== false) {
       setNewPattern(createDefaultPattern());
       setRhythmDraft("");
+      setVariantDrafts({});
     }
   };
 
@@ -507,43 +507,57 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
       !(newPattern.modifierRefs ?? []).some((r) => r.modifierId === m.id),
   );
 
-  // Counts and rhythm stay matched both ways. New counts drop a rhythm that no longer fits; a
-  // rhythm sets the counts it takes. The key goes
-  // rather than holding `undefined`, which Firestore rejects when the list is published.
+  // Counts and rhythm stay matched both ways (withTimingCounts, withTimingRhythm). New counts
+  // drop a rhythm that no longer fits; a rhythm sets the counts it takes. The key goes rather
+  // than holding `undefined`, which Firestore rejects when the list is published.
   const changeCounts = (counts: number) => {
-    const { rhythm, ...rest } = newPattern;
-    if (rhythm && !rhythmMatchesCounts(rhythm, counts)) {
-      setNewPattern({ ...rest, counts });
-      setRhythmDraft("");
-    } else {
-      setNewPattern({ ...newPattern, counts });
-    }
+    const next = withTimingCounts(newPattern, counts);
+    if (!next.rhythm && newPattern.rhythm) setRhythmDraft("");
+    setNewPattern(next);
   };
 
   const changeRhythm = (text: string) => {
     setRhythmDraft(text);
-    const { rhythm: _previous, ...rest } = newPattern;
-    const counts = rhythmCounts(text);
-    setNewPattern(
-      counts === null
-        ? rest
-        : { ...rest, counts, rhythm: normalizeRhythm(text) },
-    );
+    setNewPattern(withTimingRhythm(newPattern, text));
   };
 
-  const rhythmInvalid =
-    rhythmDraft.trim().length > 0 && rhythmCounts(rhythmDraft) === null;
-  // While the field is empty, the dance's basic rhythms for the counts, one tap each; once
-  // something is written, the next steps to tap on.
-  const suggestedRhythms = rhythmDraft.trim()
-    ? []
-    : basicRhythms(activeList?.dance, newPattern.counts);
-  const nextSteps = nextRhythmSteps(rhythmDraft);
-  // After a triple, one more beat rolled onto it (3&4 → 3&4&5): a rolling count.
-  const chainLink = nextChainLink(rhythmDraft);
-  // The last step, for the undo chip beside the next steps: a mistap is fixed without the
-  // keyboard. Offered for any text, so a typed rhythm that went wrong can be backed out too.
-  const lastStep = lastRhythmStep(rhythmDraft);
+  // The picked variant's own counts and rhythm (#134): only an attached modifier's, never a
+  // universal one's. Empty counts mean the variant follows the figure.
+  const selectedRef = isActiveVideoReadonly
+    ? undefined
+    : (newPattern.modifierRefs ?? []).find(
+        (r) => r.modifierId === selectedModifierId,
+      );
+  const variantDraft = selectedRef
+    ? (variantDrafts[selectedRef.modifierId] ?? selectedRef.rhythm ?? "")
+    : "";
+  const updateRef = (
+    modifierId: string,
+    edit: (ref: IPatternModifierRef) => IPatternModifierRef,
+  ) =>
+    setNewPattern((prev) => ({
+      ...prev,
+      modifierRefs: (prev.modifierRefs ?? []).map((ref) =>
+        ref.modifierId === modifierId ? edit(ref) : ref,
+      ),
+    }));
+  const changeVariantCounts = (modifierId: string, text: string) => {
+    const parsed = parseInt(text, 10);
+    const counts = parsed > 0 ? parsed : undefined;
+    const ref = newPattern.modifierRefs.find(
+      (r) => r.modifierId === modifierId,
+    );
+    if (!ref) return;
+    const next = withTimingCounts(ref, counts);
+    if (!next.rhythm && ref.rhythm) {
+      setVariantDrafts((prev) => ({ ...prev, [modifierId]: "" }));
+    }
+    updateRef(modifierId, () => next);
+  };
+  const changeVariantRhythm = (modifierId: string, text: string) => {
+    setVariantDrafts((prev) => ({ ...prev, [modifierId]: text }));
+    updateRef(modifierId, (ref) => withTimingRhythm(ref, text));
+  };
   // The chosen prerequisites by name, for the folded section's one line.
   const prerequisiteSummary = newPattern.prerequisites
     .map((id) => patterns.find((p) => p.id === id)?.name)
@@ -620,6 +634,53 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
                 <Text style={styles.readonlyHint}>
                   {t("universalVideosReadonly")}
                 </Text>
+              )}
+              {selectedRef && (
+                // Keyed by the variant, so each opens on whether it has counts of its own.
+                <FormSection
+                  key={selectedRef.modifierId}
+                  title={t("variantTiming")}
+                  summary={
+                    selectedRef.counts !== undefined
+                      ? [selectedRef.counts, selectedRef.rhythm]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : t("variantTimingAsFigure")
+                  }
+                  initiallyOpen={selectedRef.counts !== undefined}
+                >
+                  <Text style={styles.label}>{t("counts")}</Text>
+                  <RevealTextInput
+                    placeholder={String(newPattern.counts)}
+                    value={selectedRef.counts?.toString() ?? ""}
+                    onChangeText={(text) =>
+                      changeVariantCounts(selectedRef.modifierId, text)
+                    }
+                    accessibilityLabel={t("variantCounts")}
+                    keyboardType="numeric"
+                    style={styles.rhythmInput}
+                    placeholderTextColor={theme.colors.textMuted}
+                  />
+                  <Text style={styles.readonlyHint}>
+                    {t("variantTimingHint")}
+                  </Text>
+                  <Text style={[styles.label, styles.variantRhythmLabel]}>
+                    {t("rhythm")}
+                  </Text>
+                  <RhythmComposer
+                    value={variantDraft}
+                    onChange={(text) =>
+                      changeVariantRhythm(selectedRef.modifierId, text)
+                    }
+                    basicRhythms={
+                      selectedRef.counts !== undefined
+                        ? basicRhythms(activeList?.dance, selectedRef.counts)
+                        : []
+                    }
+                    placeholder={t("variantRhythmPlaceholder")}
+                    accessibilityLabel={t("variantRhythm")}
+                  />
+                </FormSection>
               )}
             </View>
           )}
@@ -751,73 +812,13 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             summary={rhythmDraft.trim() || t("formSectionEmpty")}
             initiallyOpen={!!seed?.rhythm}
           >
-            <View style={styles.rhythmBlock}>
-              <RevealTextInput
-                placeholder={t("rhythmPlaceholder")}
-                value={rhythmDraft}
-                onChangeText={changeRhythm}
-                accessibilityLabel={t("rhythm")}
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={styles.rhythmInput}
-                placeholderTextColor={theme.colors.textMuted}
-              />
-              {rhythmInvalid && (
-                <Text style={styles.rhythmError}>{t("rhythmInvalid")}</Text>
-              )}
-              {suggestedRhythms.length > 0 && (
-                <View style={styles.rhythmSuggestions}>
-                  {suggestedRhythms.map((rhythm) => (
-                    <Chip
-                      key={rhythm}
-                      label={rhythm}
-                      icon="music-note-outline"
-                      accessibilityHint={t("rhythmSuggestionHint")}
-                      onPress={() => changeRhythm(rhythm)}
-                    />
-                  ))}
-                </View>
-              )}
-              {(nextSteps.length > 0 || chainLink || lastStep) && (
-                <View style={styles.rhythmSuggestions}>
-                  {nextSteps.map((step) => (
-                    <Chip
-                      key={step}
-                      label={step}
-                      icon="plus"
-                      accessibilityLabel={t("rhythmAddStep", { step })}
-                      onPress={() =>
-                        changeRhythm(appendRhythmStep(rhythmDraft, step))
-                      }
-                    />
-                  ))}
-                  {chainLink && (
-                    <Chip
-                      label={chainLink}
-                      icon="plus"
-                      accessibilityLabel={t("rhythmExtendStep", {
-                        link: chainLink,
-                      })}
-                      onPress={() =>
-                        changeRhythm(appendChainLink(rhythmDraft, chainLink))
-                      }
-                    />
-                  )}
-                  {lastStep && (
-                    <Chip
-                      label={t("rhythmUndoStep")}
-                      icon="backspace-outline"
-                      accessibilityLabel={t("rhythmRemoveStep", {
-                        step: lastStep,
-                      })}
-                      onPress={() =>
-                        changeRhythm(removeLastRhythmStep(rhythmDraft))
-                      }
-                    />
-                  )}
-                </View>
-              )}
-            </View>
+            <RhythmComposer
+              value={rhythmDraft}
+              onChange={changeRhythm}
+              basicRhythms={basicRhythms(activeList?.dance, newPattern.counts)}
+              placeholder={t("rhythmPlaceholder")}
+              accessibilityLabel={t("rhythm")}
+            />
           </FormSection>
           <FormSection
             title={t("description")}
@@ -1072,7 +1073,6 @@ const styles = StyleSheet.create((theme) => {
     },
     input: { flex: 1, height: "100%", ...baseInput },
     textarea: { ...baseInput, minHeight: 48 },
-    rhythmBlock: { marginBottom: theme.space.sm },
     newTypeBlock: { gap: theme.space.sm, paddingBottom: theme.space.md },
     newTypeInput: { ...baseInput },
     rhythmInput: { ...baseInput },
@@ -1081,12 +1081,7 @@ const styles = StyleSheet.create((theme) => {
       color: theme.colors.danger,
       marginTop: theme.space.xxs,
     },
-    rhythmSuggestions: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: theme.space.xs,
-      marginTop: theme.space.xs,
-    },
+    variantRhythmLabel: { marginTop: theme.space.sm },
     label: { ...getCommonLabel(theme) },
     nameHint: {
       ...theme.typography.caption,

@@ -9,6 +9,12 @@ import {
   normalizeRhythm,
   rhythmCounts,
   rhythmMatchesCounts,
+  isSlowQuickRhythm,
+  rhythmProblem,
+  slowQuickSteps,
+  variantTiming,
+  withTimingCounts,
+  withTimingRhythm,
 } from "@/src/pattern/rhythm/rhythm";
 import { DANCES } from "@/src/pattern/types/Dance";
 import {
@@ -159,5 +165,93 @@ describe("composing a rhythm a step at a time", () => {
       written = appendRhythmStep(written, steps[i % steps.length]);
       expect(rhythmCounts(written)).not.toBeNull();
     }
+  });
+});
+
+describe("slows and quicks (#135)", () => {
+  it.each([
+    ["S Q Q", 4],
+    ["S S Q Q S", 8],
+    ["Q Q S", 4],
+    ["s q q", 4],
+    ["  S   q ", 3],
+  ])("reads %s as %i counts, in quicks", (rhythm, counts) => {
+    expect(rhythmCounts(rhythm)).toBe(counts);
+    expect(rhythmMatchesCounts(rhythm, counts)).toBe(true);
+  });
+
+  it.each([
+    ["mixed with beats", "S Q 3", "mixed"],
+    ["mixed in a token", "1 2 3S", "mixed"],
+    ["joined with &", "S Q&Q", "slowQuickJoin"],
+    ["joined with a", "QaQ", "slowQuickJoin"],
+    ["run together", "SQQ", "invalid"],
+    ["another letter", "S Q X", "invalid"],
+  ])("refuses a rhythm %s, saying why", (_, rhythm, problem) => {
+    expect(rhythmCounts(rhythm)).toBeNull();
+    expect(rhythmProblem(rhythm)).toBe(problem);
+  });
+
+  it("finds no problem in a rhythm, or in nothing", () => {
+    expect(rhythmProblem("S Q Q")).toBeNull();
+    expect(rhythmProblem("1 2 3&4")).toBeNull();
+    expect(rhythmProblem("  ")).toBeNull();
+    expect(rhythmProblem("1 2 4")).toBe("invalid");
+  });
+
+  it("writes them in capitals, and leaves a swung triple's a alone", () => {
+    expect(normalizeRhythm(" s  q Q ")).toBe("S Q Q");
+    expect(normalizeRhythm("1 2 3a4")).toBe("1 2 3a4");
+    expect(isSlowQuickRhythm("s q q")).toBe(true);
+    expect(isSlowQuickRhythm("1 2")).toBe(false);
+    expect(isSlowQuickRhythm("")).toBe(false);
+  });
+
+  it("offers S and Q to start with and after slows and quicks, never after beats", () => {
+    expect(slowQuickSteps("")).toEqual(["S", "Q"]);
+    expect(slowQuickSteps("S Q")).toEqual(["S", "Q"]);
+    expect(slowQuickSteps("1 2")).toEqual([]);
+    expect(slowQuickSteps("S 2")).toEqual([]);
+    // Beat numbers do not follow slows and quicks, nor does a rolled-on link.
+    expect(nextRhythmSteps("S Q")).toEqual([]);
+    expect(nextChainLink("S Q")).toBeUndefined();
+  });
+
+  it("undoes the last slow or quick", () => {
+    expect(lastRhythmStep("S Q Q")).toBe("Q");
+    expect(removeLastRhythmStep("S Q Q")).toBe("S Q");
+  });
+});
+
+describe("timing: counts and a rhythm kept matched", () => {
+  it("sets the counts from a rhythm, and keeps the counts for text that is not one", () => {
+    expect(withTimingRhythm({ counts: 8 }, "s q q")).toEqual({
+      counts: 4,
+      rhythm: "S Q Q",
+    });
+    expect(withTimingRhythm({ counts: 8, rhythm: "1 2" }, "1 3")).toEqual({
+      counts: 8,
+    });
+  });
+
+  it("drops a rhythm new counts no longer fit, and with no counts", () => {
+    const telemark = { modifierId: "m", counts: 6, rhythm: "1 2 3&4&5 6" };
+    expect(withTimingCounts(telemark, 6)).toEqual(telemark);
+    expect(withTimingCounts(telemark, 8)).toEqual({
+      modifierId: "m",
+      counts: 8,
+    });
+    expect(withTimingCounts(telemark, undefined)).toEqual({ modifierId: "m" });
+  });
+
+  it("shows a variant's own timing when it has counts, else the figure's", () => {
+    const whip = { counts: 8, rhythm: "1 2 3&4 5 6 7&8" };
+    expect(variantTiming(whip, undefined)).toEqual(whip);
+    expect(variantTiming(whip, {})).toEqual(whip);
+    expect(variantTiming(whip, { counts: 6 })).toEqual({ counts: 6 });
+    expect(variantTiming(whip, { counts: 4, rhythm: "S Q Q" })).toEqual({
+      counts: 4,
+      rhythm: "S Q Q",
+    });
   });
 });
