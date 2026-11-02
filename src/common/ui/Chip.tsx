@@ -37,6 +37,16 @@ export interface ChipProps {
   removeLabel?: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  /**
+   * An on/off switch rather than one of several options (the rhythm composer's _Pause_): it is
+   * announced as a toggle button, `selected` as checked.
+   */
+  toggle?: boolean;
+  /**
+   * Shows only `icon`, which stays when selected (no check); `label` is what a screen reader
+   * reads. For a sign that says it all, such as the rhythm composer's pause.
+   */
+  iconOnly?: boolean;
   testID?: string;
   style?: StyleProp<ViewStyle>;
 }
@@ -59,12 +69,14 @@ const Chip: React.FC<ChipProps> = ({
   removeLabel,
   accessibilityLabel,
   accessibilityHint,
+  toggle = false,
+  iconOnly = false,
   testID,
   style,
 }) => {
   const { theme } = useUnistyles();
   const fg = selected ? theme.colors.onPrimary : theme.colors.onSurfaceVariant;
-  const glyph = selected ? "check" : icon;
+  const glyph = selected && !iconOnly ? "check" : icon;
 
   return (
     <Pressable
@@ -74,14 +86,17 @@ const Chip: React.FC<ChipProps> = ({
       }}
       disabled={disabled}
       hitSlop={4}
-      accessibilityRole="button"
+      accessibilityRole={toggle ? "togglebutton" : "button"}
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ selected, disabled }}
+      accessibilityState={
+        toggle ? { checked: selected, disabled } : { selected, disabled }
+      }
       testID={testID}
       android_ripple={{ color: alpha(fg, 0.2), foreground: true }}
       style={({ pressed }) => [
         styles.chip(selected),
+        iconOnly && styles.iconOnly,
         pressed && Platform.OS !== "android" && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -90,7 +105,7 @@ const Chip: React.FC<ChipProps> = ({
       {swatch ? <View style={styles.swatch(swatch)} /> : null}
       {glyph ? <Icon name={glyph} size={theme.iconSize.sm} color={fg} /> : null}
       {badge ? <Text style={styles.badge(selected)}>{badge}</Text> : null}
-      <Text style={styles.label(selected)}>{label}</Text>
+      {iconOnly ? null : <Text style={styles.label(selected)}>{label}</Text>}
       {trailingIcon ? (
         <Icon name={trailingIcon} size={theme.iconSize.sm} color={fg} />
       ) : null}
@@ -143,6 +158,12 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.5,
     color: selected ? theme.colors.onPrimary : theme.colors.textMuted,
   }),
+  // Wide enough to hit with a thumb, though it shows only a sign (Oliver, 2026-11-02).
+  iconOnly: {
+    minWidth: 56,
+    justifyContent: "center",
+    paddingHorizontal: theme.space.lg,
+  },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.4 },
 }));

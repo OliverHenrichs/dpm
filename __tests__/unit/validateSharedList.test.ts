@@ -42,6 +42,18 @@ describe("validateSharedList", () => {
     expect(validateSharedList(raw, [], CODE)).toBeNull();
   });
 
+  it("keeps a rhythm with quick subdivisions and holds, and drops one out of order", () => {
+    const patterns = [
+      createTestPattern(TYPE.id, { id: 1, counts: 4, rhythm: "1 2 3&a(4)" }),
+      createTestPattern(TYPE.id, { id: 2, counts: 4, rhythm: "1 2 3a&4" }),
+    ];
+
+    const result = validateSharedList(publishedList(), patterns, CODE);
+
+    expect(result?.patterns[0].rhythm).toBe("1 2 3&a(4)");
+    expect(result?.patterns[1]).not.toHaveProperty("rhythm");
+  });
+
   it("refuses a list whose figures cannot be read", () => {
     expect(
       validateSharedList(publishedList(), [{ id: "one", name: 3 }], CODE),

@@ -308,6 +308,39 @@ describe("validateExportData", () => {
       );
     });
 
+    it("keeps quick subdivisions and held elements, in their one spelling", () => {
+      const result = validateExportData(
+        fileWithList(
+          baseList({
+            patterns: [
+              createTestPattern(TYPE.id, {
+                id: 1,
+                counts: 4,
+                rhythm: " 1 2  3&(a)4",
+              }),
+              createTestPattern(TYPE.id, {
+                id: 2,
+                counts: 3,
+                rhythm: "1 2 3&",
+              }),
+              // `3& 4` has to chain, so it is no rhythm and is dropped.
+              createTestPattern(TYPE.id, {
+                id: 3,
+                counts: 4,
+                rhythm: "1 2 3& 4",
+              }),
+            ],
+          }),
+        ),
+      );
+
+      const [quick, ending, split] = result.data!.patternLists[0].patterns;
+      expect(quick.rhythm).toBe("1 2 3&(a)4");
+      expect(ending.rhythm).toBe("1 2 3&");
+      expect(split).not.toHaveProperty("rhythm");
+      expect(result.warnings).toHaveLength(1);
+    });
+
     it("drops a rhythm that does not fit, with a warning", () => {
       const result = validateExportData(
         fileWithList(

@@ -262,6 +262,26 @@ describe("patternFromSuggestion", () => {
     );
   });
 
+  it("keeps a quick subdivision and a held one, and drops one out of order", () => {
+    const raw = (rhythm: string) => ({
+      name: "Quick",
+      typeId: push.id,
+      counts: 4,
+      rhythm,
+      prerequisites: [],
+      description: "",
+      tags: [],
+      videoRefs: [],
+      modifierRefs: [],
+    });
+    expect(
+      patternFromSuggestion(raw("1 2 3(&)a4"), list, patterns)?.rhythm,
+    ).toBe("1 2 3(&)a4");
+    expect(
+      patternFromSuggestion(raw("1 2 3a&4"), list, patterns),
+    ).not.toHaveProperty("rhythm");
+  });
+
   it("drops what the list does not have, or no longer has", () => {
     const result = patternFromSuggestion(
       {

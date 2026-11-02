@@ -427,7 +427,7 @@ describe("EditPatternForm new type", () => {
 });
 
 describe("EditPatternForm composing a rhythm", () => {
-  it("builds a rhythm from the next-step bubbles", async () => {
+  function renderNew(name = "Whip") {
     const onAccepted = jest.fn().mockResolvedValue(true);
     renderWithProviders(
       <EditPatternForm
@@ -438,12 +438,20 @@ describe("EditPatternForm composing a rhythm", () => {
         onCancel={noop}
       />,
     );
-    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), "Whip");
+    fireEvent.changeText(screen.getByPlaceholderText("Figure Name"), name);
     openSection("Rhythm");
-
-    for (const step of ["1", "2", "3&4", "5", "6", "7a8"]) {
+    return onAccepted;
+  }
+  const tap = (...steps: string[]) => {
+    for (const step of steps)
       fireEvent.press(screen.getByLabelText(`Add ${step}`));
-    }
+  };
+  const hold = () => screen.getByRole("togglebutton", { name: "Pause" });
+
+  it("builds a rhythm one element at a time", async () => {
+    const onAccepted = renderNew();
+
+    tap("1", "2", "3", "&", "4", "5", "6", "7", "a", "8");
 
     expect(rhythmInput().props.value).toBe("1 2 3&4 5 6 7a8");
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("8");
@@ -455,65 +463,119 @@ describe("EditPatternForm composing a rhythm", () => {
     );
   });
 
-  it("takes back a mistapped step with the undo bubble", () => {
-    renderWithProviders(
-      <EditPatternForm
-        patterns={[]}
-        patternTypes={[TYPE]}
-        modifiers={[]}
-        onAccepted={noop}
-        onCancel={noop}
-      />,
-    );
-    openSection("Rhythm");
-    expect(screen.queryByText("Undo")).toBeNull();
+  it("offers +1 on an empty field, then the next beat, & and a where they may follow", () => {
+    renderNew();
+    expect(screen.getByLabelText("Add 1")).toBeOnTheScreen();
+    // A pickup: & and a before beat 1.
+    expect(screen.getByLabelText("Add &")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Add a")).toBeOnTheScreen();
 
-    for (const step of ["1", "2", "3a4"]) {
-      fireEvent.press(screen.getByLabelText(`Add ${step}`));
-    }
-    fireEvent.press(screen.getByLabelText("Remove 3a4"));
-    fireEvent.press(screen.getByLabelText("Add 3&4"));
+    tap("1", "2", "3");
+    expect(screen.getByLabelText("Add 4")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Add &")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Add a")).toBeOnTheScreen();
 
-    expect(rhythmInput().props.value).toBe("1 2 3&4");
+    tap("&");
+    expect(screen.queryByLabelText("Add &")).toBeNull();
+    tap("a");
+    expect(screen.queryByLabelText("Add a")).toBeNull();
+    tap("4");
+
+    expect(rhythmInput().props.value).toBe("1 2 3&a4");
     expect(screen.getByPlaceholderText("Counts").props.value).toBe("4");
   });
 
-  it("rolls a triple on into a rolling count, and undoes one beat of it", async () => {
-    // The Telemark, as review 2's tester counts it: 1 2 3&4&5 6.
-    const onAccepted = jest.fn().mockResolvedValue(true);
-    renderWithProviders(
-      <EditPatternForm
-        patterns={[]}
-        patternTypes={[TYPE]}
-        modifiers={[]}
-        onAccepted={onAccepted}
-        onCancel={noop}
-      />,
-    );
-    fireEvent.changeText(
-      screen.getByPlaceholderText("Figure Name"),
-      "Telemark",
-    );
-    openSection("Rhythm");
-    for (const step of ["1", "2"]) {
-      fireEvent.press(screen.getByLabelText(`Add ${step}`));
-    }
-    expect(screen.queryByLabelText(/to the last step/)).toBeNull();
+  it("holds only the next element tapped, like a shift key", async () => {
+    const onAccepted = renderNew("Basic");
+    expect(hold().props.accessibilityState).toMatchObject({ checked: false });
 
-    fireEvent.press(screen.getByLabelText("Add 3&4"));
-    fireEvent.press(screen.getByLabelText("Add &5 to the last step"));
-    fireEvent.press(screen.getByLabelText("Add &6 to the last step"));
-    fireEvent.press(screen.getByLabelText("Remove &6"));
-    fireEvent.press(screen.getByLabelText("Add 6"));
+    tap("1", "2", "3");
+    fireEvent.press(hold());
+    expect(hold().props.accessibilityState).toMatchObject({ checked: true });
+    tap("4 as a pause");
+    expect(hold().props.accessibilityState).toMatchObject({ checked: false });
+    tap("5", "&");
+    fireEvent.press(hold());
+    tap("a as a pause", "6");
+
+    expect(rhythmInput().props.value).toBe("1 2 3 (4) 5&(a)6");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("6");
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(onAccepted).toHaveBeenCalledWith(
+        expect.objectContaining({ counts: 6, rhythm: "1 2 3 (4) 5&(a)6" }),
+      ),
+    );
+  });
+
+  it("starts a rhythm on a pickup, without an error on the way", async () => {
+    const onAccepted = renderNew("Basic");
+
+    tap("&", "a");
+    expect(screen.queryByText(/Not a rhythm yet/)).toBeNull();
+    tap("1", "2");
+
+    expect(rhythmInput().props.value).toBe("&a1 2");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("2");
+    fireEvent.press(screen.getByText("Save"));
+    await waitFor(() =>
+      expect(onAccepted).toHaveBeenCalledWith(
+        expect.objectContaining({ counts: 2, rhythm: "&a1 2" }),
+      ),
+    );
+  });
+
+  it("turns Pause off again on a second tap", () => {
+    renderNew();
+
+    fireEvent.press(hold());
+    fireEvent.press(hold());
+    tap("1");
+
+    expect(rhythmInput().props.value).toBe("1");
+  });
+
+  it("undoes exactly the last element tapped", () => {
+    renderNew();
+    expect(screen.queryByLabelText(/^Remove /)).toBeNull();
+
+    tap("1", "2", "3", "&", "a", "4");
+    fireEvent.press(screen.getByLabelText("Remove 4"));
+    expect(rhythmInput().props.value).toBe("1 2 3&a");
+    fireEvent.press(screen.getByLabelText("Remove a"));
+    expect(rhythmInput().props.value).toBe("1 2 3&");
+    fireEvent.press(screen.getByLabelText("Remove &"));
+    expect(rhythmInput().props.value).toBe("1 2 3");
+    expect(screen.getByPlaceholderText("Counts").props.value).toBe("3");
+
+    fireEvent.press(hold());
+    tap("4 as a pause");
+    fireEvent.press(screen.getByLabelText("Remove (4)"));
+    expect(rhythmInput().props.value).toBe("1 2 3");
+  });
+
+  it("builds the Telemark's rolling count", async () => {
+    // As review 2's tester counts it: 1 2 3&4&5 6.
+    const onAccepted = renderNew("Telemark");
+
+    tap("1", "2", "3", "&", "4", "&", "5", "6");
 
     expect(rhythmInput().props.value).toBe("1 2 3&4&5 6");
-    expect(screen.getByPlaceholderText("Counts").props.value).toBe("6");
     fireEvent.press(screen.getByText("Save"));
     await waitFor(() =>
       expect(onAccepted).toHaveBeenCalledWith(
         expect.objectContaining({ counts: 6, rhythm: "1 2 3&4&5 6" }),
       ),
     );
+  });
+
+  it("explains a subdivision out of order or spaced off its beat", () => {
+    renderNew();
+
+    fireEvent.changeText(rhythmInput(), "1 2 3a&4");
+    expect(screen.getByText(/& comes before a/)).toBeOnTheScreen();
+    fireEvent.changeText(rhythmInput(), "1 2 3& 4");
+    expect(screen.getByText(/write 3&4, not 3& 4/)).toBeOnTheScreen();
   });
 });
 
