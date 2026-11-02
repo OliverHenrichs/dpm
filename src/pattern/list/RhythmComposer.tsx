@@ -37,7 +37,7 @@ const PROBLEM_KEYS = {
 
 /**
  * The rhythm field with its bubbles: the dance's basic rhythms while empty, then one element at
- * a time (the next beat, `&`, `a`), a one-shot _Pause_ that adds the next one held, and an undo
+ * a time (the next beat, `&`, `a`), a one-shot _Pause_ that adds the next one held, and an undo, the last two pinned right as signs
  * (src/pattern/rhythm/AGENTS.md). Slows and quicks are offered while nothing is written and
  * after slows and quicks, never beside beat numbers. Shared by a figure's rhythm and a
  * variant's own.
@@ -124,16 +124,8 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
                 onPress={() => add(appendRhythmStep(value, step))}
               />
             ))}
-            {lastStep && (
-              <Chip
-                label={t("rhythmUndoStep")}
-                icon="backspace-outline"
-                accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
-                onPress={() => onChange(removeLastRhythmStep(value))}
-              />
-            )}
           </View>
-          {/* Pinned to the right, so it stays put while the pills before it change. */}
+          {/* Pinned to the right, so they stay put while the pills before them change. */}
           {nextElements.length > 0 && (
             <Chip
               label={t("rhythmPause")}
@@ -143,6 +135,15 @@ const RhythmComposer: React.FC<RhythmComposerProps> = ({
               selected={held}
               accessibilityHint={t("rhythmPauseHint")}
               onPress={() => setPause(!held)}
+            />
+          )}
+          {lastStep && (
+            <Chip
+              label={t("rhythmUndoStep")}
+              icon="backspace-outline"
+              iconOnly
+              accessibilityLabel={t("rhythmRemoveStep", { step: lastStep })}
+              onPress={() => onChange(removeLastRhythmStep(value))}
             />
           )}
         </View>

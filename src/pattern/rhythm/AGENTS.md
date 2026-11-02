@@ -49,7 +49,7 @@ match its counts is a bug.
 `nextRhythmElements` offers one element to append (the next beat, `&` after a beat, `a` after a
 beat or its `&`; on an empty field also `&` and `a`, for a pickup), added by
 `appendRhythmElement` in the one spelling. A pickup alone (`&a`) has no counts and no problem
-message yet. _Pause_ (an icon-only toggle pinned right, so it does not move as pills change) is
+message yet. _Pause_ and _Undo_ are signs without words, pinned right so they stay put. _Pause_ is
 one-shot, like a shift key: the next element tapped goes in held, then it turns off (no lock). _Undo_
 (`removeLastRhythmStep`) takes off exactly one element (`3&a4` → `3&a`), or a word of text that
 is not a rhythm yet. `slowQuickSteps` offers `S` and `Q` while the field is empty and after slows

@@ -537,7 +537,7 @@ describe("EditPatternForm composing a rhythm", () => {
 
   it("undoes exactly the last element tapped", () => {
     renderNew();
-    expect(screen.queryByText("Undo")).toBeNull();
+    expect(screen.queryByLabelText(/^Remove /)).toBeNull();
 
     tap("1", "2", "3", "&", "a", "4");
     fireEvent.press(screen.getByLabelText("Remove 4"));

@@ -22,7 +22,7 @@ so it could not build them either.
   phone). Those steps belong to the bar before, so they add no count.
 - The composer's pills add one element each: the next beat, `&`, `a`, with a one-shot pause
   toggle. Oliver found "Hold" odd and suggested a pause sign alone, pinned to the right so it
-  stays put while the pills change.
+  stays put while the pills change. Undo is a backspace sign pinned beside it, likewise.
 - Only the last token may end on a subdivision (`1 2 3&`); elsewhere a subdivision chains on to
   the next beat (`3&4`, never `3& 4`), so every rhythm has one spelling. This part was the
   building agent's choice, since Oliver asked only that there be one spelling.

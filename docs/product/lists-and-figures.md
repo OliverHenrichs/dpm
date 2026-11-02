@@ -90,7 +90,7 @@ works offline and stays on the phone unless the user shares it.
   add one element at a time, so a rhythm can be built without the keyboard: the next beat (+1 on
   an empty field, then +5 after 4), and + & and + a where they may follow (on an empty field too,
   for a pickup). The pause toggle, a pause sign pinned to the right of the bubbles, adds the next
-  element tapped held, then turns itself off. _Undo_ takes off exactly the last element
+  element tapped held, then turns itself off. _Undo_, a backspace sign pinned beside it, takes off exactly the last element
   (`3&a4` → `3&a` → `3&` → `3`). While the field is empty there are also S and Q bubbles, which
   start a rhythm in slows and quicks; after an S or Q only S and Q are offered, after a number
   only numbers. There are no S/Q basic rhythms. The rhythm section is folded by default.
