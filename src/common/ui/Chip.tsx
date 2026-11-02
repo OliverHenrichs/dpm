@@ -158,7 +158,12 @@ const styles = StyleSheet.create((theme) => ({
     letterSpacing: 0.5,
     color: selected ? theme.colors.onPrimary : theme.colors.textMuted,
   }),
-  iconOnly: { paddingHorizontal: theme.space.sm },
+  // Wide enough to hit with a thumb, though it shows only a sign (Oliver, 2026-11-02).
+  iconOnly: {
+    minWidth: 56,
+    justifyContent: "center",
+    paddingHorizontal: theme.space.lg,
+  },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.4 },
 }));
