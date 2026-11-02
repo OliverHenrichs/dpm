@@ -30,6 +30,9 @@ so it could not build them either.
 ## Alternatives considered
 
 - **`e` as a subdivision too** (`1e&a`): decided against for now.
+- **One bracket around consecutive held elements** (`3(&a)4` for `3(&)(a)4`): decided against
+  (Oliver, 2026-11-02). A bracket holds one element, so it has one meaning, and undo takes off one
+  element without rewriting a bracket. Runs of held elements are rare.
 - **Accepting `3& 4` and rewriting it to `3&4`**: two spellings to read for one rhythm; the form
   explains the chained one instead.
 
