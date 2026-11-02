@@ -737,6 +737,116 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("a variant's own counts and rhythm (3.12)", () => {
+    const telemark: IModifier = {
+      id: "m1",
+      name: "with Telemark",
+      position: "amends",
+      universal: false,
+      videoRefs: [],
+    };
+    const whipWith = (refs: Record<string, unknown>[]) =>
+      listWith(
+        [
+          createTestPattern(TYPE.id, {
+            id: 1,
+            name: "Basic Whip",
+            counts: 8,
+            rhythm: "1 2 3&4 5 6 7&8",
+            modifierRefs: refs.map((ref) => ({
+              modifierId: "m1",
+              videoRefs: [],
+              ...ref,
+            })) as never,
+          }),
+        ],
+        { modifiers: [telemark] },
+      );
+
+    it("keeps a variant's counts and rhythm, beside the figure's own", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ counts: 6, rhythm: "1 2 3&4&5 6" }]),
+      ]);
+
+      const figure = importResult.patternLists![0].patterns[0];
+      expect(figure).toMatchObject({ counts: 8, rhythm: "1 2 3&4 5 6 7&8" });
+      expect(figure.modifierRefs[0]).toEqual({
+        modifierId: "m1",
+        videoRefs: [],
+        counts: 6,
+        rhythm: "1 2 3&4&5 6",
+      });
+      expect(importResult.warnings).toEqual([]);
+    });
+
+    it("keeps counts alone, and a variant without either follows the figure", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ counts: 6 }]),
+        whipWith([{}]),
+      ]);
+
+      expect(importResult.patternLists![0].patterns[0].modifierRefs[0]).toEqual(
+        { modifierId: "m1", videoRefs: [], counts: 6 },
+      );
+      expect(importResult.patternLists![1].patterns[0].modifierRefs[0]).toEqual(
+        { modifierId: "m1", videoRefs: [] },
+      );
+    });
+
+    it("normalises a slow-quick rhythm, written in lower case", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ counts: 4, rhythm: " s  q q " }]),
+      ]);
+
+      expect(
+        importResult.patternLists![0].patterns[0].modifierRefs[0].rhythm,
+      ).toBe("S Q Q");
+    });
+
+    it("drops a rhythm that does not match, or has no counts, and says so", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ counts: 8, rhythm: "1 2 3&4&5 6" }]),
+        whipWith([{ rhythm: "S Q Q" }]),
+      ]);
+
+      expect(importResult.patternLists![0].patterns[0].modifierRefs[0]).toEqual(
+        { modifierId: "m1", videoRefs: [], counts: 8 },
+      );
+      expect(importResult.patternLists![1].patterns[0].modifierRefs[0]).toEqual(
+        { modifierId: "m1", videoRefs: [] },
+      );
+      expect(importText(importResult.warnings)).toContain(
+        "Its rhythm did not match its counts",
+      );
+    });
+
+    it("keeps a figure's rhythm in slows and quicks", async () => {
+      const { importResult } = await roundTrip([
+        listWith([
+          createTestPattern(TYPE.id, { id: 1, counts: 6, rhythm: "s s q q" }),
+          createTestPattern(TYPE.id, { id: 2, counts: 4, rhythm: "S S Q Q" }),
+        ]),
+      ]);
+
+      const [kept, dropped] = importResult.patternLists![0].patterns;
+      expect(kept).toMatchObject({ counts: 6, rhythm: "S S Q Q" });
+      expect(dropped).not.toHaveProperty("rhythm");
+    });
+
+    it("drops counts that are not a positive whole number, quietly", async () => {
+      const { importResult } = await roundTrip([
+        whipWith([{ counts: 0 }]),
+        whipWith([{ counts: 2.5 }]),
+        whipWith([{ counts: "6" }]),
+      ]);
+
+      importResult.patternLists!.forEach((list) =>
+        expect(list.patterns[0].modifierRefs[0]).not.toHaveProperty("counts"),
+      );
+      expect(importResult.warnings).toEqual([]);
+    });
+  });
+
   describe("members-only lists (3.7)", () => {
     it("keeps that only members may read the published list", async () => {
       const { importResult } = await roundTrip([

@@ -502,7 +502,7 @@
   "rhythm": "Rhythmus",
   "formSectionEmpty": "Keine",
   "rhythmPlaceholder": "z. B. 1 2 3&4 5&6",
-  "rhythmInvalid": "Noch kein Rhythmus. Zähle jeden Schlag ab 1: 3&4 ist ein Triple, (4) ein Tap oder eine Pause. Gespeichert wird er, sobald er stimmt.",
+  "rhythmInvalid": "Noch kein Rhythmus. Zähle jeden Schlag ab 1: 3&4 ist ein Triple, (4) ein Tap oder eine Pause. Oder schreibe Slows und Quicks: S Q Q. Gespeichert wird er, sobald er stimmt.",
   "dance": "Tanz",
   "danceHint": "Schlägt die Grundrhythmen des Tanzes vor und hilft der Transkription, seine Begriffe zu erkennen.",
   "danceNone": "Keiner",
@@ -781,5 +781,18 @@
   "reportFailed": "Die Meldung konnte nicht gesendet werden. Prüfe deine Verbindung und versuche es noch einmal.",
   "legal": "Rechtliches",
   "termsOfUse": "Nutzungsbedingungen",
-  "privacyPolicy": "Datenschutzerklärung"
+  "privacyPolicy": "Datenschutzerklärung",
+  "rhythmMixedNotation": "Zahlen und S/Q lassen sich nicht mischen: Schreibe den Rhythmus in Zählzeiten (1 2 3&4) oder in Slows und Quicks (S Q Q).",
+  "rhythmSlowQuickJoin": "Slows und Quicks haben kein & oder a: Schreibe jeden Schritt als S oder Q, getrennt durch Leerzeichen.",
+  "rhythmSlowHint": "Slow: zwei Zählzeiten",
+  "rhythmQuickHint": "Quick: eine Zählzeit",
+  "variantTiming": "Zählzeiten und Rhythmus dieser Variante",
+  "variantTimingAsFigure": "Wie die Figur",
+  "variantTimingHint": "Lass die Zählzeiten leer, dann folgt diese Variante den Zählzeiten und dem Rhythmus der Figur.",
+  "variantCounts": "Zählzeiten dieser Variante",
+  "variantRhythm": "Rhythmus dieser Variante",
+  "variantRhythmPlaceholder": "z. B. 1 2 3&4&5 6 oder S Q Q",
+  "suggestionEditAsFigure": "wie die Figur",
+  "suggestionEditVariantCounts": "{{name}}: Zählzeiten {{from}} → {{to}}",
+  "suggestionEditVariantTiming": "Zählzeiten: {{timing}}"
 }

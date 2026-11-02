@@ -502,7 +502,7 @@
   "rhythm": "Rhythm",
   "formSectionEmpty": "None",
   "rhythmPlaceholder": "e.g. 1 2 3&4 5&6",
-  "rhythmInvalid": "Not a rhythm yet. Count every beat from 1: 3&4 is a triple, (4) a tap or pause. It is saved once it is one.",
+  "rhythmInvalid": "Not a rhythm yet. Count every beat from 1: 3&4 is a triple, (4) a tap or pause. Or write slows and quicks: S Q Q. It is saved once it is one.",
   "dance": "Dance",
   "danceHint": "Suggests the dance's basic rhythms and helps transcription recognise its terms.",
   "danceNone": "None",
@@ -781,5 +781,18 @@
   "reportFailed": "The report could not be sent. Check your connection and try again.",
   "legal": "Legal",
   "termsOfUse": "Terms of use",
-  "privacyPolicy": "Privacy policy"
+  "privacyPolicy": "Privacy policy",
+  "rhythmMixedNotation": "Numbers and S/Q don't mix: write the rhythm in counts (1 2 3&4) or in slows and quicks (S Q Q).",
+  "rhythmSlowQuickJoin": "Slows and quicks take no & or a: write each step as S or Q, separated by spaces.",
+  "rhythmSlowHint": "Slow: two counts",
+  "rhythmQuickHint": "Quick: one count",
+  "variantTiming": "Counts and rhythm of this variant",
+  "variantTimingAsFigure": "As the figure",
+  "variantTimingHint": "Leave the counts empty and this variant follows the figure's counts and rhythm.",
+  "variantCounts": "Counts of this variant",
+  "variantRhythm": "Rhythm of this variant",
+  "variantRhythmPlaceholder": "e.g. 1 2 3&4&5 6 or S Q Q",
+  "suggestionEditAsFigure": "as the figure",
+  "suggestionEditVariantCounts": "{{name}}: counts {{from}} → {{to}}",
+  "suggestionEditVariantTiming": "Counts: {{timing}}"
 }

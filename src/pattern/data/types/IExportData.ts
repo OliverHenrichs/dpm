@@ -1,6 +1,6 @@
 import { IPattern, IPatternList } from "@/src/pattern/types/IPatternList";
 
-export const exportDataVersion = "3.11.0";
+export const exportDataVersion = "3.12.0";
 
 export interface PatternListWithPatterns extends IPatternList {
   patterns: IPattern[]; // Patterns are included for export

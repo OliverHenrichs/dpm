@@ -24,6 +24,7 @@ import {
   ChangeLine,
   CountsAndRhythm,
 } from "@/src/pattern/suggestions/figureEdits";
+import { Timing } from "@/src/pattern/rhythm/rhythm";
 
 interface SuggestedEditReviewProps {
   /** The figure as it is now in the list owner's list. */
@@ -188,6 +189,12 @@ const levelText = (
 const countsText = (c: CountsAndRhythm) =>
   c.rhythm ? `${c.counts} (${c.rhythm})` : String(c.counts);
 
+/** A variant's own counts and rhythm, or that it follows the figure. */
+const timingText = (t: TFunction, timing: Timing | undefined) =>
+  timing?.counts !== undefined
+    ? countsText({ counts: timing.counts, rhythm: timing.rhythm })
+    : t("suggestionEditAsFigure");
+
 const startText = (t: TFunction, seconds: number | null | undefined) =>
   seconds == null ? t("suggestionEditFromStart") : formatTime(seconds);
 
@@ -258,9 +265,25 @@ function describe(
           { name: modifierName(line.modifierId) },
         ),
         detail:
-          line.op === "add" && line.videos.length > 0
-            ? line.videos.map((v) => v.value).join("\n")
+          line.op === "add"
+            ? [
+                line.timing &&
+                  t("suggestionEditVariantTiming", {
+                    timing: timingText(t, line.timing),
+                  }),
+                ...line.videos.map((v) => v.value),
+              ]
+                .filter(Boolean)
+                .join("\n") || undefined
             : undefined,
+      };
+    case "variantCounts":
+      return {
+        title: t("suggestionEditVariantCounts", {
+          name: modifierName(line.modifierId),
+          from: timingText(t, line.from),
+          to: timingText(t, line.to),
+        }),
       };
     case "video": {
       const under = modifierName(line.modifierId);
@@ -317,6 +340,8 @@ function describeNow(
       return levelText(t, levels, line.now);
     case "counts":
       return line.now ? countsText(line.now) : "";
+    case "variantCounts":
+      return timingText(t, line.now);
     case "videoStart":
       return startText(t, line.now);
     default:

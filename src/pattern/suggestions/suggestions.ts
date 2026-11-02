@@ -1,4 +1,8 @@
-import { rhythmMatchesCounts } from "@/src/pattern/rhythm/rhythm";
+import {
+  normalizeRhythm,
+  rhythmMatchesCounts,
+  Timing,
+} from "@/src/pattern/rhythm/rhythm";
 import {
   IPattern,
   IPatternList,
@@ -111,11 +115,32 @@ export function suggestedPattern(pattern: NewPattern): NewPattern {
     videoRefs: onlineVideos(pattern.videoRefs).slice(0, MAX_VIDEOS),
     modifierRefs: (pattern.modifierRefs ?? [])
       .slice(0, MAX_MODIFIER_REFS)
-      .map(({ modifierId, videoRefs }) => ({
+      .map(({ modifierId, videoRefs, counts, rhythm }) => ({
         modifierId,
         videoRefs: onlineVideos(videoRefs).slice(0, MAX_VIDEOS),
+        ...(counts !== undefined && { counts }),
+        ...(rhythm && rhythm.length <= MAX_RHYTHM && { rhythm }),
       })),
   };
+}
+
+/**
+ * A variant's own counts and rhythm from another phone (#134): counts a positive whole number,
+ * a rhythm only with counts it matches. Anything else is left out, and the variant follows
+ * its figure.
+ */
+export function asVariantTiming(raw: Record<string, unknown>): Timing {
+  const counts =
+    typeof raw.counts === "number" &&
+    Number.isInteger(raw.counts) &&
+    raw.counts > 0
+      ? raw.counts
+      : undefined;
+  if (counts === undefined) return {};
+  return typeof raw.rhythm === "string" &&
+    rhythmMatchesCounts(raw.rhythm, counts)
+    ? { counts, rhythm: normalizeRhythm(raw.rhythm) }
+    : { counts };
 }
 
 export const isObject = (v: unknown): v is Record<string, unknown> =>
@@ -221,6 +246,7 @@ export function patternFromSuggestion(
         .map((m) => ({
           modifierId: m.modifierId as string,
           videoRefs: asVideoRefs(m.videoRefs),
+          ...asVariantTiming(m),
         }))
     : [];
   // Any of the list's own levels; one it does not have (any more) is dropped.
@@ -231,7 +257,7 @@ export function patternFromSuggestion(
       : undefined;
   const rhythm =
     typeof raw.rhythm === "string" && rhythmMatchesCounts(raw.rhythm, counts)
-      ? raw.rhythm
+      ? normalizeRhythm(raw.rhythm)
       : undefined;
 
   return {

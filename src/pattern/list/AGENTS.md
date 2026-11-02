@@ -68,7 +68,8 @@ nothing selected.
   saved through `usePatternCrud.editPattern`. The List tab's row and the Map's details
   (`src/pattern/graph/AGENTS.md`) both open it; a third host uses it too rather than another
   copy. The form offers no delete; deleting stays on the List tab's row.
-- `EditPatternForm` keeps `rhythm` and `counts` in step; the rules are in
+- `EditPatternForm` keeps `rhythm` and `counts` in step, and a picked attached variant's own
+  (a folded section under the variant strip; `RhythmComposer` for both). The rules are in
   `src/pattern/rhythm/AGENTS.md`. Its scroll views set `keyboardShouldPersistTaps` so taps on
   suggestions keep the keyboard up.
 - Tags and prerequisites are picked the same way, inside their folded sections

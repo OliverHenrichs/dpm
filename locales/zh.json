@@ -502,7 +502,7 @@
   "rhythm": "节奏",
   "formSectionEmpty": "无",
   "rhythmPlaceholder": "例如 1 2 3&4 5&6",
-  "rhythmInvalid": "还不是有效的节奏。请从 1 开始数每一拍：3&4 表示三连步，(4) 表示点地或停顿。有效后才会保存。",
+  "rhythmInvalid": "还不是有效的节奏。请从 1 开始数每一拍：3&4 表示三连步，(4) 表示点地或停顿。也可以用慢和快来写：S Q Q。有效后才会保存。",
   "dance": "舞种",
   "danceHint": "推荐该舞种的基本节奏，并帮助语音转写识别其术语。",
   "danceNone": "无",
@@ -781,5 +781,18 @@
   "reportFailed": "举报未能发送。请检查网络连接后重试。",
   "legal": "法律信息",
   "termsOfUse": "使用条款",
-  "privacyPolicy": "隐私政策"
+  "privacyPolicy": "隐私政策",
+  "rhythmMixedNotation": "数字和 S/Q 不能混用：请用拍数（1 2 3&4）或用慢快（S Q Q）来写节奏。",
+  "rhythmSlowQuickJoin": "慢快写法不用 & 或 a：每一步写成 S 或 Q，用空格隔开。",
+  "rhythmSlowHint": "慢（S）：两拍",
+  "rhythmQuickHint": "快（Q）：一拍",
+  "variantTiming": "此变体的拍数和节奏",
+  "variantTimingAsFigure": "与舞步相同",
+  "variantTimingHint": "拍数留空时，此变体沿用舞步的拍数和节奏。",
+  "variantCounts": "此变体的拍数",
+  "variantRhythm": "此变体的节奏",
+  "variantRhythmPlaceholder": "例如 1 2 3&4&5 6 或 S Q Q",
+  "suggestionEditAsFigure": "与舞步相同",
+  "suggestionEditVariantCounts": "{{name}}：拍数 {{from}} → {{to}}",
+  "suggestionEditVariantTiming": "拍数：{{timing}}"
 }

@@ -22,6 +22,7 @@ import {
 import VideoCarousel from "@/src/common/components/VideoCarousel";
 import ModifierPillStrip from "@/src/pattern/list/ModifierPillStrip";
 import TranscriptSheet from "@/src/transcribe/components/TranscriptSheet";
+import { variantTiming } from "@/src/pattern/rhythm/rhythm";
 
 type PatternDetailsProps = {
   selectedPattern: IPattern;
@@ -78,6 +79,18 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
     );
     return ref?.videoRefs ?? [];
   })();
+
+  // The picked variant's own counts and rhythm, when it has them (#134); else the figure's.
+  // Only an attached modifier's variant has its own.
+  const selectedModifier = modifiers.find((m) => m.id === selectedModifierId);
+  const timing = variantTiming(
+    selectedPattern,
+    selectedModifier && !selectedModifier.universal
+      ? (selectedPattern.modifierRefs ?? []).find(
+          (r) => r.modifierId === selectedModifierId,
+        )
+      : undefined,
+  );
 
   // When any variant has videos, the video slot keeps its height for one without: the content
   // below no longer jumps up and back as the variant changes. A pattern with no videos at all
@@ -144,9 +157,7 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
       <View style={styles.patternDetailsRow}>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("counts")}:</Text>
-          <Text style={styles.patternDetailsValue}>
-            {selectedPattern.counts}
-          </Text>
+          <Text style={styles.patternDetailsValue}>{timing.counts}</Text>
         </View>
         <View style={styles.patternDetailsCol}>
           <Text style={styles.label}>{t("type")}:</Text>
@@ -161,13 +172,11 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
         )}
       </View>
       {/* A row of its own: a long rhythm wraps, and would push the labels beside it out of line. */}
-      {!!selectedPattern.rhythm && (
+      {!!timing.rhythm && (
         <View style={styles.patternDetailsRow}>
           <View style={styles.patternDetailsCol}>
             <Text style={styles.label}>{t("rhythm")}:</Text>
-            <Text style={styles.patternDetailsValue}>
-              {selectedPattern.rhythm}
-            </Text>
+            <Text style={styles.patternDetailsValue}>{timing.rhythm}</Text>
           </View>
         </View>
       )}

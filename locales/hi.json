@@ -502,7 +502,7 @@
   "rhythm": "लय",
   "formSectionEmpty": "कोई नहीं",
   "rhythmPlaceholder": "जैसे 1 2 3&4 5&6",
-  "rhythmInvalid": "यह अभी लय नहीं है। 1 से हर बीट गिनें: 3&4 ट्रिपल है, (4) टैप या ठहराव। सही होते ही यह सहेजी जाती है।",
+  "rhythmInvalid": "यह अभी लय नहीं है। 1 से हर बीट गिनें: 3&4 ट्रिपल है, (4) टैप या ठहराव। या स्लो और क्विक लिखें: S Q Q। सही होते ही यह सहेजी जाती है।",
   "dance": "नृत्य",
   "danceHint": "डांस की बुनियादी लय सुझाता है और ट्रांसक्रिप्शन को उसके शब्द पहचानने में मदद करता है।",
   "danceNone": "कोई नहीं",
@@ -781,5 +781,18 @@
   "reportFailed": "रिपोर्ट नहीं भेजी जा सकी। अपना कनेक्शन जाँचें और फिर से कोशिश करें।",
   "legal": "कानूनी",
   "termsOfUse": "उपयोग की शर्तें",
-  "privacyPolicy": "गोपनीयता नीति"
+  "privacyPolicy": "गोपनीयता नीति",
+  "rhythmMixedNotation": "संख्याएँ और S/Q एक साथ नहीं चलते: लय को काउंट में (1 2 3&4) या स्लो और क्विक में (S Q Q) लिखें।",
+  "rhythmSlowQuickJoin": "स्लो और क्विक में & या a नहीं होता: हर स्टेप को S या Q लिखें, बीच में स्पेस रखें।",
+  "rhythmSlowHint": "स्लो: दो काउंट",
+  "rhythmQuickHint": "क्विक: एक काउंट",
+  "variantTiming": "इस संस्करण के काउंट और लय",
+  "variantTimingAsFigure": "पैटर्न जैसा",
+  "variantTimingHint": "काउंट खाली छोड़ें, तो यह संस्करण पैटर्न के काउंट और लय पर चलता है।",
+  "variantCounts": "इस संस्करण के काउंट",
+  "variantRhythm": "इस संस्करण की लय",
+  "variantRhythmPlaceholder": "जैसे 1 2 3&4&5 6 या S Q Q",
+  "suggestionEditAsFigure": "पैटर्न जैसा",
+  "suggestionEditVariantCounts": "{{name}}: काउंट {{from}} → {{to}}",
+  "suggestionEditVariantTiming": "काउंट: {{timing}}"
 }

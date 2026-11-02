@@ -502,7 +502,7 @@
   "rhythm": "ছন্দ",
   "formSectionEmpty": "কিছু নেই",
   "rhythmPlaceholder": "যেমন 1 2 3&4 5&6",
-  "rhythmInvalid": "এটি এখনও ছন্দ নয়। 1 থেকে প্রতিটি বিট গুনুন: 3&4 একটি ট্রিপল, (4) একটি ট্যাপ বা বিরতি। ঠিক হলে এটি সংরক্ষিত হয়।",
+  "rhythmInvalid": "এটি এখনও ছন্দ নয়। 1 থেকে প্রতিটি বিট গুনুন: 3&4 একটি ট্রিপল, (4) একটি ট্যাপ বা বিরতি। অথবা স্লো ও কুইক লিখুন: S Q Q। ঠিক হলে এটি সংরক্ষিত হয়।",
   "dance": "নাচ",
   "danceHint": "নাচের মৌলিক ছন্দ সুপারিশ করে এবং ট্রান্সক্রিপশনকে এর শব্দগুলো চিনতে সাহায্য করে।",
   "danceNone": "কোনোটি নয়",
@@ -781,5 +781,18 @@
   "reportFailed": "রিপোর্ট পাঠানো যায়নি। সংযোগ দেখে আবার চেষ্টা করুন।",
   "legal": "আইনি তথ্য",
   "termsOfUse": "ব্যবহারের শর্তাবলি",
-  "privacyPolicy": "গোপনীয়তা নীতি"
+  "privacyPolicy": "গোপনীয়তা নীতি",
+  "rhythmMixedNotation": "সংখ্যা আর S/Q মেশানো যায় না: ছন্দটি কাউন্টে (1 2 3&4) অথবা স্লো ও কুইকে (S Q Q) লিখুন।",
+  "rhythmSlowQuickJoin": "স্লো ও কুইকে & বা a থাকে না: প্রতিটি স্টেপ S বা Q লিখুন, মাঝে স্পেস দিয়ে।",
+  "rhythmSlowHint": "স্লো: দুই কাউন্ট",
+  "rhythmQuickHint": "কুইক: এক কাউন্ট",
+  "variantTiming": "এই রূপভেদের কাউন্ট ও ছন্দ",
+  "variantTimingAsFigure": "প্যাটার্নের মতো",
+  "variantTimingHint": "কাউন্ট খালি রাখলে এই রূপভেদ প্যাটার্নের কাউন্ট ও ছন্দ অনুসরণ করে।",
+  "variantCounts": "এই রূপভেদের কাউন্ট",
+  "variantRhythm": "এই রূপভেদের ছন্দ",
+  "variantRhythmPlaceholder": "যেমন 1 2 3&4&5 6 বা S Q Q",
+  "suggestionEditAsFigure": "প্যাটার্নের মতো",
+  "suggestionEditVariantCounts": "{{name}}: কাউন্ট {{from}} → {{to}}",
+  "suggestionEditVariantTiming": "কাউন্ট: {{timing}}"
 }

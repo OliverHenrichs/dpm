@@ -31,6 +31,14 @@ export interface IModifier {
 export interface IPatternModifierRef {
   modifierId: string; // References IModifier.id
   videoRefs: IVideoReference[];
+  /**
+   * The variant's own counts, when it is danced to other counts than its figure (#134; the
+   * tester's example is a whip with a Telemark). Absent means it follows its figure's counts and
+   * rhythm. Only an attached (non-universal) modifier's variant has its own.
+   */
+  counts?: number;
+  /** The variant's own rhythm; only with `counts`, and always matches them (src/pattern/rhythm/). */
+  rhythm?: string;
 }
 
 /** Type for creating a new modifier (without id) */

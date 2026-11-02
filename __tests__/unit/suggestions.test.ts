@@ -319,3 +319,81 @@ describe("patternFromSuggestion", () => {
     });
   });
 });
+
+describe("a variant's own counts and rhythm in a suggestion (#134)", () => {
+  const list = createTestPatternList({
+    modifiers: [
+      {
+        id: "telemark",
+        name: "with Telemark",
+        position: "amends",
+        universal: false,
+        videoRefs: [],
+      },
+    ],
+  });
+  const [push] = list.patternTypes;
+  const whip = (modifierRefs: unknown[]) => ({
+    name: "Basic Whip",
+    typeId: push.id,
+    counts: 8,
+    rhythm: "s q q s q q",
+    prerequisites: [],
+    description: "",
+    tags: [],
+    videoRefs: [],
+    modifierRefs,
+  });
+
+  it("sends and takes a variant's counts and rhythm, and slows and quicks in capitals", () => {
+    const sent = suggestedPattern({
+      ...whip([]),
+      modifierRefs: [
+        {
+          modifierId: "telemark",
+          videoRefs: [],
+          counts: 6,
+          rhythm: "1 2 3&4&5 6",
+        },
+      ],
+    } as NewPattern);
+    expect(sent.modifierRefs[0]).toEqual({
+      modifierId: "telemark",
+      videoRefs: [],
+      counts: 6,
+      rhythm: "1 2 3&4&5 6",
+    });
+
+    const taken = patternFromSuggestion(sent, list, []);
+    expect(taken?.modifierRefs[0]).toEqual(sent.modifierRefs[0]);
+    expect(patternFromSuggestion(whip([]), list, [])?.rhythm).toBe(
+      "S Q Q S Q Q",
+    );
+  });
+
+  it("drops a variant's rhythm that does not match its counts, and bad counts", () => {
+    const taken = patternFromSuggestion(
+      whip([
+        { modifierId: "telemark", videoRefs: [], counts: 8, rhythm: "S Q Q" },
+      ]),
+      list,
+      [],
+    );
+    expect(taken?.modifierRefs[0]).toEqual({
+      modifierId: "telemark",
+      videoRefs: [],
+      counts: 8,
+    });
+    const bad = patternFromSuggestion(
+      whip([
+        { modifierId: "telemark", videoRefs: [], counts: -2, rhythm: "1 2" },
+      ]),
+      list,
+      [],
+    );
+    expect(bad?.modifierRefs[0]).toEqual({
+      modifierId: "telemark",
+      videoRefs: [],
+    });
+  });
+});

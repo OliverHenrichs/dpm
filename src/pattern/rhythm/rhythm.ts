@@ -14,6 +14,11 @@ import type { Dance } from "@/src/pattern/types/Dance";
  * The beats run from 1 without gaps, so a rhythm says how many counts it takes, and a pattern's
  * rhythm always matches its counts (see `EditPatternForm`): typing a rhythm sets the counts,
  * and changing the counts clears a rhythm that no longer fits.
+ *
+ * A rhythm can instead be written in slows and quicks (`S Q Q`, issue #135): `S` takes two
+ * counts and `Q` one, so its counts are in quicks. The notation is read from what is written;
+ * the two never mix in one rhythm, and slows and quicks take no `&` or `a`. Lower case is read
+ * too, and `normalizeRhythm` writes it in capitals.
  */
 
 /** A step `3`, a held beat `(4)`, or two or more beats chained with `&` or `a`. */
@@ -27,10 +32,24 @@ function tokenBeats(token: string): number[] | null {
   return chain ? chain.split(/[&a]/).map(Number) : [Number(step ?? held)];
 }
 
-/** How many counts a rhythm takes, or null when it is not one. */
+/** A slow or a quick, in either case. */
+const SLOW_QUICK = /^[SQ]$/i;
+
+const tokensOf = (rhythm: string) => rhythm.trim().split(/\s+/).filter(Boolean);
+
+/** Whether `rhythm` is one written in slows and quicks (`S Q Q`). */
+export function isSlowQuickRhythm(rhythm: string): boolean {
+  const tokens = tokensOf(rhythm);
+  return tokens.length > 0 && tokens.every((token) => SLOW_QUICK.test(token));
+}
+
+/** How many counts a rhythm takes, or null when it is not one. Slows and quicks count in quicks. */
 export function rhythmCounts(rhythm: string): number | null {
-  const tokens = rhythm.trim().split(/\s+/).filter(Boolean);
+  const tokens = tokensOf(rhythm);
   if (tokens.length === 0) return null;
+  if (isSlowQuickRhythm(rhythm)) {
+    return tokens.reduce((n, token) => n + (/s/i.test(token) ? 2 : 1), 0);
+  }
   let expected = 1;
   for (const token of tokens) {
     const beats = tokenBeats(token);
@@ -47,9 +66,81 @@ export function rhythmMatchesCounts(rhythm: string, counts: number): boolean {
   return rhythmCounts(rhythm) === counts;
 }
 
-/** Tidies the spacing, so equal rhythms compare equal. */
+/** Tidies the spacing and writes slows and quicks in capitals, so equal rhythms compare equal. */
 export function normalizeRhythm(rhythm: string): string {
-  return rhythm.trim().split(/\s+/).join(" ");
+  return tokensOf(rhythm)
+    .map((token) => (SLOW_QUICK.test(token) ? token.toUpperCase() : token))
+    .join(" ");
+}
+
+/**
+ * Why text is not a rhythm, for the form to explain: `mixed` when it mixes beat numbers with
+ * slows and quicks, `slowQuickJoin` when it joins slows and quicks with `&` or `a` (`Q&Q` is
+ * not verified), else `invalid`. Null when it is a rhythm, or nothing is written.
+ */
+export type RhythmProblem = "mixed" | "slowQuickJoin" | "invalid";
+export function rhythmProblem(text: string): RhythmProblem | null {
+  if (!text.trim() || rhythmCounts(text) !== null) return null;
+  const slowQuick = /[sq]/i.test(text);
+  if (slowQuick && /\d/.test(text)) return "mixed";
+  if (slowQuick && /[&a]/i.test(text)) return "slowQuickJoin";
+  return "invalid";
+}
+
+/** Counts and a rhythm that go together: a figure's, or a variant's own (`IPatternModifierRef`). */
+export interface Timing {
+  counts?: number;
+  rhythm?: string;
+}
+
+/**
+ * `timing` with new counts (none: a variant that follows its figure), dropping a rhythm that
+ * no longer fits. Keys go rather than hold `undefined`, which Firestore refuses.
+ */
+export function withTimingCounts<T extends Timing>(
+  timing: T,
+  counts: number | undefined,
+): T {
+  const { counts: _counts, rhythm, ...rest } = timing;
+  const fits =
+    !!rhythm && counts !== undefined && rhythmMatchesCounts(rhythm, counts);
+  return {
+    ...rest,
+    ...(counts !== undefined && { counts }),
+    ...(fits && { rhythm }),
+  } as T;
+}
+
+/**
+ * `timing` with what is typed in its rhythm field: a rhythm sets the counts it takes; text that
+ * is not one yet (or none) leaves the counts and carries no rhythm.
+ */
+export function withTimingRhythm<T extends Timing>(timing: T, text: string): T {
+  const { rhythm: _previous, ...rest } = timing;
+  const counts = rhythmCounts(text);
+  return (
+    counts === null ? rest : { ...rest, counts, rhythm: normalizeRhythm(text) }
+  ) as T;
+}
+
+/**
+ * What a variant is danced to: its own counts and rhythm when it has counts, else its figure's.
+ * Only an attached (non-universal) modifier's variant has its own.
+ */
+export function variantTiming(
+  figure: { counts: number; rhythm?: string },
+  variant: Timing | undefined,
+): { counts: number; rhythm?: string } {
+  if (variant?.counts === undefined) {
+    return {
+      counts: figure.counts,
+      ...(figure.rhythm && { rhythm: figure.rhythm }),
+    };
+  }
+  return {
+    counts: variant.counts,
+    ...(variant.rhythm && { rhythm: variant.rhythm }),
+  };
 }
 
 /**
@@ -113,9 +204,17 @@ export function defaultRhythm(
  */
 export function nextRhythmSteps(written: string): string[] {
   const counts = written.trim() ? rhythmCounts(written) : 0;
-  if (counts === null) return [];
+  if (counts === null || isSlowQuickRhythm(written)) return [];
   const beat = counts + 1;
   return [`${beat}`, `${beat}&${beat + 1}`, `${beat}a${beat + 1}`, `(${beat})`];
+}
+
+/**
+ * The slow and the quick, to tap on: while nothing is written (a way to start a rhythm in slows
+ * and quicks), and after slows and quicks. Nothing after beat numbers, which they do not mix with.
+ */
+export function slowQuickSteps(written: string): string[] {
+  return !written.trim() || isSlowQuickRhythm(written) ? ["S", "Q"] : [];
 }
 
 /** `written` with one more step on the end. */

@@ -3,6 +3,7 @@ import { MAX_SUGGESTIONS_PER_DAY } from "@/src/pattern/suggestions/suggestions";
 import {
   normalizeRhythm,
   rhythmMatchesCounts,
+  Timing,
 } from "@/src/pattern/rhythm/rhythm";
 import {
   IModifier,
@@ -235,6 +236,29 @@ function normalizeModifiers(
   return modifiers;
 }
 
+/**
+ * 3.12. A variant's own counts (a positive whole number; anything else is dropped quietly, and
+ * the variant follows its figure) and rhythm, kept only when it matches them, as on a figure.
+ */
+function normalizeVariantTiming(
+  entry: Record<string, unknown>,
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
+): Timing {
+  const counts =
+    isInteger(entry.counts) && entry.counts > 0 ? entry.counts : undefined;
+  if (entry.rhythm === undefined) return counts ? { counts } : {};
+  if (
+    counts &&
+    typeof entry.rhythm === "string" &&
+    rhythmMatchesCounts(entry.rhythm, counts)
+  ) {
+    return { counts, rhythm: normalizeRhythm(entry.rhythm) };
+  }
+  warnings.push(msg("importWarnRhythmMismatch", undefined, where));
+  return counts ? { counts } : {};
+}
+
 function normalizeModifierRefs(
   raw: unknown,
   knownModifierIds: Set<string>,
@@ -265,6 +289,7 @@ function normalizeModifierRefs(
     refs.push({
       modifierId: entry.modifierId,
       videoRefs: normalizeVideoRefs(entry.videoRefs, where, warnings),
+      ...normalizeVariantTiming(entry, where, warnings),
     });
   }
   return refs;

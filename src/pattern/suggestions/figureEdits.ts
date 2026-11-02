@@ -1,5 +1,9 @@
 import { findIneligiblePrerequisiteIds } from "@/src/pattern/graph/utils/GenericGraphUtils";
-import { rhythmMatchesCounts } from "@/src/pattern/rhythm/rhythm";
+import {
+  normalizeRhythm,
+  rhythmMatchesCounts,
+  Timing,
+} from "@/src/pattern/rhythm/rhythm";
 import {
   IPattern,
   IPatternList,
@@ -7,7 +11,11 @@ import {
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
 import { resolveLevelIds } from "@/src/pattern/types/PatternLevel";
-import { asVideoRefs, isObject } from "@/src/pattern/suggestions/suggestions";
+import {
+  asVariantTiming,
+  asVideoRefs,
+  isObject,
+} from "@/src/pattern/suggestions/suggestions";
 
 /**
  * A suggested change to an existing figure, as the list owner reviews it.
@@ -31,7 +39,22 @@ export type FigureChange =
   | { kind: "description"; from: string; to: string; now?: string }
   | { kind: "tag"; op: Op; tag: string }
   | { kind: "prerequisite"; op: Op; patternId: number }
-  | { kind: "modifier"; op: Op; modifierId: string; videos: IVideoReference[] }
+  | {
+      kind: "modifier";
+      op: Op;
+      modifierId: string;
+      videos: IVideoReference[];
+      /** An added variant's own counts and rhythm, when it has them. */
+      timing?: Timing;
+    }
+  /** A variant's own counts and rhythm (#134); empty means it follows the figure. */
+  | {
+      kind: "variantCounts";
+      modifierId: string;
+      from: Timing;
+      to: Timing;
+      now?: Timing;
+    }
   | { kind: "video"; op: Op; modifierId?: string; video: IVideoReference }
   | {
       kind: "videoStart";
@@ -100,7 +123,9 @@ function snapshot(raw: unknown): Snapshot | null {
     ...(typeof raw.level === "string" &&
       raw.level !== "" && { level: raw.level }),
     ...(typeof raw.rhythm === "string" &&
-      rhythmMatchesCounts(raw.rhythm, counts) && { rhythm: raw.rhythm }),
+      rhythmMatchesCounts(raw.rhythm, counts) && {
+        rhythm: normalizeRhythm(raw.rhythm),
+      }),
     description: typeof raw.description === "string" ? raw.description : "",
     tags: strings(raw.tags),
     prerequisites: Array.isArray(raw.prerequisites)
@@ -125,6 +150,7 @@ function snapshot(raw: unknown): Snapshot | null {
           .map((m) => ({
             modifierId: m.modifierId as string,
             videoRefs: uniqueByLink(asVideoRefs(m.videoRefs)),
+            ...asVariantTiming(m),
           }))
       : [],
   };
@@ -142,8 +168,14 @@ function byLink(refs: IVideoReference[] | undefined) {
   );
 }
 
-const sameCounts = (a: CountsAndRhythm, b: CountsAndRhythm) =>
+const sameCounts = (a: Timing, b: Timing) =>
   a.counts === b.counts && (a.rhythm ?? "") === (b.rhythm ?? "");
+
+/** A variant's own counts and rhythm, without its other fields. */
+const timingOf = (ref: Timing | undefined): Timing => ({
+  ...(ref?.counts !== undefined && { counts: ref.counts }),
+  ...(ref?.rhythm && { rhythm: ref.rhythm }),
+});
 
 /**
  * The lines of a suggested change to `current`, in the order the review shows them. A change
@@ -301,14 +333,27 @@ export function figureChanges(
     const had = baseMods.get(modifierId);
     const has = currentMods.get(modifierId);
     if (!had && !has) {
+      const timing = timingOf(ref);
       lines.push({
         id: `modifier:add:${modifierId}`,
         kind: "modifier",
         op: "add",
         modifierId,
         videos: ref.videoRefs,
+        ...(timing.counts !== undefined && { timing }),
       });
     } else if (has) {
+      const from = timingOf(had);
+      const to = timingOf(ref);
+      const now = timingOf(has);
+      scalar(from, to, now, sameCounts, (changedSince) => ({
+        id: `variantCounts:${modifierId}`,
+        kind: "variantCounts",
+        modifierId,
+        from,
+        to,
+        ...(changedSince && { changedSince, now }),
+      }));
       videoLines(
         had?.videoRefs ?? [],
         ref.videoRefs,
@@ -461,9 +506,20 @@ export function applyFigureChanges(
         ) {
           figure.modifierRefs = [
             ...figure.modifierRefs,
-            { modifierId: line.modifierId, videoRefs: line.videos },
+            {
+              modifierId: line.modifierId,
+              videoRefs: line.videos,
+              ...line.timing,
+            },
           ];
         }
+        break;
+      case "variantCounts":
+        figure.modifierRefs = figure.modifierRefs.map((m) => {
+          if (m.modifierId !== line.modifierId) return m;
+          const { counts: _counts, rhythm: _rhythm, ...rest } = m;
+          return { ...rest, ...line.to };
+        });
         break;
       case "video":
         withVideos(line.modifierId, (refs) =>
