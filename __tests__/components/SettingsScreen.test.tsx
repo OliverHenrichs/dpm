@@ -17,12 +17,18 @@ import {
   peekAsyncStorage,
   seedAsyncStorage,
 } from "@/__mocks__/@react-native-async-storage/async-storage";
-import { CHANGELOG } from "@/src/changelog/changelog";
+import { CHANGELOG, noteParts } from "@/src/changelog/changelog";
 import {
   getAppIconName,
   setAlternateAppIcon,
   setAlternateIconsSupported,
 } from "@/__mocks__/expo-alternate-app-icons";
+
+/** A note as it reads on screen, without its `*term*` marks. */
+const plain = (note: string) =>
+  noteParts(note)
+    .map((part) => part.text)
+    .join("");
 
 jest.mock("@/src/pattern/data/exportPatterns", () => ({
   exportPatternLists: jest.fn(),
@@ -400,7 +406,7 @@ describe("SettingsScreen", () => {
       fireEvent.press(screen.getByText("Changelog"));
 
       expect(
-        await screen.findByText(CHANGELOG[0].notes.en[0], {
+        await screen.findByText(plain(CHANGELOG[0].notes.en[0]), {
           includeHiddenElements: true,
         }),
       ).toBeOnTheScreen();

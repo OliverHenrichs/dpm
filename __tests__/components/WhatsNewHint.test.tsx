@@ -1,6 +1,6 @@
 import React from "react";
 import WhatsNewHint from "@/src/changelog/components/WhatsNewHint";
-import { CHANGELOG } from "@/src/changelog/changelog";
+import { CHANGELOG, noteParts } from "@/src/changelog/changelog";
 import { createTestPatternList } from "@/utils/testFactories";
 import {
   fireEvent,
@@ -13,6 +13,12 @@ import {
   seedAsyncStorage,
 } from "@/__mocks__/@react-native-async-storage/async-storage";
 
+/** A note as it reads on screen, without its `*term*` marks. */
+const plain = (note: string) =>
+  noteParts(note)
+    .map((part) => part.text)
+    .join("");
+
 const latest = CHANGELOG[0];
 const previous = CHANGELOG[1];
 const title = `What's new in ${latest.version}`;
@@ -24,8 +30,10 @@ describe("WhatsNewHint", () => {
     renderWithProviders(<WhatsNewHint />, { lists: [createTestPatternList()] });
 
     expect(await screen.findByText(title, hidden)).toBeOnTheScreen();
-    expect(screen.getByText(latest.notes.en[0], hidden)).toBeOnTheScreen();
-    expect(screen.queryByText(previous.notes.en[0], hidden)).toBeNull();
+    expect(
+      screen.getByText(plain(latest.notes.en[0]), hidden),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText(plain(previous.notes.en[0]), hidden)).toBeNull();
   });
 
   it("records the version once closed", async () => {
@@ -43,7 +51,9 @@ describe("WhatsNewHint", () => {
 
     fireEvent.press(await screen.findByText("All changes", hidden));
 
-    expect(screen.getByText(previous.notes.en[0], hidden)).toBeOnTheScreen();
+    expect(
+      screen.getByText(plain(previous.notes.en[0]), hidden),
+    ).toBeOnTheScreen();
   });
 
   it("stays away on a first install, and records the version", async () => {

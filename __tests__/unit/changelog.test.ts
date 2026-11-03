@@ -5,6 +5,7 @@ import {
   ChangelogEntry,
   compareVersions,
   decideWhatsNew,
+  noteParts,
   notesFor,
 } from "@/src/changelog/changelog";
 import {
@@ -70,6 +71,40 @@ describe("the changelog", () => {
 });
 
 describe("compareVersions", () => {
+  it("closes every *term* mark it opens", () => {
+    // An odd number of marks would set the rest of the note in italics.
+    for (const { version, notes } of CHANGELOG) {
+      for (const [language, list] of Object.entries(notes)) {
+        for (const note of list) {
+          const marks = note.split("*").length - 1;
+          expect({ version, language, note, even: marks % 2 === 0 }).toEqual({
+            version,
+            language,
+            note,
+            even: true,
+          });
+        }
+      }
+    }
+  });
+
+  it("splits a note into plain text and terms", () => {
+    expect(noteParts("Tap *Edit Figure* on the *Map*.")).toEqual([
+      { text: "Tap ", term: false },
+      { text: "Edit Figure", term: true },
+      { text: " on the ", term: false },
+      { text: "Map", term: true },
+      { text: ".", term: false },
+    ]);
+    expect(noteParts("No marks here.")).toEqual([
+      { text: "No marks here.", term: false },
+    ]);
+    expect(noteParts("*Reels* first")).toEqual([
+      { text: "Reels", term: true },
+      { text: " first", term: false },
+    ]);
+  });
+
   it("compares numerically, part by part", () => {
     expect(compareVersions("1.0.10", "1.0.9")).toBeGreaterThan(0);
     expect(compareVersions("1.2.0", "1.10.0")).toBeLessThan(0);
