@@ -152,6 +152,33 @@ describe("sequences on the List tab", () => {
     expect(screen.getByText("Edit")).toBeOnTheScreen();
   });
 
+  it("closes the sheet with Close, and a new one's Cancel with nothing saved", async () => {
+    const list = await renderSequences({ sequences: [rallye] });
+
+    fireEvent.press(screen.getByText("Rallye 2026"));
+    expect(screen.getByText("Basic Whip")).toBeOnTheScreen();
+    fireEvent.press(screen.getByText("Close"));
+    expect(screen.queryByText("Basic Whip")).toBeNull();
+
+    fireEvent.press(screen.getByLabelText("New sequence"));
+    fireEvent.changeText(screen.getByLabelText("Name"), "Not kept");
+    fireEvent.press(screen.getByText("Cancel"));
+    expect(screen.queryByText("Save sequence")).toBeNull();
+    expect((await storedList(list.id)).sequences).toEqual([rallye]);
+  });
+
+  it("goes back from the form to the sequence on Cancel", async () => {
+    await renderSequences({ sequences: [rallye] });
+
+    fireEvent.press(screen.getByText("Rallye 2026"));
+    fireEvent.press(screen.getByText("Edit"));
+    fireEvent.changeText(screen.getByLabelText("Name"), "Renamed");
+    fireEvent.press(screen.getByText("Cancel"));
+
+    expect(screen.getByText("Edit")).toBeOnTheScreen();
+    expect(screen.getAllByText("Rallye 2026").length).toBeGreaterThan(0);
+  });
+
   it("creates a sequence from figures and a free step", async () => {
     const list = await renderSequences();
 
