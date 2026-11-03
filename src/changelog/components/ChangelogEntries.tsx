@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { AppText } from "@/src/common/ui";
-import { ChangelogEntry, notesFor } from "@/src/changelog/changelog";
+import { ChangelogEntry, noteParts, notesFor } from "@/src/changelog/changelog";
 
 interface ChangelogEntriesProps {
   entries: ChangelogEntry[];
@@ -47,7 +47,15 @@ const ChangelogEntries: React.FC<ChangelogEntriesProps> = ({ entries }) => {
                 {"•"}
               </AppText>
               <AppText variant="bodySmall" style={styles.noteText}>
-                {note}
+                {noteParts(note).map((part, i) =>
+                  part.term ? (
+                    <AppText key={i} variant="bodySmall" style={styles.term}>
+                      {part.text}
+                    </AppText>
+                  ) : (
+                    part.text
+                  ),
+                )}
               </AppText>
             </View>
           ))}
@@ -69,6 +77,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   note: { flexDirection: "row", gap: theme.space.sm },
   noteText: { flex: 1 },
+  term: { fontStyle: "italic" },
 }));
 
 export default ChangelogEntries;

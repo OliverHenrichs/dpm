@@ -11,7 +11,7 @@
 <de-DE>
 1.5.0
 • Listen können eigene Niveaus haben, etwa Kursnummern.
-• Eine Variante kann eigenen Count, Rhythmus, Niveau und Beschreibung haben.
+• Varianten können eigene Counts, Rhythmen, Niveaus und Beschreibungen haben.
 • Mehr Rhythmen: 3&a4, gehaltene Schläge wie 3(&)4, Auftakte, S Q Q.
 • Tags umbenennen, zusammenführen, löschen; genutzte Typen entfernen.
 • Karte: Figur bearbeiten, Bahnen ziehen, Typfarbe in der Legende ändern.

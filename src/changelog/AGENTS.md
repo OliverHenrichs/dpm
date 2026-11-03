@@ -16,6 +16,13 @@ written once per release and never reused, so they stay together in one place. W
 dancers (what they will notice), not as commit messages, and keep the dance terms as precise as
 anywhere else in the app.
 
+Set the app's own names apart (buttons, tabs, sections, settings: *Edit Figure*, *Map*,
+*Levels*), using the exact label from `locales/<lang>.json`. In Latin-script languages wrap
+them in `*…*`, which `ChangelogEntries` shows in italics (`noteParts` splits them; the test
+fails on an unclosed mark). Chinese, Arabic, Hindi and Bengali use the script's quotation
+marks instead (“…”, «…»), since italics don't suit those scripts. Play's what's-new text is
+plain, so it has neither.
+
 ## When the hint shows
 
 `decideWhatsNew` is pure and decides it from the version last seen (`@changelogSeenVersion`), the
