@@ -24,7 +24,7 @@ sharing control is hidden. Nobody needs an account.
 
 ### What is published, and what never is
 
-- Published: the list's name, types, dance, figures, modifiers, lane order and settings, and
+- Published: the list's name, types, dance, figures, modifiers, sequences, lane order and settings, and
   **link videos only**.
 - Never published: videos stored on the phone, transcripts, the network view's manual
   arrangement, the date a figure was added and the owner's secret share key.

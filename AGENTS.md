@@ -17,6 +17,7 @@ in, so read the one listed below before you add code there.
 | `src/pattern/data/AGENTS.md`        | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates          |
 | `src/pattern/list/AGENTS.md`        | `usePatternCrud`, modifiers, sorting, always-mounted modals                                                    |
 | `src/pattern/rhythm/AGENTS.md`      | Rhythm notation, its link to counts, composing one step by step                                                |
+| `src/pattern/sequences/AGENTS.md`   | Sequences: named runs of a list's figures, their steps and totals, drag reorder                                |
 | `src/pattern/graph/AGENTS.md`       | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity                           |
 | `src/reels/AGENTS.md`               | The Reels tab                                                                                                  |
 | `src/anonymize/AGENTS.md`           | Video jobs (`jobStore`), review, Shorten and Anonymize, providers                                              |
@@ -95,6 +96,9 @@ All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.
 | `IModifier`           | UUID string | `position: "prefix" \| "postfix" \| "amends"` (shown as Entry / Exit / During); `universal`; `videoRefs` used only when universal; optional `description`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `IPatternModifierRef` | —           | `{ modifierId, videoRefs, overrides? }`: a non-universal modifier attached to one pattern, with videos of that pattern danced with it; `overrides` holds the counts, rhythm, level and description that differ from the pattern's (`VariantOverrides.ts`)                                                                                                                                                                                                                                                                                                                                                         |
 | `IVideoReference`     | —           | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+
+A list's optional `sequences` (`ISequence`) are named runs of its figures in dancing order, each
+step a figure (with a variant) or free text (`src/pattern/sequences/AGENTS.md`).
 
 `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`. `PatternType.ts` also
 exports `PATTERN_TYPE_COLORS`, `generateUUID()`, `normalizeSlug()` and `isSlugUnique()`.

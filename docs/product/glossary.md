@@ -16,6 +16,8 @@ text, the website, release notes and example content.
 | modifier                | `IModifier`                | A change to how a figure is danced ("with inside turn"). Positions: Entry, During, Exit                  |
 | universal modifier      | `universal: true`          | A modifier that applies to every figure, with its own videos                                             |
 | variant                 | `IPatternModifierRef`      | A figure danced with one attached modifier, with its own videos and any values of its own                |
+| sequence                | `ISequence`                | A named run of a list's figures in dancing order (a routine, a Rallye). De _Folge_                       |
+| step, free step         | `ISequenceStep`            | One place in a sequence: a figure (as a variant or plain), or free text with optional counts             |
 | counts                  | `counts`                   | How many beats a figure takes                                                                            |
 | rhythm                  | `rhythm`                   | The step pattern over those beats, written `1 2 3&4 5&6`                                                 |
 | Map, Timeline, Network  | graph, `timeline`, `graph` | The tab and its two views                                                                                |

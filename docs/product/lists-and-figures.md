@@ -67,8 +67,10 @@ works offline and stays on the phone unless the user shares it.
 - A row shows the figure's type, level and number of videos. Tapping it expands the details:
   description, videos, prerequisites, what it builds into, tags and modifiers.
 - **Compact list** (a setting) puts each figure on one line, its type a coloured dot.
-- **Deleting a figure** asks first and removes it from every other figure's prerequisites.
-- The List tab has a second segment, **Modifiers**.
+- **Deleting a figure** asks first and removes it from every other figure's prerequisites. If
+  sequences use it, the question names them, and its steps there become free steps.
+- The List tab's other segments are **Modifiers** (below) and **Sequences**, named runs of the
+  list's figures in dancing order ([sequences](sequences.md)).
 
 ### Rhythm and counts
 
@@ -162,13 +164,12 @@ works offline and stays on the phone unless the user shares it.
 
 - S and Q bubbles by the list's dance: no ballroom dance can be picked yet, so the composer
   offers them to every list while the field is empty.
-- Sequences ([#136](https://github.com/OliverHenrichs/dpm/issues/136), design in [`docs/plans/sequences.md`](../plans/sequences.md)).
 - Argentine tango has no basic rhythm on purpose.
 - No `e` subdivision (`1e&a`), and no locked pause for several taps.
 
 ## Code
 
-`src/pattern/list/AGENTS.md`, `src/pattern/rhythm/AGENTS.md`, `src/pattern/data/AGENTS.md`
+`src/pattern/list/AGENTS.md`, `src/pattern/rhythm/AGENTS.md`, `src/pattern/sequences/AGENTS.md`, `src/pattern/data/AGENTS.md`
 (storage, ids, templates, the example list), `src/pattern/types/` and the root `AGENTS.md` (data
 model).
 

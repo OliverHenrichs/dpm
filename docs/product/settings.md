@@ -39,7 +39,8 @@ publishing it ([sharing](sharing.md)), not by sending files.
   phone. A read-only export does not.
 - **Import** validates the whole file before writing anything.
   - Damage that can be repaired (a dangling prerequisite, an unknown type, a malformed video, a
-    rhythm that doesn't match its counts) is fixed and listed as a warning.
+    rhythm that doesn't match its counts, a sequence step whose figure is missing) is fixed and
+    listed as a warning.
   - Damage that can't (not an export, no lists, a list without an id, duplicate ids, a file from
     a newer app version) refuses the whole import, with the reason.
 - A list that is already on the phone can be **skipped** (the default), **replaced**, or imported
