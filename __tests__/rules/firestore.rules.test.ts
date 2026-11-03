@@ -186,6 +186,26 @@ describe("publishing", () => {
     await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
   });
 
+  it("accepts a list with sequences, and the sync that deletes the last one", async () => {
+    const data = sharedListDoc();
+    data.list.sequences = [
+      {
+        id: "0b6c7d1e-2f3a-4b5c-8d9e-0f1a2b3c4d5e",
+        name: "Rallye 2026",
+        description: "Heat 1",
+        createdAt: Date.now(),
+        steps: [
+          { kind: "figure", id: "s1", patternId: 1, note: "slow" },
+          { kind: "free", id: "s2", text: "pose", counts: 2 },
+          { kind: "figure", id: "s3", patternId: 2 },
+        ],
+      },
+    ];
+    await assertSucceeds(publish(as(PUBLISHER), data));
+    // The last one deleted removes the key.
+    await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
+  });
+
   it("refuses a publish from a device that has not signed in", async () => {
     await assertFails(publish(anonymous(), sharedListDoc(), owner("")));
   });
