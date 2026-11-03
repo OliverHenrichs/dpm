@@ -1,14 +1,20 @@
 <en-US>
-1.4.0
-• Map boxes follow your style: rounded in After Hours, square in Clipboard.
-• A pattern's level shows as how much of its type colour fills the box.
-• Network: pan, and the pattern under the centre mark shows in a card.
-• The card plays the pattern's first video; tap it to open the pattern.
+1.5.0
+• Lists can have their own levels, such as course numbers.
+• A variant can have its own counts, rhythm, level and description.
+• Richer rhythms: 3&a4, held beats like 3(&)4, pickups, S Q Q.
+• Rename, merge and delete tags; remove a type that figures use.
+• Map: edit a figure, drag timeline lanes, recolour types in the legend.
+• Subscribers can suggest changes to existing figures.
+• Terms of use, Report list, import a list as a copy, and fixes.
 </en-US>
 <de-DE>
-1.4.0
-• Kästen auf der Karte folgen dem Stil: rund in After Hours, eckig in Clipboard.
-• Das Niveau zeigt sich daran, wie viel Typfarbe den Kasten füllt.
-• Netzwerk: Beim Verschieben erscheint die Figur unter der Mitte in einer Karte.
-• Die Karte spielt das erste Video; Tippen öffnet die Figur.
+1.5.0
+• Listen können eigene Niveaus haben, etwa Kursnummern.
+• Eine Variante kann eigenen Count, Rhythmus, Niveau und Beschreibung haben.
+• Mehr Rhythmen: 3&a4, gehaltene Schläge wie 3(&)4, Auftakte, S Q Q.
+• Tags umbenennen, zusammenführen, löschen; genutzte Typen entfernen.
+• Karte: Figur bearbeiten, Bahnen ziehen, Typfarbe in der Legende ändern.
+• Abonnenten können Änderungen an Figuren vorschlagen.
+• Nutzungsbedingungen, Liste melden, Import als Kopie und Korrekturen.
 </de-DE>
