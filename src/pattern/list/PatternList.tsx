@@ -9,7 +9,11 @@ import { FlatList, ListRenderItemInfo, Text, View } from "react-native";
 import { ListRow, type IconName } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
 import BottomSheet from "@/src/common/components/BottomSheet";
-import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
+import {
+  IModifier,
+  IPattern,
+  ISequence,
+} from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
 import PatternFilterBottomSheet, {
@@ -57,6 +61,8 @@ type PatternListProps = {
   headerActions?: React.ReactNode;
   /** The filter sheet's _Manage_ link for tags: list settings on the Tags section. */
   onManageTags?: () => void;
+  /** The list's sequences, so deleting a figure can name those that use it. */
+  sequences?: ISequence[];
 };
 
 const PatternList: React.FC<PatternListProps> = (props) => {
@@ -181,6 +187,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           onEdit={props.onEdit}
           onSuggestEdit={props.onSuggestEdit}
           onDelete={props.onDelete}
+          sequences={props.sequences}
         />
       ),
     [
@@ -192,6 +199,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
       props.onEdit,
       props.onSuggestEdit,
       props.onDelete,
+      props.sequences,
       isReadonly,
       compactList,
     ],

@@ -3,7 +3,12 @@ import { Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Icon, IconButton, ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
+import {
+  IModifier,
+  IPattern,
+  ISequence,
+} from "@/src/pattern/types/IPatternList";
+import { sequencesUsing } from "@/src/pattern/sequences/sequences";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
 import AppDialog from "@/src/common/components/AppDialog";
@@ -29,6 +34,8 @@ interface PatternListItemProps {
    */
   onSuggestEdit?: (pattern: IPattern) => void;
   onDelete: (id?: number) => void;
+  /** The list's sequences: deleting a figure some of them use names them first. */
+  sequences?: ISequence[];
 }
 
 const PatternListItem: React.FC<PatternListItemProps> = ({
@@ -43,10 +50,12 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   onEdit,
   onSuggestEdit,
   onDelete,
+  sequences,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const usedIn = sequencesUsing(sequences, pattern.id);
 
   const handleToggleSelect = () => {
     if (isSelected) {
@@ -176,7 +185,14 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
       <AppDialog
         visible={showConfirmDelete}
         title={t("deletePattern")}
-        message={t("deletePatternConfirm", { name: pattern.name })}
+        message={
+          usedIn.length > 0
+            ? t("deletePatternInSequences", {
+                name: pattern.name,
+                sequences: usedIn.map((s) => s.name).join(", "),
+              })
+            : t("deletePatternConfirm", { name: pattern.name })
+        }
         closeLabel={t("cancel")}
         onClose={() => setShowConfirmDelete(false)}
         confirmLabel={t("delete")}

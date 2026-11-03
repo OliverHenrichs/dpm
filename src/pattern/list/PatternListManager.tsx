@@ -57,6 +57,11 @@ import SuggestionsModal from "@/src/pattern/suggestions/SuggestionsModal";
 import { managesMembers } from "@/src/pattern/members/members";
 import { useMembers } from "@/src/pattern/members/useMembers";
 import MembersModal from "@/src/pattern/members/MembersModal";
+import SequenceList from "@/src/pattern/sequences/SequenceList";
+import SequenceModal, {
+  OpenSequence,
+} from "@/src/pattern/sequences/SequenceModal";
+import { newSequenceId } from "@/src/pattern/sequences/sequences";
 
 const PatternListManager = () => {
   const { t } = useTranslation();
@@ -66,6 +71,7 @@ const PatternListManager = () => {
     patterns,
     patternTypes,
     modifiers,
+    sequences,
     isReadonly,
     addPattern,
     editPattern,
@@ -73,6 +79,7 @@ const PatternListManager = () => {
     addModifier,
     editModifier,
     deleteModifier,
+    deleteSequence,
     addPatternType,
     saveList,
   } = usePatternCrud();
@@ -92,9 +99,11 @@ const PatternListManager = () => {
   const [isAddingNew, setIsAddingNew] = useState(false);
   // Editing a figure: shared with the Map's details (`EditPatternModal`).
   const { editing, startEditing, stopEditing } = usePatternEditing();
-  const [activeTab, setActiveTab] = useState<"patterns" | "modifiers">(
-    "patterns",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "patterns" | "modifiers" | "sequences"
+  >("patterns");
+  // The sequence open in its sheet (src/pattern/sequences/), viewed or edited.
+  const [openSequence, setOpenSequence] = useState<OpenSequence | null>(null);
   const [isAddingModifier, setIsAddingModifier] = useState(false);
   const [isEditingModifier, setIsEditingModifier] = useState(false);
   const [selectedModifier, setSelectedModifier] = useState<
@@ -408,6 +417,11 @@ const PatternListManager = () => {
           />
         )}
 
+        <SequenceModal
+          open={openSequence}
+          onClose={() => setOpenSequence(null)}
+        />
+
         <AnonymizeJobsBanner openAction={openJobPattern} />
 
         {/* Tab strip */}
@@ -415,13 +429,18 @@ const PatternListManager = () => {
           segments={[
             {
               value: "patterns",
-              label: t("patternList"),
+              label: t("figuresTab"),
               count: patterns.length,
             },
             {
               value: "modifiers",
               label: t("modifiersTab"),
               count: modifiers.length,
+            },
+            {
+              value: "sequences",
+              label: t("sequencesTab"),
+              count: sequences.length,
             },
           ]}
           value={activeTab}
@@ -449,6 +468,7 @@ const PatternListManager = () => {
                 mayBeSuggestedEditsTo ? setSuggestingEdit : undefined
               }
               selectedPattern={selectedPattern}
+              sequences={sequences}
               headerActions={
                 <>
                   {!isReadonly && (
@@ -485,6 +505,29 @@ const PatternListManager = () => {
                   ) : null}
                 </>
               }
+            />
+          ) : activeTab === "sequences" ? (
+            <SequenceList
+              sequences={sequences}
+              patterns={patterns}
+              modifiers={modifiers}
+              dance={activeList.dance}
+              isReadonly={isReadonly}
+              onOpen={(sequence) =>
+                setOpenSequence({ id: sequence.id, editing: false })
+              }
+              onEdit={(sequence) =>
+                setOpenSequence({ id: sequence.id, editing: true })
+              }
+              onAdd={() => {
+                const id = newSequenceId();
+                setOpenSequence({
+                  id,
+                  editing: true,
+                  draft: { id, name: "", steps: [], createdAt: Date.now() },
+                });
+              }}
+              onDelete={deleteSequence}
             />
           ) : (
             <ModifierList
