@@ -44,6 +44,12 @@ export const IMPORT_MESSAGE_KEYS = [
   "importWarnPrerequisiteNotNumber",
   "importWarnPrerequisitesMissing",
   "importWarnPrerequisiteNotInFile",
+  "importWarnSequencesNotList",
+  "importWarnSequenceMalformed",
+  "importWarnTooManySequences",
+  "importWarnSequenceTooLong",
+  "importWarnSequenceStepsMissingFigure",
+  "importWarnSequenceStepsMalformed",
   "importWarnVideoDataUnreadable",
   "importWarnVideoEntryUnreadable",
   "importWarnVideoRestoreFailed",
@@ -52,11 +58,12 @@ export const IMPORT_MESSAGE_KEYS = [
 
 export type ImportMessageKey = (typeof IMPORT_MESSAGE_KEYS)[number];
 
-/** Where in the file a problem is: always a list, sometimes a pattern or modifier in it. */
+/** Where in the file a problem is: always a list, sometimes a pattern, modifier or sequence. */
 export interface ImportMessageContext {
   list: string;
   pattern?: string;
   modifier?: string;
+  sequence?: string;
 }
 
 export interface ImportMessage {
@@ -93,6 +100,12 @@ function formatContext(t: Translate, context: ImportMessageContext): string {
     return t("importContextModifier", {
       list: context.list,
       modifier: context.modifier,
+    });
+  }
+  if (context.sequence !== undefined) {
+    return t("importContextSequence", {
+      list: context.list,
+      sequence: context.sequence,
     });
   }
   return t("importContextList", { list: context.list });

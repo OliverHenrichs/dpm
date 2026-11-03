@@ -111,6 +111,47 @@ export interface IPatternList {
    * with the list, so subscribers see the owner's level names.
    */
   levels?: IPatternLevel[];
+  /**
+   * Named runs of the list's figures in the order they are danced (`src/pattern/sequences/`),
+   * at most `MAX_SEQUENCES`. Absent rather than empty. Published and exported with the list.
+   */
+  sequences?: ISequence[];
+}
+
+/** A named, ordered run of a list's figures: a routine, a Rallye, a workshop combination. */
+export interface ISequence {
+  id: string; // UUID
+  name: string;
+  /** Absent rather than empty. */
+  description?: string;
+  /** In dancing order, at most `MAX_SEQUENCE_STEPS`. */
+  steps: ISequenceStep[];
+  createdAt: number;
+}
+
+/**
+ * One step of a sequence: a figure of the list, or free text for what is not one ("pose").
+ * `id` keeps a step apart from another of the same figure when steps are reordered.
+ */
+export type ISequenceStep = ISequenceFigureStep | ISequenceFreeStep;
+
+export interface ISequenceFigureStep {
+  kind: "figure";
+  id: string;
+  patternId: number;
+  /** The variant danced: a universal modifier, or one attached to that figure. Absent = plain. */
+  modifierId?: string;
+  note?: string;
+}
+
+export interface ISequenceFreeStep {
+  kind: "free";
+  id: string;
+  text: string;
+  /** A positive whole number, or absent. */
+  counts?: number;
+  /** Carried over from a figure step whose figure was deleted. */
+  note?: string;
 }
 
 /** How many pattern suggestions a published list takes a day (UTC), counted for whom. */
