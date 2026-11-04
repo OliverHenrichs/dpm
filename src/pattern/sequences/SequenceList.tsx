@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import SectionHeader from "@/src/common/components/SectionHeader";
 import PlusButton from "@/src/common/components/PlusButton";
 import AppDialog from "@/src/common/components/AppDialog";
-import { IconButton, ListRow } from "@/src/common/ui";
+import { Icon, IconButton, ListRow } from "@/src/common/ui";
 import type { Dance } from "@/src/pattern/types/Dance";
 import {
   IModifier,
@@ -31,7 +31,8 @@ interface SequenceListProps {
 }
 
 /**
- * The List tab's Sequences: one row per sequence with its name, step count and total counts.
+ * The List tab's Sequences: one row per sequence with its name, step count and total counts,
+ * and a badge when it has a video.
  * Tapping a row opens it; + adds one, and each row edits or deletes it, unless the list is
  * read-only. At `MAX_SEQUENCES` the + is greyed out and says why.
  */
@@ -82,27 +83,42 @@ const SequenceList: React.FC<SequenceListProps> = ({
               )}
               onPress={() => onOpen(sequence)}
               trailing={
-                !isReadonly && (
-                  <View style={styles.actions}>
-                    <IconButton
-                      icon="pencil"
-                      size={theme.iconSize.md}
-                      onPress={() => onEdit(sequence)}
-                      accessibilityLabel={t("sequenceEditNamed", {
-                        name: sequence.name,
-                      })}
-                    />
-                    <IconButton
-                      icon="trash-can-outline"
-                      size={theme.iconSize.md}
-                      color="danger"
-                      onPress={() => setDeleting(sequence)}
-                      accessibilityLabel={t("sequenceDeleteNamed", {
-                        name: sequence.name,
-                      })}
-                    />
-                  </View>
-                )
+                <View style={styles.actions}>
+                  {sequence.video && (
+                    <View
+                      style={styles.videoBadge}
+                      accessible
+                      accessibilityLabel={t("sequenceHasVideo")}
+                    >
+                      <Icon
+                        name="play-circle-outline"
+                        size={theme.iconSize.md}
+                        color={theme.colors.textMuted}
+                      />
+                    </View>
+                  )}
+                  {!isReadonly && (
+                    <>
+                      <IconButton
+                        icon="pencil"
+                        size={theme.iconSize.md}
+                        onPress={() => onEdit(sequence)}
+                        accessibilityLabel={t("sequenceEditNamed", {
+                          name: sequence.name,
+                        })}
+                      />
+                      <IconButton
+                        icon="trash-can-outline"
+                        size={theme.iconSize.md}
+                        color="danger"
+                        onPress={() => setDeleting(sequence)}
+                        accessibilityLabel={t("sequenceDeleteNamed", {
+                          name: sequence.name,
+                        })}
+                      />
+                    </>
+                  )}
+                </View>
               }
             />
           </View>
@@ -145,6 +161,7 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
   },
+  videoBadge: { paddingHorizontal: theme.space.xs },
   full: {
     ...theme.typography.caption,
     color: theme.colors.textMuted,
