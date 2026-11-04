@@ -29,7 +29,9 @@ these tools.
 ### Jobs and review
 
 - Every tool runs as a **background job, one at a time**. A banner on the List tab reports each
-  job, and a line opens its figure. Queued jobs and running transcriptions can be cancelled; a
+  job, and a line opens its figure. The figure's or sequence's form shows its own jobs under its
+  videos. Each job is a card: what it does, its status (queued, running, ready to review,
+  failed), a progress bar (moving without a count while the AI writes), and Review or Cancel job. Queued jobs and running transcriptions can be cancelled; a
   running cut cannot.
 - The user may switch apps. A phone notification says when a batch finishes. Closing DPM, or
   Android killing it, loses the running job and leaves the original untouched.

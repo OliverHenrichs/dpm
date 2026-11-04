@@ -534,7 +534,8 @@ const shadows = (strength: number) =>
 
 /** Motion timings, shared by Reanimated and `Animated` so everything moves alike. */
 export const motion = {
-  duration: { fast: 150, normal: 250, slow: 400 },
+  /** `sweep`: one pass of an indeterminate progress bar's segment. */
+  duration: { fast: 150, normal: 250, slow: 400, sweep: 1400 },
   spring: { damping: 20, stiffness: 220, mass: 1 },
 } as const;
 

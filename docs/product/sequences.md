@@ -69,10 +69,12 @@ in [`docs/plans/sequences.md`](../plans/sequences.md).
 - Files, direct links, Dropbox and YouTube can be marked. **Vimeo** videos play, but the steps
   can't be marked or seek, and the sheet says so where Mark steps (or Loop step) would be. So
   does YouTube on the web version.
-- **The figures' video tools**, under the video in the form (Android): **Edit video** (Shorten,
-  Anonymize, Speech), the transcript (read, corrected, transcribed again, copied into the
-  description), and **Put online** for a video on the phone. An online video's Edit video says
-  only videos on the phone can be edited. Opened, a transcribed video has **Show transcript**,
+- **The figures' video tools**, under the video in the form (Android), in one row of buttons:
+  **Edit video** (Shorten, Anonymize, Speech), **Transcript** (read, corrected, transcribed
+  again, copied into the description), and **Put online** for a video on the phone. An online
+  video's Edit video is greyed out, and a hint under it says only videos on the phone can be
+  edited. The video, Mark steps and these tools sit in one card above the form's fields, the
+  video centred across its width. Opened, a transcribed video has **Show transcript**,
   read-only. Jobs run in the background and report in the form and the jobs banner, whose line
   opens the sequence.
 - **A cut moves the marks.** Replacing the video with its shortened or anonymized cut moves each

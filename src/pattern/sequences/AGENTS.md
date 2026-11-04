@@ -69,6 +69,12 @@ phase still to come (the Map) is `docs/plans/sequences.md`.
   `saveSequence` applies them again. **A cut moves the marks** (`marksAfterCut`: minus the cut's
   start, those outside it dropped); _Keep both_ is not offered, since a sequence holds one video.
   A mark session ends when the video is replaced.
+- **Layout**: in the form the video, the _Mark steps_ row and the tools are one card framed like
+  the form's card below it. The tools are one wrapping row of `secondary` `sm` buttons (_Edit
+  video_, _Transcript_, _Put online_); an online video's _Edit video_ is disabled with an
+  `InfoHint` under it; job cards follow. **The video frame is always 100% wide** and only its
+  height is capped (`SEQUENCE_VIDEO_MAX_HEIGHT`): `aspectRatio` with `maxHeight` made Yoga shrink
+  the width to the capped height, off centre. Embedded players get 16:9 of that height, centred.
 - **Mark steps** (`SequenceForm`): `markQueue` (the unmarked steps, or all when every one is
   marked), started at `markStart` (0, or the last mark before the first one queued). A mark
   awaits the player's time, so it changes the draft functionally and a ref keeps a second tap

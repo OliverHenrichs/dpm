@@ -60,6 +60,7 @@ import {
 } from "@/src/anonymize/jobs/replaceVideo";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
 import DraftJobLines from "@/src/anonymize/components/DraftJobLines";
+import InfoHint from "@/src/common/components/InfoHint";
 import { canShortenVideos } from "@/src/anonymize/shortenVideo";
 import TranscriptSheet, {
   TranscriptTarget,
@@ -775,8 +776,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             full={
               !isActiveVideoReadonly && activeVideoRefs.length >= MAX_VIDEOS
             }
-          />
-          <DraftJobLines jobs={draftJobs} onReview={setReviewId} />
+          >
+            {/* The jobs on these videos, as cards under their thumbnails. */}
+            <DraftJobLines
+              jobs={draftJobs}
+              onReview={setReviewId}
+              style={styles.jobCards}
+            />
+          </PatternVideos>
           <FormSection
             title={t("typeAndLevel")}
             summary={typeLevelSummary || t("formSectionEmpty")}
@@ -915,7 +922,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             maxHeight="50%"
           >
             {onlineVideos > 0 && (
-              <Text style={styles.jobLine}>{t("videoEditOnlineHint")}</Text>
+              <InfoHint style={styles.pickerHint}>
+                {t("videoEditOnlineHint")}
+              </InfoHint>
             )}
             <View style={styles.anonymizeChoices}>
               {editable.map(({ ref, index }) => (
@@ -1137,11 +1146,8 @@ const styles = StyleSheet.create((theme) => {
       fontStyle: "italic",
       marginTop: theme.space.xs,
     },
-    jobLine: {
-      ...theme.typography.caption,
-      marginBottom: theme.space.sm,
-      color: theme.colors.textMuted,
-    },
+    jobCards: { marginTop: theme.space.sm },
+    pickerHint: { marginBottom: theme.space.sm },
     anonymizeChoices: {
       ...getCommonRow(),
       flexWrap: "wrap",

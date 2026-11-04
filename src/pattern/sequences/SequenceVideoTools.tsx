@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { View } from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { Button, IconButton } from "@/src/common/ui";
-import AppDialog from "@/src/common/components/AppDialog";
+import { Button } from "@/src/common/ui";
+import InfoHint from "@/src/common/components/InfoHint";
 import {
   ISequence,
   IVideoReference,
@@ -48,6 +48,10 @@ interface Props {
  * form takes a finished one through `applySequenceReplacements`, marks moved to a cut. What
  * changes the draft (a corrected line, text for the description) stays in it until Save, as in
  * the figure form. Android only, gated as there (`canShortenVideos`).
+ *
+ * Laid out as one row of `secondary` buttons under the form's _Mark steps_ row: _Edit video_,
+ * _Transcript_, _Put online_. An online video's _Edit video_ is disabled, with why under it.
+ * The job cards follow (`DraftJobLines`). The form leaves the whole block out while marking.
  */
 const SequenceVideoTools: React.FC<Props> = ({
   video,
@@ -56,7 +60,6 @@ const SequenceVideoTools: React.FC<Props> = ({
   onOpen,
 }) => {
   const { t } = useTranslation();
-  const { theme } = useUnistyles();
   const { activeList } = useActivePatternList();
   const { jobs } = useAnonymizeJobs();
   const startTranscription = useStartTranscription();
@@ -67,7 +70,6 @@ const SequenceVideoTools: React.FC<Props> = ({
   const [putOnlineTarget, setPutOnlineTarget] =
     useState<PutOnlineTarget | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
-  const [editBlocked, setEditBlocked] = useState(false);
 
   const writable = !!activeList && !activeList.readonly;
   const canEditVideos = writable && canShortenVideos();
@@ -101,11 +103,7 @@ const SequenceVideoTools: React.FC<Props> = ({
   };
 
   const openEditor = () => {
-    if (!activeList) return;
-    if (!local) {
-      setEditBlocked(true);
-      return;
-    }
+    if (!activeList || !local) return;
     onOpen();
     setAnonymizeTarget({
       listId: activeList.id,
@@ -163,47 +161,59 @@ const SequenceVideoTools: React.FC<Props> = ({
   return (
     <>
       {anyTool && (
-        <View style={styles.row}>
-          {canEditVideos && (
-            <Button
-              title={t("videoEditTitle")}
-              icon="movie-edit"
-              variant="secondary"
-              size="sm"
-              onPress={openEditor}
-            />
-          )}
-          {video.transcript && (
-            <IconButton
-              icon="text-box-outline"
-              color="primary"
-              size={theme.iconSize.md}
-              onPress={openTranscript}
-              accessibilityLabel={t("transcriptShow")}
-            />
-          )}
-          {writable && local && (
-            <IconButton
-              icon="cloud-upload-outline"
-              color="primary"
-              size={theme.iconSize.md}
-              onPress={openPutOnline}
-              accessibilityLabel={t("videoOnlineTitle")}
-            />
+        <View style={styles.tools}>
+          {/* One row of equal-height buttons, each an icon and a short label; a long
+              translation wraps the row rather than cutting a label short. */}
+          <View style={styles.row}>
+            {canEditVideos && (
+              <Button
+                title={t("videoEditTitle")}
+                icon="movie-edit"
+                variant="secondary"
+                size="sm"
+                onPress={openEditor}
+                disabled={!local}
+                style={styles.tool}
+              />
+            )}
+            {video.transcript && (
+              <Button
+                title={t("transcriptTitle")}
+                icon="text-box-outline"
+                variant="secondary"
+                size="sm"
+                onPress={openTranscript}
+                accessibilityLabel={t("transcriptShow")}
+                style={styles.tool}
+              />
+            )}
+            {writable && local && (
+              <Button
+                title={t("videoOnlineShort")}
+                icon="cloud-upload-outline"
+                variant="secondary"
+                size="sm"
+                onPress={openPutOnline}
+                accessibilityLabel={t("videoOnlineTitle")}
+                style={styles.tool}
+              />
+            )}
+          </View>
+          {/* A disabled button says why under it. */}
+          {canEditVideos && !local && (
+            <InfoHint>{t("videoEditOnlineHint")}</InfoHint>
           )}
         </View>
       )}
-      <DraftJobLines jobs={draftJobs} onReview={setReviewId} />
+      <DraftJobLines
+        jobs={draftJobs}
+        onReview={setReviewId}
+        style={styles.jobs}
+      />
       <VideoReviewModal
         job={reviewing}
         onClose={() => setReviewId(null)}
         source={reviewSource}
-      />
-      <AppDialog
-        visible={editBlocked}
-        title={t("videoEditTitle")}
-        message={t("videoEditOnlineHint")}
-        onClose={() => setEditBlocked(false)}
       />
       <AnonymizeModal
         target={anonymizeTarget}
@@ -245,12 +255,15 @@ const SequenceVideoTools: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
+  tools: { gap: theme.space.xs, marginTop: theme.space.sm },
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
     gap: theme.space.sm,
-    marginBottom: theme.space.xs,
   },
+  // Each grows into the row's room, so the row ends flush with the video above it.
+  tool: { flexGrow: 1 },
+  jobs: { marginTop: theme.space.sm },
 }));
 
 export default SequenceVideoTools;

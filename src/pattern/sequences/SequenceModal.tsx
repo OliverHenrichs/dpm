@@ -140,7 +140,9 @@ const SequenceView: React.FC<{
       {video && (
         <>
           <SequenceVideo video={video} {...playback.player} />
-          {!seeks && <SequenceVideoNoSeek video={video} />}
+          {!seeks && (
+            <SequenceVideoNoSeek video={video} style={styles.noSeek} />
+          )}
           {((seeks && marked) || transcript) && (
             <View style={styles.playRow}>
               {seeks && marked && (
@@ -258,6 +260,7 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: theme.space.sm,
   },
   footerButton: { flex: 1 },
+  noSeek: { marginBottom: theme.space.sm },
   playRow: {
     flexDirection: "row",
     flexWrap: "wrap",

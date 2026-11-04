@@ -42,7 +42,9 @@ Unqualified paths are relative to `src/anonymize/`.
   Edit video after saving.
 - A sequence's one video has the same tools in its form (`src/pattern/sequences/AGENTS.md`).
 - `components/AnonymizeJobsBanner.tsx` on the pattern list reports every job; a line opens its
-  pattern, or its sequence, when it is in the active list. Queued jobs and running transcriptions can be cancelled;
+  pattern, or its sequence, when it is in the active list. Each job, there and in the forms
+  (`DraftJobLines`), is a `components/JobCard.tsx`: kind icon, status, a `ProgressBar` (counting
+  `progress`, sweeping where `writesWithoutCount`), _Review_ and _Cancel job_ buttons. Queued jobs and running transcriptions can be cancelled;
   a running shorten or anonymize cannot (the native pipeline has no stop).
 - `components/VideoReviewModal.tsx` shows a finished cut for review: tags for what changed, then
   _Replace the original_ (filled), _Keep both_ (outlined), and _Discard_ / _Decide later_ as text.

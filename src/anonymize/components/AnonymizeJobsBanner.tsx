@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Text, View } from "react-native";
-import { Button, IconButton } from "@/src/common/ui";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { View } from "react-native";
+import { Button } from "@/src/common/ui";
+import { StyleSheet } from "react-native-unistyles";
+import InfoHint from "@/src/common/components/InfoHint";
 import { useTranslation } from "react-i18next";
 import {
   AnonymizeJob,
@@ -10,6 +11,7 @@ import {
   writesWithoutCount,
 } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import VideoReviewModal from "@/src/anonymize/components/VideoReviewModal";
+import JobCard from "@/src/anonymize/components/JobCard";
 
 type Props = {
   /**
@@ -20,13 +22,13 @@ type Props = {
 };
 
 /**
- * Where background video jobs report: one line per job, and a dismiss button once none is
- * still running. A finished video waiting to be checked gets a Review button, which opens it
- * for the user to keep or discard. Renders nothing when there are no jobs.
+ * Where background video jobs report: one `JobCard` per job (as the edit forms show their
+ * own), and a dismiss button once none is still running. A finished video waiting to be
+ * checked gets a Review button, which opens it for the user to keep or discard. Renders
+ * nothing when there are no jobs.
  */
 const AnonymizeJobsBanner: React.FC<Props> = ({ openAction }) => {
   const { t } = useTranslation();
-  const { theme } = useUnistyles();
   const { jobs, dismissFinished, cancel, canCancel } = useAnonymizeJobs();
   const [reviewId, setReviewId] = useState<string | null>(null);
   if (jobs.length === 0) return null;
@@ -67,44 +69,19 @@ const AnonymizeJobsBanner: React.FC<Props> = ({ openAction }) => {
       {jobs.map((job) => {
         const open = openAction?.(job);
         return (
-          <View key={job.id} style={styles.row}>
-            <Text
-              onPress={open}
-              accessibilityRole={open ? "link" : undefined}
-              accessibilityHint={open ? t("videoJobOpenPattern") : undefined}
-              style={[
-                styles.line,
-                job.status === "failed" && {
-                  color: theme.colors.danger,
-                },
-                job.status === "done" && { color: theme.colors.success },
-                open && styles.link,
-              ]}
-            >
-              {line(job)}
-            </Text>
-            {job.status === "review" && (
-              <Button
-                title={t("videoJobReviewButton")}
-                size="sm"
-                onPress={() => setReviewId(job.id)}
-              />
-            )}
-            {canCancel(job) && (
-              <IconButton
-                icon="close-circle-outline"
-                color="textMuted"
-                size={theme.iconSize.md}
-                onPress={() => cancel(job.id)}
-                accessibilityLabel={t("videoJobCancel", {
-                  name: job.patternName,
-                })}
-              />
-            )}
-          </View>
+          <JobCard
+            key={job.id}
+            job={job}
+            title={line(job)}
+            onTitlePress={open}
+            titleHint={t("videoJobOpenPattern")}
+            onReview={() => setReviewId(job.id)}
+            onCancel={canCancel(job) ? () => cancel(job.id) : undefined}
+            cancelLabel={t("videoJobCancel", { name: job.patternName })}
+          />
         );
       })}
-      {busy && <Text style={styles.keepOpen}>{t("videoJobsKeepOpen")}</Text>}
+      {busy && <InfoHint>{t("videoJobsKeepOpen")}</InfoHint>}
       <VideoReviewModal
         job={reviewing?.status === "review" ? reviewing : null}
         onClose={() => setReviewId(null)}
@@ -131,9 +108,8 @@ const PREFIX: Record<AnonymizeJob["kind"], string> = {
 };
 
 const styles = StyleSheet.create((theme) => ({
-  row: { flexDirection: "row", alignItems: "center", gap: theme.space.xs },
   banner: {
-    gap: theme.space.xs,
+    gap: theme.space.sm,
     padding: theme.space.md,
     marginBottom: theme.space.sm,
     borderRadius: theme.radius.md,
@@ -141,9 +117,6 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
   },
-  line: { ...theme.typography.bodySmall, color: theme.colors.text, flex: 1 },
-  link: { textDecorationLine: "underline" },
-  keepOpen: { ...theme.typography.caption, color: theme.colors.textMuted },
   dismissButton: {
     alignSelf: "flex-end",
   },

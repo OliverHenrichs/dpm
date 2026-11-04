@@ -109,6 +109,11 @@ export function withSpring<T>(
   return target;
 }
 
+/** No repeating either: the animation it wraps lands on its target once. */
+export function withRepeat<T>(animation: T): T {
+  return animation;
+}
+
 export function withDelay<T>(_delay: number, animation: T): T {
   return animation;
 }
@@ -138,6 +143,7 @@ const bezier = () => ({ factory: () => (t: number) => t });
 export const Easing = {
   bezier,
   linear: (t: number) => t,
+  quad: (t: number) => t * t,
   ease: (t: number) => t,
   in: (fn: (t: number) => number) => fn,
   out: (fn: (t: number) => number) => fn,

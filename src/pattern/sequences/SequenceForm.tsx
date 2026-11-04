@@ -255,7 +255,9 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
   return (
     <View style={styles.form}>
       {video && (
-        <View>
+        // The video and its tools as one card, framed as the form's card below it, so their
+        // edges line up with the fields.
+        <View style={styles.videoSection}>
           <SequenceVideo key={video.value} video={video} {...playback.player} />
           {session ? (
             <View style={styles.markBar}>
@@ -313,9 +315,7 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
                   style={styles.markButton}
                 />
               ) : (
-                <View style={styles.markButton}>
-                  <SequenceVideoNoSeek video={video} />
-                </View>
+                <SequenceVideoNoSeek video={video} style={styles.markButton} />
               )}
               <IconButton
                 icon="trash-can-outline"
@@ -540,6 +540,12 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.space.sm,
+  },
+  videoSection: {
+    ...getCommonBorder(theme),
+    padding: theme.space.sm,
+    backgroundColor: theme.colors.surface,
+    marginBottom: theme.space.sm,
   },
   markBar: { gap: theme.space.xs },
   markButton: { flex: 1 },

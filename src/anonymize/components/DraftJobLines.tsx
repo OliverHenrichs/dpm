@@ -1,89 +1,79 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { StyleProp, View, ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/src/common/ui";
-import { getCommonRow } from "@/src/common/utils/CommonStyles";
+import InfoHint from "@/src/common/components/InfoHint";
 import {
   AnonymizeJob,
   reviewsSuggestion,
+  useAnonymizeJobs,
   writesWithoutCount,
 } from "@/src/anonymize/jobs/AnonymizeJobsContext";
+import JobCard from "@/src/anonymize/components/JobCard";
 
 type Props = {
   /** The jobs on the form's videos that are not done yet. */
   jobs: AnonymizeJob[];
   /** Opens a finished result for review. */
   onReview: (id: string) => void;
+  /** Layout only: the room it keeps from what is around it, when it shows anything. */
+  style?: StyleProp<ViewStyle>;
 };
 
 /**
- * An edit form's lines for the jobs on its own videos, under them: one per job, naming its kind
- * and how far it got, a Review button once a result waits, and a reminder to keep the app open
- * while any runs. Shared by the figure and the sequence forms.
+ * An edit form's cards for the jobs on its own videos, under them: one `JobCard` per job,
+ * naming its kind, its status and progress, with _Review_ once a result waits and _Cancel job_
+ * where the job can still be stopped; then, while any runs, a hint to keep the app open.
+ * Shared by the figure and the sequence forms.
  */
-const DraftJobLines: React.FC<Props> = ({ jobs, onReview }) => {
+const DraftJobLines: React.FC<Props> = ({ jobs, onReview, style }) => {
   const { t } = useTranslation();
+  const { cancel, canCancel } = useAnonymizeJobs();
+  if (jobs.length === 0) return null;
+
+  // Each line names its kind: a transcription that failed for want of sound sat above a cut
+  // still running, and "processing" for both read as one job failing and going on.
+  const title = (job: AnonymizeJob) => {
+    switch (job.status) {
+      case "queued":
+        return t(`${job.kind}JobInFormQueued`);
+      case "running":
+        return writesWithoutCount(job)
+          ? t("suggestJobInFormWriting")
+          : t(`${job.kind}JobInFormRunning`, {
+              percent: Math.round(job.progress * 100),
+            });
+      case "review":
+        return reviewsSuggestion(job)
+          ? t("suggestJobInFormReview")
+          : t("videoJobInFormReview");
+      default:
+        return t(`${job.kind}JobInFormFailed`, {
+          error: job.errorKey ? t(job.errorKey) : (job.error ?? ""),
+        });
+    }
+  };
+
   return (
-    <>
-      {jobs.map((job) =>
-        job.status === "review" ? (
-          <View key={job.id} style={styles.jobRow}>
-            <Text style={[styles.jobLine, styles.jobRowText]}>
-              {reviewsSuggestion(job)
-                ? t("suggestJobInFormReview")
-                : t("videoJobInFormReview")}
-            </Text>
-            <Button
-              title={t("videoJobReviewButton")}
-              size="sm"
-              onPress={() => onReview(job.id)}
-            />
-          </View>
-        ) : (
-          // Each line names its kind: a transcription that failed for want of sound sat above
-          // a cut still running, and "processing" for both read as one job failing and going on.
-          <Text
-            key={job.id}
-            style={[
-              styles.jobLine,
-              job.status === "failed" && styles.jobLineFailed,
-            ]}
-          >
-            {job.status === "queued"
-              ? t(`${job.kind}JobInFormQueued`)
-              : job.status === "running"
-                ? writesWithoutCount(job)
-                  ? t("suggestJobInFormWriting")
-                  : t(`${job.kind}JobInFormRunning`, {
-                      percent: Math.round(job.progress * 100),
-                    })
-                : t(`${job.kind}JobInFormFailed`, {
-                    error: job.errorKey ? t(job.errorKey) : (job.error ?? ""),
-                  })}
-          </Text>
-        ),
-      )}
+    <View style={[styles.list, style]}>
+      {jobs.map((job) => (
+        <JobCard
+          key={job.id}
+          job={job}
+          title={title(job)}
+          onReview={() => onReview(job.id)}
+          onCancel={canCancel(job) ? () => cancel(job.id) : undefined}
+        />
+      ))}
       {jobs.some((j) => j.status === "queued" || j.status === "running") && (
-        <Text style={styles.jobLine}>{t("videoJobsKeepOpen")}</Text>
+        <InfoHint>{t("videoJobsKeepOpen")}</InfoHint>
       )}
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
-  jobLine: {
-    ...theme.typography.caption,
-    marginBottom: theme.space.sm,
-    color: theme.colors.textMuted,
-  },
-  jobLineFailed: { color: theme.colors.danger },
-  jobRow: {
-    ...getCommonRow(),
-    gap: theme.space.sm,
-    marginBottom: theme.space.sm,
-  },
-  jobRowText: { flex: 1, marginBottom: 0 },
+  list: { gap: theme.space.sm },
 }));
 
 export default DraftJobLines;

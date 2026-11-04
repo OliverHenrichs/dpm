@@ -168,7 +168,8 @@ describe("a sequence's video tools", () => {
     fireEvent.press(screen.getByLabelText("Edit Rallye 2026"));
 
     expect(screen.queryByLabelText("Put this video online")).toBeNull();
-    fireEvent.press(screen.getByText("Edit video"));
+    // Disabled, with why under it rather than in a dialog.
+    expect(screen.getByRole("button", { name: "Edit video" })).toBeDisabled();
     expect(
       screen.getByText(
         "Online videos can't be edited, only videos saved on the phone.",

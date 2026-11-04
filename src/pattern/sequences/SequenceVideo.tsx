@@ -82,6 +82,11 @@ function DirectPlayer({
  * A sequence's one video, the width of the sheet, above its steps. The player behind it
  * depends on the video: `expo-video` for a file or a direct link, YouTube's own player, or
  * Vimeo's (which plays but does not seek, so it takes no handle).
+ *
+ * The frame is always the full width, and only its height is capped: the player letterboxes
+ * the picture inside it. It used to be `aspectRatio` with a `maxHeight`, and once the cap
+ * applied (a sheet wider than 391 dp) Yoga derived the width back from the capped height, so
+ * the frame shrank to the left and left a gap on the right.
  */
 const SequenceVideo: React.FC<SequencePlayerProps> = (props) => {
   const [width, setWidth] = useState(0);
@@ -89,6 +94,9 @@ const SequenceVideo: React.FC<SequencePlayerProps> = (props) => {
     Math.round((width * 9) / 16),
     SEQUENCE_VIDEO_MAX_HEIGHT,
   );
+  // An embedded player draws its picture 16:9 across its whole width, so below the cap it is
+  // given the width that fits the height, centred in the frame; expo-video letterboxes itself.
+  const embedWidth = Math.min(width, Math.round((height * 16) / 9));
   const host =
     props.video.type === "url" ? embeddedHost(props.video.value) : null;
 
@@ -96,11 +104,15 @@ const SequenceVideo: React.FC<SequencePlayerProps> = (props) => {
   if (width > 0) {
     if (host === "youtube") {
       player = (
-        <SequenceYouTubePlayer {...props} width={width} height={height} />
+        <SequenceYouTubePlayer {...props} width={embedWidth} height={height} />
       );
     } else if (host === "vimeo") {
       player = (
-        <VimeoVideoItem videoRef={props.video} width={width} height={height} />
+        <VimeoVideoItem
+          videoRef={props.video}
+          width={embedWidth}
+          height={height}
+        />
       );
     } else {
       player = <DirectPlayer {...props} />;
@@ -108,7 +120,7 @@ const SequenceVideo: React.FC<SequencePlayerProps> = (props) => {
   }
   return (
     <View
-      style={[styles.frame, width > 0 && { height }]}
+      style={styles.frame(width > 0 ? height : undefined)}
       onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width))}
       testID="sequence-video"
     >
@@ -118,15 +130,18 @@ const SequenceVideo: React.FC<SequencePlayerProps> = (props) => {
 };
 
 const styles = StyleSheet.create((theme) => ({
-  frame: {
-    width: "100%",
-    aspectRatio: 16 / 9,
-    maxHeight: SEQUENCE_VIDEO_MAX_HEIGHT,
+  // Until measured, 16:9 of the full width (no cap, which would shrink the width); then the
+  // capped height, with the width left at 100%.
+  frame: (height?: number) => ({
+    width: "100%" as const,
+    ...(height === undefined ? { aspectRatio: 16 / 9 } : { height }),
     borderRadius: theme.radius.md,
-    overflow: "hidden",
+    overflow: "hidden" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     backgroundColor: theme.media.black,
     marginBottom: theme.space.sm,
-  },
+  }),
   fill: { width: "100%", height: "100%" },
 }));
 

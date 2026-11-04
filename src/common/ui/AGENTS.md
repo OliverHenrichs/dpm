@@ -19,6 +19,8 @@ ripple on Android, a fade elsewhere), a 44dp touch target, `accessibilityRole` /
 | `Tappable`         | The same press behaviour around content that is not text or an icon (the header's logo, a video thumbnail). `accessibilityLabel` required. Reach for the others first.                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `Icon`             | The one icon set; see the theme file.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
+- `ProgressBar`: a thin track, `value` 0..1, or indeterminate without it (a sweep, still under
+  reduced motion); announced as a `progressbar` with its percentage, or busy.
 - `Button` and `Chip` default their `accessibilityLabel` to their visible text, which is what tests
   find them by.
 - `style` on a primitive is for layout (flex, margins); the look comes from its props.

@@ -16,6 +16,7 @@ import {
   Chip,
   IconButton,
   ListRow,
+  ProgressBar,
   SegmentedControl,
   SwitchRow,
   TextVariant,
@@ -267,6 +268,12 @@ const DesignGallery: React.FC = () => {
             onValueChange={() => {}}
             disabled
           />
+        </Section>
+
+        <Section title="Progress bars">
+          <ProgressBar value={0.42} accessibilityLabel="42 %" />
+          <ProgressBar accessibilityLabel="Indeterminate" />
+          <ProgressBar value={1} tone="success" accessibilityLabel="Done" />
         </Section>
 
         <Section title="List rows">
