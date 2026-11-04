@@ -3,14 +3,14 @@
 A sequence is a named, ordered run of a list's figures that someone wants to keep and practise as
 a whole: a Standard or Latin routine, a West Coast Swing Rallye routine, a combination learned in
 a workshop ([#136](https://github.com/OliverHenrichs/dpm/issues/136)). It lives on its list, so
-it travels with export and publishing. Phases 2 (video mapping) and 3 (Map and details) are still
-to come; their design is in [`docs/plans/sequences.md`](../plans/sequences.md).
+it travels with export and publishing. Phase 3 (Map and details) is still to come; its design is
+in [`docs/plans/sequences.md`](../plans/sequences.md).
 
 ## What the user can do
 
 - The List tab's segments are **Figures · Modifiers · Sequences**, each with a count.
-- The **overview** has one row per sequence: name, number of steps and total counts. **+** adds
-  one. With none yet, it says what a sequence is: "Figures in the order you dance them: a
+- The **overview** has one row per sequence: name, number of steps and total counts, and a
+  video badge when it has a video. **+** adds one. With none yet, it says what a sequence is: "Figures in the order you dance them: a
   routine, a Rallye, a workshop combination."
 - **Opening** a sequence shows its name, totals, description and its steps as a numbered list:
   each with the figure's name and type colour, the variant and the counts, and the step's note.
@@ -42,8 +42,33 @@ to come; their design is in [`docs/plans/sequences.md`](../plans/sequences.md).
 - At most **50 sequences** per list and **200 steps** per sequence; + and Add step say so at the
   limit.
 - **Read-only lists** (followed, read-only imports) show their sequences, without +, Edit or
-  delete.
+  delete. Their videos play, seek and loop the same; nothing can be marked.
 - Sequences come along in every **export** (also read-only ones) and in the **published** list.
+  Their video follows a figure's rules: a video file only in an export with videos, its
+  transcript only when chosen on the export sheet, only links in a published list. Where the
+  video stays behind, the marks do too.
+
+### Video
+
+- A sequence has **one video**, added in the form from the same sheet as a figure's (from the
+  library, or a link, with its start time and its warning for a link DPM can't play), and
+  removed with its bin. With a video, it sits above the steps, in the form and when opened.
+  Removing it and saving drops the marks.
+- **Mark steps** (in the form) plays the video from the beginning, and a big **Mark** button
+  names the next unmarked step ("Mark 3. Sugar Push"). Each tap stores where the video is as
+  that step's start and moves to the next. **Back** takes the last mark off, **Done** stops. With
+  some steps marked already it goes on with the unmarked ones, from the last mark before them;
+  with all marked, it marks them all again.
+- Each step's row in the form shows its start as m:ss with tenths ("1:02.5") or _Not marked_.
+  Its **clock** marks it alone where the video is (pause where it starts, tap); **−** and **+**
+  nudge it by half a second; tapping its time plays from there. A duplicated step is unmarked.
+- **Opened**, each marked step shows its start, and tapping it plays from there. While the
+  video plays, the step playing (the latest start passed) is highlighted and kept in view,
+  unless the user scrolled a moment ago. **Loop step** repeats the step playing (or the one
+  tapped next) from its start to the next later start, or to the end.
+- Files, direct links, Dropbox and YouTube can be marked. **Vimeo** videos play, but the steps
+  can't be marked or seek, and the sheet says so where Mark steps (or Loop step) would be. So
+  does YouTube on the web version.
 
 ## Rules that must always hold
 
@@ -57,11 +82,17 @@ to come; their design is in [`docs/plans/sequences.md`](../plans/sequences.md).
 | A list without sequences has no `sequences` key                             | `__tests__/unit/sequences.test.ts`, `usePatternCrud.test.ts`        |
 | Sequence changes are refused on a read-only list                            | `__tests__/components/usePatternCrud.test.ts`, `sequences.test.tsx` |
 | A published list with sequences is accepted by the security rules           | `__tests__/rules/firestore.rules.test.ts`                           |
+| A step's mark exists only with its sequence's video, and goes with it       | `__tests__/unit/sequences.test.ts`, `sequenceVideo.test.tsx`        |
+| A sequence video travels as a figure's: files, transcripts, publishing      | `ExportImportRoundTrip.test.ts`, `publishedContent.test.ts`         |
+| A shared list keeps only a web link as a sequence's video                   | `__tests__/unit/validateSharedList.test.ts`                         |
+| Marking, nudging, seeking and looping act on the video's time               | `__tests__/components/sequenceVideo.test.tsx`                       |
+| A published list with a sequence video and marks is accepted by the rules   | `__tests__/rules/firestore.rules.test.ts`                           |
 
 ## Not built yet
 
-- A video per sequence, marking each step's start and following it while the video plays
-  (phase 2).
+- Vimeo videos (and YouTube on the web version) can't be marked: their players don't tell DPM
+  the time. Following along, marking and seeking need a device check per player.
+- A sequence video can't be edited (shortened, anonymized), transcribed or put online from DPM.
 - "Show sequence" on the Map, and "In: …" under a figure's details (phase 3); with them, the
   picker putting first the figures that followed the last step in the list's other sequences.
 - The size limits are kept by the app; the security rules do not enforce them.
@@ -71,7 +102,7 @@ to come; their design is in [`docs/plans/sequences.md`](../plans/sequences.md).
 ## Code
 
 `src/pattern/sequences/AGENTS.md`, `src/pattern/list/AGENTS.md` (`usePatternCrud`),
-`src/pattern/data/AGENTS.md` (export format 3.13, import repairs).
+`src/pattern/data/AGENTS.md` (export format 3.14, import repairs).
 
 ## Decisions
 
