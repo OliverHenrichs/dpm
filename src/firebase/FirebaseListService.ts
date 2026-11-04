@@ -33,6 +33,7 @@ import {
 } from "@/src/firebase/firestoreAccess";
 import {
   publishedModifiers,
+  publishedSequences,
   publishedPattern,
 } from "@/src/firebase/publishedContent";
 import { getPatternListById } from "@/src/pattern/data/PatternListStorage";
@@ -130,6 +131,9 @@ export async function publishList(
     list: {
       ...listBase,
       modifiers: publishedModifiers(listBase.modifiers ?? []),
+      ...(listBase.sequences && {
+        sequences: publishedSequences(listBase.sequences),
+      }),
       shareCode,
     },
     // Local videos and their transcripts stay on the device (L4): subscribers

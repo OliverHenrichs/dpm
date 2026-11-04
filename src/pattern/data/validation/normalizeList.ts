@@ -10,13 +10,16 @@ import {
 } from "@/src/pattern/types/VariantOverrides";
 import {
   isCount,
+  isMark,
   MAX_SEQUENCE_DESCRIPTION,
   MAX_SEQUENCE_NAME,
   MAX_SEQUENCE_STEPS,
   MAX_SEQUENCES,
   MAX_STEP_NOTE,
   MAX_STEP_TEXT,
+  roundMark,
   stepVariants,
+  withSequenceVideo,
 } from "@/src/pattern/sequences/sequences";
 import {
   IModifier,
@@ -515,6 +518,8 @@ function normalizeSteps(
       continue;
     }
     const note = trimmedText(entry.note, MAX_STEP_NOTE);
+    // 3.14. A mark that is not a place in a video is dropped quietly: the step just won't seek.
+    const at = isMark(entry.at) ? { at: roundMark(entry.at) } : {};
     if (entry.kind === "figure" && isInteger(entry.patternId)) {
       const pattern = patterns.get(entry.patternId);
       if (!pattern) {
@@ -531,6 +536,7 @@ function normalizeSteps(
         patternId: pattern.id,
         ...(variant && { modifierId: variant.id }),
         ...(note && { note }),
+        ...at,
       });
     } else if (entry.kind === "free") {
       const text = trimmedText(entry.text, MAX_STEP_TEXT);
@@ -545,6 +551,7 @@ function normalizeSteps(
         text,
         ...(isCount(entry.counts) && { counts: entry.counts }),
         ...(note && { note }),
+        ...at,
       });
     } else {
       malformed++;
@@ -570,9 +577,10 @@ function normalizeSteps(
 }
 
 /**
- * 3.13. The list's sequences: each needs a non-empty id not seen before and a name that is not
- * blank, or it is dropped with a warning; at most `MAX_SEQUENCES`, the rest dropped with one.
- * Nothing left (or not a list) drops the key: absent rather than empty.
+ * 3.13. The list's sequences (3.14: with a video, and marks on their steps): each needs a
+ * non-empty id not seen before and a name that is not blank, or it is dropped with a warning; at
+ * most `MAX_SEQUENCES`, the rest dropped with one. Nothing left (or not a list) drops the key:
+ * absent rather than empty.
  */
 function normalizeSequences(
   raw: unknown,
@@ -613,19 +621,27 @@ function normalizeSequences(
       entry.description,
       MAX_SEQUENCE_DESCRIPTION,
     );
-    sequences.push({
-      id: entry.id,
-      name,
-      ...(description && { description }),
-      steps: normalizeSteps(
-        entry.steps,
-        byId,
-        modifiers,
-        { list: where.list, sequence: name },
-        warnings,
+    const here = { list: where.list, sequence: name };
+    // 3.14. One video, checked as a figure's are (a malformed one is dropped with a warning);
+    // without it the steps' marks go too, since they are places in it.
+    const [video] =
+      entry.video === undefined
+        ? []
+        : normalizeVideoRefs([entry.video], here, warnings);
+    sequences.push(
+      withSequenceVideo(
+        {
+          id: entry.id,
+          name,
+          ...(description && { description }),
+          steps: normalizeSteps(entry.steps, byId, modifiers, here, warnings),
+          createdAt: isTimestamp(entry.createdAt)
+            ? entry.createdAt
+            : Date.now(),
+        },
+        video,
       ),
-      createdAt: isTimestamp(entry.createdAt) ? entry.createdAt : Date.now(),
-    });
+    );
   }
   return sequences.length > 0 ? sequences : undefined;
 }

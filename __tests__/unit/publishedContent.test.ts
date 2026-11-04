@@ -1,8 +1,9 @@
 import {
   publishedModifiers,
   publishedPattern,
+  publishedSequences,
 } from "@/src/firebase/publishedContent";
-import { IVideoReference } from "@/src/pattern/types/IPatternList";
+import { ISequence, IVideoReference } from "@/src/pattern/types/IPatternList";
 import { createTestPattern } from "@/utils/testFactories";
 
 const transcript = {
@@ -66,5 +67,30 @@ describe("publishedModifiers", () => {
     ]);
 
     expect(published[0].videoRefs).toEqual([online]);
+  });
+});
+
+describe("publishedSequences", () => {
+  const marked = (video: IVideoReference): ISequence => ({
+    id: "s",
+    name: "Rallye",
+    createdAt: 1,
+    video,
+    steps: [{ kind: "free", id: "a", text: "pose", at: 4 }],
+  });
+
+  it("keeps a link and its marks, without the transcript", () => {
+    const [published] = publishedSequences([marked({ ...online, transcript })]);
+    expect(published).toEqual(marked(online));
+  });
+
+  it("leaves a local video on the phone, and the marks with it", () => {
+    const [published] = publishedSequences([marked(local)]);
+    expect(published).toEqual({
+      id: "s",
+      name: "Rallye",
+      createdAt: 1,
+      steps: [{ kind: "free", id: "a", text: "pose" }],
+    });
   });
 });

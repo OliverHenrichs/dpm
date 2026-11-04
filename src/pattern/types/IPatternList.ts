@@ -124,6 +124,11 @@ export interface ISequence {
   name: string;
   /** Absent rather than empty. */
   description?: string;
+  /**
+   * One video of the whole sequence, the same kind a figure has. Its steps' `at` say where each
+   * starts in it. Absent when there is none, and then no step has an `at`.
+   */
+  video?: IVideoReference;
   /** In dancing order, at most `MAX_SEQUENCE_STEPS`. */
   steps: ISequenceStep[];
   createdAt: number;
@@ -142,6 +147,8 @@ export interface ISequenceFigureStep {
   /** The variant danced: a universal modifier, or one attached to that figure. Absent = plain. */
   modifierId?: string;
   note?: string;
+  /** Seconds into the sequence's video where the step starts, set by marking. Absent = unmarked. */
+  at?: number;
 }
 
 export interface ISequenceFreeStep {
@@ -152,6 +159,8 @@ export interface ISequenceFreeStep {
   counts?: number;
   /** Carried over from a figure step whose figure was deleted. */
   note?: string;
+  /** As on a figure step. */
+  at?: number;
 }
 
 /** How many pattern suggestions a published list takes a day (UTC), counted for whom. */

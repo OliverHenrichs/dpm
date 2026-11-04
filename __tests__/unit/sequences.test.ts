@@ -2,12 +2,20 @@ import {
   cleanSequence,
   duplicateStep,
   figureStep,
+  formatMark,
   freeStep,
   freeStepsOf,
+  loopWindow,
+  markQueue,
+  markStart,
   MAX_SEQUENCE_STEPS,
   MAX_SEQUENCES,
   MAX_STEP_TEXT,
   moveStep,
+  roundMark,
+  stepAtTime,
+  withMark,
+  withSequenceVideo,
   sequencesUsing,
   sequenceTotals,
   stepCounts,
@@ -403,5 +411,122 @@ describe("repairs on import and from the cloud (normalizeList)", () => {
     expect(normalize("routine").warnings).toEqual([
       "importWarnSequencesNotList",
     ]);
+  });
+});
+
+describe("video mapping", () => {
+  const marks = (...ats: (number | undefined)[]): ISequenceStep[] =>
+    ats.map((at, i) => ({
+      kind: "free",
+      id: `m${i}`,
+      text: `step ${i}`,
+      ...(at !== undefined && { at }),
+    }));
+  const video = { type: "url" as const, value: "https://youtu.be/abc" };
+
+  it("finds the step playing: the latest mark passed, a little early counting", () => {
+    const steps = marks(0, 4, undefined, 9);
+    expect(stepAtTime(steps, 0)).toBe(0);
+    expect(stepAtTime(steps, 3.85)).toBe(0);
+    expect(stepAtTime(steps, 3.95)).toBe(1);
+    expect(stepAtTime(steps, 8)).toBe(1);
+    expect(stepAtTime(steps, 60)).toBe(3);
+    expect(stepAtTime(marks(2), 1)).toBe(-1);
+    // Marks out of order: the latest passed wins, wherever it is in the list.
+    expect(stepAtTime(marks(5, 1), 6)).toBe(0);
+  });
+
+  it("loops a step from its mark to the next later one, or to the end", () => {
+    const steps = marks(0, 4, undefined, 9);
+    expect(loopWindow(steps, 0)).toEqual({ start: 0, end: 4 });
+    expect(loopWindow(steps, 1)).toEqual({ start: 4, end: 9 });
+    expect(loopWindow(steps, 3)).toEqual({ start: 9 });
+    expect(loopWindow(steps, 2)).toBeNull();
+  });
+
+  it("marks the unmarked steps, or all of them again, from where the marked ones end", () => {
+    const partly = marks(0, 4, undefined, undefined);
+    expect(markQueue(partly)).toEqual(["m2", "m3"]);
+    expect(markStart(partly, markQueue(partly))).toBe(4);
+    const all = marks(0, 4);
+    expect(markQueue(all)).toEqual(["m0", "m1"]);
+    expect(markStart(all, markQueue(all))).toBe(0);
+    expect(markStart(marks(undefined), ["m0"])).toBe(0);
+  });
+
+  it("shows a mark as m:ss with tenths, and stores it to the hundredth", () => {
+    expect(formatMark(0)).toBe("0:00.0");
+    expect(formatMark(62.5)).toBe("1:02.5");
+    expect(formatMark(59.96)).toBe("1:00.0");
+    expect(roundMark(3.14159)).toBe(3.14);
+    expect(roundMark(-2)).toBe(0);
+    expect(withMark(marks(1)[0], 2.345)).toMatchObject({ at: 2.35 });
+    expect(withMark(marks(1)[0], undefined)).not.toHaveProperty("at");
+  });
+
+  it("drops the marks with the video", () => {
+    const marked = sequence(marks(0, 4), { video });
+    expect(withSequenceVideo(marked, video)).toEqual(marked);
+    const without = withSequenceVideo(marked, undefined);
+    expect(without).not.toHaveProperty("video");
+    without.steps.forEach((s) => expect(s).not.toHaveProperty("at"));
+  });
+
+  it("saves the video and rounded marks, and no marks without a video", () => {
+    const steps: ISequenceStep[] = [{ ...step(1), at: 1.234 }];
+    expect(
+      cleanSequence(sequence(steps, { video }), patterns, modifiers),
+    ).toEqual(sequence([{ ...step(1), at: 1.23 }], { video }));
+    expect(cleanSequence(sequence(steps), patterns, modifiers).steps).toEqual([
+      step(1),
+    ]);
+  });
+
+  it("does not copy a mark onto a duplicate, and keeps it on a freed step", () => {
+    const steps: ISequenceStep[] = [{ ...step(1), at: 3 }];
+    expect(duplicateStep(steps, 0)[1]).not.toHaveProperty("at");
+    const [freed] = freeStepsOf(
+      [sequence(steps, { video })],
+      sugarPush,
+      modifiers,
+    )!;
+    expect(freed.steps[0]).toMatchObject({ kind: "free", at: 3 });
+  });
+
+  it("keeps marks and the video on import, and drops a bad mark quietly", () => {
+    const warnings: ImportMessage[] = [];
+    const list = normalizeList(
+      {
+        ...createTestPatternList({
+          patternTypes: [PUSH, PASS, WHIP],
+          modifiers,
+        }),
+        patterns,
+        sequences: [
+          sequence(
+            [
+              { ...step(1), at: 2 },
+              { ...step(2), id: "x", at: -1 },
+            ],
+            {
+              video,
+            },
+          ),
+        ],
+      },
+      0,
+      [],
+      warnings,
+    );
+    expect(list?.sequences?.[0]).toEqual(
+      sequence(
+        [
+          { ...step(1), at: 2 },
+          { ...step(2), id: "x" },
+        ],
+        { video },
+      ),
+    );
+    expect(warnings).toEqual([]);
   });
 });

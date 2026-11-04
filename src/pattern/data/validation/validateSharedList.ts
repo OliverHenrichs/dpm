@@ -1,8 +1,10 @@
 import {
   IModifier,
   IPattern,
+  ISequence,
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
+import { withSequenceVideo } from "@/src/pattern/sequences/sequences";
 import { PatternListWithPatterns } from "@/src/pattern/data/types/IExportData";
 import { normalizeList } from "@/src/pattern/data/validation/normalizeList";
 import { ImportMessage } from "@/src/pattern/data/validation/importMessages";
@@ -16,7 +18,8 @@ import { ImportMessage } from "@/src/pattern/data/validation/importMessages";
  * import file (`normalizeList`), and on top of that:
  *
  * - only web videos stay (`http(s)` links of `type: "url"`): the publish path strips local videos,
- *   so one in a downloaded list was put there by hand;
+ *   so one in a downloaded list was put there by hand; a sequence that loses its video loses its
+ *   steps' marks too;
  * - nothing that is this phone's own business comes from the cloud: `readonly`, the share key,
  *   and the share code, which is the one the list was read under.
  *
@@ -50,6 +53,9 @@ export function validateSharedList(
     shareCode,
     modifiers: rest.modifiers.map(webVideosOfModifier),
     patterns: rest.patterns.map(webVideosOfPattern),
+    ...(rest.sequences && {
+      sequences: rest.sequences.map(webVideoOfSequence),
+    }),
   };
 }
 
@@ -74,4 +80,9 @@ function webVideosOfPattern(pattern: IPattern): IPattern {
       videoRefs: webVideos(ref.videoRefs),
     })),
   };
+}
+
+function webVideoOfSequence(sequence: ISequence): ISequence {
+  const [video] = webVideos(sequence.video ? [sequence.video] : []);
+  return withSequenceVideo(sequence, video);
 }

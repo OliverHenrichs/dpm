@@ -122,6 +122,38 @@ describe("validateSharedList", () => {
   });
 });
 
+describe("a sequence's video from the cloud", () => {
+  const steps = [{ kind: "free", id: "a", text: "pose", at: 4 }];
+  const withVideo = (video: unknown) =>
+    validateSharedList(
+      publishedList({
+        sequences: [{ id: "s", name: "Rallye", createdAt: 1, video, steps }],
+      }),
+      [],
+      CODE,
+    );
+
+  it("keeps a web link and the marks", () => {
+    const video = { type: "url", value: "https://youtu.be/abc123" };
+    expect(withVideo(video)?.sequences).toEqual([
+      { id: "s", name: "Rallye", createdAt: 1, video, steps },
+    ]);
+  });
+
+  it("drops a video on someone's phone, and the marks with it", () => {
+    expect(
+      withVideo({ type: "local", value: "file:///x.mp4" })?.sequences,
+    ).toEqual([
+      {
+        id: "s",
+        name: "Rallye",
+        createdAt: 1,
+        steps: [{ kind: "free", id: "a", text: "pose" }],
+      },
+    ]);
+  });
+});
+
 describe("extractYouTubeVideoId", () => {
   it("reads an ordinary id", () => {
     expect(extractYouTubeVideoId("https://youtu.be/dQw4w9WgXcQ")).toBe(

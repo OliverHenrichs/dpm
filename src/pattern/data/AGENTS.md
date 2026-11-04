@@ -51,8 +51,7 @@ Settings live under their own keys, outside any list, so they survive deleting e
 (`patternIds.ts`) is the only way to mint an id. `usePatternCrud` keeps the mark ahead of every id
 the list has used, measured before _and_ after each write so a delete cannot lower it. The
 allocator also takes `max(id) + 1`, so a missing or corrupt mark cannot collide; that is why there
-is no migration. Ids used to be `max(id) + 1`, unique at any instant but not over time, and the
-manual layout then gave a deleted pattern's position to whichever pattern inherited its id.
+is no migration.
 
 ## Migrations
 
@@ -109,7 +108,7 @@ modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.13.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.14.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -123,8 +122,7 @@ Version `"3.13.0"`: `exportDataVersion` and `IPatternListExportData` in `types/I
 - `exportPatternLists(lists, { includeVideos, exportAsReadonly, includeTranscripts })`
   (`exportPatterns.ts`) writes the file and hands it to `expo-sharing`. Without `includeVideos`
   local refs are dropped (URL refs survive); `exportAsReadonly` marks each list `readonly`. Videos
-  are keyed by their **original local path**: pattern, universal-modifier and modifier-combination
-  videos alike.
+  are keyed by their **original local path**, wherever they sit.
 - `importPatternLists()` (`ImportPatterns.ts`) picks a file, validates it, decodes the videos back
   into the document directory, and warns (never fails) on a missing or unreadable video.
 - Picked videos go through `persistVideo` / `persistPickedVideos` (`videoFiles.ts`), which copy them
@@ -165,6 +163,8 @@ Version history (what each minor added):
   rhythm as on a figure. Rhythms may be `S Q Q`.
 - **3.13** `IPatternList.sequences` (`src/pattern/sequences/`): a step whose figure is missing
   is dropped with a warning; a bad variant, counts or note quietly.
+- **3.14** `ISequence.video` (handled as a figure's video) and a step's `at`; a bad mark is
+  dropped quietly, and the marks go with the video (`withSequenceVideo`).
 
 ## Shared list context
 

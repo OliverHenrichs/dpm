@@ -6,6 +6,7 @@ import {
   PatternListWithPatterns,
 } from "@/src/pattern/data/types/IExportData";
 import { generateUUID } from "@/src/pattern/types/PatternType";
+import { withSequenceVideo } from "@/src/pattern/sequences/sequences";
 import { validateExportData } from "@/src/pattern/data/validation/validateExportData";
 import {
   ImportMessage,
@@ -92,8 +93,24 @@ export async function importPatternLists(): Promise<IImportPatternListResult> {
           modifierRefs: updatedModifierRefs,
         });
       }
+      // A sequence's video, restored as a figure's; one that cannot be takes its marks along.
+      let updatedSequences = list.sequences;
+      if (list.sequences) {
+        updatedSequences = [];
+        for (const sequence of list.sequences) {
+          const [video] = await addVideoRefs(
+            `sequence:${sequence.id}`,
+            { list: list.name, sequence: sequence.name },
+            sequence.video ? [sequence.video] : [],
+            data,
+            warnings,
+          );
+          updatedSequences.push(withSequenceVideo(sequence, video));
+        }
+      }
       updatedLists.push({
         ...list,
+        ...(updatedSequences && { sequences: updatedSequences }),
         modifiers: updatedModifiers,
         patterns: updatedPatterns,
       });
