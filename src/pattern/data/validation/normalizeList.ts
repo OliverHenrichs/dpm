@@ -9,9 +9,21 @@ import {
   prunedVariantOverrides,
 } from "@/src/pattern/types/VariantOverrides";
 import {
+  isCount,
+  MAX_SEQUENCE_DESCRIPTION,
+  MAX_SEQUENCE_NAME,
+  MAX_SEQUENCE_STEPS,
+  MAX_SEQUENCES,
+  MAX_STEP_NOTE,
+  MAX_STEP_TEXT,
+  stepVariants,
+} from "@/src/pattern/sequences/sequences";
+import {
   IModifier,
   IPattern,
   IPatternModifierRef,
+  ISequence,
+  ISequenceStep,
   ISuggestionPolicy,
   ITranscriptSegment,
   IVideoReference,
@@ -471,6 +483,153 @@ function normalizeLevels(raw: unknown): IPatternLevel[] | undefined {
   return levels.length > 0 ? levels : undefined;
 }
 
+/** Trimmed and cut to `max`, or undefined when not text or blank. */
+function trimmedText(v: unknown, max: number): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const text = v.trim().slice(0, max);
+  return text || undefined;
+}
+
+/**
+ * 3.13. One sequence's steps, against the figures that survived. A figure step whose figure is
+ * not in the file is dropped and counted (as a prerequisite would be); a malformed step (no id,
+ * one seen before, an unknown kind, a free step without text) is dropped and counted apart. A
+ * variant its figure does not have, counts that are not a positive whole number and blank notes
+ * are dropped quietly. At most `MAX_SEQUENCE_STEPS`.
+ */
+function normalizeSteps(
+  raw: unknown,
+  patterns: Map<number, IPattern>,
+  modifiers: IModifier[],
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
+): ISequenceStep[] {
+  if (!Array.isArray(raw)) return [];
+  const steps: ISequenceStep[] = [];
+  const seen = new Set<string>();
+  let missing = 0;
+  let malformed = 0;
+  for (const entry of raw) {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || seen.has(entry.id)) {
+      malformed++;
+      continue;
+    }
+    const note = trimmedText(entry.note, MAX_STEP_NOTE);
+    if (entry.kind === "figure" && isInteger(entry.patternId)) {
+      const pattern = patterns.get(entry.patternId);
+      if (!pattern) {
+        missing++;
+        continue;
+      }
+      seen.add(entry.id);
+      const variant = stepVariants(pattern, modifiers).find(
+        (m) => m.id === entry.modifierId,
+      );
+      steps.push({
+        kind: "figure",
+        id: entry.id,
+        patternId: pattern.id,
+        ...(variant && { modifierId: variant.id }),
+        ...(note && { note }),
+      });
+    } else if (entry.kind === "free") {
+      const text = trimmedText(entry.text, MAX_STEP_TEXT);
+      if (!text) {
+        malformed++;
+        continue;
+      }
+      seen.add(entry.id);
+      steps.push({
+        kind: "free",
+        id: entry.id,
+        text,
+        ...(isCount(entry.counts) && { counts: entry.counts }),
+        ...(note && { note }),
+      });
+    } else {
+      malformed++;
+    }
+  }
+  if (missing > 0) {
+    warnings.push(
+      msg("importWarnSequenceStepsMissingFigure", { count: missing }, where),
+    );
+  }
+  if (malformed > 0) {
+    warnings.push(
+      msg("importWarnSequenceStepsMalformed", { count: malformed }, where),
+    );
+  }
+  if (steps.length > MAX_SEQUENCE_STEPS) {
+    warnings.push(
+      msg("importWarnSequenceTooLong", { max: MAX_SEQUENCE_STEPS }, where),
+    );
+    return steps.slice(0, MAX_SEQUENCE_STEPS);
+  }
+  return steps;
+}
+
+/**
+ * 3.13. The list's sequences: each needs a non-empty id not seen before and a name that is not
+ * blank, or it is dropped with a warning; at most `MAX_SEQUENCES`, the rest dropped with one.
+ * Nothing left (or not a list) drops the key: absent rather than empty.
+ */
+function normalizeSequences(
+  raw: unknown,
+  patterns: IPattern[],
+  modifiers: IModifier[],
+  where: ImportMessageContext,
+  warnings: ImportMessage[],
+): ISequence[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) {
+    warnings.push(msg("importWarnSequencesNotList", undefined, where));
+    return undefined;
+  }
+  const byId = new Map(patterns.map((p) => [p.id, p]));
+  const sequences: ISequence[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    const name = isObject(entry)
+      ? trimmedText(entry.name, MAX_SEQUENCE_NAME)
+      : undefined;
+    if (
+      !isObject(entry) ||
+      !isNonEmptyString(entry.id) ||
+      seen.has(entry.id) ||
+      !name
+    ) {
+      warnings.push(msg("importWarnSequenceMalformed", undefined, where));
+      continue;
+    }
+    if (sequences.length >= MAX_SEQUENCES) {
+      warnings.push(
+        msg("importWarnTooManySequences", { max: MAX_SEQUENCES }, where),
+      );
+      break;
+    }
+    seen.add(entry.id);
+    const description = trimmedText(
+      entry.description,
+      MAX_SEQUENCE_DESCRIPTION,
+    );
+    sequences.push({
+      id: entry.id,
+      name,
+      ...(description && { description }),
+      steps: normalizeSteps(
+        entry.steps,
+        byId,
+        modifiers,
+        { list: where.list, sequence: name },
+        warnings,
+      ),
+      createdAt: isTimestamp(entry.createdAt) ? entry.createdAt : Date.now(),
+    });
+  }
+  return sequences.length > 0 ? sequences : undefined;
+}
+
 export function normalizeList(
   raw: unknown,
   index: number,
@@ -500,6 +659,13 @@ export function normalizeList(
 
   const laneOrder = normalizeLaneOrder(raw.laneOrder, patternTypes);
   const levels = normalizeLevels(raw.levels);
+  const sequences = normalizeSequences(
+    raw.sequences,
+    patterns,
+    modifiers,
+    label,
+    warnings,
+  );
   const now = Date.now();
   return {
     id: raw.id,
@@ -528,6 +694,7 @@ export function normalizeList(
     ...(raw.membersOnly === true && { membersOnly: true as const }),
     ...(laneOrder && { laneOrder }),
     ...(levels && { levels }),
+    ...(sequences && { sequences }),
     // The id high-water mark: exports always carried it, but import used to drop it, so the id
     // of a figure deleted from the end could be handed out again. A bad value is dropped and
     // `nextPatternId()` falls back to the figures present.

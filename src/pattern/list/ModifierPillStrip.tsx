@@ -23,6 +23,8 @@ export type ModifierPillStripProps = {
   onDetachModifier?: (modifierId: string) => void;
   /** Called when the user taps the attach (+) pill */
   onShowAttachPicker?: () => void;
+  /** Leaves out what a variant is, under the Base pill (a sequence's step, beside the others). */
+  hideHint?: boolean;
 };
 
 const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
@@ -34,6 +36,7 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
   isEditMode = false,
   onDetachModifier,
   onShowAttachPicker,
+  hideHint = false,
 }) => {
   const { t } = useTranslation();
 
@@ -134,7 +137,7 @@ const ModifierPillStrip: React.FC<ModifierPillStripProps> = ({
           opens a pattern from the Map has not seen the Modifiers tab (tester review 1). */}
       {selectedModifier?.description ? (
         <Text style={styles.note}>{selectedModifier.description}</Text>
-      ) : !isEditMode && selectedModifierId === null ? (
+      ) : !isEditMode && !hideHint && selectedModifierId === null ? (
         <Text style={styles.note}>{t("variantHint")}</Text>
       ) : null}
     </View>

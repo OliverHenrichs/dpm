@@ -16,6 +16,7 @@ The drawer holds **Lists** and **Settings**. Inside the open list, bottom tabs s
 | Area                                       | In one line                                                                                  |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------- |
 | [Lists and figures](lists-and-figures.md)  | Lists from templates, figures with prerequisites, counts, rhythm, tags, videos and modifiers |
+| [Sequences](sequences.md)                  | Named runs of a list's figures in dancing order: a routine, a Rallye, a workshop combination |
 | [Map](map.md)                              | The prerequisite graph as a timeline of lanes or a movable network, filterable               |
 | [Reels](reels.md)                          | Every figure with a video, one per screen, for watching before a social                      |
 | [Video tools](video-tools.md)              | Shorten, anonymize, transcribe and draft a description on the phone; put a video online      |

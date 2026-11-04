@@ -22,6 +22,7 @@ import {
 import {
   IModifier,
   IPattern,
+  ISequence,
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
 import { generateUUID } from "@/src/pattern/types/PatternType";
@@ -891,6 +892,117 @@ describe("export → import round trip", () => {
       const [kept, dropped] = importResult.patternLists![0].patterns;
       expect(kept).toMatchObject({ counts: 6, rhythm: "S S Q Q" });
       expect(dropped).not.toHaveProperty("rhythm");
+    });
+  });
+
+  describe("sequences (3.13)", () => {
+    const insideTurn: IModifier = {
+      id: "m1",
+      name: "with Inside Turn",
+      position: "amends",
+      universal: false,
+      videoRefs: [],
+    };
+    const figures = () => [
+      createTestPattern(TYPE.id, { id: 1, name: "Sugar Push" }),
+      createTestPattern(TYPE.id, {
+        id: 2,
+        name: "Left Side Pass",
+        modifierRefs: [{ modifierId: "m1", videoRefs: [] }],
+      }),
+    ];
+    const rallye: ISequence = {
+      id: "s1",
+      name: "Rallye 2026",
+      description: "Heat 1",
+      createdAt: 1_700_000_000_000,
+      steps: [
+        { kind: "figure", id: "a", patternId: 2, modifierId: "m1" },
+        {
+          kind: "free",
+          id: "b",
+          text: "pose",
+          counts: 2,
+          note: "on the break",
+        },
+        { kind: "figure", id: "c", patternId: 1, note: "slow" },
+        { kind: "figure", id: "d", patternId: 2 },
+      ],
+    };
+
+    it("keeps each sequence with its steps in order, variants and free steps", async () => {
+      const { importResult } = await roundTrip([
+        listWith(figures(), { modifiers: [insideTurn], sequences: [rallye] }),
+      ]);
+
+      expect(importResult.patternLists![0].sequences).toEqual([rallye]);
+      expect(importResult.warnings).toEqual([]);
+    });
+
+    it("comes along in a read-only export", async () => {
+      const { importResult } = await roundTrip(
+        [listWith(figures(), { modifiers: [insideTurn], sequences: [rallye] })],
+        { exportAsReadonly: true },
+      );
+
+      expect(importResult.patternLists![0].sequences).toEqual([rallye]);
+    });
+
+    it("drops a step whose figure is not in the file, and says so", async () => {
+      const { importResult } = await roundTrip([
+        listWith(figures(), {
+          modifiers: [insideTurn],
+          sequences: [
+            {
+              ...rallye,
+              steps: [
+                ...rallye.steps,
+                { kind: "figure", id: "e", patternId: 99 },
+              ],
+            },
+          ],
+        }),
+      ]);
+
+      expect(importResult.patternLists![0].sequences![0].steps).toEqual(
+        rallye.steps,
+      );
+      expect(importText(importResult.warnings)).toContain(
+        'List "Test Dance", sequence "Rallye 2026": 1 step(s) named a figure not in the file',
+      );
+    });
+
+    it("drops a variant the figure does not have, quietly", async () => {
+      const { importResult } = await roundTrip([
+        listWith(figures(), {
+          modifiers: [insideTurn],
+          sequences: [
+            {
+              ...rallye,
+              steps: [
+                { kind: "figure", id: "a", patternId: 1, modifierId: "m1" },
+              ],
+            },
+          ],
+        }),
+      ]);
+
+      expect(importResult.patternLists![0].sequences![0].steps).toEqual([
+        { kind: "figure", id: "a", patternId: 1 },
+      ]);
+      expect(importResult.warnings).toEqual([]);
+    });
+
+    it("leaves a list without them, or with nothing usable, without the key", async () => {
+      const { importResult } = await roundTrip([
+        listWith(figures()),
+        listWith([], { sequences: [] }),
+        listWith([], { sequences: [{ id: "x", name: " " }] as never }),
+      ]);
+
+      importResult.patternLists!.forEach((list) =>
+        expect(list).not.toHaveProperty("sequences"),
+      );
     });
   });
 

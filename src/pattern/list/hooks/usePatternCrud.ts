@@ -4,9 +4,18 @@ import {
   IModifier,
   IPattern,
   IPatternList,
+  ISequence,
   NewModifier,
   NewPattern,
 } from "@/src/pattern/types/IPatternList";
+import {
+  blankFreeStep,
+  cleanSequence,
+  freeStepsOf,
+  MAX_SEQUENCES,
+  withoutVariant,
+  withSequences,
+} from "@/src/pattern/sequences/sequences";
 import {
   generateUUID,
   isSlugUnique,
@@ -41,6 +50,7 @@ export interface PatternCrud {
   patterns: IPattern[];
   patternTypes: PatternType[];
   modifiers: IModifier[];
+  sequences: ISequence[];
   isReadonly: boolean;
   addPattern: (pattern: NewPattern) => Promise<boolean>;
   editPattern: (pattern: NewPattern | IPattern) => Promise<boolean>;
@@ -48,6 +58,12 @@ export interface PatternCrud {
   addModifier: (modifier: NewModifier | IModifier) => Promise<boolean>;
   editModifier: (modifier: NewModifier | IModifier) => Promise<boolean>;
   deleteModifier: (modifierId: string) => Promise<boolean>;
+  /**
+   * Adds the sequence, or replaces the one with its id, as `cleanSequence` makes it. False for a
+   * read-only list, a blank name, a free step without text, or a new one past `MAX_SEQUENCES`.
+   */
+  saveSequence: (sequence: ISequence) => Promise<boolean>;
+  deleteSequence: (sequenceId: string) => Promise<boolean>;
   /** The new type, or null for a read-only list, a blank name or one already used. */
   addPatternType: (name: string) => Promise<PatternType | null>;
   /** Recolours one type (the Map's legend); false for a read-only list or an unknown type. */
@@ -91,6 +107,7 @@ export function usePatternCrud(): PatternCrud {
     [activeList],
   );
   const modifiers = useMemo(() => activeList?.modifiers ?? [], [activeList]);
+  const sequences = useMemo(() => activeList?.sequences ?? [], [activeList]);
   const isReadonly = !!activeList?.readonly;
 
   /**
@@ -176,12 +193,45 @@ export function usePatternCrud(): PatternCrud {
       // the network layout cannot place a node whose prerequisites are not all
       // positioned, so the dependent — and its whole subtree — would vanish
       // from the graph with no error. See src/pattern/graph/AGENTS.md, "Prerequisite integrity".
-      await commitPatterns(
-        repairDanglingPrerequisites(patterns.filter((p) => p.id !== id)),
+      const remaining = repairDanglingPrerequisites(
+        patterns.filter((p) => p.id !== id),
       );
+      // Steps of the figure in a sequence become free steps with its name, so the sequence
+      // keeps its shape. The list goes first: should the patterns' write fail, the figure is
+      // still there beside free steps of its name, rather than steps pointing at nothing.
+      const pattern = patterns.find((p) => p.id === id);
+      const freed =
+        activeList && pattern
+          ? freeStepsOf(activeList.sequences, pattern, modifiers)
+          : activeList?.sequences;
+      if (activeList && freed !== activeList.sequences) {
+        const mark = Math.max(
+          nextPatternId(activeList, patterns),
+          nextPatternId(activeList, remaining),
+        );
+        await updateActiveList(
+          {
+            ...withSequences(activeList, freed),
+            nextPatternId: mark,
+            updatedAt: Date.now(),
+          },
+          remaining,
+        );
+        await updatePatterns(remaining);
+        return true;
+      }
+      await commitPatterns(remaining);
       return true;
     },
-    [isReadonly, patterns, commitPatterns],
+    [
+      isReadonly,
+      patterns,
+      commitPatterns,
+      activeList,
+      modifiers,
+      updateActiveList,
+      updatePatterns,
+    ],
   );
 
   const addModifier = useCallback(
@@ -215,10 +265,14 @@ export function usePatternCrud(): PatternCrud {
   const deleteModifier = useCallback(
     async (modifierId: string) => {
       if (!activeList || isReadonly) return false;
-      const updatedList = {
-        ...activeList,
-        modifiers: modifiers.filter((m) => m.id !== modifierId),
-      };
+      // Steps danced with it become the plain figure.
+      const updatedList = withSequences(
+        {
+          ...activeList,
+          modifiers: modifiers.filter((m) => m.id !== modifierId),
+        },
+        withoutVariant(activeList.sequences, modifierId),
+      );
       // Scrub the modifier from every pattern that attached it.
       const updatedPatterns = patterns.map((p) => ({
         ...p,
@@ -238,6 +292,43 @@ export function usePatternCrud(): PatternCrud {
       updateActiveList,
       updatePatterns,
     ],
+  );
+
+  const saveSequence = useCallback(
+    async (sequence: ISequence) => {
+      if (!activeList || isReadonly || !sequence.name.trim()) return false;
+      if (sequence.steps.some(blankFreeStep)) return false;
+      const exists = sequences.some((s) => s.id === sequence.id);
+      if (!exists && sequences.length >= MAX_SEQUENCES) return false;
+      const cleaned = cleanSequence(sequence, patterns, modifiers);
+      await updateActiveList({
+        ...withSequences(
+          activeList,
+          exists
+            ? sequences.map((s) => (s.id === cleaned.id ? cleaned : s))
+            : [...sequences, cleaned],
+        ),
+        updatedAt: Date.now(),
+      });
+      return true;
+    },
+    [activeList, isReadonly, sequences, patterns, modifiers, updateActiveList],
+  );
+
+  const deleteSequence = useCallback(
+    async (sequenceId: string) => {
+      if (!activeList || isReadonly) return false;
+      if (!sequences.some((s) => s.id === sequenceId)) return false;
+      await updateActiveList({
+        ...withSequences(
+          activeList,
+          sequences.filter((s) => s.id !== sequenceId),
+        ),
+        updatedAt: Date.now(),
+      });
+      return true;
+    },
+    [activeList, isReadonly, sequences, updateActiveList],
   );
 
   const addPatternType = useCallback(
@@ -320,6 +411,7 @@ export function usePatternCrud(): PatternCrud {
     patterns,
     patternTypes,
     modifiers,
+    sequences,
     isReadonly,
     addPattern,
     editPattern,
@@ -327,6 +419,8 @@ export function usePatternCrud(): PatternCrud {
     addModifier,
     editModifier,
     deleteModifier,
+    saveSequence,
+    deleteSequence,
     addPatternType,
     setPatternTypeColor,
     setLaneOrder,

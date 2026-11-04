@@ -109,7 +109,7 @@ modals" in `src/pattern/list/AGENTS.md`.
 
 ## Export / import format
 
-Version `"3.12.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
+Version `"3.13.0"`: `exportDataVersion` and `IPatternListExportData` in `types/IExportData.ts`:
 
 ```ts
 { version, exportDate, includesVideos, includesTranscripts?, patternLists: PatternListWithPatterns[], videos: { [localPath]: base64 } }
@@ -163,6 +163,8 @@ Version history (what each minor added):
   most `MAX_LEVELS`; nothing left drops the key.
 - **3.12** `IPatternModifierRef.overrides` (`parseOverrides`); bad fields dropped quietly, a
   rhythm as on a figure. Rhythms may be `S Q Q`.
+- **3.13** `IPatternList.sequences` (`src/pattern/sequences/`): a step whose figure is missing
+  is dropped with a warning; a bad variant, counts or note quietly.
 
 ## Shared list context
 
@@ -174,9 +176,7 @@ step, or it pushes the pre-change snapshot.
 
 ## Default list templates
 
-`DefaultPatternLists.ts`: `createWestCoastSwingList`, `createSalsaList`, `createBachataList`,
-`createTangoList`, `createZoukList`,
-`createLindyHopList`, `createBlankList`, each a fresh `IPatternList` with UUID
+`DefaultPatternLists.ts`: a `create…List` per template, and `createBlankList`, each a fresh `IPatternList` with UUID
 types and no modifiers; every template but blank sets `dance`. `TEMPLATE_FOUNDATIONAL_PATTERNS`
 maps a template id to starter patterns, and `resolveTemplatePatterns` resolves their `typeSlug` to
 `typeId` (stable across renames) and gives each the dance's basic rhythm for its counts. A template

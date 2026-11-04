@@ -8,8 +8,10 @@ import {
   IModifier,
   IPattern,
   IPatternList,
+  ISequence,
 } from "@/src/pattern/types/IPatternList";
 import { generateUUID } from "@/src/pattern/types/PatternType";
+import { MAX_SEQUENCES } from "@/src/pattern/sequences/sequences";
 import {
   createTestPattern,
   createTestPatternList,
@@ -625,6 +627,157 @@ describe("usePatternCrud", () => {
       });
 
       expect((await storedList(list.id)).modifiers).toHaveLength(1);
+    });
+  });
+
+  describe("sequences", () => {
+    const routine = (
+      steps: ISequence["steps"],
+      overrides: Partial<ISequence> = {},
+    ): ISequence => ({
+      id: generateUUID(),
+      name: "Rallye 2026",
+      steps,
+      createdAt: 1,
+      ...overrides,
+    });
+
+    it("adds a sequence, then saves edits over it", async () => {
+      const { result, list } = await mountCrud([pattern(1)]);
+      const added = routine([{ kind: "figure", id: "a", patternId: 1 }]);
+
+      let accepted = false;
+      await act(async () => {
+        accepted = await result.current.saveSequence(added);
+      });
+      expect(accepted).toBe(true);
+      expect((await storedList(list.id)).sequences).toEqual([added]);
+
+      await act(async () => {
+        await result.current.saveSequence({ ...added, name: "  Heat 1 " });
+      });
+      expect((await storedList(list.id)).sequences).toEqual([
+        { ...added, name: "Heat 1" },
+      ]);
+    });
+
+    it("refuses a blank name, a free step without text, and a new one past the cap", async () => {
+      const full = Array.from({ length: MAX_SEQUENCES }, (_, i) =>
+        routine([], { id: `s${i}` }),
+      );
+      const { result } = await mountCrud([], { sequences: full });
+
+      for (const refused of [
+        routine([], { name: " " }),
+        routine([{ kind: "free", id: "f", text: " " }]),
+        routine([]),
+      ]) {
+        let accepted = true;
+        await act(async () => {
+          accepted = await result.current.saveSequence(refused);
+        });
+        expect(accepted).toBe(false);
+      }
+      // An existing one can still be edited at the cap.
+      let accepted = false;
+      await act(async () => {
+        accepted = await result.current.saveSequence({
+          ...full[0],
+          name: "Edited",
+        });
+      });
+      expect(accepted).toBe(true);
+    });
+
+    it("refuses sequence changes on a read-only list", async () => {
+      const existing = routine([]);
+      const { result, list } = await mountCrud([], {
+        sequences: [existing],
+        readonly: true,
+      });
+
+      let accepted = true;
+      await act(async () => {
+        accepted = await result.current.saveSequence(routine([]));
+      });
+      expect(accepted).toBe(false);
+      await act(async () => {
+        await result.current.deleteSequence(existing.id);
+      });
+      expect((await storedList(list.id)).sequences).toEqual([existing]);
+    });
+
+    it("deletes a sequence, and the key with the last one", async () => {
+      const only = routine([]);
+      const { result, list } = await mountCrud([], { sequences: [only] });
+
+      await act(async () => {
+        await result.current.deleteSequence(only.id);
+      });
+
+      expect(await storedList(list.id)).not.toHaveProperty("sequences");
+    });
+
+    it("turns the steps of a deleted figure into free steps with its name", async () => {
+      const used = routine([
+        { kind: "figure", id: "a", patternId: 1, note: "slow" },
+        { kind: "figure", id: "b", patternId: 2 },
+      ]);
+      const { result, list } = await mountCrud(
+        [pattern(1, { name: "Sugar Push", counts: 6 }), pattern(2)],
+        { sequences: [used], nextPatternId: 3 },
+      );
+
+      await act(async () => {
+        await result.current.deletePattern(1);
+      });
+
+      const stored = await storedList(list.id);
+      expect(stored.sequences![0].steps).toEqual([
+        { kind: "free", id: "a", text: "Sugar Push", counts: 6, note: "slow" },
+        { kind: "figure", id: "b", patternId: 2 },
+      ]);
+      expect(stored.nextPatternId).toBe(3);
+      expect((await storedPatterns(list.id)).map((p) => p.id)).toEqual([2]);
+    });
+
+    it("makes a step danced with a deleted modifier the plain figure", async () => {
+      const spin = modifier();
+      const used = routine([
+        { kind: "figure", id: "a", patternId: 1, modifierId: spin.id },
+      ]);
+      const { result, list } = await mountCrud(
+        [
+          pattern(1, {
+            modifierRefs: [{ modifierId: spin.id, videoRefs: [] }],
+          }),
+        ],
+        { modifiers: [spin], sequences: [used] },
+      );
+
+      await act(async () => {
+        await result.current.deleteModifier(spin.id);
+      });
+
+      expect((await storedList(list.id)).sequences![0].steps).toEqual([
+        { kind: "figure", id: "a", patternId: 1 },
+      ]);
+    });
+
+    it("pushes a published list with its sequences", async () => {
+      const { result } = await mountCrud([pattern(1)], {
+        shareCode: "ABCD1234",
+      });
+      const added = routine([{ kind: "figure", id: "a", patternId: 1 }]);
+
+      await act(async () => {
+        await result.current.saveSequence(added);
+      });
+
+      expect(mockedSync).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sequences: [added] }),
+        expect.any(Array),
+      );
     });
   });
 

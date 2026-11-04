@@ -101,8 +101,7 @@ async function renderManager(
   );
   // The provider loads storage on mount; wait for the screen to reflect it.
   // Anchor on the sort button: it is present whether or not the list is
-  // read-only, and unlike "Figure List" it appears exactly once (that string
-  // is both the tab label and the section heading).
+  // read-only, and appears exactly once.
   await waitFor(() =>
     expect(screen.getByLabelText("Sort Figures")).toBeOnTheScreen(),
   );
@@ -162,7 +161,7 @@ describe("PatternListManager", () => {
       expect(screen.queryByText("Sugar Push")).toBeNull();
       expect(screen.getByText("with a spin")).toBeOnTheScreen();
 
-      fireEvent.press(screen.getAllByText("Figure List")[0]);
+      fireEvent.press(screen.getByRole("tab", { name: "Figures (1)" }));
       expect(screen.getByText("Sugar Push")).toBeOnTheScreen();
     });
 

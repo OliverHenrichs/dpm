@@ -6,14 +6,15 @@ patterns, modifiers, tags, videos and sharing. Unqualified paths are relative to
 
 ## Mutations go through `usePatternCrud`
 
-Pattern **and** modifier mutations (`addPattern`, `editPattern`, `deletePattern`, `addModifier`,
-`editModifier`, `deleteModifier`) live in `hooks/usePatternCrud.ts`, never inline in a screen or
+Pattern, modifier and sequence mutations (`addPattern`, `editPattern`, `deletePattern`,
+`addModifier`, `editModifier`, `deleteModifier`, `saveSequence`, `deleteSequence`) live in `hooks/usePatternCrud.ts`, never inline in a screen or
 straight on the context. The hook owns, in one place:
 
 - the read-only guard;
 - id allocation and the `nextPatternId` high-water mark (`src/pattern/data/AGENTS.md`);
 - referential cleanup: deleting a pattern scrubs it from every `prerequisites`
-  (`repairDanglingPrerequisites`), deleting a modifier scrubs it from every `modifierRefs`;
+  (`repairDanglingPrerequisites`) and turns its sequence steps into free steps, deleting a
+  modifier scrubs it from every `modifierRefs` and sequence step (`src/pattern/sequences/`);
 - `applyReplacements`, which swaps in a video a finished job replaced while the form was open
   (`src/anonymize/AGENTS.md`);
 - the opportunistic Firestore push (`syncPublishedList`, unawaited, after the local write;
