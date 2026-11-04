@@ -7,6 +7,10 @@ import { useTranslation } from "react-i18next";
 import { AppText, Icon } from "@/src/common/ui";
 import { SwimlaneInfo } from "@/src/pattern/graph/utils/TimelineGraphUtils";
 import { LaneDrag } from "@/src/pattern/graph/hooks/useLaneDrag";
+import {
+  LaneMotion,
+  useLaneStyle,
+} from "@/src/pattern/graph/hooks/useLaneMotion";
 import { START_OFFSET } from "@/src/pattern/graph/types/Constants";
 
 /**
@@ -22,6 +26,8 @@ const LIFT_SCALE = 1.06;
 interface LaneHandlesProps {
   /** The lanes as drawn now (the preview order while a lane is dragged). */
   lanes: SwimlaneInfo[];
+  /** Where the lanes are as they slide; the grips move with them. */
+  motion: LaneMotion;
   drag: LaneDrag;
   /** The timeline's height, so the column covers every lane. */
   height: number;
@@ -36,81 +42,58 @@ interface LaneHandlesProps {
  * One column, under one pan (`useLaneDrag`), laid over the left edge of the lanes; the grips
  * inside it are drawn where the lanes are now, the dragged one hidden while its lifted copy
  * follows the finger. The column itself never moves, so the gesture's coordinates stay put
- * while the lanes reflow.
+ * while the lanes reflow. On the drop the lifted name eases into its lane before the grip
+ * comes back.
  */
 const LaneHandles: React.FC<LaneHandlesProps> = ({
   lanes,
+  motion,
   drag,
   height,
   uppercase,
   onStep,
 }) => {
-  const { t } = useTranslation();
   const { theme } = useUnistyles();
-  const { dragging, dragOffset } = drag;
+  const { dragging, settling, dragOffset, lift } = drag;
+  const held = dragging ?? settling;
 
   const lifted = useAnimatedStyle(() => ({
-    transform: [{ translateY: dragOffset.get() }, { scale: LIFT_SCALE }],
+    transform: [
+      { translateY: dragOffset.get() },
+      { scale: 1 + (LIFT_SCALE - 1) * lift.get() },
+    ],
   }));
 
   const label = (lane: SwimlaneInfo) => {
     const text = lane.label || lane.typeId || "";
     return uppercase ? text.toUpperCase() : text;
   };
-  const draggedLane = dragging
-    ? lanes.find((lane) => lane.typeId === dragging.typeId)
+  const draggedLane = held
+    ? lanes.find((lane) => lane.typeId === held.typeId)
     : undefined;
 
   return (
     <>
       <GestureDetector gesture={drag.gesture}>
         <View style={[styles.column, { height }]} testID="lane-handle-column">
-          {lanes.map((lane, index) => {
-            const name = lane.label || lane.typeId || "";
-            return (
-              <View
-                key={lane.typeId ?? name}
-                style={[
-                  styles.grip,
-                  { top: lane.y },
-                  dragging?.typeId === lane.typeId && styles.hidden,
-                ]}
-                accessible
-                accessibilityRole="adjustable"
-                accessibilityLabel={t("laneHandleLabel", { type: name })}
-                accessibilityHint={t("laneHandleHint")}
-                accessibilityActions={[
-                  ...(index > 0
-                    ? [{ name: "moveUp", label: t("laneMoveUp") }]
-                    : []),
-                  ...(index < lanes.length - 1
-                    ? [{ name: "moveDown", label: t("laneMoveDown") }]
-                    : []),
-                ]}
-                onAccessibilityAction={(event) => {
-                  const action = event.nativeEvent.actionName;
-                  if (action === "moveUp" || action === "decrement") {
-                    if (index > 0) onStep(index, -1);
-                  } else if (action === "moveDown" || action === "increment") {
-                    if (index < lanes.length - 1) onStep(index, 1);
-                  }
-                }}
-              >
-                <Icon
-                  name="drag-vertical"
-                  size={theme.iconSize.sm}
-                  color={lane.color ?? theme.colors.textMuted}
-                />
-              </View>
-            );
-          })}
+          {lanes.map((lane, index) => (
+            <LaneGrip
+              key={lane.typeId ?? lane.label ?? String(index)}
+              lane={lane}
+              motion={motion}
+              hidden={held?.typeId === lane.typeId}
+              canMoveUp={index > 0}
+              canMoveDown={index < lanes.length - 1}
+              onStep={(step) => onStep(index, step)}
+            />
+          ))}
         </View>
       </GestureDetector>
 
-      {dragging && (
+      {held && (
         <Animated.View
           pointerEvents="none"
-          style={[styles.lifted, { top: dragging.top }, lifted]}
+          style={[styles.lifted, { top: held.top }, lifted]}
           testID="lane-lifted"
         >
           <Icon
@@ -129,6 +112,50 @@ const LaneHandles: React.FC<LaneHandlesProps> = ({
   );
 };
 
+/** One lane's grip, moving with its lane. */
+const LaneGrip: React.FC<{
+  lane: SwimlaneInfo;
+  motion: LaneMotion;
+  hidden: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onStep: (step: -1 | 1) => void;
+}> = ({ lane, motion, hidden, canMoveUp, canMoveDown, onStep }) => {
+  const { t } = useTranslation();
+  const { theme } = useUnistyles();
+  const moving = useLaneStyle(motion, lane.typeId ?? "", lane.y);
+  const name = lane.label || lane.typeId || "";
+  return (
+    <Animated.View
+      style={[styles.grip, moving, hidden && styles.hidden]}
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={t("laneHandleLabel", { type: name })}
+      accessibilityHint={t("laneHandleHint")}
+      accessibilityActions={[
+        ...(canMoveUp ? [{ name: "moveUp", label: t("laneMoveUp") }] : []),
+        ...(canMoveDown
+          ? [{ name: "moveDown", label: t("laneMoveDown") }]
+          : []),
+      ]}
+      onAccessibilityAction={(event) => {
+        const action = event.nativeEvent.actionName;
+        if (action === "moveUp" || action === "decrement") {
+          if (canMoveUp) onStep(-1);
+        } else if (action === "moveDown" || action === "increment") {
+          if (canMoveDown) onStep(1);
+        }
+      }}
+    >
+      <Icon
+        name="drag-vertical"
+        size={theme.iconSize.sm}
+        color={lane.color ?? theme.colors.textMuted}
+      />
+    </Animated.View>
+  );
+};
+
 const styles = StyleSheet.create((theme) => ({
   column: {
     position: "absolute",
@@ -139,6 +166,7 @@ const styles = StyleSheet.create((theme) => ({
   grip: {
     position: "absolute",
     left: 0,
+    top: 0,
     width: LANE_HANDLE_WIDTH,
     height: START_OFFSET,
     paddingLeft: theme.space.xs,

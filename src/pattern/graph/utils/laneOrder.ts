@@ -108,6 +108,27 @@ export function laneIndexAt(
   return index;
 }
 
+/**
+ * How far the lane at `from` travels, from its own band's top, to land at each index: what the
+ * lifted name settles by on a drop. Lanes are contiguous and keep their heights when the order
+ * changes (the timeline's layout test holds that), so a lane moved down ends where the lane it
+ * displaced ended. A worklet, run once at pick-up.
+ */
+export function landingOffsets(
+  bands: readonly { y: number; height: number }[],
+  from: number,
+): number[] {
+  "worklet";
+  const offsets: number[] = [];
+  const start = bands[from];
+  for (let to = 0; to < bands.length; to++) {
+    if (!start) offsets.push(0);
+    else if (to <= from) offsets.push(bands[to].y - start.y);
+    else offsets.push(bands[to].y + bands[to].height - start.height - start.y);
+  }
+  return offsets;
+}
+
 /** The index of the lane whose band holds `y`, or -1. A worklet, for the drag's pick-up. */
 export function laneAt(
   bands: readonly { y: number; height: number }[],

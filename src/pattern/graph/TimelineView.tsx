@@ -4,22 +4,17 @@ import { useWindowDimensions, View } from "react-native";
 // one gesture system rather than racing a native scroll view it cannot see.
 import { ScrollView } from "react-native-gesture-handler";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg from "react-native-svg";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
-import type { AppTheme } from "@/src/common/theme/tokens";
 import {
   generateOrthogonalPath,
   generateSkipLevelPath,
   LayoutPosition,
 } from "./utils/GraphUtils";
-import {
-  ArrowheadMarker,
-  drawNodes,
-} from "@/src/pattern/graph/render/GraphPrimitives";
+import { ArrowheadMarker } from "@/src/pattern/graph/render/GraphPrimitives";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import GraphEmptyState from "@/src/pattern/graph/components/GraphEmptyState";
-import { edgeStroke } from "@/src/pattern/graph/render/edgeStyle";
 import {
   MIN_PATTERN_HEIGHT,
   MIN_PATTERNS_VISIBLE,
@@ -29,12 +24,24 @@ import {
   SkipLevelEdgeInfo,
   SwimlaneInfo,
 } from "./utils/TimelineGraphUtils";
-import { GraphEdge, GraphModel } from "@/src/pattern/graph/model/GraphModel";
+import {
+  GraphEdge,
+  GraphModel,
+  GraphNode,
+} from "@/src/pattern/graph/model/GraphModel";
 import { moveLane } from "@/src/pattern/graph/utils/laneOrder";
 import { useLaneDrag } from "@/src/pattern/graph/hooks/useLaneDrag";
 import LaneHandles, {
   LANE_LABEL_X_WITH_HANDLE,
 } from "@/src/pattern/graph/components/LaneHandles";
+import { useLaneMotion } from "@/src/pattern/graph/hooks/useLaneMotion";
+import {
+  CrossEdge,
+  CrossLaneEdge,
+  LaneBandLayer,
+  LaneContent,
+  LaneFiguresLayer,
+} from "@/src/pattern/graph/render/TimelineLanes";
 
 /** Where a lane's name starts when it has no grip in front of it. */
 const LANE_LABEL_X = 20;
@@ -139,6 +146,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     [swimlanes],
   );
   const drag = useLaneDrag(lanes, handleDrop, canReorder);
+  const laneMotion = useLaneMotion(swimlanes);
+  const { laneContents, crossEdges } = useMemo(
+    () =>
+      splitIntoLanes(
+        model.nodes,
+        model.edges,
+        positions,
+        swimlanes,
+        skipLevelEdges,
+      ),
+    [model.nodes, model.edges, positions, swimlanes, skipLevelEdges],
+  );
 
   // The preview follows the drag's target, adjusted during render rather than in an effect
   // (the layout above needs it, and the drag needs the layout).
@@ -169,6 +188,13 @@ const TimelineView: React.FC<TimelineViewProps> = ({
     return <GraphEmptyState hasActiveFilter={hasActiveFilter} />;
   }
 
+  const labelX = canReorder ? LANE_LABEL_X_WITH_HANDLE : LANE_LABEL_X;
+  // The lane whose name is on the lifted label: while it is dragged, and while that label
+  // settles into place after the drop.
+  const liftedId = drag.dragging?.typeId ?? drag.settling?.typeId;
+
+  // Bands, then the edges between lanes, then each lane's figures: the order one SVG used to
+  // draw them in, split so that each lane can slide as a piece.
   return (
     <ScrollView style={styles.container} scrollEnabled={!drag.dragging}>
       <ScrollView
@@ -177,22 +203,41 @@ const TimelineView: React.FC<TimelineViewProps> = ({
         scrollEnabled={!drag.dragging}
       >
         <View style={{ width: svgWidth, height: svgHeight }}>
-          <Svg
-            width={svgWidth}
-            height={svgHeight}
-            {...rasterizeLargeGraph(patterns.length)}
-          >
-            <ArrowheadMarker />
-            {drawSwimlanes(swimlanes, svgWidth, theme, {
-              labelX: canReorder ? LANE_LABEL_X_WITH_HANDLE : LANE_LABEL_X,
-              draggingId: drag.dragging?.typeId,
-            })}
-            {drawTimelineEdges(model.edges, positions, skipLevelEdges, theme)}
-            {drawNodes(model.nodes, positions, onNodeTap)}
-          </Svg>
+          {laneContents.map(({ lane, typeId }) => (
+            <LaneBandLayer
+              key={typeId}
+              lane={lane}
+              typeId={typeId}
+              width={svgWidth}
+              lanes={laneMotion}
+              labelX={labelX}
+              highlighted={typeId === drag.dragging?.typeId}
+              nameHidden={typeId === liftedId}
+              uppercase={theme.list.sectionUppercase}
+            />
+          ))}
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Svg width={svgWidth} height={svgHeight}>
+              <ArrowheadMarker />
+              {crossEdges.map((edge) => (
+                <CrossLaneEdge key={edge.key} edge={edge} lanes={laneMotion} />
+              ))}
+            </Svg>
+          </View>
+          {laneContents.map((content) => (
+            <LaneFiguresLayer
+              key={content.typeId}
+              content={content}
+              width={svgWidth}
+              lanes={laneMotion}
+              onNodeTap={onNodeTap}
+              rasterize={rasterizeLargeGraph(patterns.length)}
+            />
+          ))}
           {canReorder && (
             <LaneHandles
               lanes={swimlanes}
+              motion={laneMotion}
               drag={drag}
               height={svgHeight}
               uppercase={theme.list.sectionUppercase}
@@ -206,113 +251,97 @@ const TimelineView: React.FC<TimelineViewProps> = ({
 };
 
 /**
- * Draw edges with optimized routing for skip-level edges.
- * Skip-level edges route through the cleared space below shifted nodes.
+ * Splits the laid-out timeline into lanes, each with its figures and the edges inside it
+ * relative to its own top, and the edges between lanes. Reordering lanes moves each one as a
+ * whole (`laneOrder.test.ts` holds that), so a lane drawn this way only has to be slid.
+ *
+ * Skip-level edges route through the cleared space below shifted nodes; they never leave their
+ * lane, since collision avoidance only shifts within one.
  */
-function drawTimelineEdges(
+function splitIntoLanes(
+  nodes: GraphNode[],
   edges: GraphEdge[],
   positions: Map<number, LayoutPosition>,
+  swimlanes: SwimlaneInfo[],
   skipLevelEdges: SkipLevelEdgeInfo[],
-  theme: AppTheme,
-) {
-  // Create a map of skip-level edges for quick lookup
+): { laneContents: LaneContent[]; crossEdges: CrossEdge[] } {
+  const laneOf = new Map<number, string>();
+  nodes.forEach((node) => laneOf.set(node.pattern.id, node.pattern.typeId));
+
+  const byType = new Map<string, LaneContent>();
+  const laneContents = swimlanes.map((lane) => {
+    const typeId = lane.typeId ?? "";
+    const content: LaneContent = {
+      lane,
+      typeId,
+      nodes: [],
+      positions: new Map(),
+      edges: [],
+    };
+    byType.set(typeId, content);
+    return content;
+  });
+  const relative = (pos: LayoutPosition, content: LaneContent) => ({
+    x: pos.x,
+    y: pos.y - content.lane.y,
+  });
+
+  nodes.forEach((node) => {
+    const pos = positions.get(node.pattern.id);
+    const content = byType.get(node.pattern.typeId);
+    if (!pos || !content) return;
+    content.nodes.push(node);
+    content.positions.set(node.pattern.id, relative(pos, content));
+  });
+
   const skipLevelEdgeMap = new Map<string, SkipLevelEdgeInfo>();
   skipLevelEdges.forEach((edge) => {
     if (edge.intermediateNodeIds.length > 0) {
-      const key = `${edge.fromId}-${edge.toId}`;
-      skipLevelEdgeMap.set(key, edge);
+      skipLevelEdgeMap.set(`${edge.fromId}-${edge.toId}`, edge);
     }
   });
 
-  return (
-    <>
-      {edges.map((edge, index) => {
-        const fromPos = positions.get(edge.from);
-        const toPos = positions.get(edge.to);
-        if (!fromPos || !toPos) return null;
+  const crossEdges: CrossEdge[] = [];
+  edges.forEach((edge, index) => {
+    const fromPos = positions.get(edge.from);
+    const toPos = positions.get(edge.to);
+    const fromLane = byType.get(laneOf.get(edge.from) ?? "");
+    const toLane = byType.get(laneOf.get(edge.to) ?? "");
+    if (!fromPos || !toPos || !fromLane || !toLane) return;
+    const key = `edge-${edge.from}-${edge.to}-${index}`;
+    const elided = edge.kind === "elided";
 
-        const edgeKey = `${edge.from}-${edge.to}`;
-        const skipLevelInfo = skipLevelEdgeMap.get(edgeKey);
+    if (fromLane !== toLane) {
+      crossEdges.push({
+        key,
+        from: relative(fromPos, fromLane),
+        to: relative(toPos, toLane),
+        fromLane: fromLane.typeId,
+        toLane: toLane.typeId,
+        fromTop: fromLane.lane.y,
+        toTop: toLane.lane.y,
+        elided,
+      });
+      return;
+    }
 
-        let pathData: string;
-        if (skipLevelInfo && skipLevelInfo.intermediateNodeIds.length > 0) {
-          // This is a skip-level edge with shifted nodes - use optimized routing
-          // Use the pre-calculated original Y position from the edge info
-          // Pass forceDirection=true for timeline left-to-right flow
-          pathData = generateSkipLevelPath(
-            fromPos,
-            toPos,
-            skipLevelInfo.originalIntermediateY,
-            skipLevelInfo.firstIntermediateX,
-            skipLevelInfo.lastIntermediateX,
-          );
-        } else {
-          // Regular edge - use standard orthogonal routing
-          // Pass forceDirection=true for timeline left-to-right flow
-          pathData = generateOrthogonalPath(fromPos, toPos, true);
-        }
+    const from = relative(fromPos, fromLane);
+    const to = relative(toPos, fromLane);
+    const skip = skipLevelEdgeMap.get(`${edge.from}-${edge.to}`);
+    const d = skip
+      ? generateSkipLevelPath(
+          from,
+          to,
+          skip.originalIntermediateY - fromLane.lane.y,
+          skip.firstIntermediateX,
+          skip.lastIntermediateX,
+        )
+      : // Left to right, for the timeline's flow.
+        generateOrthogonalPath(from, to, true);
+    fromLane.edges.push({ key, d, elided });
+  });
 
-        const elided = edge.kind === "elided";
-        return (
-          <Path
-            key={`edge-${index}`}
-            d={pathData}
-            {...edgeStroke(theme, elided)}
-            fill="none"
-            markerEnd="url(#arrowhead-graph)"
-          />
-        );
-      })}
-    </>
-  );
-}
-
-/**
- * Lanes, labelled like the pattern list's section headers in the app style:
- * After Hours' italic serif, Clipboard's mono capitals. A lane being dragged is
- * tinted more strongly where it would land; its name rides on the lifted label.
- */
-function drawSwimlanes(
-  swimlanes: SwimlaneInfo[],
-  svgWidth: number,
-  theme: AppTheme,
-  { labelX, draggingId }: { labelX: number; draggingId?: string },
-) {
-  const { section } = theme.typography;
-  return (
-    <>
-      {swimlanes.map((swimlane) => (
-        <React.Fragment key={swimlane.typeId || swimlane.label}>
-          <Rect
-            x={0}
-            y={swimlane.y}
-            width={svgWidth}
-            height={swimlane.height}
-            fill={swimlane.color}
-            fillOpacity={swimlane.typeId === draggingId ? 0.25 : 0.1}
-          />
-          <SvgText
-            x={labelX}
-            y={swimlane.y + 25}
-            fontFamily={section.fontFamily}
-            fontSize={section.fontSize}
-            fontWeight={section.fontWeight}
-            fontStyle={section.fontStyle}
-            letterSpacing={section.letterSpacing}
-            fill={swimlane.color}
-            fillOpacity={swimlane.typeId === draggingId ? 0 : 0.5}
-          >
-            {laneLabel(swimlane, theme.list.sectionUppercase)}
-          </SvgText>
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
-
-function laneLabel(swimlane: SwimlaneInfo, uppercase: boolean): string {
-  const label = swimlane.label || swimlane.typeId || "";
-  return uppercase ? label.toUpperCase() : label;
+  return { laneContents, crossEdges };
 }
 
 const styles = StyleSheet.create((theme) => ({

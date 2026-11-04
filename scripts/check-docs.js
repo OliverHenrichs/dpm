@@ -33,7 +33,7 @@ const BUDGETS = [
 ];
 
 const OVER_BUDGET = {
-  "src/pattern/graph/AGENTS.md": 27500,
+  "src/pattern/graph/AGENTS.md": 25600,
   "src/pattern/data/AGENTS.md": 14600,
   "src/firebase/AGENTS.md": 12000,
 };

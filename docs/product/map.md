@@ -35,7 +35,8 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 - **Lanes can be reordered**: hold a lane's grip, left of its name, and drag it up or down. The
   order is saved on the list, so it is shared with subscribers. _Reset lanes to automatic order_
   in the header (shown only while there is a manual order) goes back. Screen readers get _Move up_
-  and _Move down_ actions. A read-only list has no grips.
+  and _Move down_ actions. A read-only list has no grips. The other lanes slide aside as the
+  dragged lane passes them, and on letting go its name settles into the lane it landed in.
 
 ### Network
 
@@ -63,6 +64,7 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 | The network ring shrinks for few roots, and boxes on it never touch       | `__tests__/unit/networkRing.test.ts`             |
 | Stored positions of deleted figures are pruned on save                    | `__tests__/components/useGraphPositions.test.ts` |
 | Lanes not named in the manual order follow it in automatic order          | `__tests__/unit/laneOrder.test.ts`               |
+| Reordering lanes moves each lane as a whole, nothing inside it            | `__tests__/unit/laneOrder.test.ts`               |
 | Node text keeps 4.5:1 contrast on every type colour in every theme        | `__tests__/unit/nodeFrame.test.ts`               |
 | Badges sit inside the box outline in both styles                          | `__tests__/components/nodeBadgeRender.test.tsx`  |
 

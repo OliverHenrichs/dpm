@@ -1,14 +1,25 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Gesture } from "react-native-gesture-handler";
-import { SharedValue, useSharedValue } from "react-native-reanimated";
+import {
+  SharedValue,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import * as Haptics from "expo-haptics";
 import {
   laneAt,
   laneIndexAt,
+  landingOffsets,
   moveLane,
 } from "@/src/pattern/graph/utils/laneOrder";
 import { DRAG_ACTIVATION_MS } from "@/src/pattern/graph/hooks/useNodeDrag";
+import { motion } from "@/src/common/theme/tokens";
+
+/** How long the lifted name takes to settle into its lane after the drop. */
+export const LANE_SETTLE_MS = motion.duration.normal;
+/** How long the name takes to lift on pick-up. */
+const LIFT_MS = motion.duration.fast;
 
 /** A lane as drawn: its type and its band, in the timeline's content coordinates. */
 export interface LaneBand {
@@ -30,8 +41,18 @@ export interface LaneDrag {
   } | null;
   /** Where the dragged lane would land now, an index into `dragging.order`, or null. */
   target: number | null;
-  /** How far the finger has moved since pick-up, for the lifted label. */
+  /**
+   * The lane just let go of, its band top when picked up, while its lifted name settles into
+   * place (`LANE_SETTLE_MS`), or null.
+   */
+  settling: { typeId: string; top: number } | null;
+  /**
+   * How far the lifted label is from where it was picked up: the finger's travel while
+   * dragged, then easing to the lane's landing place.
+   */
   dragOffset: SharedValue<number>;
+  /** 0 to 1 as the name lifts on pick-up, and back as it settles. */
+  lift: SharedValue<number>;
   /** One pan over the lane-label column, hit-testing which lane it picked up. */
   gesture: ReturnType<typeof Gesture.Pan>;
 }
@@ -58,7 +79,14 @@ export function useLaneDrag(
 ): LaneDrag {
   const [dragging, setDragging] = useState<LaneDrag["dragging"]>(null);
   const [target, setTarget] = useState<number | null>(null);
+  const [settling, setSettling] = useState<LaneDrag["settling"]>(null);
   const dragOffset = useSharedValue(0);
+  const lift = useSharedValue(0);
+  // How far the lane would travel to land at each index, worked out at pick-up.
+  const landing = useSharedValue<number[]>([]);
+  // The lane picked up, for the settle after the drop or cancel; outside React state for the
+  // same reason as `startOrder` below.
+  const picked = useSharedValue<LaneDrag["settling"]>(null);
   const activeIndex = useSharedValue(-1);
   const lastTarget = useSharedValue(-1);
   const centres = useSharedValue<number[]>([]);
@@ -73,29 +101,39 @@ export function useLaneDrag(
       // `lanes` is the reflowed preview by the time of the drop; the move is from this order.
       const order = lanes.map((l) => l.typeId);
       startOrder.set(order);
+      picked.set({ typeId: lane.typeId, top: lane.y });
+      setSettling(null);
       setDragging({ typeId: lane.typeId, from, top: lane.y, order });
       setTarget(from);
       // Medium on pick-up, Light on drop, as for a graph node. Never the only cue: the label
       // visibly lifts.
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     },
-    [lanes, startOrder],
+    [lanes, picked, startOrder],
   );
+
+  // Lets go of the lane and keeps its lifted name up while it eases into place.
+  const letGo = useCallback(() => {
+    setDragging(null);
+    setTarget(null);
+    setSettling(picked.get());
+    picked.set(null);
+  }, [picked]);
+
+  useEffect(() => {
+    if (!settling) return;
+    const timer = setTimeout(() => setSettling(null), LANE_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [settling]);
 
   const finish = useCallback(
     (from: number, to: number) => {
-      setDragging(null);
-      setTarget(null);
+      letGo();
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (from !== to) onDrop(moveLane(startOrder.get(), from, to));
     },
-    [onDrop, startOrder],
+    [letGo, onDrop, startOrder],
   );
-
-  const cancel = useCallback((_ignored: number) => {
-    setDragging(null);
-    setTarget(null);
-  }, []);
 
   // Worked out here, on the JS thread, and captured by the gesture as plain data. An arrow
   // function inside the worklet below is not safe: the React Compiler hoists one that captures
@@ -112,7 +150,9 @@ export function useLaneDrag(
       activeIndex.set(index);
       if (index < 0) return;
       centres.set(bandCentres);
+      landing.set(landingOffsets(bands, index));
       dragOffset.set(0);
+      lift.set(withTiming(1, { duration: LIFT_MS }));
       lastTarget.set(index);
       scheduleOnRN(begin, index);
     })
@@ -128,14 +168,28 @@ export function useLaneDrag(
         scheduleOnRN(setTarget, to);
       }
     })
-    .onEnd(() => {
+    .onEnd((_event, success) => {
       const from = activeIndex.get();
-      if (from >= 0) scheduleOnRN(finish, from, lastTarget.get());
-    })
-    .onFinalize((_event, success) => {
+      // A cancelled drag is put back in `onFinalize`, not dropped.
+      if (from < 0 || success === false) return;
+      const to = lastTarget.get();
+      // The lifted name eases from under the finger to where its lane landed.
+      const offsets = landing.get();
+      const settleTo = to < offsets.length ? offsets[to] : 0;
+      dragOffset.set(withTiming(settleTo, { duration: LANE_SETTLE_MS }));
+      lift.set(withTiming(0, { duration: LANE_SETTLE_MS }));
       activeIndex.set(-1);
-      if (!success) scheduleOnRN(cancel, 0);
+      scheduleOnRN(finish, from, to);
+    })
+    .onFinalize(() => {
+      // Still active here only when the drag was cancelled rather than dropped: back to where
+      // it was picked up, as the lanes slide back.
+      if (activeIndex.get() < 0) return;
+      activeIndex.set(-1);
+      dragOffset.set(withTiming(0, { duration: LANE_SETTLE_MS }));
+      lift.set(withTiming(0, { duration: LANE_SETTLE_MS }));
+      scheduleOnRN(letGo);
     });
 
-  return { dragging, target, dragOffset, gesture };
+  return { dragging, target, settling, dragOffset, lift, gesture };
 }
