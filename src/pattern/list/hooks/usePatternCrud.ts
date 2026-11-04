@@ -1,4 +1,7 @@
-import { applyReplacements } from "@/src/anonymize/jobs/replaceVideo";
+import {
+  applyReplacements,
+  applySequenceReplacements,
+} from "@/src/anonymize/jobs/replaceVideo";
 import { useCallback, useMemo } from "react";
 import {
   IModifier,
@@ -300,13 +303,22 @@ export function usePatternCrud(): PatternCrud {
       if (sequence.steps.some(blankFreeStep)) return false;
       const exists = sequences.some((s) => s.id === sequence.id);
       if (!exists && sequences.length >= MAX_SEQUENCES) return false;
-      const cleaned = cleanSequence(sequence, patterns, modifiers);
+      // A draft opened before a job on its video finished still holds the original video (and
+      // its marks before the cut); saving it must not put them back. The others too: this
+      // callback may hold the list from before the job's swap.
+      const cleaned = cleanSequence(
+        applySequenceReplacements(sequence),
+        patterns,
+        modifiers,
+      );
       await updateActiveList({
         ...withSequences(
           activeList,
           exists
-            ? sequences.map((s) => (s.id === cleaned.id ? cleaned : s))
-            : [...sequences, cleaned],
+            ? sequences.map((s) =>
+                s.id === cleaned.id ? cleaned : applySequenceReplacements(s),
+              )
+            : [...sequences.map(applySequenceReplacements), cleaned],
         ),
         updatedAt: Date.now(),
       });

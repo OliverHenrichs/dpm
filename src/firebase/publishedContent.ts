@@ -1,7 +1,12 @@
-import { withoutTranscripts } from "@/src/pattern/data/transcripts";
+import {
+  withoutTranscript,
+  withoutTranscripts,
+} from "@/src/pattern/data/transcripts";
+import { withSequenceVideo } from "@/src/pattern/sequences/sequences";
 import {
   IModifier,
   IPattern,
+  ISequence,
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
 
@@ -40,4 +45,15 @@ export function publishedModifiers(modifiers: IModifier[]): IModifier[] {
       ({ transcript: _t, ...ref }) => ref,
     ),
   }));
+}
+
+/**
+ * The list's sequences as they are published: a video only when it is a link, without its
+ * transcript; a local one stays behind, and the steps' marks with it.
+ */
+export function publishedSequences(sequences: ISequence[]): ISequence[] {
+  return sequences.map((sequence) => {
+    const [video] = onlineVideos(sequence.video ? [sequence.video] : []);
+    return withSequenceVideo(sequence, video && withoutTranscript(video));
+  });
 }

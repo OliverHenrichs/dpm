@@ -206,6 +206,24 @@ describe("publishing", () => {
     await assertSucceeds(publish(as(PUBLISHER), sharedListDoc()));
   });
 
+  it("accepts a sequence with a video and its steps' marks", async () => {
+    const data = sharedListDoc();
+    data.list.sequences = [
+      {
+        id: "0b6c7d1e-2f3a-4b5c-8d9e-0f1a2b3c4d5e",
+        name: "Rallye 2026",
+        createdAt: Date.now(),
+        video: { type: "url", value: "https://youtu.be/abc123", startTime: 3 },
+        steps: [
+          { kind: "figure", id: "s1", patternId: 1, at: 0 },
+          { kind: "free", id: "s2", text: "pose", counts: 2, at: 12.5 },
+          { kind: "figure", id: "s3", patternId: 2 },
+        ],
+      },
+    ];
+    await assertSucceeds(publish(as(PUBLISHER), data));
+  });
+
   it("refuses a publish from a device that has not signed in", async () => {
     await assertFails(publish(anonymous(), sharedListDoc(), owner("")));
   });

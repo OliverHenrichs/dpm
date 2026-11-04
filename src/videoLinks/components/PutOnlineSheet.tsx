@@ -17,6 +17,8 @@ export type PutOnlineTarget = {
   listId: string;
   sourceUri: string;
   patternName: string;
+  /** The video is a sequence's, not a figure's: the note says where the link goes. */
+  inSequence?: boolean;
 };
 
 type Props = {
@@ -206,7 +208,13 @@ const PutOnlineBody: React.FC<{
         disabled={busy || saving}
       />
       <AppText variant="caption" color="textMuted" style={styles.note}>
-        {busy ? t("videoOnlineBusy") : t("videoOnlineReplaceNote")}
+        {busy
+          ? t("videoOnlineBusy")
+          : t(
+              target.inSequence
+                ? "videoOnlineReplaceNoteSequence"
+                : "videoOnlineReplaceNote",
+            )}
       </AppText>
     </RevealScrollView>
   );

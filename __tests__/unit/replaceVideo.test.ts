@@ -1,11 +1,14 @@
 import {
   applyReplacements,
+  applySequenceReplacements,
   clearReplacements,
   MAX_VIDEOS,
   recordReplacement,
   replaceVideoInPattern,
+  replaceVideoInSequence,
+  replaceVideoInSequences,
 } from "@/src/anonymize/jobs/replaceVideo";
-import { IVideoReference } from "@/src/pattern/types/IPatternList";
+import { ISequence, IVideoReference } from "@/src/pattern/types/IPatternList";
 import { createTestPattern } from "@/utils/testFactories";
 
 const OLD = "file:///document/video-a.mp4";
@@ -117,5 +120,80 @@ describe("applyReplacements", () => {
       videoRefs: [{ type: "local", value: OLD }],
     });
     expect(applyReplacements(draft)).toBe(draft);
+  });
+});
+
+describe("a sequence's video", () => {
+  const marked = (at: (number | undefined)[]): ISequence => ({
+    id: "s",
+    name: "Rallye",
+    createdAt: 1,
+    video: { type: "local", value: OLD },
+    steps: at.map((a, i) => ({
+      kind: "free",
+      id: `f${i}`,
+      text: "pose",
+      ...(a !== undefined && { at: a }),
+    })),
+  });
+  const marks = (s: ISequence) => s.steps.map((step) => step.at);
+  const CUT = { start: 3, end: 8 };
+
+  it("replaces the video with its cut, moving the marks inside it and dropping the rest", () => {
+    const s = marked([1, 3, 5.5, undefined, 8, 9]);
+    const replaced = replaceVideoInSequence(s, OLD, NEW, CUT);
+    expect(replaced.video).toEqual(NEW);
+    expect(marks(replaced)).toEqual([
+      undefined,
+      0,
+      2.5,
+      undefined,
+      5,
+      undefined,
+    ]);
+    replaced.steps
+      .filter((step) => step.at === undefined)
+      .forEach((step) => expect(step).not.toHaveProperty("at"));
+  });
+
+  it("keeps both: the sequence keeps its original and its marks", () => {
+    const s = marked([1, 5]);
+    expect(replaceVideoInSequence(s, OLD, (prev) => [prev, NEW], CUT)).toBe(s);
+  });
+
+  it("leaves the marks of a video that stays the same one (a transcript, a link)", () => {
+    const s = marked([1, 5]);
+    const withLine = replaceVideoInSequence(s, OLD, (prev) => ({
+      ...prev,
+      transcript: { language: "en", model: "m", createdAt: 1, segments: [] },
+    }));
+    expect(withLine.video?.transcript).toBeDefined();
+    expect(marks(withLine)).toEqual([1, 5]);
+    const linked = replaceVideoInSequence(s, OLD, other);
+    expect(linked.video).toEqual(other);
+    expect(marks(linked)).toEqual([1, 5]);
+  });
+
+  it("returns the same objects when the video is not the sequence's", () => {
+    const s = marked([1]);
+    const list = [s];
+    expect(replaceVideoInSequence(s, "file:///other.mp4", NEW, CUT)).toBe(s);
+    expect(replaceVideoInSequences(list, "file:///other.mp4", NEW)).toBe(list);
+    expect(replaceVideoInSequences(undefined, OLD, NEW)).toBeUndefined();
+    expect(replaceVideoInSequences(list, OLD, NEW)?.[0].video).toEqual(NEW);
+  });
+
+  it("puts a finished cut into a draft that still holds the original, once", () => {
+    recordReplacement(OLD, NEW, CUT);
+    const draft = marked([4, 10]);
+    const applied = applySequenceReplacements(draft);
+    expect(applied.video).toEqual(NEW);
+    expect(marks(applied)).toEqual([1, undefined]);
+    expect(applySequenceReplacements(applied)).toBe(applied);
+    // Patterns take the same replacement, with no marks to move.
+    const p = createTestPattern("t", {
+      videoRefs: [{ type: "local", value: OLD }],
+    });
+    expect(applyReplacements(p).videoRefs).toEqual([NEW]);
   });
 });

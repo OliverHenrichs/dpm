@@ -1006,6 +1006,121 @@ describe("export → import round trip", () => {
     });
   });
 
+  describe("sequence videos and marks (3.14)", () => {
+    const transcript = {
+      language: "en",
+      model: "base",
+      createdAt: 1,
+      segments: [{ start: 0, end: 1, text: "five six seven eight" }],
+    };
+    const marked = (video: IVideoReference): ISequence => ({
+      id: "s1",
+      name: "Rallye 2026",
+      createdAt: 1_700_000_000_000,
+      video,
+      steps: [
+        { kind: "figure", id: "a", patternId: 1, at: 0 },
+        { kind: "free", id: "b", text: "pose", at: 12.5 },
+        { kind: "figure", id: "c", patternId: 1 },
+      ],
+    });
+    const figures = () => [
+      createTestPattern(TYPE.id, { id: 1, name: "Sugar Push" }),
+    ];
+
+    it("embeds a local video and brings it back with the marks", async () => {
+      seedBinaryFile(VIDEO_A, videoBytes(7));
+      const { importResult, exported } = await roundTrip([
+        listWith(figures(), { sequences: [marked(localRef(VIDEO_A))] }),
+      ]);
+
+      expect(exported.version).toBe("3.14.0");
+      expect(Object.keys(exported.videos)).toEqual([VIDEO_A]);
+      const [sequence] = importResult.patternLists![0].sequences!;
+      expect(sequence.video!.type).toBe("local");
+      expect(sequence.video!.value).not.toBe(VIDEO_A);
+      expect(readFileBytes(sequence.video!.value)).toEqual(videoBytes(7));
+      expect(sequence.steps).toEqual(marked(localRef(VIDEO_A)).steps);
+      expect(importResult.warnings).toEqual([]);
+    });
+
+    it("leaves a local video out without videos, and its marks with it", async () => {
+      seedBinaryFile(VIDEO_A, videoBytes(7));
+      const { importResult, exported } = await roundTrip(
+        [listWith(figures(), { sequences: [marked(localRef(VIDEO_A))] })],
+        { includeVideos: false },
+      );
+
+      expect(exported.videos).toEqual({});
+      const [sequence] = importResult.patternLists![0].sequences!;
+      expect(sequence).not.toHaveProperty("video");
+      sequence.steps.forEach((step) => expect(step).not.toHaveProperty("at"));
+    });
+
+    it("keeps a link and its marks without videos, in a read-only export too", async () => {
+      const link = urlRef("https://youtu.be/abc", 3);
+      const { importResult } = await roundTrip(
+        [listWith(figures(), { sequences: [marked(link)] })],
+        { includeVideos: false, exportAsReadonly: true },
+      );
+
+      expect(importResult.patternLists![0].sequences).toEqual([marked(link)]);
+    });
+
+    it("carries the video's transcript only when asked to", async () => {
+      seedBinaryFile(VIDEO_A, videoBytes(7));
+      const lists = [
+        listWith(figures(), {
+          sequences: [marked({ ...localRef(VIDEO_A), transcript })],
+        }),
+      ];
+
+      const without = await roundTrip(lists);
+      expect(
+        without.importResult.patternLists![0].sequences![0].video,
+      ).not.toHaveProperty("transcript");
+
+      const withIt = await roundTrip(lists, { includeTranscripts: true });
+      expect(
+        withIt.importResult.patternLists![0].sequences![0].video!.transcript,
+      ).toEqual(transcript);
+    });
+
+    it("drops a malformed video with a warning, and a bad mark quietly", async () => {
+      const { importResult } = await roundTrip([
+        listWith(figures(), {
+          sequences: [
+            {
+              ...marked(urlRef("https://example.com/a.mp4")),
+              steps: [
+                { kind: "figure", id: "a", patternId: 1, at: -1 },
+                { kind: "free", id: "b", text: "pose", at: "1:00" as never },
+                { kind: "figure", id: "c", patternId: 1, at: 3.14159 },
+              ],
+            },
+            {
+              ...marked({ type: "tape" } as never),
+              id: "s2",
+              name: "Broken",
+            },
+          ],
+        }),
+      ]);
+
+      const [kept, broken] = importResult.patternLists![0].sequences!;
+      expect(kept.steps).toEqual([
+        { kind: "figure", id: "a", patternId: 1 },
+        { kind: "free", id: "b", text: "pose" },
+        { kind: "figure", id: "c", patternId: 1, at: 3.14 },
+      ]);
+      expect(broken).not.toHaveProperty("video");
+      broken.steps.forEach((step) => expect(step).not.toHaveProperty("at"));
+      expect(importText(importResult.warnings)).toContain(
+        'List "Test Dance", sequence "Broken"',
+      );
+    });
+  });
+
   describe("members-only lists (3.7)", () => {
     it("keeps that only members may read the published list", async () => {
       const { importResult } = await roundTrip([

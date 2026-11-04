@@ -42,7 +42,10 @@ import AnonymizeModal, {
 import AnonymizeJobsBanner from "@/src/anonymize/components/AnonymizeJobsBanner";
 import { canShortenVideos } from "@/src/anonymize/shortenVideo";
 import { AnonymizeJob, jobStore } from "@/src/anonymize/jobs/jobStore";
-import { patternHasVideo } from "@/src/anonymize/jobs/replaceVideo";
+import {
+  patternHasVideo,
+  sequenceWithVideo,
+} from "@/src/anonymize/jobs/replaceVideo";
 import { useActivePatternList } from "@/src/pattern/data/components/ActivePatternListContext";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import {
@@ -201,15 +204,22 @@ const PatternListManager = () => {
     return accepted;
   };
 
-  // The banner links a job to its pattern: by the video it produced once done, by the source
-  // until then (a result waiting for review is not in the pattern yet). Only in the active
-  // list — another list's patterns are not loaded here.
+  // The banner links a job to its pattern, or to its sequence: by the video it produced once
+  // done, by the source until then (a result waiting for review is not in the pattern yet).
+  // Only in the active list — another list's patterns are not loaded here.
   const openJobPattern = (job: AnonymizeJob) => {
     if (activeList?.id !== job.listId) return undefined;
     const uri =
       job.status === "done" ? (job.resultUri ?? job.sourceUri) : job.sourceUri;
     const pattern = patterns.find((p) => patternHasVideo(p, uri));
-    if (!pattern) return undefined;
+    if (!pattern) {
+      const sequence = sequenceWithVideo(activeList.sequences, uri);
+      if (!sequence) return undefined;
+      return () => {
+        setActiveTab("sequences");
+        setOpenSequence({ id: sequence.id, editing: false });
+      };
+    }
     return () => {
       setActiveTab("patterns");
       setSelectedPattern(pattern);

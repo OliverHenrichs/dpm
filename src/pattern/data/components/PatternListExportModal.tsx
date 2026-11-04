@@ -11,7 +11,10 @@ import { useExportSelection } from "@/src/pattern/data/hooks/useExportSelection"
 import { SelectAllButton } from "@/src/pattern/data/components/SelectAllButton";
 import { ExportListItem } from "@/src/pattern/data/components/ExportListItem";
 import { ExportOptions } from "@/src/pattern/data/exportPatterns";
-import { hasTranscripts } from "@/src/pattern/data/transcripts";
+import {
+  hasTranscripts,
+  sequencesHaveTranscripts,
+} from "@/src/pattern/data/transcripts";
 
 interface PatternListExportModalProps {
   visible: boolean;
@@ -58,11 +61,10 @@ const ExportSheet: React.FC<Omit<PatternListExportModalProps, "visible">> = ({
   // Off unless chosen, every time (L4): a transcript is someone's words in writing.
   const [includeTranscripts, setIncludeTranscripts] = useState(false);
   // Offered only when there is something to include; it rides on the videos, so it needs them.
-  const offerTranscripts = hasTranscripts(
-    patternLists
-      .filter((list) => selectedIds.has(list.id))
-      .flatMap((list) => list.patterns),
-  );
+  const selectedLists = patternLists.filter((list) => selectedIds.has(list.id));
+  const offerTranscripts =
+    hasTranscripts(selectedLists.flatMap((list) => list.patterns)) ||
+    selectedLists.some((list) => sequencesHaveTranscripts(list.sequences));
   const handleExport = () => {
     onExport(getSelectedLists(), {
       includeVideos,

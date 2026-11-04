@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Modal, ScrollView, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet } from "react-native-unistyles";
@@ -9,13 +9,20 @@ import {
   getCommonFormSheet,
   getCommonRow,
 } from "@/src/common/utils/CommonStyles";
-import { Button } from "@/src/common/ui";
+import { Button, Chip } from "@/src/common/ui";
 import { ISequence } from "@/src/pattern/types/IPatternList";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 import { sequenceTotals } from "@/src/pattern/sequences/sequences";
 import SequenceForm from "@/src/pattern/sequences/SequenceForm";
 import SequenceStepRow from "@/src/pattern/sequences/SequenceStepRow";
 import SequenceTotalsLine from "@/src/pattern/sequences/SequenceTotalsLine";
+import SequenceVideo, {
+  videoSeeks,
+} from "@/src/pattern/sequences/SequenceVideo";
+import SequenceVideoNoSeek from "@/src/pattern/sequences/SequenceVideoNoSeek";
+import { useSequencePlayback } from "@/src/pattern/sequences/useSequencePlayback";
+import { useFollowStep } from "@/src/pattern/sequences/useFollowStep";
+import TranscriptSheet from "@/src/transcribe/components/TranscriptSheet";
 
 /** Which sequence is open, and how: `draft` is a new one, not on the list until saved. */
 export interface OpenSequence {
@@ -30,8 +37,8 @@ interface SequenceModalProps {
 }
 
 /**
- * A sequence, opened from the List tab's Sequences: its steps as a numbered list with the
- * totals and description, and behind _Edit_ the form, in the same sheet, as with figures. A
+ * A sequence, opened from the List tab's Sequences: its video, its steps as a numbered list with
+ * the totals and description, and behind _Edit_ the form, in the same sheet, as with figures. A
  * read-only list has no _Edit_. A new sequence opens straight in the form; Cancel then closes.
  */
 const SequenceModal: React.FC<SequenceModalProps> = ({ open, onClose }) => (
@@ -58,7 +65,6 @@ const SequenceSheet: React.FC<{
   open: OpenSequence;
   onClose: () => void;
 }> = ({ open, onClose }) => {
-  const { t } = useTranslation();
   const {
     activeList,
     patterns,
@@ -92,6 +98,37 @@ const SequenceSheet: React.FC<{
     );
   }
 
+  return (
+    <SequenceView
+      sequence={sequence}
+      onClose={onClose}
+      onEdit={isReadonly ? undefined : () => setEditing(true)}
+    />
+  );
+};
+
+/**
+ * A sequence as it is danced: the video pinned above the steps, which light up as it plays and
+ * stay in view; tapping a marked step plays from it, and _Loop step_ repeats one. A transcribed
+ * video shows its transcript read-only, as a figure's details do. A read-only list plays and
+ * seeks the same, without _Edit_.
+ */
+const SequenceView: React.FC<{
+  sequence: ISequence;
+  onClose: () => void;
+  onEdit?: () => void;
+}> = ({ sequence, onClose, onEdit }) => {
+  const { t } = useTranslation();
+  const { activeList, patterns, patternTypes, modifiers } = usePatternCrud();
+  const playback = useSequencePlayback(sequence.steps);
+  const scrollRef = useRef<ScrollView>(null);
+  const follow = useFollowStep(scrollRef, playback.current, playback.playing);
+  const video = sequence.video;
+  const seeks = !!video && videoSeeks(video);
+  const marked = sequence.steps.some((step) => step.at !== undefined);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const transcript = video?.transcript;
+
   const totals = sequenceTotals(
     sequence.steps,
     patterns,
@@ -100,23 +137,72 @@ const SequenceSheet: React.FC<{
   );
   return (
     <View style={styles.form}>
-      <ScrollView>
+      {video && (
+        <>
+          <SequenceVideo video={video} {...playback.player} />
+          {!seeks && (
+            <SequenceVideoNoSeek video={video} style={styles.noSeek} />
+          )}
+          {((seeks && marked) || transcript) && (
+            <View style={styles.playRow}>
+              {seeks && marked && (
+                <Chip
+                  label={t("sequenceLoopStep")}
+                  icon="repeat"
+                  toggle
+                  selected={playback.loopId !== null}
+                  onPress={playback.toggleLoop}
+                />
+              )}
+              {transcript && (
+                <Chip
+                  label={t("transcriptShow")}
+                  icon="text-box-outline"
+                  onPress={() => {
+                    playback.pause();
+                    setShowTranscript(true);
+                  }}
+                />
+              )}
+            </View>
+          )}
+        </>
+      )}
+      <TranscriptSheet
+        target={
+          showTranscript && video && transcript
+            ? {
+                patternName: sequence.name,
+                sourceUri: video.value,
+                transcript,
+                hasSound: !video.generated,
+              }
+            : null
+        }
+        onClose={() => setShowTranscript(false)}
+      />
+      <ScrollView ref={scrollRef} {...follow.scrollProps}>
         <View style={styles.container}>
           <Text style={styles.title}>{sequence.name}</Text>
           <SequenceTotalsLine totals={totals} style={styles.totals} />
           {sequence.description ? (
             <Text style={styles.description}>{sequence.description}</Text>
           ) : null}
-          {sequence.steps.map((step, index) => (
-            <SequenceStepRow
-              key={step.id}
-              step={step}
-              index={index}
-              patterns={patterns}
-              patternTypes={patternTypes}
-              modifiers={modifiers}
-            />
-          ))}
+          <View onLayout={follow.onRowsLayout}>
+            {sequence.steps.map((step, index) => (
+              <SequenceStepRow
+                key={step.id}
+                step={step}
+                index={index}
+                patterns={patterns}
+                patternTypes={patternTypes}
+                modifiers={modifiers}
+                current={seeks && index === playback.current}
+                onLayout={follow.onRowLayout(index)}
+                onPlay={seeks ? () => playback.playStep(index) : undefined}
+              />
+            ))}
+          </View>
           {sequence.steps.length === 0 && (
             <Text style={styles.empty}>{t("sequenceNoSteps")}</Text>
           )}
@@ -129,11 +215,11 @@ const SequenceSheet: React.FC<{
           onPress={onClose}
           style={styles.footerButton}
         />
-        {!isReadonly && (
+        {onEdit && (
           <Button
             title={t("sequenceEditButton")}
             icon="pencil"
-            onPress={() => setEditing(true)}
+            onPress={onEdit}
             style={styles.footerButton}
           />
         )}
@@ -174,6 +260,13 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: theme.space.sm,
   },
   footerButton: { flex: 1 },
+  noSeek: { marginBottom: theme.space.sm },
+  playRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: theme.space.sm,
+    marginBottom: theme.space.sm,
+  },
 }));
 
 export default SequenceModal;

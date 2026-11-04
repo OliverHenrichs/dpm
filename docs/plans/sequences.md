@@ -32,16 +32,23 @@ interface IPatternList {
 }
 
 interface ISequence {
-  id: string;              // UUID
+  id: string; // UUID
   name: string;
   description?: string;
   video?: IVideoReference; // one video for the whole sequence; reuses today's type
-  steps: ISequenceStep[];  // in dancing order
+  steps: ISequenceStep[]; // in dancing order
   createdAt: number;
 }
 
 type ISequenceStep =
-  | { kind: "figure"; id: string; patternId: number; modifierId?: string; note?: string; at?: number }
+  | {
+      kind: "figure";
+      id: string;
+      patternId: number;
+      modifierId?: string;
+      note?: string;
+      at?: number;
+    }
   | { kind: "free"; id: string; text: string; counts?: number; at?: number };
 ```
 
@@ -76,11 +83,11 @@ The user marks each step's start while the video plays; afterwards the steps and
 
 **Which videos can do this.** Seeking and reading the playback time are needed:
 
-| Source | How DPM plays it today | Marking and following |
-| --- | --- | --- |
-| Local file, direct/stream link, Dropbox | `expo-video` player (`FocusPreviewVideo.tsx`, `ReelVideoView.tsx` set `currentTime`) | Yes: the player exposes and sets `currentTime` |
-| YouTube | `react-native-youtube-iframe` (`YouTubeVideoItem.tsx`) | Yes: the library's ref has `getCurrentTime()` and `seekTo()` |
-| Vimeo | WebView embed (`VimeoVideoItem.tsx`) | Not in phase 1; needs Vimeo's player.js API bridged through the WebView |
+| Source                                  | How DPM plays it today                                                               | Marking and following                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| Local file, direct/stream link, Dropbox | `expo-video` player (`FocusPreviewVideo.tsx`, `ReelVideoView.tsx` set `currentTime`) | Yes: the player exposes and sets `currentTime`                          |
+| YouTube                                 | `react-native-youtube-iframe` (`YouTubeVideoItem.tsx`)                               | Yes: the library's ref has `getCurrentTime()` and `seekTo()`            |
+| Vimeo                                   | WebView embed (`VimeoVideoItem.tsx`)                                                 | Not in phase 1; needs Vimeo's player.js API bridged through the WebView |
 
 For Vimeo the sequence still plays, the steps just don't seek; the UI says so where the Mark button would be.
 
@@ -97,16 +104,20 @@ For Vimeo the sequence still plays, the steps just don't seek; the UI says so wh
 Three PRs, each usable on its own; phase 1 is the bulk.
 
 **Phase 1 is built** and described in [`docs/product/sequences.md`](../product/sequences.md), its
-own spec: `lists-and-figures.md` had no room left under its size budget. Phase 1 left out the
-sequence's `video` and the steps' `at`, which phase 2 adds with its own export minor. It gave free
-steps an optional `note`, so a figure step's note survives the figure's deletion. The decided bars
-show as "4 × 8" (counts ÷ 8) on salsa and bachata lists. Phases 2 and 3 fold into that spec.
+own spec: `lists-and-figures.md` had no room left under its size budget. It gave free steps an
+optional `note`, so a figure step's note survives the figure's deletion. The decided bars show as
+"4 × 8" (counts ÷ 8) on salsa and bachata lists.
 
-| Phase | What ships | Effort |
-| --- | --- | --- |
+**Phase 2 is built** too (export format 3.14), and folded into the same spec. Beyond this design
+it shows marks as m:ss with tenths (a ±0.5 s nudge would otherwise often not show), drops a
+sequence's marks wherever its video stays behind, and continues an interrupted _Mark steps_ from
+the last mark rather than from 0. Phase 3 folds into that spec too.
+
+| Phase                               | What ships                                                                                                                                                              | Effort                                   |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | 1. Sequences on the List tab (done) | Segment, overview, create/edit, figure and free steps, variants, drag reorder, totals, delete-figure handling, export/import, publishing, i18n in nine languages, tests | L (about the size of members-only lists) |
-| 2. Video mapping | One video per sequence, Mark steps, seek on tap, follow while playing, loop step; local, direct links, YouTube | M |
-| 3. Map and details | "Show sequence" on the Map, "In: …" under figure details, next-step ordering in the picker | M |
+| 2. Video mapping (done)             | One video per sequence, Mark steps, seek on tap, follow while playing, loop step; local, direct links, YouTube                                                          | M                                        |
+| 3. Map and details                  | "Show sequence" on the Map, "In: …" under figure details, next-step ordering in the picker                                                                              | M                                        |
 
 #118 has merged. Own levels (#126) also bumps the export format, so rebase on it first. The variant-rhythm work (attached modifiers only) can land in either order; a step just shows whatever counts its variant has.
 

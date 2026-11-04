@@ -6,7 +6,7 @@ Optional Firestore-backed list sharing. The app runs local-only when credentials
 - `FirebaseListService.ts` — `publishList`, `syncPublishedList`, `unpublishList`, `fetchSharedList`, `subscribeToSharedList`; documents follow `SharedListDocument` (`list`, `patterns`, `publisherVersion`, `publishedAt`, `appToken`). Share codes are 8-char alphanumeric, generated with `expo-crypto` (CSPRNG). `publishList` returns `{ shareCode, shareKey }` and `unpublishList` takes the list.
 - `auth.ts` / `auth.web.ts` — `ensureSignedIn()`: anonymous Firebase Auth, created lazily on the first publish (subscribing never signs in), persisted in AsyncStorage on native. A platform split because only the react-native build of `firebase/auth` has `getReactNativePersistence` (typed in `firebaseAuthReactNative.d.ts`).
 - `shareKey.ts` — `generateShareKey()`, the publisher's 256-bit secret for one list.
-- `publishedContent.ts` — `publishedPattern`, `publishedModifiers`: what of a list goes into the published document (URL videos only, no transcripts).
+- `publishedContent.ts` — `publishedPattern`, `publishedModifiers`, `publishedSequences`: what of a list goes into the published document (URL videos only, no transcripts).
 - `MembershipService.ts` — members-only lists: asking to join, where a subscriber stands, letting in and turning away, in the same `subscribers` records; see `src/pattern/members/AGENTS.md`. `fetchSharedList` throws `MembersOnlyError` and `subscribeToSharedList` reports `NoAccessError` when the rules refuse a read.
 - `HandoverService.ts` — handing a published list over to someone who follows it: offers under
   `sharedLists/{code}/handovers/{handoverCode}`, accepted together with an owner record carrying a

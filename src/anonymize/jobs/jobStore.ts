@@ -2,8 +2,10 @@ import { File } from "expo-file-system";
 import {
   getPatternListById,
   loadPatterns,
+  savePatternList,
   savePatterns,
 } from "@/src/pattern/data/PatternListStorage";
+import { withSequences } from "@/src/pattern/sequences/sequences";
 import { persistVideo } from "@/src/pattern/data/videoFiles";
 import { trimTranscript, withTranscript } from "@/src/pattern/data/transcripts";
 import { generateUUID } from "@/src/pattern/types/PatternType";
@@ -18,8 +20,10 @@ import {
 } from "@/src/anonymize/providers/AnonymizeProvider";
 import { Consent, runAnonymize } from "@/src/anonymize/runAnonymize";
 import {
+  Cut,
   recordReplacement,
   replaceVideoInPattern,
+  replaceVideoInSequences,
   VideoUpdate,
 } from "@/src/anonymize/jobs/replaceVideo";
 import {
@@ -99,8 +103,13 @@ export const reviewsSuggestion = (job: AnonymizeJob): boolean =>
 export const writesWithoutCount = (job: AnonymizeJob): boolean =>
   job.kind === "suggest" && job.phase !== "download";
 
+/**
+ * Where a job's video is: a list, and the name of the figure or sequence holding it, for the
+ * progress line. The video itself is found by URI (see [jobStore]).
+ */
 type JobTarget = {
   listId: string;
+  /** A figure's name, or a sequence's: the job goes wherever the video is. */
   patternName: string;
 };
 
@@ -155,13 +164,16 @@ export type SuggestRequest = {
 };
 
 /**
- * Puts a finished video into the list through whoever holds it in memory. Returns false when
- * that is not the list it holds, and the store then writes storage itself.
+ * Puts a finished video into the list — its patterns and its sequences — through whoever holds
+ * it in memory. [cut] is the part a shortened or anonymized video kept, which moves a
+ * sequence's marks. Returns false when that is not the list it holds, and the store then
+ * writes storage itself.
  */
 export type AttachHandler = (
   listId: string,
   oldUri: string,
   update: VideoUpdate,
+  cut?: Cut,
 ) => Promise<boolean>;
 
 /**
@@ -172,9 +184,10 @@ export type AttachHandler = (
  * (two pipelines at once do not fit in memory), and the result goes through the handler the
  * *current* tree registered.
  *
- * A job finds its video by URI in every pattern of the list, not by pattern id: a video picked
- * in the form of a pattern that is not saved yet has no pattern to name. If the pattern is saved
- * after the job finished, `applyReplacements` swaps it on the way in.
+ * A job finds its video by URI in every pattern and every sequence of the list, not by id: a
+ * video picked in the form of a pattern that is not saved yet has no pattern to name. If the
+ * pattern or sequence is saved after the job finished, `applyReplacements` (or
+ * `applySequenceReplacements`) swaps it on the way in.
  */
 let jobs: AnonymizeJob[] = [];
 const listeners = new Set<() => void>();
@@ -295,8 +308,12 @@ export const jobStore = {
         }),
     });
     try {
-      await attach(job.listId, job.sourceUri, (previous) =>
-        mode === "replace" ? made(previous) : [previous, made(previous)],
+      await attach(
+        job.listId,
+        job.sourceUri,
+        (previous) =>
+          mode === "replace" ? made(previous) : [previous, made(previous)],
+        clip,
       );
       patch(id, { status: "done" });
     } catch (e) {
@@ -378,13 +395,30 @@ function deleteQuietly(uri: string | undefined) {
   }
 }
 
-async function attach(listId: string, oldUri: string, update: VideoUpdate) {
-  recordReplacement(oldUri, update);
-  if (attachHandler && (await attachHandler(listId, oldUri, update))) return;
+async function attach(
+  listId: string,
+  oldUri: string,
+  update: VideoUpdate,
+  cut?: Cut,
+) {
+  recordReplacement(oldUri, update, cut);
+  if (attachHandler && (await attachHandler(listId, oldUri, update, cut))) {
+    return;
+  }
   const patterns = await loadPatterns(listId);
   const swapped = patterns.map((p) => replaceVideoInPattern(p, oldUri, update));
   if (swapped.some((p, i) => p !== patterns[i])) {
     await savePatterns(listId, swapped);
+  }
+  const list = await getPatternListById(listId);
+  const sequences = replaceVideoInSequences(
+    list?.sequences,
+    oldUri,
+    update,
+    cut,
+  );
+  if (list && sequences !== list.sequences) {
+    await savePatternList(withSequences(list, sequences));
   }
 }
 

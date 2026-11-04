@@ -24,8 +24,9 @@ export const SUPPORTED_MAJOR = 3;
  * 12: a figure's `modifierRefs` may carry `overrides` (a variant's own counts, rhythm, level and
  *     description); rhythms may be written in slows and quicks (`S Q Q`).
  * 13: lists may carry `sequences` (named runs of their figures in dancing order).
+ * 14: a sequence may carry a `video`, its steps `at` (where each starts in it).
  */
-export const SUPPORTED_MINOR = 13;
+export const SUPPORTED_MINOR = 14;
 
 export interface ParsedVersion {
   major: number;

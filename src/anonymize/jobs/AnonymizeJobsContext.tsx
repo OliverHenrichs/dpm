@@ -15,7 +15,11 @@ import {
   KeepMode,
   StartJob,
 } from "@/src/anonymize/jobs/jobStore";
-import { replaceVideoInPattern } from "@/src/anonymize/jobs/replaceVideo";
+import {
+  replaceVideoInPattern,
+  replaceVideoInSequences,
+} from "@/src/anonymize/jobs/replaceVideo";
+import { withSequences } from "@/src/pattern/sequences/sequences";
 import {
   askNotificationPermission,
   clearJobsNotification,
@@ -43,23 +47,43 @@ const KEEP_AWAKE_TAG = "anonymize";
 export const AnonymizeJobsProvider: React.FC<PropsWithChildren> = ({
   children,
 }) => {
-  const { activeList, patterns, updatePatterns } = useActivePatternList();
+  const { activeList, patterns, updatePatterns, updateActiveList } =
+    useActivePatternList();
   const { jobs } = useAnonymizeJobs();
 
   // A job finishes many renders after it was queued; attach must see the latest state.
-  const latest = useRef({ activeList, patterns, updatePatterns });
+  const latest = useRef({
+    activeList,
+    patterns,
+    updatePatterns,
+    updateActiveList,
+  });
   useEffect(() => {
-    latest.current = { activeList, patterns, updatePatterns };
-  }, [activeList, patterns, updatePatterns]);
+    latest.current = { activeList, patterns, updatePatterns, updateActiveList };
+  }, [activeList, patterns, updatePatterns, updateActiveList]);
 
   useEffect(
     () =>
-      jobStore.setAttachHandler(async (listId, oldUri, update) => {
+      jobStore.setAttachHandler(async (listId, oldUri, update, cut) => {
         const now = latest.current;
-        if (now.activeList?.id !== listId) return false;
+        const list = now.activeList;
+        if (list?.id !== listId) return false;
         await now.updatePatterns(
           now.patterns.map((p) => replaceVideoInPattern(p, oldUri, update)),
         );
+        // A sequence's video lives on the list itself.
+        const sequences = replaceVideoInSequences(
+          list.sequences,
+          oldUri,
+          update,
+          cut,
+        );
+        if (sequences !== list.sequences) {
+          await now.updateActiveList({
+            ...withSequences(list, sequences),
+            updatedAt: Date.now(),
+          });
+        }
         return true;
       }),
     [],

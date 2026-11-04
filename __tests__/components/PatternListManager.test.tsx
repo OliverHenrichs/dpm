@@ -320,6 +320,35 @@ describe("PatternListManager", () => {
       expect(await screen.findByText(/^Counts/)).toBeOnTheScreen();
     });
 
+    it("links a job on a sequence's video to that sequence, opening it", async () => {
+      (shortenVideo as jest.Mock).mockResolvedValueOnce(
+        "file:///cache/shortened-out.mp4",
+      );
+      const { list } = await renderManager([pattern(1, "Sugar Push")], {
+        sequences: [
+          {
+            id: generateUUID(),
+            name: "Rallye routine",
+            steps: [],
+            createdAt: 1,
+            video: { type: "local", value: SOURCE },
+          },
+        ],
+      });
+
+      await startShorten(list.id);
+      const line = await screen.findByText(
+        "Whip: the new video is ready to check",
+      );
+      await waitFor(() => expect(line.props.accessibilityRole).toBe("link"));
+      fireEvent.press(line);
+
+      // On the Sequences tab: its row, and the sequence opened over it.
+      await waitFor(() =>
+        expect(screen.getAllByText("Rallye routine")).toHaveLength(2),
+      );
+    });
+
     it("does not link a job from another list, even to a same-named pattern", async () => {
       (shortenVideo as jest.Mock).mockResolvedValueOnce(
         "file:///cache/shortened-out.mp4",

@@ -99,7 +99,8 @@ All in `src/pattern/types/` (`IPatternList.ts`, `PatternType.ts`, `PatternLevel.
 | `IVideoReference`     | —           | `{ type: "url" \| "local", value, startTime?, generated?, transcript? }`; `startTime` for URLs only; `generated` marks a video the app made; `transcript` is what was said in it                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 A list's optional `sequences` (`ISequence`) are named runs of its figures in dancing order, each
-step a figure (with a variant) or free text (`src/pattern/sequences/AGENTS.md`).
+step a figure (with a variant) or free text, with one optional video in which each step can be
+marked (`src/pattern/sequences/AGENTS.md`).
 
 `NewPattern = Omit<IPattern, "id">`, `NewModifier = Omit<IModifier, "id">`. `PatternType.ts` also
 exports `PATTERN_TYPE_COLORS`, `generateUUID()`, `normalizeSlug()` and `isSlugUnique()`.
@@ -148,8 +149,8 @@ inherit a stranger's position.
 - **Screen edges.** `SCREEN_EDGE_INSET` is applied once, as `PageContainer`'s horizontal padding,
   to keep clear of Android's back-gesture band. Do not pad individual scrollers.
 - **Platform splits.** Metro prefers `Foo.web.tsx` over `Foo.tsx` for web; both must export the
-  same shape. The seven today: `YouTubeVideoItem`, `VimeoVideoItem`, `PatternNodeGroup`, `theme/ServerStyles`,
-  `src/transcribe/whisper`, `src/suggest/llama`, `src/firebase/auth`. Route graph node presses
+  same shape. The eight today: `YouTubeVideoItem`, `VimeoVideoItem`, `PatternNodeGroup`, `theme/ServerStyles`,
+  `src/transcribe/whisper`, `src/suggest/llama`, `src/firebase/auth`, `SequenceYouTubePlayer`. Route graph node presses
   through `PatternNodeGroup`, never `onPress` on an SVG element.
 - **A package that reads its native module at import** takes the app down on a build without it,
   before any `try` runs. Either split it per platform (above) or `require` it inside a function

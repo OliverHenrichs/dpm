@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { LayoutChangeEvent, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { AppText, Icon, IconButton, ListRow } from "@/src/common/ui";
+import { AppText, Icon, IconButton, ListRow, Tappable } from "@/src/common/ui";
 import { RevealTextInput } from "@/src/common/components/reveal";
 import { getCommonInput } from "@/src/common/utils/CommonStyles";
 import {
@@ -18,9 +18,12 @@ import {
 import { PatternType } from "@/src/pattern/types/PatternType";
 import ModifierPillStrip from "@/src/pattern/list/ModifierPillStrip";
 import {
+  formatMark,
+  MARK_NUDGE,
   MAX_STEP_NOTE,
   MAX_STEP_TEXT,
   stepCounts,
+  stepName,
   stepVariant,
 } from "@/src/pattern/sequences/sequences";
 import { StepDrag } from "@/src/pattern/sequences/useStepDrag";
@@ -36,6 +39,15 @@ interface SequenceStepRowProps {
   patterns: IPattern[];
   patternTypes: PatternType[];
   modifiers: IModifier[];
+  /** The step playing in the sequence's video: highlighted. */
+  current?: boolean;
+  /** The row's place in its box, for keeping the step playing in view. */
+  onLayout?: (e: LayoutChangeEvent) => void;
+  /**
+   * Viewing, with a video that seeks: the step's mark shown, and a tap plays from it (only a
+   * marked step takes one).
+   */
+  onPlay?: () => void;
   /** Editing: with a grip, the step's own fields when expanded, duplicate and remove. */
   edit?: {
     expanded: boolean;
@@ -46,6 +58,15 @@ interface SequenceStepRowProps {
     onDuplicate: () => void;
     onRemove: () => void;
     onMoveBy: (step: -1 | 1) => void;
+    /**
+     * With a video that seeks: the mark line, where the clock marks the step at the video's
+     * time, − and + nudge it and tapping its time plays from there.
+     */
+    mark?: {
+      onMarkHere: () => void;
+      onNudge: (by: number) => void;
+      onSeek: () => void;
+    };
   };
 }
 
@@ -60,6 +81,9 @@ const SequenceStepRow: React.FC<SequenceStepRowProps> = ({
   patterns,
   patternTypes,
   modifiers,
+  current = false,
+  onLayout,
+  onPlay,
   edit,
 }) => {
   const { t } = useTranslation();
@@ -77,9 +101,8 @@ const SequenceStepRow: React.FC<SequenceStepRowProps> = ({
   const counts = stepCounts(step, patterns, modifiers);
 
   const title =
-    step.kind === "free"
-      ? step.text.trim() || t("sequenceFreeStep")
-      : (pattern?.name ?? t("sequenceFigureMissing"));
+    stepName(step, patterns) ??
+    t(step.kind === "free" ? "sequenceFreeStep" : "sequenceFigureMissing");
   const details = [
     step.kind === "free" ? t("sequenceFreeStep") : variant?.name,
     counts !== undefined ? t("countsSection", { n: counts }) : undefined,
@@ -135,31 +158,44 @@ const SequenceStepRow: React.FC<SequenceStepRowProps> = ({
     </View>
   );
 
+  const at = step.at !== undefined ? formatMark(step.at) : undefined;
+
   if (!edit) {
+    const playable = !!onPlay && at !== undefined;
     return (
-      <View style={styles.row}>
+      <View style={styles.row} onLayout={onLayout}>
         <ListRow
           title={title}
           leading={leading}
           subtitle={subtitle || undefined}
           subtitleLines={0}
+          meta={onPlay ? at : undefined}
+          selected={current}
+          onPress={playable ? onPlay : undefined}
+          accessibilityLabel={
+            playable
+              ? t("sequencePlayStep", { n: index + 1, name: title, time: at })
+              : undefined
+          }
         />
       </View>
     );
   }
+  const mark = edit.mark;
 
   const set = (fields: Partial<ISequenceStep>) =>
     edit.onChange({ ...step, ...fields } as ISequenceStep);
 
   return (
     <Animated.View
-      style={[styles.row, styles.editRow, moving]}
-      onLayout={(e) =>
+      style={[styles.row, styles.editRow, current && styles.current, moving]}
+      onLayout={(e) => {
         edit.drag.onRowLayout(index, {
           y: e.nativeEvent.layout.y,
           height: e.nativeEvent.layout.height,
-        })
-      }
+        });
+        onLayout?.(e);
+      }}
       testID={`sequence-step-${index}`}
     >
       <View style={styles.header}>
@@ -236,6 +272,52 @@ const SequenceStepRow: React.FC<SequenceStepRowProps> = ({
         />
       </View>
 
+      {mark && (
+        <View style={styles.markLine}>
+          <IconButton
+            icon="clock-outline"
+            size={theme.iconSize.md}
+            color="primary"
+            onPress={mark.onMarkHere}
+            accessibilityLabel={t("sequenceMarkHere", { n: index + 1 })}
+            testID={`sequence-mark-here-${index}`}
+          />
+          {at !== undefined ? (
+            <>
+              <Tappable
+                onPress={mark.onSeek}
+                accessibilityLabel={t("sequencePlayStep", {
+                  n: index + 1,
+                  name: title,
+                  time: at,
+                })}
+                style={styles.markTime}
+              >
+                <AppText variant="label">{at}</AppText>
+              </Tappable>
+              <IconButton
+                icon="minus"
+                size={theme.iconSize.md}
+                onPress={() => mark.onNudge(-MARK_NUDGE)}
+                accessibilityLabel={t("sequenceNudgeEarlier", {
+                  n: index + 1,
+                })}
+              />
+              <IconButton
+                icon="plus"
+                size={theme.iconSize.md}
+                onPress={() => mark.onNudge(MARK_NUDGE)}
+                accessibilityLabel={t("sequenceNudgeLater", { n: index + 1 })}
+              />
+            </>
+          ) : (
+            <AppText variant="caption" color="textMuted">
+              {t("sequenceStepNotMarked")}
+            </AppText>
+          )}
+        </View>
+      )}
+
       {edit.expanded && (
         <View style={styles.body}>
           {step.kind === "figure" && pattern && (
@@ -308,6 +390,23 @@ const styles = StyleSheet.create((theme) => ({
   editRow: {
     borderWidth: 1,
     borderColor: theme.colors.border,
+  },
+  current: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  markLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space.xs,
+    paddingLeft: theme.touchTarget,
+    paddingRight: theme.space.sm,
+    paddingBottom: theme.space.xs,
+  },
+  markTime: {
+    paddingHorizontal: theme.space.xs,
+    paddingVertical: theme.space.xxs,
+    borderRadius: theme.radius.sm,
   },
   header: {
     flexDirection: "row",

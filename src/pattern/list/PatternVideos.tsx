@@ -33,6 +33,8 @@ export type PatternVideosProps = {
   disabled?: boolean;
   /** At the most videos it can hold: '+' is disabled, and a line says why. */
   full?: boolean;
+  /** Shown last inside the section, under the videos: the form's job cards. */
+  children?: React.ReactNode;
 };
 
 const PatternVideos: React.FC<PatternVideosProps> = ({
@@ -46,6 +48,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
   onOpenTranscript,
   disabled = false,
   full = false,
+  children,
 }) => {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
@@ -213,6 +216,7 @@ const PatternVideos: React.FC<PatternVideosProps> = ({
           {t("videosFullHint", { max: MAX_VIDEOS })}
         </Text>
       )}
+      {children}
     </View>
   );
 };

@@ -40,8 +40,11 @@ Unqualified paths are relative to `src/anonymize/`.
   footage off the device: `runAnonymize` refuses a remote preview, which would be billed.
 - The pattern list's **+** → _From a video_ / _Record a video_ seeds a new pattern, then offers
   Edit video after saving.
+- A sequence's one video has the same tools in its form (`src/pattern/sequences/AGENTS.md`).
 - `components/AnonymizeJobsBanner.tsx` on the pattern list reports every job; a line opens its
-  pattern when it is in the active list. Queued jobs and running transcriptions can be cancelled;
+  pattern, or its sequence, when it is in the active list. Each job, there and in the forms
+  (`DraftJobLines`), is a `components/JobCard.tsx`: kind icon, status, a `ProgressBar` (counting
+  `progress`, sweeping where `writesWithoutCount`), _Review_ and _Cancel job_ buttons. Queued jobs and running transcriptions can be cancelled;
   a running shorten or anonymize cannot (the native pipeline has no stop).
 - `components/VideoReviewModal.tsx` shows a finished cut for review: tags for what changed, then
   _Replace the original_ (filled), _Keep both_ (outlined), and _Discard_ / _Decide later_ as text.
@@ -61,7 +64,8 @@ native run carried on, and would have written that tree's stale pattern back.
   Anything else heavy goes through `jobStore.runExclusive`, which waits for everything queued
   before it. The one exception: a transcription asked to go on and suggest calls `runSuggestion`
   inside its own turn.
-- **A job finds its video by URI**, across the list, so it works for a pattern not yet saved.
+- **A job finds its video by URI**, across the list's patterns and sequences, so it works for a
+  pattern not yet saved; `patternName` is the holder's name, a figure's or a sequence's.
 - Failures the user can act on carry an `errorKey` (an i18n key) shown instead of exception text.
 - `jobs/AnonymizeJobsContext.tsx` (`AnonymizeJobsProvider`, in the root layout) exposes the store to
   React through `useSyncExternalStore`, keeps the screen awake while jobs run, registers the attach
@@ -86,6 +90,8 @@ Keeping goes through `jobs/replaceVideo.ts`:
 - through the **mounted tree's attach handler** when the job's list is active, so the result merges
   with whatever the user edited meanwhile; otherwise **straight to storage**, since the user may have
   switched lists;
+- a sequence takes the update's first reference (`replaceVideoInSequence`); with the job's
+  `clip` as the `Cut`, a replaced video's step marks move to the cut (`marksAfterCut`);
 - `VideoUpdate` is a reference or a function of the current reference, so it keeps fields the job
   never saw, including on the copy in an open form's draft;
 - `recordReplacement` + `applyReplacements` swap the new video into drafts saved later

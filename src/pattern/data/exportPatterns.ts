@@ -1,7 +1,15 @@
-import { withoutTranscripts } from "@/src/pattern/data/transcripts";
+import {
+  withoutTranscript,
+  withoutTranscripts,
+} from "@/src/pattern/data/transcripts";
+import { withSequenceVideo } from "@/src/pattern/sequences/sequences";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
+import {
+  IPattern,
+  ISequence,
+  IVideoReference,
+} from "@/src/pattern/types/IPatternList";
 import {
   exportDataVersion,
   IPatternListExportData,
@@ -132,8 +140,31 @@ async function createExportData(
             }),
       );
     }
+    // A sequence's video travels as a figure's does: embedded when local and videos are
+    // included, else only a link; its transcript only on the opt-in. Its marks go with it.
+    let exportedSequences: ISequence[] | undefined;
+    if (list.sequences) {
+      exportedSequences = [];
+      for (const sequence of list.sequences) {
+        if (!sequence.video) {
+          exportedSequences.push(sequence);
+          continue;
+        }
+        const [video] = await portable(
+          [sequence.video],
+          `sequence:${sequence.id}`,
+        );
+        exportedSequences.push(
+          withSequenceVideo(
+            sequence,
+            video && (includeTranscripts ? video : withoutTranscript(video)),
+          ),
+        );
+      }
+    }
     exportedLists.push({
       ...list,
+      ...(exportedSequences && { sequences: exportedSequences }),
       modifiers: exportedModifiers,
       readonly: exportAsReadonly ? true : undefined,
       // The share key lets whoever holds it take over the published list. An

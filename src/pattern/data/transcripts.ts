@@ -1,5 +1,6 @@
 import {
   IPattern,
+  ISequence,
   IVideoReference,
   IVideoTranscript,
 } from "@/src/pattern/types/IPatternList";
@@ -37,6 +38,13 @@ export function hasTranscripts(
       (p.videoRefs ?? []).some((v) => v.transcript) ||
       (p.modifierRefs ?? []).some((m) => m.videoRefs.some((v) => v.transcript)),
   );
+}
+
+/** Whether any of these sequences' videos has a transcript (one can come with an import). */
+export function sequencesHaveTranscripts(
+  sequences: Pick<ISequence, "video">[] | undefined,
+): boolean {
+  return (sequences ?? []).some((s) => !!s.video?.transcript);
 }
 
 /**

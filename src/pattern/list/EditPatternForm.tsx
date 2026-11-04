@@ -53,16 +53,14 @@ import AnonymizeModal, {
 import VideoReviewModal, {
   ReviewSource,
 } from "@/src/anonymize/components/VideoReviewModal";
-import {
-  reviewsSuggestion,
-  useAnonymizeJobs,
-  writesWithoutCount,
-} from "@/src/anonymize/jobs/AnonymizeJobsContext";
+import { useAnonymizeJobs } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import {
   applyReplacements,
   MAX_VIDEOS,
 } from "@/src/anonymize/jobs/replaceVideo";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
+import DraftJobLines from "@/src/anonymize/components/DraftJobLines";
+import InfoHint from "@/src/common/components/InfoHint";
 import { canShortenVideos } from "@/src/anonymize/shortenVideo";
 import TranscriptSheet, {
   TranscriptTarget,
@@ -778,50 +776,14 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             full={
               !isActiveVideoReadonly && activeVideoRefs.length >= MAX_VIDEOS
             }
-          />
-          {draftJobs.map((job) =>
-            job.status === "review" ? (
-              <View key={job.id} style={styles.jobRow}>
-                <Text style={[styles.jobLine, styles.jobRowText]}>
-                  {reviewsSuggestion(job)
-                    ? t("suggestJobInFormReview")
-                    : t("videoJobInFormReview")}
-                </Text>
-                <Button
-                  title={t("videoJobReviewButton")}
-                  size="sm"
-                  onPress={() => setReviewId(job.id)}
-                />
-              </View>
-            ) : (
-              // Each line names its kind: a transcription that failed for want of sound sat above
-              // a cut still running, and "processing" for both read as one job failing and going on.
-              <Text
-                key={job.id}
-                style={[
-                  styles.jobLine,
-                  job.status === "failed" && styles.jobLineFailed,
-                ]}
-              >
-                {job.status === "queued"
-                  ? t(`${job.kind}JobInFormQueued`)
-                  : job.status === "running"
-                    ? writesWithoutCount(job)
-                      ? t("suggestJobInFormWriting")
-                      : t(`${job.kind}JobInFormRunning`, {
-                          percent: Math.round(job.progress * 100),
-                        })
-                    : t(`${job.kind}JobInFormFailed`, {
-                        error: job.errorKey
-                          ? t(job.errorKey)
-                          : (job.error ?? ""),
-                      })}
-              </Text>
-            ),
-          )}
-          {draftJobs.some(
-            (j) => j.status === "queued" || j.status === "running",
-          ) && <Text style={styles.jobLine}>{t("videoJobsKeepOpen")}</Text>}
+          >
+            {/* The jobs on these videos, as cards under their thumbnails. */}
+            <DraftJobLines
+              jobs={draftJobs}
+              onReview={setReviewId}
+              style={styles.jobCards}
+            />
+          </PatternVideos>
           <FormSection
             title={t("typeAndLevel")}
             summary={typeLevelSummary || t("formSectionEmpty")}
@@ -960,7 +922,9 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             maxHeight="50%"
           >
             {onlineVideos > 0 && (
-              <Text style={styles.jobLine}>{t("videoEditOnlineHint")}</Text>
+              <InfoHint style={styles.pickerHint}>
+                {t("videoEditOnlineHint")}
+              </InfoHint>
             )}
             <View style={styles.anonymizeChoices}>
               {editable.map(({ ref, index }) => (
@@ -1182,18 +1146,8 @@ const styles = StyleSheet.create((theme) => {
       fontStyle: "italic",
       marginTop: theme.space.xs,
     },
-    jobLine: {
-      ...theme.typography.caption,
-      marginBottom: theme.space.sm,
-      color: theme.colors.textMuted,
-    },
-    jobLineFailed: { color: theme.colors.danger },
-    jobRow: {
-      ...getCommonRow(),
-      gap: theme.space.sm,
-      marginBottom: theme.space.sm,
-    },
-    jobRowText: { flex: 1, marginBottom: 0 },
+    jobCards: { marginTop: theme.space.sm },
+    pickerHint: { marginBottom: theme.space.sm },
     anonymizeChoices: {
       ...getCommonRow(),
       flexWrap: "wrap",
