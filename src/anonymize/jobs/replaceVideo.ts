@@ -1,4 +1,9 @@
-import { IPattern, IVideoReference } from "@/src/pattern/types/IPatternList";
+import {
+  IPattern,
+  ISequence,
+  IVideoReference,
+} from "@/src/pattern/types/IPatternList";
+import { marksAfterCut } from "@/src/pattern/sequences/sequences";
 
 /** How many videos a pattern, or one modifier combination of it, can hold. */
 export const MAX_VIDEOS = 10;
@@ -72,6 +77,56 @@ export function replaceVideoInPattern(
   return changed ? { ...pattern, videoRefs, modifierRefs } : pattern;
 }
 
+/**
+ * The part of the original a cut kept, in seconds. A sequence's marks are places in its video,
+ * so a video replaced by its cut moves them with it (`marksAfterCut`).
+ */
+export type Cut = { start: number; end: number };
+
+/**
+ * Applies [update] to the video at [oldUri] when it is this sequence's video. A sequence holds
+ * one video, so only the update's first reference is kept: keeping both leaves the original,
+ * and its marks, as they were. When the video is replaced by a [cut] of it, the marks move to
+ * the kept part and those outside it go. Returns the same sequence object when nothing changed.
+ */
+export function replaceVideoInSequence(
+  sequence: ISequence,
+  oldUri: string,
+  update: VideoUpdate,
+  cut?: Cut,
+): ISequence {
+  const video = sequence.video;
+  if (video?.value !== oldUri) return sequence;
+  const [next] = applyUpdate(update, video);
+  if (!next || sameVideoRef(next, video)) return sequence;
+  const moved = cut && next.value !== oldUri;
+  return {
+    ...sequence,
+    video: next,
+    ...(moved && { steps: marksAfterCut(sequence.steps, cut.start, cut.end) }),
+  };
+}
+
+/** [replaceVideoInSequence] over a list's sequences; the same array when none changed. */
+export function replaceVideoInSequences(
+  sequences: ISequence[] | undefined,
+  oldUri: string,
+  update: VideoUpdate,
+  cut?: Cut,
+): ISequence[] | undefined {
+  if (!sequences) return sequences;
+  const next = sequences.map((s) =>
+    replaceVideoInSequence(s, oldUri, update, cut),
+  );
+  return next.some((s, i) => s !== sequences[i]) ? next : sequences;
+}
+
+/** The sequence whose video is the one at [uri], if any. */
+export const sequenceWithVideo = (
+  sequences: ISequence[] | undefined,
+  uri: string,
+): ISequence | undefined => sequences?.find((s) => s.video?.value === uri);
+
 /** Whether two references hold the same fields, each the same value or object. */
 function sameVideoRef(a: IVideoReference, b: IVideoReference): boolean {
   if (a === b) return true;
@@ -95,14 +150,19 @@ export function patternHasVideo(
 }
 
 /**
- * Replacements made by finished jobs, old URI → new reference. An edit form that was open on
- * the pattern while its job finished still holds the old video in its draft; saving it would
- * put the original back. `usePatternCrud` runs every save through [applyReplacements].
+ * Replacements made by finished jobs, old URI → new reference (and the cut, for a sequence's
+ * marks). An edit form that was open on the pattern or sequence while its job finished still
+ * holds the old video in its draft; saving it would put the original back. `usePatternCrud`
+ * runs every save through [applyReplacements] or [applySequenceReplacements].
  */
-const replacements = new Map<string, VideoUpdate>();
+const replacements = new Map<string, { update: VideoUpdate; cut?: Cut }>();
 
-export function recordReplacement(oldUri: string, update: VideoUpdate) {
-  replacements.set(oldUri, update);
+export function recordReplacement(
+  oldUri: string,
+  update: VideoUpdate,
+  cut?: Cut,
+) {
+  replacements.set(oldUri, { update, cut });
 }
 
 export function applyReplacements<
@@ -110,12 +170,21 @@ export function applyReplacements<
 >(pattern: T): T {
   if (replacements.size === 0) return pattern;
   let result = pattern;
-  for (const [oldUri, update] of replacements) {
+  for (const [oldUri, { update }] of replacements) {
     result = replaceVideoInPattern(
       result as unknown as IPattern,
       oldUri,
       update,
     ) as unknown as T;
+  }
+  return result;
+}
+
+/** [applyReplacements] for a sequence: its draft's video, and the marks a cut moves. */
+export function applySequenceReplacements(sequence: ISequence): ISequence {
+  let result = sequence;
+  for (const [oldUri, { update, cut }] of replacements) {
+    result = replaceVideoInSequence(result, oldUri, update, cut);
   }
   return result;
 }

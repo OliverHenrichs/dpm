@@ -7,6 +7,7 @@ import {
   freeStepsOf,
   loopWindow,
   markQueue,
+  marksAfterCut,
   markStart,
   MAX_SEQUENCE_STEPS,
   MAX_SEQUENCES,
@@ -462,6 +463,21 @@ describe("video mapping", () => {
     expect(roundMark(-2)).toBe(0);
     expect(withMark(marks(1)[0], 2.345)).toMatchObject({ at: 2.35 });
     expect(withMark(marks(1)[0], undefined)).not.toHaveProperty("at");
+  });
+
+  it("moves the marks to a cut of the video, and drops those outside it", () => {
+    const steps = marks(2, 2.95, 7.5, undefined, 12, 12.5);
+    expect(marksAfterCut(steps, 3, 12).map((s) => s.at)).toEqual([
+      undefined,
+      0,
+      4.5,
+      undefined,
+      9,
+      undefined,
+    ]);
+    expect(marksAfterCut(steps, 3, 12)[0]).not.toHaveProperty("at");
+    const unmarked = marks(undefined);
+    expect(marksAfterCut(unmarked, 3, 12)).toBe(unmarked);
   });
 
   it("drops the marks with the video", () => {

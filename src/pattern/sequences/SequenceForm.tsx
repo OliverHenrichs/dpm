@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ScrollView, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -49,12 +49,17 @@ import SequenceVideo, {
 import SequenceVideoNoSeek from "@/src/pattern/sequences/SequenceVideoNoSeek";
 import { useSequencePlayback } from "@/src/pattern/sequences/useSequencePlayback";
 import { useFollowStep } from "@/src/pattern/sequences/useFollowStep";
+import SequenceVideoTools from "@/src/pattern/sequences/SequenceVideoTools";
+import { jobStore } from "@/src/anonymize/jobs/jobStore";
+import { applySequenceReplacements } from "@/src/anonymize/jobs/replaceVideo";
 
 /**
  * A run of _Mark steps_: the steps it goes through (by id, `markQueue`), how far it got, and
  * each mark it made with what the step had before, for _Back_.
  */
 interface MarkSession {
+  /** The video it marks in: a job that replaces the video ends it. */
+  video: string;
   queue: string[];
   pos: number;
   undo: { id: string; previous?: number; pos: number }[];
@@ -81,6 +86,7 @@ interface SequenceFormProps {
  * With a video that seeks, it sits pinned above the scroller with _Mark steps_: the video plays
  * and each tap of _Mark_ stores its time as the next step's start. Each step's row then has its
  * mark: the clock marks it alone where the video is, - and + nudge it, its time plays from it.
+ * Under the video are the figures' video tools (`SequenceVideoTools`).
  */
 const SequenceForm: React.FC<SequenceFormProps> = ({
   initial,
@@ -99,7 +105,7 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
   const [picking, setPicking] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const [addingVideo, setAddingVideo] = useState(false);
-  const [session, setSession] = useState<MarkSession | null>(null);
+  const [markSession, setSession] = useState<MarkSession | null>(null);
   const nameRef = useRef<TextInput>(null);
   /** A mark waits for the player's time; a second tap meanwhile must not mark the same step. */
   const markBusy = useRef(false);
@@ -121,6 +127,17 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
 
   const video = draft.video;
   const seeks = !!video && videoSeeks(video);
+  const session = markSession?.video === video?.value ? markSession : null;
+
+  // A job on the video that finishes while the form is open replaced it in the stored list,
+  // not in this draft: swap it here too, marks and all, so saving does not put it back.
+  useEffect(
+    () =>
+      jobStore.subscribe(() =>
+        setDraft((prev) => applySequenceReplacements(prev)),
+      ),
+    [],
+  );
   const playback = useSequencePlayback(steps);
   const scrollRef = useRef<ScrollView>(null);
   const follow = useFollowStep(scrollRef, playback.current, playback.playing);
@@ -161,11 +178,11 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
       : -1;
   const startMarking = () => {
     const queue = markQueue(steps);
-    if (queue.length === 0) return;
+    if (!video || queue.length === 0) return;
     setExpandedId(null);
     playback.seekTo(markStart(steps, queue));
     playback.play();
-    setSession({ queue, pos: 0, undo: [] });
+    setSession({ video: video.value, queue, pos: 0, undo: [] });
   };
   const mark = async () => {
     if (!session || nextMark < 0 || markBusy.current) return;
@@ -308,6 +325,14 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
                 accessibilityLabel={t("sequenceRemoveVideo")}
               />
             </View>
+          )}
+          {!session && (
+            <SequenceVideoTools
+              video={video}
+              name={draft.name}
+              setDraft={setDraft}
+              onOpen={playback.pause}
+            />
           )}
         </View>
       )}

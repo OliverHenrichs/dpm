@@ -378,6 +378,29 @@ export function withSequenceVideo(
   };
 }
 
+/**
+ * The steps' marks once the video is cut to `start`..`end` (seconds of the original): a mark in
+ * the kept part moves back by `start`, one outside it goes, since that moment is no longer in
+ * the video. The same array when no step is marked.
+ */
+export function marksAfterCut<T extends ISequenceStep>(
+  steps: T[],
+  start: number,
+  end: number,
+): T[] {
+  if (!steps.some((step) => step.at !== undefined)) return steps;
+  return steps.map((step) =>
+    step.at === undefined
+      ? step
+      : withMark(
+          step,
+          step.at >= start - MARK_TOLERANCE && step.at <= end
+            ? Math.max(0, step.at - start)
+            : undefined,
+        ),
+  );
+}
+
 /** The step playing at `seconds`: the one whose mark is the latest passed, or -1. */
 export function stepAtTime(
   steps: readonly ISequenceStep[],

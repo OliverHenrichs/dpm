@@ -13,7 +13,10 @@ import {
   reviewsSuggestion,
   useAnonymizeJobs,
 } from "@/src/anonymize/jobs/AnonymizeJobsContext";
-import { MAX_VIDEOS } from "@/src/anonymize/jobs/replaceVideo";
+import {
+  MAX_VIDEOS,
+  sequenceWithVideo,
+} from "@/src/anonymize/jobs/replaceVideo";
 import { trimTranscript } from "@/src/pattern/data/transcripts";
 import { usePatternCrud } from "@/src/pattern/list/hooks/usePatternCrud";
 import { IVideoReference } from "@/src/pattern/types/IPatternList";
@@ -29,6 +32,11 @@ export type ReviewSource = {
   ref?: IVideoReference;
   /** How many videos its group holds; at [MAX_VIDEOS] there is no room to keep both. */
   groupSize: number;
+  /**
+   * The original is a sequence's one video: there is nowhere to keep the new one beside it, so
+   * only replacing it is offered (with its step marks moved to the cut).
+   */
+  holdsOne?: boolean;
   /** Appends to the description of the pattern the original belongs to. */
   onDescriptionChange?: (append: (description: string) => string) => void;
   /** Hands a suggestion to that pattern, which decides what it may fill. */
@@ -103,7 +111,7 @@ const ReviewCard: React.FC<{
   const { t } = useTranslation();
   const { keep, discard } = useAnonymizeJobs();
   const fromList = useListSource(job.sourceUri);
-  const { ref, groupSize, onDescriptionChange } = source ?? fromList;
+  const { ref, groupSize, holdsOne, onDescriptionChange } = source ?? fromList;
   const [addTranscript, setAddTranscript] = useState(true);
 
   const player = useVideoPlayer(resultUri, (p) => {
@@ -208,13 +216,15 @@ const ReviewCard: React.FC<{
         )}
         <View style={styles.actions}>
           <Button title={t("videoReviewReplace")} onPress={replace} />
-          <Button
-            title={t("videoReviewKeepBoth")}
-            variant="secondary"
-            onPress={() => decide(() => keep(job.id, "both"))}
-            disabled={!roomForBoth}
-          />
-          {!roomForBoth && (
+          {!holdsOne && (
+            <Button
+              title={t("videoReviewKeepBoth")}
+              variant="secondary"
+              onPress={() => decide(() => keep(job.id, "both"))}
+              disabled={!roomForBoth}
+            />
+          )}
+          {!roomForBoth && !holdsOne && (
             <AppText variant="caption" color="textMuted" style={styles.centred}>
               {t("videoReviewNoRoom", { max: MAX_VIDEOS })}
             </AppText>
@@ -321,9 +331,13 @@ const SuggestionCard: React.FC<{
   );
 };
 
-/** The original as the active list holds it, with the means to change its description. */
+/**
+ * The original as the active list holds it, in a figure or a sequence, with the means to change
+ * the description of whichever holds it.
+ */
 function useListSource(sourceUri: string): ReviewSource {
-  const { patterns, editPattern, isReadonly } = usePatternCrud();
+  const { patterns, sequences, editPattern, saveSequence, isReadonly } =
+    usePatternCrud();
   for (const pattern of patterns) {
     const groups = [
       pattern.videoRefs,
@@ -349,6 +363,32 @@ function useListSource(sourceUri: string): ReviewSource {
               name: pattern.name.trim() ? pattern.name : suggestion.name,
               description: appendToDescription(
                 pattern.description ?? "",
+                suggestion.description,
+              ),
+            }),
+    };
+  }
+  const sequence = sequenceWithVideo(sequences, sourceUri);
+  if (sequence) {
+    return {
+      ref: sequence.video,
+      groupSize: 1,
+      holdsOne: true,
+      onDescriptionChange: isReadonly
+        ? undefined
+        : (append) =>
+            void saveSequence({
+              ...sequence,
+              description: append(sequence.description ?? ""),
+            }),
+      onApplySuggestion: isReadonly
+        ? undefined
+        : (suggestion) =>
+            void saveSequence({
+              ...sequence,
+              name: sequence.name.trim() ? sequence.name : suggestion.name,
+              description: appendToDescription(
+                sequence.description ?? "",
                 suggestion.description,
               ),
             }),

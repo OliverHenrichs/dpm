@@ -61,6 +61,14 @@ phase still to come (the Map) is `docs/plans/sequences.md`.
   (`src/transcribe/followScroll.ts`). **The scroller's ref is made by the component and passed
   in**: a hook returning an object with a ref in it makes `react-hooks/refs` flag every use of
   that object during render.
+- **The figures' video tools** (`SequenceVideoTools`, under the form's video): the same
+  `AnonymizeModal`, `VideoReviewModal`, `TranscriptSheet`, `PutOnlineSheet` and job lines
+  (`DraftJobLines`) as `EditPatternForm`, with its gating. Jobs find the video by URI in the
+  list's sequences too (`replaceVideoInSequence`, `src/anonymize/AGENTS.md`); the form takes a
+  finished one through `applySequenceReplacements` on every job-store change, and
+  `saveSequence` applies them again. **A cut moves the marks** (`marksAfterCut`: minus the cut's
+  start, those outside it dropped); _Keep both_ is not offered, since a sequence holds one video.
+  A mark session ends when the video is replaced.
 - **Mark steps** (`SequenceForm`): `markQueue` (the unmarked steps, or all when every one is
   marked), started at `markStart` (0, or the last mark before the first one queued). A mark
   awaits the player's time, so it changes the draft functionally and a ref keeps a second tap

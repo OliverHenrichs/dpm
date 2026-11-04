@@ -53,16 +53,13 @@ import AnonymizeModal, {
 import VideoReviewModal, {
   ReviewSource,
 } from "@/src/anonymize/components/VideoReviewModal";
-import {
-  reviewsSuggestion,
-  useAnonymizeJobs,
-  writesWithoutCount,
-} from "@/src/anonymize/jobs/AnonymizeJobsContext";
+import { useAnonymizeJobs } from "@/src/anonymize/jobs/AnonymizeJobsContext";
 import {
   applyReplacements,
   MAX_VIDEOS,
 } from "@/src/anonymize/jobs/replaceVideo";
 import { jobStore } from "@/src/anonymize/jobs/jobStore";
+import DraftJobLines from "@/src/anonymize/components/DraftJobLines";
 import { canShortenVideos } from "@/src/anonymize/shortenVideo";
 import TranscriptSheet, {
   TranscriptTarget,
@@ -779,49 +776,7 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
               !isActiveVideoReadonly && activeVideoRefs.length >= MAX_VIDEOS
             }
           />
-          {draftJobs.map((job) =>
-            job.status === "review" ? (
-              <View key={job.id} style={styles.jobRow}>
-                <Text style={[styles.jobLine, styles.jobRowText]}>
-                  {reviewsSuggestion(job)
-                    ? t("suggestJobInFormReview")
-                    : t("videoJobInFormReview")}
-                </Text>
-                <Button
-                  title={t("videoJobReviewButton")}
-                  size="sm"
-                  onPress={() => setReviewId(job.id)}
-                />
-              </View>
-            ) : (
-              // Each line names its kind: a transcription that failed for want of sound sat above
-              // a cut still running, and "processing" for both read as one job failing and going on.
-              <Text
-                key={job.id}
-                style={[
-                  styles.jobLine,
-                  job.status === "failed" && styles.jobLineFailed,
-                ]}
-              >
-                {job.status === "queued"
-                  ? t(`${job.kind}JobInFormQueued`)
-                  : job.status === "running"
-                    ? writesWithoutCount(job)
-                      ? t("suggestJobInFormWriting")
-                      : t(`${job.kind}JobInFormRunning`, {
-                          percent: Math.round(job.progress * 100),
-                        })
-                    : t(`${job.kind}JobInFormFailed`, {
-                        error: job.errorKey
-                          ? t(job.errorKey)
-                          : (job.error ?? ""),
-                      })}
-              </Text>
-            ),
-          )}
-          {draftJobs.some(
-            (j) => j.status === "queued" || j.status === "running",
-          ) && <Text style={styles.jobLine}>{t("videoJobsKeepOpen")}</Text>}
+          <DraftJobLines jobs={draftJobs} onReview={setReviewId} />
           <FormSection
             title={t("typeAndLevel")}
             summary={typeLevelSummary || t("formSectionEmpty")}
@@ -1187,13 +1142,6 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.space.sm,
       color: theme.colors.textMuted,
     },
-    jobLineFailed: { color: theme.colors.danger },
-    jobRow: {
-      ...getCommonRow(),
-      gap: theme.space.sm,
-      marginBottom: theme.space.sm,
-    },
-    jobRowText: { flex: 1, marginBottom: 0 },
     anonymizeChoices: {
       ...getCommonRow(),
       flexWrap: "wrap",

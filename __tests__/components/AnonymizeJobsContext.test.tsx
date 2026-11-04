@@ -12,8 +12,10 @@ import { AnonymizeProvider } from "@/src/anonymize/providers/AnonymizeProvider";
 import {
   IPattern,
   IPatternList,
+  ISequence,
   IVideoTranscript,
 } from "@/src/pattern/types/IPatternList";
+import { shortenVideo } from "@/src/anonymize/shortenVideo";
 import {
   NoAudioError,
   transcribeVideo,
@@ -34,6 +36,11 @@ import { act, renderWithProviders, waitFor } from "@/utils/renderWithProviders";
 jest.mock("@/src/transcribe/transcribeVideo", () => ({
   ...jest.requireActual("@/src/transcribe/transcribeVideo"),
   transcribeVideo: jest.fn(),
+}));
+// The native cut is absent under jest; a test hands back its output.
+jest.mock("@/src/anonymize/shortenVideo", () => ({
+  ...jest.requireActual("@/src/anonymize/shortenVideo"),
+  shortenVideo: jest.fn(),
 }));
 // Installed unless a test says otherwise; the store itself has its own suite.
 jest.mock("@/src/transcribe/modelStore", () => ({
@@ -278,6 +285,103 @@ describe("AnonymizeJobsProvider", () => {
     act(() => jobs.dismissFinished());
 
     expect(jobs.jobs).toEqual([]);
+  });
+});
+
+describe("a job on a sequence's video", () => {
+  const SEQ_VIDEO = "file:///document/rallye.mp4";
+  const rallye: ISequence = {
+    id: "rallye",
+    name: "Rallye",
+    createdAt: 1,
+    video: { type: "local", value: SEQ_VIDEO },
+    steps: [
+      { kind: "free", id: "a", text: "intro", at: 1 },
+      { kind: "free", id: "b", text: "pose", at: 4.5 },
+      { kind: "free", id: "c", text: "outro", at: 12 },
+    ],
+  };
+  const storedList = async (listId: string): Promise<IPatternList> =>
+    (
+      JSON.parse(
+        (await AsyncStorage.getItem("@patternLists")) ?? "[]",
+      ) as IPatternList[]
+    ).find((l) => l.id === listId)!;
+
+  const shortenSequenceVideo = (listId: string) =>
+    act(() =>
+      jobs.start({
+        kind: "shorten",
+        listId,
+        patternName: "Rallye",
+        request: { sourceUri: SEQ_VIDEO, startSeconds: 2, endSeconds: 10 },
+      }),
+    );
+
+  beforeEach(() => {
+    jest
+      .mocked(shortenVideo)
+      .mockResolvedValue("file:///cache/anonymized-out.mp4");
+  });
+
+  it("replaces the video in the sequence, with its marks moved to the cut", async () => {
+    const { list } = setup({ sequences: [rallye] });
+    await waitFor(async () =>
+      expect(await storedPatterns(list.id)).toHaveLength(1),
+    );
+
+    await shortenSequenceVideo(list.id);
+    await keepWhenReady();
+
+    const [saved] = (await storedList(list.id)).sequences!;
+    expect(saved.video?.value).toMatch(/^file:\/\/\/document\/shortened-/);
+    expect(saved.steps.map((s) => s.at)).toEqual([undefined, 2.5, undefined]);
+    // The figure's video is untouched.
+    expect((await storedPatterns(list.id))[0].videoRefs[0].value).toBe(SOURCE);
+  });
+
+  it("writes storage for a list that is not the active one", async () => {
+    const active = createTestPatternList({ id: "active" });
+    const other = createTestPatternList({ id: "other", sequences: [rallye] });
+    renderWithProviders(
+      <AnonymizeJobsProvider>
+        <Probe />
+      </AnonymizeJobsProvider>,
+      { lists: [active, other], activeListId: active.id },
+    );
+    await waitFor(() => expect(jobs).toBeDefined());
+
+    await shortenSequenceVideo(other.id);
+    await keepWhenReady();
+
+    const [saved] = (await storedList(other.id)).sequences!;
+    expect(saved.video?.value).toMatch(/^file:\/\/\/document\/shortened-/);
+    expect(saved.steps.map((s) => s.at)).toEqual([undefined, 2.5, undefined]);
+  });
+
+  it("puts a transcript on the sequence's video, keeping its marks", async () => {
+    mockedTranscribe.mockReturnValue({
+      promise: Promise.resolve({ transcript: TRANSCRIPT, timing: TIMING }),
+      stop: jest.fn(),
+    });
+    const { list } = setup({ sequences: [rallye] });
+    await waitFor(async () =>
+      expect(await storedPatterns(list.id)).toHaveLength(1),
+    );
+
+    await act(() =>
+      jobs.start({
+        kind: "transcribe",
+        listId: list.id,
+        patternName: "Rallye",
+        request: { sourceUri: SEQ_VIDEO },
+      }),
+    );
+
+    await waitFor(() => expect(jobs.jobs[0].status).toBe("done"));
+    const [saved] = (await storedList(list.id)).sequences!;
+    expect(saved.video).toEqual({ ...rallye.video, transcript: TRANSCRIPT });
+    expect(saved.steps).toEqual(rallye.steps);
   });
 });
 

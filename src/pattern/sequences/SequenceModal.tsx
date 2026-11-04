@@ -22,6 +22,7 @@ import SequenceVideo, {
 import SequenceVideoNoSeek from "@/src/pattern/sequences/SequenceVideoNoSeek";
 import { useSequencePlayback } from "@/src/pattern/sequences/useSequencePlayback";
 import { useFollowStep } from "@/src/pattern/sequences/useFollowStep";
+import TranscriptSheet from "@/src/transcribe/components/TranscriptSheet";
 
 /** Which sequence is open, and how: `draft` is a new one, not on the list until saved. */
 export interface OpenSequence {
@@ -108,8 +109,9 @@ const SequenceSheet: React.FC<{
 
 /**
  * A sequence as it is danced: the video pinned above the steps, which light up as it plays and
- * stay in view; tapping a marked step plays from it, and _Loop step_ repeats one. A read-only
- * list plays and seeks the same, without _Edit_.
+ * stay in view; tapping a marked step plays from it, and _Loop step_ repeats one. A transcribed
+ * video shows its transcript read-only, as a figure's details do. A read-only list plays and
+ * seeks the same, without _Edit_.
  */
 const SequenceView: React.FC<{
   sequence: ISequence;
@@ -124,6 +126,8 @@ const SequenceView: React.FC<{
   const video = sequence.video;
   const seeks = !!video && videoSeeks(video);
   const marked = sequence.steps.some((step) => step.at !== undefined);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const transcript = video?.transcript;
 
   const totals = sequenceTotals(
     sequence.steps,
@@ -136,9 +140,10 @@ const SequenceView: React.FC<{
       {video && (
         <>
           <SequenceVideo video={video} {...playback.player} />
-          {seeks ? (
-            marked && (
-              <View style={styles.playRow}>
+          {!seeks && <SequenceVideoNoSeek video={video} />}
+          {((seeks && marked) || transcript) && (
+            <View style={styles.playRow}>
+              {seeks && marked && (
                 <Chip
                   label={t("sequenceLoopStep")}
                   icon="repeat"
@@ -146,13 +151,34 @@ const SequenceView: React.FC<{
                   selected={playback.loopId !== null}
                   onPress={playback.toggleLoop}
                 />
-              </View>
-            )
-          ) : (
-            <SequenceVideoNoSeek video={video} />
+              )}
+              {transcript && (
+                <Chip
+                  label={t("transcriptShow")}
+                  icon="text-box-outline"
+                  onPress={() => {
+                    playback.pause();
+                    setShowTranscript(true);
+                  }}
+                />
+              )}
+            </View>
           )}
         </>
       )}
+      <TranscriptSheet
+        target={
+          showTranscript && video && transcript
+            ? {
+                patternName: sequence.name,
+                sourceUri: video.value,
+                transcript,
+                hasSound: !video.generated,
+              }
+            : null
+        }
+        onClose={() => setShowTranscript(false)}
+      />
       <ScrollView ref={scrollRef} {...follow.scrollProps}>
         <View style={styles.container}>
           <Text style={styles.title}>{sequence.name}</Text>
@@ -234,6 +260,8 @@ const styles = StyleSheet.create((theme) => ({
   footerButton: { flex: 1 },
   playRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: theme.space.sm,
     marginBottom: theme.space.sm,
   },
 }));

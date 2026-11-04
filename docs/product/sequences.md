@@ -69,6 +69,16 @@ in [`docs/plans/sequences.md`](../plans/sequences.md).
 - Files, direct links, Dropbox and YouTube can be marked. **Vimeo** videos play, but the steps
   can't be marked or seek, and the sheet says so where Mark steps (or Loop step) would be. So
   does YouTube on the web version.
+- **The figures' video tools**, under the video in the form (Android): **Edit video** (Shorten,
+  Anonymize, Speech), the transcript (read, corrected, transcribed again, copied into the
+  description), and **Put online** for a video on the phone. An online video's Edit video says
+  only videos on the phone can be edited. Opened, a transcribed video has **Show transcript**,
+  read-only. Jobs run in the background and report in the form and the jobs banner, whose line
+  opens the sequence.
+- **A cut moves the marks.** Replacing the video with its shortened or anonymized cut moves each
+  mark inside the kept part back by the cut's start, and drops the marks outside it (that moment
+  is gone). The review offers no _Keep both_: a sequence holds one video. A transcript or a link
+  leaves the marks as they are.
 
 ## Rules that must always hold
 
@@ -86,13 +96,13 @@ in [`docs/plans/sequences.md`](../plans/sequences.md).
 | A sequence video travels as a figure's: files, transcripts, publishing      | `ExportImportRoundTrip.test.ts`, `publishedContent.test.ts`         |
 | A shared list keeps only a web link as a sequence's video                   | `__tests__/unit/validateSharedList.test.ts`                         |
 | Marking, nudging, seeking and looping act on the video's time               | `__tests__/components/sequenceVideo.test.tsx`                       |
+| A cut replaces a sequence's video with its marks moved, in storage and form | `replaceVideo.test.ts`, `sequenceVideoTools.test.tsx`               |
 | A published list with a sequence video and marks is accepted by the rules   | `__tests__/rules/firestore.rules.test.ts`                           |
 
 ## Not built yet
 
 - Vimeo videos (and YouTube on the web version) can't be marked: their players don't tell DPM
   the time. Following along, marking and seeking need a device check per player.
-- A sequence video can't be edited (shortened, anonymized), transcribed or put online from DPM.
 - "Show sequence" on the Map, and "In: …" under a figure's details (phase 3); with them, the
   picker putting first the figures that followed the last step in the list's other sequences.
 - The size limits are kept by the app; the security rules do not enforce them.
