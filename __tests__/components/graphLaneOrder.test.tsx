@@ -6,6 +6,7 @@ import { subscribeToSharedList } from "@/src/firebase/FirebaseListService";
 import PatternGraphScreen from "@/src/pattern/graph/PatternGraphScreen";
 import { IPatternList } from "@/src/pattern/types/IPatternList";
 import { DRAG_ACTIVATION_MS } from "@/src/pattern/graph/hooks/useNodeDrag";
+import { LANE_SETTLE_MS } from "@/src/pattern/graph/hooks/useLaneDrag";
 import { seedAsyncStorage } from "@/__mocks__/@react-native-async-storage/async-storage";
 import {
   MockGesture,
@@ -170,7 +171,12 @@ describe("reordering the timeline's lanes", () => {
     expect(pickedUpAt + translateY(lifted.props.style)).toBe(
       whipTop + whipHeight - pushHeight,
     );
-    await waitFor(() => expect(screen.queryByTestId("lane-lifted")).toBeNull());
+    // Wait the settle out rather than polling for it: on a loaded CI runner a poll's own
+    // timeout can run out first.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, LANE_SETTLE_MS));
+    });
+    expect(screen.queryByTestId("lane-lifted")).toBeNull();
   });
 
   it("changes nothing when the lane is put back where it was", async () => {
