@@ -10,6 +10,7 @@ import CycleWarning from "./CycleWarning";
 import { ViewMode } from "@/src/pattern/graph/types/ViewMode";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
+import { SequenceOverlay } from "@/src/pattern/graph/model/sequenceOverlay";
 import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
 
 interface GraphViewContainerProps {
@@ -34,6 +35,8 @@ interface GraphViewContainerProps {
   laneOrder?: string[];
   /** Saves the timeline's lanes as dragged (shown type ids, top to bottom); absent when read-only. */
   onReorderLanes?: (shownOrder: string[]) => void;
+  /** The sequence shown over the graph ("Show sequence" in the filter), if any. */
+  sequence?: SequenceOverlay;
 }
 
 const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
@@ -48,6 +51,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
   onChangeTypeColor,
   laneOrder,
   onReorderLanes,
+  sequence,
 }) => {
   // Shading needs explaining only when a figure has one of the list's levels.
   const levels = useActiveListLevels();
@@ -68,6 +72,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
             onNodeTap={onNodeTap}
             laneOrder={laneOrder}
             onReorderLanes={onReorderLanes}
+            sequence={sequence}
           />
         ) : (
           <NetworkGraphView
@@ -78,6 +83,7 @@ const GraphViewContainer: React.FC<GraphViewContainerProps> = ({
             positions={positions}
             onMoveNode={onMoveNode}
             onNodeTap={onNodeTap}
+            sequence={sequence}
           />
         )}
       </View>

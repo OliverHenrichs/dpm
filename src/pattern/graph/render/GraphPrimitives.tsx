@@ -120,6 +120,8 @@ export function drawNodes(
   positions: Map<number, LayoutPosition>,
   onNodeTap: ((pattern: IPattern) => void) | undefined,
   drag?: DragRender,
+  /** A shown sequence's figures (`sequenceOverlay`): every other node dims. */
+  highlight?: ReadonlySet<number>,
 ) {
   return nodes.map((node) => {
     const pos = positions.get(node.pattern.id);
@@ -138,7 +140,11 @@ export function drawNodes(
         x={pos.x}
         y={pos.y}
         onPress={onNodeTap}
+        dimmed={!!highlight && !highlight.has(node.pattern.id)}
       />
     );
   });
 }
+
+/** How far back the prerequisite edges sit while a sequence is shown over them. */
+export const SEQUENCE_EDGE_OPACITY = 0.3;

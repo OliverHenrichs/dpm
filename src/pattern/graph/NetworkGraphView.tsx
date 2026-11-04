@@ -15,6 +15,7 @@ import { PatternType } from "@/src/pattern/types/PatternType";
 import { useFocusPreview } from "@/src/pattern/graph/hooks/useFocusPreview";
 import FocusMark from "@/src/pattern/graph/render/FocusMark";
 import FocusPreviewCard from "@/src/pattern/graph/components/FocusPreviewCard";
+import { SequenceOverlay } from "@/src/pattern/graph/model/sequenceOverlay";
 
 interface NetworkGraphViewProps {
   model: GraphModel;
@@ -27,6 +28,8 @@ interface NetworkGraphViewProps {
   /** Persist a node's new position. */
   onMoveNode: (id: number, position: LayoutPosition) => void;
   onNodeTap: (pattern: IPattern) => void;
+  /** The sequence shown over the graph, if any. */
+  sequence?: SequenceOverlay;
 }
 
 const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
@@ -36,6 +39,7 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
   positions,
   onMoveNode,
   onNodeTap,
+  sequence,
 }) => {
   const { width, height } = useWindowDimensions();
 
@@ -132,6 +136,7 @@ const NetworkGraphView: React.FC<NetworkGraphViewProps> = ({
           dragX={dragX}
           dragY={dragY}
           onNodeTap={onNodeTap}
+          sequence={sequence}
         />
 
         {draggedNode && (

@@ -88,6 +88,7 @@ const SequenceSheet: React.FC<{
         patternTypes={patternTypes}
         modifiers={modifiers}
         dance={activeList?.dance}
+        sequences={sequences}
         onSave={async (edited) => {
           const accepted = await saveSequence(edited);
           if (accepted) setEditing(false);

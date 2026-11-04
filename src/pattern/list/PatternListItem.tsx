@@ -36,6 +36,8 @@ interface PatternListItemProps {
   onDelete: (id?: number) => void;
   /** The list's sequences: deleting a figure some of them use names them first. */
   sequences?: ISequence[];
+  /** Opens a sequence from the figure's "In: …". */
+  onOpenSequence?: (id: string) => void;
 }
 
 const PatternListItem: React.FC<PatternListItemProps> = ({
@@ -51,6 +53,7 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
   onSuggestEdit,
   onDelete,
   sequences,
+  onOpenSequence,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -179,6 +182,8 @@ const PatternListItem: React.FC<PatternListItemProps> = ({
             patterns={allPatterns}
             patternTypes={patternTypes}
             modifiers={modifiers}
+            sequences={sequences}
+            onOpenSequence={onOpenSequence}
           />
         </Animated.View>
       )}

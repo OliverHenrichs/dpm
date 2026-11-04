@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import {
   IModifier,
   IPattern,
+  ISequence,
   IVideoReference,
 } from "@/src/pattern/types/IPatternList";
+import { sequencesUsing } from "@/src/pattern/sequences/sequences";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
 import { useActiveListLevels } from "@/src/pattern/data/components/ActivePatternListContext";
@@ -37,6 +39,10 @@ type PatternDetailsProps = {
    * two stacked separators is one too many — so that passes `false`.
    */
   showTopSeparator?: boolean;
+  /** The list's sequences: those this figure is danced in show as "In: …". */
+  sequences?: ISequence[];
+  /** Opens one of them; without it they are named but not links. */
+  onOpenSequence?: (id: string) => void;
 };
 
 const PatternDetails: React.FC<PatternDetailsProps> = ({
@@ -45,6 +51,8 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
   patternTypes,
   modifiers = [],
   showTopSeparator = true,
+  sequences,
+  onOpenSequence,
 }) => {
   const { t } = useTranslation();
   const levels = useActiveListLevels();
@@ -180,6 +188,10 @@ const PatternDetails: React.FC<PatternDetailsProps> = ({
       )}
       {getPrerequisiteView(selectedPattern, patterns, t, styles)}
       {getBuildsIntoView(selectedPattern, patterns, t, styles)}
+      <SequencesUsing
+        sequences={sequencesUsing(sequences, selectedPattern.id)}
+        onOpen={onOpenSequence}
+      />
       {getTagView(selectedPattern, t, styles)}
     </View>
   );
@@ -225,6 +237,47 @@ function getPrerequisites(
     </>
   );
 }
+
+/**
+ * "In: Rallye 2026, Workshop combo": the sequences this figure is danced in, each opening it.
+ * Nothing at all when there are none, like tags: most figures are in no sequence, and saying so
+ * on each would be noise.
+ */
+const SequencesUsing: React.FC<{
+  sequences: ISequence[];
+  onOpen?: (id: string) => void;
+}> = ({ sequences, onOpen }) => {
+  const { t } = useTranslation();
+  if (sequences.length === 0) return null;
+  return (
+    <View style={styles.multiSelectContainer} testID="details-in-sequences">
+      <Text style={styles.label}>{t("inSequences")}:</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {sequences.map((sequence) =>
+          onOpen ? (
+            <Pressable
+              key={sequence.id}
+              style={styles.prereqItem}
+              onPress={() => onOpen(sequence.id)}
+              accessibilityRole="link"
+              accessibilityLabel={t("sequenceOpenNamed", {
+                name: sequence.name,
+              })}
+            >
+              <Text style={[styles.otherLabel, styles.link]}>
+                {sequence.name}
+              </Text>
+            </Pressable>
+          ) : (
+            <View key={sequence.id} style={styles.prereqItem}>
+              <Text style={styles.otherLabel}>{sequence.name}</Text>
+            </View>
+          ),
+        )}
+      </ScrollView>
+    </View>
+  );
+};
 
 /**
  * Tags, or nothing at all when there are none.
@@ -294,6 +347,7 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.space.sm,
     },
     otherLabel: getCommon2ndOrderLabel(theme),
+    link: { color: theme.colors.primary },
     label: getCommonLabel(theme),
     multiSelectContainer: {
       ...getCommonPrereqContainer(theme),

@@ -25,6 +25,9 @@ import {
   stepVariants,
   withoutVariant,
   withSequences,
+  nextStepHints,
+  lastFigureId,
+  MAX_NEXT_HINTS,
 } from "@/src/pattern/sequences/sequences";
 import { normalizeList } from "@/src/pattern/data/validation/normalizeList";
 import { ImportMessage } from "@/src/pattern/data/validation/importMessages";
@@ -544,5 +547,66 @@ describe("video mapping", () => {
       ),
     );
     expect(warnings).toEqual([]);
+  });
+});
+
+describe("next-step hints", () => {
+  const p = (id: number, name: string) =>
+    createTestPattern("t", { id, name, counts: 6 });
+  const patterns = [
+    p(1, "Sugar Push"),
+    p(2, "Whip"),
+    p(3, "Basket"),
+    p(4, "Tuck"),
+  ];
+  const s = (id: string, ids: (number | "free")[]): ISequence => ({
+    id,
+    name: id,
+    createdAt: 1,
+    steps: ids.map((x, i) =>
+      x === "free"
+        ? { kind: "free", id: `${id}${i}`, text: "pose" }
+        : { kind: "figure", id: `${id}${i}`, patternId: x },
+    ),
+  });
+
+  it("offers what followed the figure in other sequences, most often first, ties by name", () => {
+    const sequences = [s("a", [1, 3]), s("b", [1, 2]), s("c", [1, 3, 1, 4])];
+
+    expect(nextStepHints(sequences, 1, patterns).map((x) => x.id)).toEqual([
+      3, 4, 2,
+    ]);
+  });
+
+  it("skips free steps in between, and never offers the figure itself", () => {
+    // 1 → 1 offers nothing; the second 1 is then followed by 3.
+    const sequences = [s("a", [1, "free", 2]), s("b", [1, 1, 3])];
+
+    expect(nextStepHints(sequences, 1, patterns).map((x) => x.id)).toEqual([
+      3, 2,
+    ]);
+  });
+
+  it("leaves out the sequence being edited, figures gone from the list, and nothing to follow", () => {
+    const sequences = [s("self", [1, 2]), s("b", [1, 99])];
+
+    expect(nextStepHints(sequences, 1, patterns, "self")).toEqual([]);
+    expect(nextStepHints(sequences, undefined, patterns)).toEqual([]);
+    expect(nextStepHints(undefined, 1, patterns)).toEqual([]);
+  });
+
+  it(`offers at most ${MAX_NEXT_HINTS}`, () => {
+    const many = Array.from({ length: 8 }, (_, i) => p(10 + i, `Figure ${i}`));
+    const sequences = many.map((f, i) => s(`s${i}`, [1, f.id]));
+
+    expect(nextStepHints(sequences, 1, [...patterns, ...many])).toHaveLength(
+      MAX_NEXT_HINTS,
+    );
+  });
+
+  it("follows on from the last figure step, past free steps at the end", () => {
+    expect(lastFigureId(s("a", [1, 2, "free"]).steps)).toBe(2);
+    expect(lastFigureId(s("a", ["free"]).steps)).toBeUndefined();
+    expect(lastFigureId([])).toBeUndefined();
   });
 });

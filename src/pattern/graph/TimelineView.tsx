@@ -4,7 +4,7 @@ import { useWindowDimensions, View } from "react-native";
 // one gesture system rather than racing a native scroll view it cannot see.
 import { ScrollView } from "react-native-gesture-handler";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg, { G, Path, Rect, Text as SvgText } from "react-native-svg";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import type { AppTheme } from "@/src/common/theme/tokens";
@@ -16,7 +16,10 @@ import {
 import {
   ArrowheadMarker,
   drawNodes,
+  SEQUENCE_EDGE_OPACITY,
 } from "@/src/pattern/graph/render/GraphPrimitives";
+import SequenceLayer from "@/src/pattern/graph/render/SequenceLayer";
+import { SequenceOverlay } from "@/src/pattern/graph/model/sequenceOverlay";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import GraphEmptyState from "@/src/pattern/graph/components/GraphEmptyState";
 import { edgeStroke } from "@/src/pattern/graph/render/edgeStyle";
@@ -52,6 +55,8 @@ interface TimelineViewProps {
    * on a read-only list, which then has no grips.
    */
   onReorderLanes?: (shownOrder: string[]) => void;
+  /** The sequence shown over the lanes, if any. */
+  sequence?: SequenceOverlay;
 }
 
 const TimelineView: React.FC<TimelineViewProps> = ({
@@ -61,6 +66,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   onNodeTap,
   laneOrder,
   onReorderLanes,
+  sequence,
 }) => {
   const patterns = model.patterns;
   const { theme } = useUnistyles();
@@ -187,8 +193,19 @@ const TimelineView: React.FC<TimelineViewProps> = ({
               labelX: canReorder ? LANE_LABEL_X_WITH_HANDLE : LANE_LABEL_X,
               draggingId: drag.dragging?.typeId,
             })}
-            {drawTimelineEdges(model.edges, positions, skipLevelEdges, theme)}
-            {drawNodes(model.nodes, positions, onNodeTap)}
+            <G opacity={sequence ? SEQUENCE_EDGE_OPACITY : undefined}>
+              {drawTimelineEdges(model.edges, positions, skipLevelEdges, theme)}
+            </G>
+            {drawNodes(
+              model.nodes,
+              positions,
+              onNodeTap,
+              undefined,
+              sequence ? new Set(sequence.numbers.keys()) : undefined,
+            )}
+            {sequence && (
+              <SequenceLayer overlay={sequence} positions={positions} />
+            )}
           </Svg>
           {canReorder && (
             <LaneHandles

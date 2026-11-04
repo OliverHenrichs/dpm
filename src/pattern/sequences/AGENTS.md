@@ -1,8 +1,8 @@
 # Sequences — `src/pattern/sequences/`
 
 Named runs of a list's figures in dancing order (#136): `IPatternList.sequences`, shown on the
-List tab's third segment. What the user sees is `docs/product/sequences.md`; the design for the
-phase still to come (the Map) is `docs/plans/sequences.md`.
+List tab's third segment, over the Map and in a figure's details. What the user sees is
+`docs/product/sequences.md`.
 
 - **Model** (`src/pattern/types/IPatternList.ts`): a sequence has an id, name, optional
   description, optional `video` (an `IVideoReference`), steps and `createdAt`; a step is
@@ -79,3 +79,32 @@ phase still to come (the Map) is `docs/plans/sequences.md`.
   marked), started at `markStart` (0, or the last mark before the first one queued). A mark
   awaits the player's time, so it changes the draft functionally and a ref keeps a second tap
   from marking the same step. _Back_ restores what the step had before.
+
+## On the Map, in details and in the picker (phase 3)
+
+The Map's part lives in `src/pattern/graph/` but is described here, since the graph's own
+`AGENTS.md` is at its size cap.
+
+- **`model/sequenceOverlay.ts` is pure** and shared by both views: `sequenceOverlay(sequence,
+  drawn)` gives each drawn figure its step numbers (free steps counted, as in the list) and the
+  hops between consecutive drawn figures (no self-hop, each direction of a pair once). It runs
+  over the model's nodes, so it lays over whatever the filter left and never re-filters.
+  `hopPath` bends each arrow to the left of its direction, so A → B and B → A don't overlap,
+  further between boxes in one column or row (`SIDESTEP`: the timeline stacks a lane's boxes
+  10 px apart), and cuts it at both boxes' outlines; null for overlapping boxes.
+- **`render/SequenceLayer.tsx` is drawn after the nodes**, inside each view's `<Svg>`, with
+  `pointerEvents="none"`: the timeline's boxes take taps by `onPress`, and a badge on top must
+  not swallow them. Its arrowhead marker has its own id (`arrowhead-sequence`) in the accent.
+- **Dimming is a `drawNodes` argument** (`highlight`), shown by `PatternNode`'s `dimmed` at
+  `SEQUENCE_DIM_OPACITY`, on the group like context dimming; the prerequisite edges sit in a
+  `<G>` at `SEQUENCE_EDGE_OPACITY`. The model is untouched, so the layout, the focus preview and
+  the timeline's columns don't change when a sequence is shown.
+- **During a node drag** the layer leaves out the dragged node's hops and badge rather than
+  animate them: no new worklets (see the graph's React Compiler trap).
+- The shown sequence is `PatternGraphScreen` state, by id (a deleted one stops showing), reset
+  on a list change during render, like the filter. The screen mounts its own `SequenceModal`;
+  the details modal is hidden while it is open (two RN modals at once are not relied on).
+- **"In: …"** is `PatternDetails`' `sequences` / `onOpenSequence` props (`sequencesUsing`); both
+  hosts pass them. Without `onOpenSequence` the names aren't links.
+- **_Often next_** is `nextStepHints(sequences, lastFigureId(steps), patterns, draft.id)`,
+  computed in `SequenceForm` and shown by `StepPicker` only while the search is empty.

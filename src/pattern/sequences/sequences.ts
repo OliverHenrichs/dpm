@@ -329,6 +329,57 @@ export function stepPickerGroups(
   return groups.filter((group) => group.patterns.length > 0);
 }
 
+/** At most this many figures in the step picker's _Often next_ group. */
+export const MAX_NEXT_HINTS = 5;
+
+/**
+ * The figures that followed `after` in the list's other sequences, most often first (ties by
+ * name): the step picker offers them first (#136, phase 3). The Map's links are prerequisites,
+ * not "can follow", so they can't suggest a next step; the user's own sequences can. Free steps
+ * in between are skipped, and the figure itself is left out (a repeat is the duplicate button's
+ * job). `exceptId` is the sequence being edited, which mustn't suggest to itself.
+ */
+export function nextStepHints(
+  sequences: readonly ISequence[] | undefined,
+  after: number | undefined,
+  patterns: readonly IPattern[],
+  exceptId?: string,
+): IPattern[] {
+  if (after === undefined) return [];
+  const tally = new Map<number, number>();
+  for (const sequence of sequences ?? []) {
+    if (sequence.id === exceptId) continue;
+    const figures = sequence.steps.filter(
+      (step): step is ISequenceFigureStep => step.kind === "figure",
+    );
+    for (let i = 0; i < figures.length - 1; i++) {
+      const next = figures[i + 1].patternId;
+      if (figures[i].patternId !== after || next === after) continue;
+      tally.set(next, (tally.get(next) ?? 0) + 1);
+    }
+  }
+  const byId = new Map(patterns.map((pattern) => [pattern.id, pattern]));
+  return [...tally]
+    .flatMap(([id, n]) => {
+      const pattern = byId.get(id);
+      return pattern ? [{ pattern, n }] : [];
+    })
+    .sort((a, b) => b.n - a.n || a.pattern.name.localeCompare(b.pattern.name))
+    .slice(0, MAX_NEXT_HINTS)
+    .map((hint) => hint.pattern);
+}
+
+/** The figure of the last figure step, which the picker's hints follow on from. */
+export function lastFigureId(
+  steps: readonly ISequenceStep[],
+): number | undefined {
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const step = steps[i];
+    if (step.kind === "figure") return step.patternId;
+  }
+  return undefined;
+}
+
 /*
  * Video mapping (#136, phase 2): each step's `at` is where it starts in the sequence's video.
  */

@@ -2,6 +2,7 @@ import { LayoutPosition } from "@/src/pattern/graph/utils/GraphUtils";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { GraphModel } from "@/src/pattern/graph/model/GraphModel";
 import { SharedValue } from "react-native-reanimated";
+import { SequenceOverlay } from "@/src/pattern/graph/model/sequenceOverlay";
 
 export interface IGraphSvgProps {
   svgWidth: number;
@@ -18,6 +19,8 @@ export interface IGraphSvgProps {
   dragX?: SharedValue<number>;
   dragY?: SharedValue<number>;
   onNodeTap: (pattern: IPattern) => void;
+  /** The sequence shown over the graph, if any (`sequenceOverlay`). */
+  sequence?: SequenceOverlay;
 }
 
 export type IGraphPosition = Map<number, LayoutPosition>;

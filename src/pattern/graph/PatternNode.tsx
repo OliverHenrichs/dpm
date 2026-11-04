@@ -16,6 +16,8 @@ interface PatternNodeProps {
   y: number;
   /** Omit to make the node inert; see `PatternNodeGroup`. */
   onPress?: (pattern: IPattern) => void;
+  /** Not in the sequence shown on the Map: drawn further back than a context node. */
+  dimmed?: boolean;
 }
 
 /**
@@ -26,6 +28,13 @@ interface PatternNodeProps {
 const CONTEXT_OPACITY = 0.45;
 
 /**
+ * A figure outside the sequence shown on the Map. Further back than context, since the
+ * sequence's figures must stand out at the zoom the network view opens at; still legible, as
+ * the figures around a sequence are what someone looks for next.
+ */
+export const SEQUENCE_DIM_OPACITY = 0.3;
+
+/**
  * One node in either graph view.
  *
  * Takes a `GraphNode` rather than a bare pattern plus a colour map: the type
@@ -33,7 +42,13 @@ const CONTEXT_OPACITY = 0.45;
  * model. It used to declare its own structural prop type — which included a
  * `type?: any` — and every call site cast to `any` to satisfy it.
  */
-const PatternNode: React.FC<PatternNodeProps> = ({ node, x, y, onPress }) => {
+const PatternNode: React.FC<PatternNodeProps> = ({
+  node,
+  x,
+  y,
+  onPress,
+  dimmed,
+}) => {
   const { theme } = useUnistyles();
   const { pattern, color, tint, foundational, isContext } = node;
   const typeColor = color ?? theme.colors.primary;
@@ -52,7 +67,9 @@ const PatternNode: React.FC<PatternNodeProps> = ({ node, x, y, onPress }) => {
   return (
     <PatternNodeGroup
       onPress={onPress ? () => onPress(pattern) : undefined}
-      opacity={isContext ? CONTEXT_OPACITY : undefined}
+      opacity={
+        dimmed ? SEQUENCE_DIM_OPACITY : isContext ? CONTEXT_OPACITY : undefined
+      }
     >
       <NodeFrame
         x={x}
