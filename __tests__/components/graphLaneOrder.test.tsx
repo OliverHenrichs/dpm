@@ -62,23 +62,31 @@ const storedList = async (listId: string): Promise<IPatternList> => {
   return lists.find((l) => l.id === listId)!;
 };
 
-/** The lane grips, top to bottom, by the type they move. */
+/** The type a grip moves. */
+const gripType = (grip: { props: { accessibilityLabel?: string } }) =>
+  (grip.props.accessibilityLabel as string)
+    .replace("Move the ", "")
+    .replace(" lane", "");
+
+/**
+ * The lane grips, top to bottom, by the type they move. They are drawn in lane order; where
+ * each sits on screen is its lane's slide (`useLaneMotion`), which the mock does not play.
+ */
 function gripOrder(): string[] {
-  return screen
-    .getAllByLabelText(/^Move the .* lane$/)
-    .map((grip) => ({
-      name: (grip.props.accessibilityLabel as string)
-        .replace("Move the ", "")
-        .replace(" lane", ""),
-      top: StyleSheet.flatten(grip.props.style).top as number,
-    }))
-    .sort((a, b) => a.top - b.top)
-    .map((grip) => grip.name);
+  return screen.getAllByLabelText(/^Move the .* lane$/).map(gripType);
 }
 
+/** Where a view sits, from its slide. */
+const translateY = (style: unknown): number => {
+  const { transform } = StyleSheet.flatten(style) as {
+    transform?: { translateY?: number }[];
+  };
+  return transform?.find((t) => t.translateY !== undefined)?.translateY ?? 0;
+};
+
+/** A grip's top as laid out when the timeline was first drawn. */
 const gripTop = (type: string) =>
-  StyleSheet.flatten(screen.getByLabelText(`Move the ${type} lane`).props.style)
-    .top as number;
+  translateY(screen.getByLabelText(`Move the ${type} lane`).props.style);
 
 /** The lane drag: the newest long-press pan registered (the component rebuilds it each render). */
 function lanePan(): MockGesture {
@@ -129,6 +137,9 @@ describe("reordering the timeline's lanes", () => {
   it("reflows the lanes while the lane is dragged, and lifts its name", async () => {
     await renderGraph();
     const whipTop = gripTop("whip");
+    // Every lane here holds one figure, so they are all one height.
+    const pushHeight = gripTop("pass") - gripTop("push");
+    const whipHeight = pushHeight;
 
     act(() => {
       lanePan().handlers.onStart({ y: gripTop("push") + 10 });
@@ -153,7 +164,13 @@ describe("reordering the timeline's lanes", () => {
     expect(Haptics.impactAsync).toHaveBeenLastCalledWith(
       Haptics.ImpactFeedbackStyle.Light,
     );
-    expect(screen.queryByTestId("lane-lifted")).toBeNull();
+    // The name settles into the lane it landed in, the bottom one, then lets go.
+    const lifted = screen.getByTestId("lane-lifted");
+    const pickedUpAt = StyleSheet.flatten(lifted.props.style).top as number;
+    expect(pickedUpAt + translateY(lifted.props.style)).toBe(
+      whipTop + whipHeight - pushHeight,
+    );
+    await waitFor(() => expect(screen.queryByTestId("lane-lifted")).toBeNull());
   });
 
   it("changes nothing when the lane is put back where it was", async () => {

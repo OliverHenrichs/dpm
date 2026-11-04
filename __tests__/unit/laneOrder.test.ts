@@ -3,6 +3,7 @@ import { PatternType } from "@/src/pattern/types/PatternType";
 import {
   laneAt,
   laneIndexAt,
+  landingOffsets,
   moveLane,
   orderLanes,
   reorderLanes,
@@ -245,6 +246,35 @@ describe("dragging a lane", () => {
   });
 });
 
+describe("landingOffsets", () => {
+  // Heights 100, 240 and 60, stacked from 0.
+  const bands = [
+    { y: 0, height: 100 },
+    { y: 100, height: 240 },
+    { y: 340, height: 60 },
+  ];
+
+  it("lands a lane moved up at the top of the lane it displaces", () => {
+    expect(landingOffsets(bands, 2)).toEqual([-340, -240, 0]);
+  });
+
+  it("lands a lane moved down where the lane it displaces ended", () => {
+    // The first lane under the second: its 100 high band ends at 340.
+    expect(landingOffsets(bands, 0)).toEqual([0, 240, 300]);
+  });
+
+  it("matches the lanes as laid out after the move", () => {
+    const heights = [100, 240, 60];
+    for (let from = 0; from < 3; from++) {
+      landingOffsets(bands, from).forEach((offset, to) => {
+        const moved = moveLane(heights, from, to);
+        const top = moved.slice(0, to).reduce((sum, h) => sum + h, 0);
+        expect(bands[from].y + offset).toBe(top);
+      });
+    }
+  });
+});
+
 describe("timeline lanes", () => {
   it("are laid out in the manual order", () => {
     const push = createTestPatternType({ slug: "push" });
@@ -263,6 +293,65 @@ describe("timeline lanes", () => {
     );
     expect(swimlanes.map((s) => s.label)).toEqual(["tuck", "push"]);
     expect(positions.get(2)!.y).toBeLessThan(positions.get(1)!.y);
+  });
+
+  it("only moves each lane as a whole when the order changes", () => {
+    // The timeline animates a reorder by sliding each lane (its band, figures and the edges
+    // inside it) as one piece, so nothing inside a lane may depend on the lanes around it.
+    const a = createTestPatternType({ slug: "a" });
+    const b = createTestPatternType({ slug: "b" });
+    const c = createTestPatternType({ slug: "c" });
+    const patterns = [
+      createTestPattern(a.id, { id: 1 }),
+      createTestPattern(a.id, { id: 2, prerequisites: [1] }),
+      createTestPattern(a.id, { id: 3, prerequisites: [2] }),
+      // Skips a column within its lane, so collision avoidance shifts 2 aside.
+      createTestPattern(a.id, { id: 4, prerequisites: [1, 3] }),
+      createTestPattern(b.id, { id: 5, prerequisites: [1] }),
+      createTestPattern(b.id, { id: 6, prerequisites: [1] }),
+      createTestPattern(b.id, { id: 7, prerequisites: [5, 2] }),
+      createTestPattern(c.id, { id: 8, prerequisites: [7] }),
+      createTestPattern(c.id, { id: 9 }),
+      createTestPattern(c.id, { id: 10, prerequisites: [9, 4] }),
+    ];
+    const depthMap = buildDepthMap(buildAdjacency(patterns));
+    const layout = (order: string[]) => {
+      const { swimlanes, positions, skipLevelEdgeInfos } =
+        calculateDynamicTimelineLayout(
+          patterns,
+          [a, b, c],
+          1200,
+          800,
+          depthMap,
+          order,
+        );
+      const top = new Map(swimlanes.map((s) => [s.typeId, s.y]));
+      const height = new Map(swimlanes.map((s) => [s.typeId, s.height]));
+      const relative = new Map(
+        patterns.map((p) => {
+          const pos = positions.get(p.id)!;
+          return [p.id, { x: pos.x, y: pos.y - top.get(p.typeId)! }];
+        }),
+      );
+      const routes = skipLevelEdgeInfos.map((edge) => {
+        const typeId = patterns.find((p) => p.id === edge.fromId)!.typeId;
+        return {
+          ...edge,
+          originalIntermediateY: edge.originalIntermediateY - top.get(typeId)!,
+        };
+      });
+      return { height, relative, routes };
+    };
+
+    const first = layout([a.id, b.id, c.id]);
+    expect(first.routes.length).toBeGreaterThan(0);
+    for (const order of [
+      [c.id, a.id, b.id],
+      [b.id, c.id, a.id],
+      [c.id, b.id, a.id],
+    ]) {
+      expect(layout(order)).toEqual(first);
+    }
   });
 
   it("draws no lane for a type the filter hid", () => {
