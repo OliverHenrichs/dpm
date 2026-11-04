@@ -591,6 +591,7 @@
   "videoLinkUseAnyway": "استخدامه على أي حال",
   "videoOnlineUseLink": "استخدام هذا الرابط",
   "videoOnlineReplaceNote": "يحل الرابط محل هذا الفيديو في الحركة ويحتفظ بنصه المفرغ. يبقى الملف على هاتفك.",
+  "videoOnlineReplaceNoteSequence": "يحل الرابط محل هذا الفيديو في التسلسل ويحتفظ بنصه المفرغ وعلامات الخطوات. يبقى الملف على هاتفك.",
   "videoOnlineBusy": "انتظر حتى ينتهي العمل على هذا الفيديو.",
   "videoOnlineShareFailed": "تعذر فتح قائمة المشاركة.",
   "videoOnlineLinkFailed": "تعذر حفظ الرابط. حاول مرة أخرى.",

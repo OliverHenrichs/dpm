@@ -591,6 +591,7 @@
   "videoLinkUseAnyway": "L'utiliser quand même",
   "videoOnlineUseLink": "Utiliser ce lien",
   "videoOnlineReplaceNote": "Le lien prend la place de cette vidéo dans la figure et garde sa transcription. Le fichier reste sur votre téléphone.",
+  "videoOnlineReplaceNoteSequence": "Le lien prend la place de cette vidéo dans la séquence et garde sa transcription et les repères des pas. Le fichier reste sur votre téléphone.",
   "videoOnlineBusy": "Attendez que le traitement de cette vidéo soit terminé.",
   "videoOnlineShareFailed": "Impossible d'ouvrir le menu de partage.",
   "videoOnlineLinkFailed": "Impossible d'enregistrer le lien. Réessayez.",

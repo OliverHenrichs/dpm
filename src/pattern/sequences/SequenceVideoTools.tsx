@@ -134,6 +134,7 @@ const SequenceVideoTools: React.FC<Props> = ({
       listId: activeList.id,
       sourceUri: video.value,
       patternName: label,
+      inSequence: true,
     });
   };
   // The link has replaced the video: nothing left to put online.

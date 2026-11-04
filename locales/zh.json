@@ -591,6 +591,7 @@
   "videoLinkUseAnyway": "仍然使用",
   "videoOnlineUseLink": "使用此链接",
   "videoOnlineReplaceNote": "链接会取代舞步中的这个视频，并保留它的转写。文件仍留在你的手机上。",
+  "videoOnlineReplaceNoteSequence": "链接会取代组合中的这个视频，并保留它的转写和各步的标记。文件仍留在你的手机上。",
   "videoOnlineBusy": "请等待对此视频的处理完成。",
   "videoOnlineShareFailed": "无法打开分享菜单。",
   "videoOnlineLinkFailed": "无法保存链接，请重试。",
