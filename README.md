@@ -158,8 +158,8 @@ can be reset through Play support rather than losing the app. The first AAB has 
 hand in Play Console; `eas submit` works after that.
 
 **Uploading to Play from EAS.** `npm run release:android` (`eas build --platform android --profile
-production --auto-submit`) builds the AAB and hands it straight to Play's closed testing track
-(`alpha`, set under `submit` in `eas.json`). `npm run submit:android` sends the latest existing
+production --auto-submit`) builds the AAB and hands it straight to Play's production track
+(`production`, set under `submit` in `eas.json`; it was `alpha` until 1.6.0). `npm run submit:android` sends the latest existing
 build.
 Submitting needs a Google service account key, held by EAS and never committed:
 
