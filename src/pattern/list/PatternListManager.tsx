@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { clearNewVideo, newVideoFor } from "@/src/videoLinks/newVideoHandoff";
 import { Modal, Text, View } from "react-native";
@@ -107,6 +107,11 @@ const PatternListManager = () => {
   >("patterns");
   // The sequence open in its sheet (src/pattern/sequences/), viewed or edited.
   const [openSequence, setOpenSequence] = useState<OpenSequence | null>(null);
+  // From a figure's "In: …": the sequence opens over the Figures segment, which stays put.
+  const openSequenceById = useCallback(
+    (id: string) => setOpenSequence({ id, editing: false }),
+    [],
+  );
   const [isAddingModifier, setIsAddingModifier] = useState(false);
   const [isEditingModifier, setIsEditingModifier] = useState(false);
   const [selectedModifier, setSelectedModifier] = useState<
@@ -479,6 +484,7 @@ const PatternListManager = () => {
               }
               selectedPattern={selectedPattern}
               sequences={sequences}
+              onOpenSequence={openSequenceById}
               headerActions={
                 <>
                   {!isReadonly && (

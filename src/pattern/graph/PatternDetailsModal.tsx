@@ -3,7 +3,11 @@ import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
 import { IconButton } from "@/src/common/ui";
 import { StyleSheet } from "react-native-unistyles";
-import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
+import {
+  IModifier,
+  IPattern,
+  ISequence,
+} from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import { useTranslation } from "react-i18next";
 import PatternDetails from "@/src/pattern/graph/PatternDetails";
@@ -22,6 +26,9 @@ interface PatternDetailsModalProps {
    * (`canSuggestEditsTo`). Ignored when `onEdit` is given.
    */
   onSuggestEdit?: () => void;
+  /** The list's sequences, for "In: …"; each opens through `onOpenSequence`. */
+  sequences?: ISequence[];
+  onOpenSequence?: (id: string) => void;
 }
 
 const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
@@ -33,6 +40,8 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
   onClose,
   onEdit,
   onSuggestEdit,
+  sequences,
+  onOpenSequence,
 }) => {
   const { t } = useTranslation();
 
@@ -92,6 +101,8 @@ const PatternDetailsModal: React.FC<PatternDetailsModalProps> = ({
                 patternTypes={patternTypes}
                 modifiers={modifiers}
                 showTopSeparator={false}
+                sequences={sequences}
+                onOpenSequence={onOpenSequence}
               />
             )}
           </ScrollView>

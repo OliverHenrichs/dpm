@@ -3,8 +3,7 @@
 A sequence is a named, ordered run of a list's figures that someone wants to keep and practise as
 a whole: a Standard or Latin routine, a West Coast Swing Rallye routine, a combination learned in
 a workshop ([#136](https://github.com/OliverHenrichs/dpm/issues/136)). It lives on its list, so
-it travels with export and publishing. Phase 3 (Map and details) is still to come; its design is
-in [`docs/plans/sequences.md`](../plans/sequences.md).
+it travels with export and publishing.
 
 ## What the user can do
 
@@ -20,6 +19,10 @@ in [`docs/plans/sequences.md`](../plans/sequences.md).
   Save and Cancel stay pinned below while it scrolls.
 - **Add step** opens a picker: a _Free step_ first, then the list's figures grouped by type in
   its colour, by name within a type, with a fuzzy search. Picking one adds it at the end.
+  **Often next** comes first, while nothing is searched: the figures that came right after the
+  last figure step in the list's other sequences (free steps in between don't count), most often
+  first, at most five. The Map's links are prerequisites, not "can follow", so they suggest
+  nothing here.
 - A **figure step** can be danced as a **variant**: a modifier attached to that figure or a
   universal one, picked from the same pill strip as in the figure's details. A figure with
   variants opens its strip under the new step. No pill picked means the plain figure. The step
@@ -47,6 +50,22 @@ in [`docs/plans/sequences.md`](../plans/sequences.md).
   Their video follows a figure's rules: a video file only in an export with videos, its
   transcript only when chosen on the export sheet, only links in a published list. Where the
   video stays behind, the marks do too.
+
+### On the Map and in a figure's details
+
+- **Show sequence** in the Map's filter sheet picks one of the list's sequences (or _None_) and
+  lays it over either view: its figures stay bright, each with a pill of its step numbers
+  ("2", "1 · 4", more than three end in "…"), the other figures and the prerequisite edges dim,
+  and dashed arrows run from each figure to the next in dancing order. Numbers count free steps,
+  as in the list, so a free step shows as a gap; a figure danced twice in a row gets both
+  numbers and no arrow, and a pair danced twice the same way one arrow.
+- It lays over what the filter leaves: an arrow runs on past a hidden figure to the next one
+  shown, and the line above the Map says so ("Sequence: Rallye 2026 · 2 of 3 figures shown").
+  Tapping that line opens the sequence; its × hides it. It isn't kept when leaving the list.
+- A figure's **details** (on the List tab and on the Map) name the sequences it is in: "In:
+  Rallye 2026, Workshop combo", each opening that sequence. A figure in none shows nothing. On
+  the Map the details step aside while the sequence is open and come back when it closes.
+- Read-only lists show sequences on the Map and in the details the same.
 
 ### Video
 
@@ -100,13 +119,17 @@ in [`docs/plans/sequences.md`](../plans/sequences.md).
 | Marking, nudging, seeking and looping act on the video's time               | `__tests__/components/sequenceVideo.test.tsx`                       |
 | A cut replaces a sequence's video with its marks moved, in storage and form | `replaceVideo.test.ts`, `sequenceVideoTools.test.tsx`               |
 | A published list with a sequence video and marks is accepted by the rules   | `__tests__/rules/firestore.rules.test.ts`                           |
+| On the Map a sequence's steps keep their list numbers, arrows skip the rest | `__tests__/unit/sequenceOverlay.test.ts`, `sequencesOnMap.test.tsx` |
+| _Often next_ comes from other sequences only, never the figure itself       | `__tests__/unit/sequences.test.ts`, `sequencesOnMap.test.tsx`       |
 
 ## Not built yet
 
 - Vimeo videos (and YouTube on the web version) can't be marked: their players don't tell DPM
   the time. Following along, marking and seeking need a device check per player.
-- "Show sequence" on the Map, and "In: …" under a figure's details (phase 3); with them, the
-  picker putting first the figures that followed the last step in the list's other sequences.
+- While a figure is dragged in the network view, its sequence arrows and pill wait for the
+  drop. Arrows are single curves: one between figures in one column or row bends out past its
+  side, but a diagonal one may still cross a box on its way.
+- _Often next_ suggests figures, not variants.
 - The size limits are kept by the app; the security rules do not enforce them.
 - Subscribers cannot suggest sequences, and a sequence cannot span several lists.
 - Moving a step by drag does not scroll the form at its edges yet.
@@ -114,9 +137,19 @@ in [`docs/plans/sequences.md`](../plans/sequences.md).
 ## Code
 
 `src/pattern/sequences/AGENTS.md`, `src/pattern/list/AGENTS.md` (`usePatternCrud`),
-`src/pattern/data/AGENTS.md` (export format 3.14, import repairs).
+`src/pattern/data/AGENTS.md` (export format 3.14, import repairs), `src/pattern/graph/AGENTS.md`
+(the Map's sequence layer).
 
 ## Decisions
 
-None recorded yet. The choices made with Oliver on 2026-10-31 are listed at the end of
-[`docs/plans/sequences.md`](../plans/sequences.md).
+No decision record yet. Designed with Oliver on 2026-10-31
+([design doc](https://claude.ai/artifact/1VuucTXjpKdtnR3Rgiffcg)), who decided:
+
+- The name on screen is "Sequences"; German uses "Folgen".
+- Free steps, as proposed.
+- One video per sequence.
+- Bars next to counts for 8-count dances ("4 × 8").
+- The Map highlight comes last (phase 3), after the List side works.
+
+Left out of the first version: suggestions on sequences from subscribers, sequences spanning
+several lists, music sync by beat detection, and sequences in Reels.

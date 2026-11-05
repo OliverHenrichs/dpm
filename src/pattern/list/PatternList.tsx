@@ -63,6 +63,8 @@ type PatternListProps = {
   onManageTags?: () => void;
   /** The list's sequences, so deleting a figure can name those that use it. */
   sequences?: ISequence[];
+  /** Opens a sequence from a figure's "In: …". */
+  onOpenSequence?: (id: string) => void;
 };
 
 const PatternList: React.FC<PatternListProps> = (props) => {
@@ -188,6 +190,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           onSuggestEdit={props.onSuggestEdit}
           onDelete={props.onDelete}
           sequences={props.sequences}
+          onOpenSequence={props.onOpenSequence}
         />
       ),
     [
@@ -200,6 +203,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
       props.onSuggestEdit,
       props.onDelete,
       props.sequences,
+      props.onOpenSequence,
       isReadonly,
       compactList,
     ],

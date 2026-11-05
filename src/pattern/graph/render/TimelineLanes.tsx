@@ -1,12 +1,13 @@
 import React from "react";
 import Animated, { useAnimatedProps } from "react-native-reanimated";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Svg, { Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg, { G, Path, Rect, Text as SvgText } from "react-native-svg";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { GraphNode } from "@/src/pattern/graph/model/GraphModel";
 import {
   ArrowheadMarker,
   drawNodes,
+  SEQUENCE_EDGE_OPACITY,
 } from "@/src/pattern/graph/render/GraphPrimitives";
 import { edgeStroke } from "@/src/pattern/graph/render/edgeStyle";
 import {
@@ -123,7 +124,9 @@ export const LaneFiguresLayer: React.FC<{
   lanes: LaneMotion;
   onNodeTap: (pattern: IPattern) => void;
   rasterize: object;
-}> = ({ content, width, lanes, onNodeTap, rasterize }) => {
+  /** A shown sequence's figures: the lane's other figures and its edges dim. */
+  highlight?: ReadonlySet<number>;
+}> = ({ content, width, lanes, onNodeTap, rasterize, highlight }) => {
   const { theme } = useUnistyles();
   const { lane, typeId, nodes, positions, edges } = content;
   const moving = useLaneStyle(lanes, typeId, lane.y);
@@ -134,16 +137,18 @@ export const LaneFiguresLayer: React.FC<{
     >
       <Svg width={width} height={lane.height} {...rasterize}>
         <ArrowheadMarker />
-        {edges.map((edge) => (
-          <Path
-            key={edge.key}
-            d={edge.d}
-            {...edgeStroke(theme, edge.elided)}
-            fill="none"
-            markerEnd="url(#arrowhead-graph)"
-          />
-        ))}
-        {drawNodes(nodes, positions, onNodeTap)}
+        <G opacity={highlight ? SEQUENCE_EDGE_OPACITY : undefined}>
+          {edges.map((edge) => (
+            <Path
+              key={edge.key}
+              d={edge.d}
+              {...edgeStroke(theme, edge.elided)}
+              fill="none"
+              markerEnd="url(#arrowhead-graph)"
+            />
+          ))}
+        </G>
+        {drawNodes(nodes, positions, onNodeTap, undefined, highlight)}
       </Svg>
     </Animated.View>
   );

@@ -28,6 +28,12 @@ import { canSuggestEditsTo } from "@/src/pattern/suggestions/suggestions";
 import { firebaseAvailable } from "@/src/firebase/firebaseConfig";
 import { reorderLanes } from "@/src/pattern/graph/utils/laneOrder";
 import { resolveLevelIds } from "@/src/pattern/types/PatternLevel";
+import SequenceMapFilter from "@/src/pattern/graph/components/SequenceMapFilter";
+import SequenceMapSummary from "@/src/pattern/graph/components/SequenceMapSummary";
+import { sequenceOverlay } from "@/src/pattern/graph/model/sequenceOverlay";
+import SequenceModal, {
+  OpenSequence,
+} from "@/src/pattern/sequences/SequenceModal";
 
 const PatternGraphScreen: React.FC = () => {
   const { t } = useTranslation();
@@ -35,7 +41,8 @@ const PatternGraphScreen: React.FC = () => {
   const { activeList, patterns } = useActivePatternList();
   // Recolouring a type from the legend and reordering the lanes: owners only, through the same
   // mutation path as edits.
-  const { isReadonly, setPatternTypeColor, setLaneOrder } = usePatternCrud();
+  const { isReadonly, setPatternTypeColor, setLaneOrder, sequences } =
+    usePatternCrud();
 
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   // By id, so the details show the figure as it is now: after an edit from here, the change
@@ -56,6 +63,18 @@ const PatternGraphScreen: React.FC = () => {
   const [resetKey, setResetKey] = useState(0);
   const [filterVisible, setFilterVisible] = useState(false);
   const [resetLayoutVisible, setResetLayoutVisible] = useState(false);
+  // "Show sequence" (#136, phase 3): one of the list's sequences laid over the graph. Not
+  // persisted, like the filter, and dropped when the active list changes.
+  const [shownSequenceId, setShownSequenceId] = useState<string | null>(null);
+  // A sequence opened from a figure's "In: …" or from the summary line. The details step aside
+  // meanwhile, as for the edit form, and come back when it closes.
+  const [openSequence, setOpenSequence] = useState<OpenSequence | null>(null);
+  const [sequenceListId, setSequenceListId] = useState(activeList?.id);
+  if (sequenceListId !== activeList?.id) {
+    setSequenceListId(activeList?.id);
+    setShownSequenceId(null);
+    setOpenSequence(null);
+  }
 
   const handleToggleView = () => {
     setViewMode((prev) => (prev === "timeline" ? "graph" : "timeline"));
@@ -93,6 +112,30 @@ const PatternGraphScreen: React.FC = () => {
     totalCount,
     clearFilter,
   } = useGraphFilter(patterns, patternTypes, activeList?.id, levelIds);
+
+  // A deleted sequence simply stops being shown.
+  const shownSequence = sequences.find((s) => s.id === shownSequenceId);
+  const overlay = useMemo(
+    () =>
+      shownSequence
+        ? sequenceOverlay(
+            shownSequence,
+            new Set(model.nodes.map((node) => node.pattern.id)),
+          )
+        : undefined,
+    [shownSequence, model.nodes],
+  );
+  const sequenceFigures = useMemo(() => {
+    if (!shownSequence) return 0;
+    const ids = new Set(patterns.map((p) => p.id));
+    return new Set(
+      shownSequence.steps.flatMap((step) =>
+        step.kind === "figure" && ids.has(step.patternId)
+          ? [step.patternId]
+          : [],
+      ),
+    ).size;
+  }, [shownSequence, patterns]);
 
   // Re-fit the viewport when the drawn set changes, or a narrowed graph opens
   // at the zoom the whole graph needed and reads as an empty canvas.
@@ -134,7 +177,7 @@ const PatternGraphScreen: React.FC = () => {
           <PatternGraphHeader
             viewMode={viewMode}
             onToggleView={handleToggleView}
-            hasActiveFilter={hasActiveFilter}
+            hasActiveFilter={hasActiveFilter || !!shownSequence}
             onFilter={() => setFilterVisible(true)}
             canResetLayout={hasManualLayout}
             onResetLayout={() => setResetLayoutVisible(true)}
@@ -154,6 +197,17 @@ const PatternGraphScreen: React.FC = () => {
             onClear={clearFilter}
           />
 
+          <SequenceMapSummary
+            name={shownSequence?.name}
+            shown={overlay?.numbers.size ?? 0}
+            figures={sequenceFigures}
+            onOpen={() =>
+              shownSequence &&
+              setOpenSequence({ id: shownSequence.id, editing: false })
+            }
+            onClear={() => setShownSequenceId(null)}
+          />
+
           <GraphViewContainer
             viewMode={viewMode}
             model={model}
@@ -170,6 +224,7 @@ const PatternGraphScreen: React.FC = () => {
             onReorderLanes={
               activeList && !isReadonly ? handleReorderLanes : undefined
             }
+            sequence={overlay}
           />
         </View>
 
@@ -181,7 +236,14 @@ const PatternGraphScreen: React.FC = () => {
           allPatterns={patterns}
           patternTypes={patternTypes}
           headerSection={
-            <ChainModeFilter chainMode={chainMode} onChange={setChainMode} />
+            <>
+              <SequenceMapFilter
+                sequences={sequences}
+                selectedId={shownSequence?.id ?? null}
+                onChange={setShownSequenceId}
+              />
+              <ChainModeFilter chainMode={chainMode} onChange={setChainMode} />
+            </>
           }
         />
 
@@ -209,7 +271,8 @@ const PatternGraphScreen: React.FC = () => {
           visible={
             selectedPattern !== undefined &&
             editing === null &&
-            suggestingEdit === null
+            suggestingEdit === null &&
+            openSequence === null
           }
           pattern={selectedPattern}
           allPatterns={patterns}
@@ -226,6 +289,13 @@ const PatternGraphScreen: React.FC = () => {
               ? () => setSuggestingEdit(selectedPattern)
               : undefined
           }
+          sequences={sequences}
+          onOpenSequence={(id) => setOpenSequence({ id, editing: false })}
+        />
+
+        <SequenceModal
+          open={openSequence}
+          onClose={() => setOpenSequence(null)}
         />
 
         <EditPatternModal pattern={editing} onClose={stopEditing} />

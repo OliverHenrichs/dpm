@@ -4,7 +4,7 @@ import { useWindowDimensions, View } from "react-native";
 // one gesture system rather than racing a native scroll view it cannot see.
 import { ScrollView } from "react-native-gesture-handler";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import Svg from "react-native-svg";
+import Svg, { G } from "react-native-svg";
 import { IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import {
@@ -12,7 +12,12 @@ import {
   generateSkipLevelPath,
   LayoutPosition,
 } from "./utils/GraphUtils";
-import { ArrowheadMarker } from "@/src/pattern/graph/render/GraphPrimitives";
+import {
+  ArrowheadMarker,
+  SEQUENCE_EDGE_OPACITY,
+} from "@/src/pattern/graph/render/GraphPrimitives";
+import SequenceLayer from "@/src/pattern/graph/render/SequenceLayer";
+import { SequenceOverlay } from "@/src/pattern/graph/model/sequenceOverlay";
 import { rasterizeLargeGraph } from "./utils/RasterizeProps";
 import GraphEmptyState from "@/src/pattern/graph/components/GraphEmptyState";
 import {
@@ -59,6 +64,8 @@ interface TimelineViewProps {
    * on a read-only list, which then has no grips.
    */
   onReorderLanes?: (shownOrder: string[]) => void;
+  /** The sequence shown over the lanes, if any. */
+  sequence?: SequenceOverlay;
 }
 
 const TimelineView: React.FC<TimelineViewProps> = ({
@@ -68,6 +75,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   onNodeTap,
   laneOrder,
   onReorderLanes,
+  sequence,
 }) => {
   const patterns = model.patterns;
   const { theme } = useUnistyles();
@@ -192,6 +200,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({
   // The lane whose name is on the lifted label: while it is dragged, and while that label
   // settles into place after the drop.
   const liftedId = drag.dragging?.typeId ?? drag.settling?.typeId;
+  // A shown sequence's figures stay bright; the rest dim (`sequenceOverlay`).
+  const highlight = sequence ? new Set(sequence.numbers.keys()) : undefined;
 
   // Bands, then the edges between lanes, then each lane's figures: the order one SVG used to
   // draw them in, split so that each lane can slide as a piece.
@@ -219,9 +229,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
             <Svg width={svgWidth} height={svgHeight}>
               <ArrowheadMarker />
-              {crossEdges.map((edge) => (
-                <CrossLaneEdge key={edge.key} edge={edge} lanes={laneMotion} />
-              ))}
+              <G opacity={sequence ? SEQUENCE_EDGE_OPACITY : undefined}>
+                {crossEdges.map((edge) => (
+                  <CrossLaneEdge
+                    key={edge.key}
+                    edge={edge}
+                    lanes={laneMotion}
+                  />
+                ))}
+              </G>
             </Svg>
           </View>
           {laneContents.map((content) => (
@@ -232,8 +248,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({
               lanes={laneMotion}
               onNodeTap={onNodeTap}
               rasterize={rasterizeLargeGraph(patterns.length)}
+              highlight={highlight}
             />
           ))}
+          {/* Over the lanes, laid out for where they rest: hidden while one slides, so the
+              arrows never point at a lane mid-move. Inert, so taps reach the boxes below. */}
+          {sequence && !liftedId && (
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <Svg width={svgWidth} height={svgHeight}>
+                <SequenceLayer overlay={sequence} positions={positions} />
+              </Svg>
+            </View>
+          )}
           {canReorder && (
             <LaneHandles
               lanes={swimlanes}

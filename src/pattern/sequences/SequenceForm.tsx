@@ -38,6 +38,8 @@ import {
   stepName,
   stepVariants,
   withMark,
+  lastFigureId,
+  nextStepHints,
 } from "@/src/pattern/sequences/sequences";
 import SequenceStepRow from "@/src/pattern/sequences/SequenceStepRow";
 import SequenceTotalsLine from "@/src/pattern/sequences/SequenceTotalsLine";
@@ -72,6 +74,8 @@ interface SequenceFormProps {
   patternTypes: PatternType[];
   modifiers: IModifier[];
   dance?: Dance;
+  /** The list's sequences, for the picker's _Often next_ (`nextStepHints`). */
+  sequences?: ISequence[];
   /** Whether it was saved; a refusal keeps the form open with what was typed. */
   onSave: (sequence: ISequence) => Promise<boolean>;
   onCancel: () => void;
@@ -95,6 +99,7 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
   patternTypes,
   modifiers,
   dance,
+  sequences,
   onSave,
   onCancel,
 }) => {
@@ -488,6 +493,12 @@ const SequenceForm: React.FC<SequenceFormProps> = ({
         visible={picking}
         patterns={patterns}
         patternTypes={patternTypes}
+        hints={nextStepHints(
+          sequences,
+          lastFigureId(steps),
+          patterns,
+          draft.id,
+        )}
         onClose={() => setPicking(false)}
         onPickFree={() => add(freeStep(), true)}
         onPickFigure={(pattern) =>

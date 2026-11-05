@@ -20,6 +20,10 @@ of the same graph, switched in its header: **Timeline** and **Network**.
   matches: _Matches only_, _Path to_ (what leads to them) or _Everything connected_. Matches stay
   bright and the figures around them dim. A summary says how many matched and how many are shown,
   with _Clear filter_. Where a hidden figure sat between two shown ones, the edge is drawn dashed.
+- **Show sequence**, at the top of the filter sheet on a list with sequences, lays one of them
+  over the Map ([sequences](sequences.md)): its figures stay bright with their step numbers on
+  them, everything else dims, and dashed arrows in the accent run from figure to figure in
+  dancing order. A line above the Map names it (tapping it opens the sequence) and hides it.
 - A **legend** explains type colours, level shading, badges and the direction of prerequisites.
   It opens by itself the first time the Map is shown. On an editable list, tapping a type in the
   legend changes its colour.
@@ -67,11 +71,11 @@ of the same graph, switched in its header: **Timeline** and **Network**.
 | Reordering lanes moves each lane as a whole, nothing inside it            | `__tests__/unit/laneOrder.test.ts`               |
 | Node text keeps 4.5:1 contrast on every type colour in every theme        | `__tests__/unit/nodeFrame.test.ts`               |
 | Badges sit inside the box outline in both styles                          | `__tests__/components/nodeBadgeRender.test.tsx`  |
+| A shown sequence's arrows follow its order, skipping what isn't drawn     | `__tests__/unit/sequenceOverlay.test.ts`         |
 
 ## Not built yet
 
 - Auto-scroll at the screen's edges while dragging a lane.
-- Highlighting sequences on the Map (sequences phase 3, planned).
 
 ## Code
 
