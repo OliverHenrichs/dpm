@@ -1,20 +1,18 @@
 <en-US>
-1.5.0
-• Lists can have their own levels, such as course numbers.
-• A variant can have its own counts, rhythm, level and description.
-• Richer rhythms: 3&a4, held beats like 3(&)4, pickups, S Q Q.
-• Rename, merge and delete tags; remove a type that figures use.
-• Map: edit a figure, drag timeline lanes, recolour types in the legend.
-• Subscribers can suggest changes to existing figures.
-• Terms of use, Report list, import a list as a copy, and fixes.
+1.6.0
+• Sequences: keep a routine, Rallye or workshop combination as figures in dancing order.
+• Add figures, variants and free steps; counts add up, in eights for salsa and bachata.
+• A video per sequence: mark each step, play from a step, loop it.
+• Often next suggests the following figure from your other sequences.
+• Show a sequence on the Map; a figure's details name its sequences.
+• Timeline lanes slide aside while you drag one.
 </en-US>
 <de-DE>
-1.5.0
-• Listen können eigene Niveaus haben, etwa Kursnummern.
-• Varianten können eigene Counts, Rhythmen, Niveaus und Beschreibungen haben.
-• Mehr Rhythmen: 3&a4, gehaltene Schläge wie 3(&)4, Auftakte, S Q Q.
-• Tags umbenennen, zusammenführen, löschen; genutzte Typen entfernen.
-• Karte: Figur bearbeiten, Bahnen ziehen, Typfarbe in der Legende ändern.
-• Abonnenten können Änderungen an Figuren vorschlagen.
-• Nutzungsbedingungen, Liste melden, Import als Kopie und Korrekturen.
+1.6.0
+• Folgen: Choreografie, Rallye oder Workshop-Kombination als Figuren in Tanzreihenfolge.
+• Figuren, Varianten und freie Schritte; die Counts werden addiert, bei Salsa und Bachata in Achtern.
+• Ein Video pro Folge: Schritte markieren, ab einem Schritt abspielen, wiederholen.
+• Oft als Nächstes schlägt die nächste Figur aus deinen anderen Folgen vor.
+• Folge auf der Karte zeigen; die Details einer Figur nennen ihre Folgen.
+• Im Zeitstrahl weichen beim Ziehen die anderen Bahnen aus.
 </de-DE>
