@@ -118,35 +118,10 @@ node through `forwardedRef` and binds the listener itself. Route node presses th
 component rather than putting `onPress` on an SVG element directly. These console errors only
 appear with a populated graph, so check a list that actually has patterns.
 
-## Node boxes follow the app style
+## Node boxes and badges
 
-`render/NodeFrame.tsx` draws a pattern's box from `theme.graph` (`tokens.ts`), after the style
-mockups' Map screens: After Hours outlines a rounded box in the type colour, with a soft halo in
-its dark theme; Clipboard draws a square box on the neutral `border` rule with the type colour in
-a bar down its left edge. Edges (`render/edgeStyle.ts`) take the accent in After Hours and the
-muted rule in Clipboard; lane labels take the list's section style. Node text uses the
-`nodeTitle` / `nodeMeta` text styles.
-
-- **Level is a tint of the type colour mixed into the surface** (`model/nodeFrame.ts`), one solid
-  fill so edges don't show through. `levelTints(n)` spreads the list's levels over 0.1 to 0.36;
-  `buildGraphModel`'s third argument (level ids) sets each node's `tint`. The tints are capped by `__tests__/unit/nodeFrame.test.ts`:
-  the node text must hold 4.5:1 over every palette type colour in every theme. That is also why
-  the counts are in `text`, not `textMuted`.
-- `Legend` draws its samples with `NodeFrame` itself, so it matches whatever the style draws.
-
-## Node badges
-
-A node marks what it has: a play triangle when the pattern (or one of its modifier combinations) has video, and up to three dots for attached modifiers. `model/nodeBadges.ts` decides; `render/NodeBadges.tsx` draws.
-
-- **They live inside the existing 100×60 box.** `NODE_WIDTH`/`NODE_HEIGHT` feed the timeline's swimlane sizing and its collision-avoidance pass, so node size is not a free variable — growing a node moves the timeline layout everywhere.
-- **Shapes, not glyphs from a font.** A triangle and circles render identically on every device; an emoji or a box-drawing character depends on what is installed. `Legend` draws the same shapes so it always matches the graph.
-- **Coloured with the node's type colour**, never a secondary-text grey: the fill carries more of the type colour the higher the level, and grey washes out on an advanced pattern.
-- **The corner inset is the style's `theme.graph.badgeInset`.** After Hours' rounded corner would cut through marks set at Clipboard's square-corner inset; `nodeBadgeRender.test.tsx` checks every mark against the outline's inner edge with a dot's width of clear space; merely inside the curve (inset 5) still overlapped the line on a device.
-- **Every shape is positioned by its bounding box, on both axes.** Taking the right edge of one and the centre line of another looks correct in code and is visibly lopsided on a device — it happened twice, once to each badge. The shapes are written symmetrically about their own centre lines so the insets are a testable property rather than true by construction.
-- The dots take the corner themselves when there is no video mark, and share the triangle's centre line when there is. Always sharing it would hang them the triangle's height above the bottom edge with nothing underneath.
-- **A foundational node's badges step in further** (`FOUNDATIONAL_FRAME_INSET`), because its inner frame is itself at that inset and the badges would otherwise rest on that line.
-- **Dot spacing is set by what survives being zoomed out**, not by what looks right at 1:1. At 1.5px apart the dots merged into one blob at the zoom the graph actually opens at; they now have a full dot's width of clear space. Anything drawn here has the same constraint — the network view fits a whole list on screen by default.
-- Only _attached_ modifiers are counted. A universal modifier applies to every pattern in the list, so badging one would mark every node and say nothing.
+How a node's box and its badges are drawn (style, level tint, the badge geometry and why node
+size is fixed) is in `render/AGENTS.md`.
 
 ## Reordering the timeline's lanes
 
@@ -184,9 +159,29 @@ only while there is a manual order) removes the key.
   network view's manual layout, so dragging it is an edit.
 - No auto-scroll at the edges yet: a lane is moved past the screen in steps.
 
+### Lanes slide
+
+The lanes slide to their new places rather than jump: as a dragged lane passes them, on the
+drop, on a screen reader's move and when a filter changes the lanes shown. On the drop the
+lifted name eases from under the finger into its lane (`landingOffsets`) and scales back down.
+
+- **A reorder moves each lane as a whole.** Nothing inside a lane (its figures, the edges and
+  skip-level routes inside it, its height) depends on the lanes around it;
+  `laneOrder.test.ts` holds that. So the timeline is not one SVG any more but layers per lane
+  (`render/TimelineLanes.tsx`): bands, then one SVG of the edges between lanes, then each lane's
+  figures with the edges inside it, each lane drawn relative to its own top.
+- **Lanes are positioned by shared values alone** (`hooks/useLaneMotion.ts`, a tween per type id
+  from `from` to `to`), never by a `top` in their style. Setting the new `top` and then starting
+  a slide back from the old one flashes the lane at its new place for a frame, because React's
+  commit and the UI thread's first frame of the slide do not land together.
+- **Only the edges between lanes are rebuilt per frame**, in a worklet (`CrossLaneEdge`); the
+  rest just move with their view. When nothing slides no worklet runs.
+- The slide is one shared tween, so a drag that passes three lanes quickly restarts it from
+  where each lane is; nothing snaps.
+
 ## The views
 
-- **Timeline** (`TimelineView.tsx`) — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `utils/TimelineGraphUtils.ts`); skip-level edge routing handled by `utils/CollisionAvoidanceUtils.ts`. Lanes come from `orderLanes` (`utils/laneOrder.ts`): only types with a pattern shown get one (a filtered-out type left an empty band), in the user's order when the list has one (below), otherwise ordered to keep linked types adjacent (every order up to seven lanes, a barycentre pass and single moves above), ties in the list's own order.
+- **Timeline** (`TimelineView.tsx`, drawn in layers per lane, see "Lanes slide") — swimlane by `PatternType`, left-to-right by `node.depth` (`calculateDynamicTimelineLayout` in `utils/TimelineGraphUtils.ts`); skip-level edge routing handled by `utils/CollisionAvoidanceUtils.ts`. Lanes come from `orderLanes` (`utils/laneOrder.ts`): only types with a pattern shown get one (a filtered-out type left an empty band), in the user's order when the list has one (below), otherwise ordered to keep linked types adjacent (every order up to seven lanes, a barycentre pass and single moves above), ties in the list's own order.
 - **Network roots** go round the ellipse grouped by type (`getFoundationalPatterns`), so unlinked patterns of one type sit together. The ellipse shrinks to fit the root count (`getEllipseRadii`). Only the automatic layout; a stored manual one is untouched.
 - **The legend opens by itself the first time** the Map is shown (`isLegendSeen` in `data/GraphHintStorage.ts`, app-wide like the drag hint); the dots and triangle mean nothing to someone who never presses "Legend".
 - **The legend recolours types** on a list the user may edit: each type row opens the palette list settings use (`TypeColorSwatches` from `src/pattern/list/`) and saves through `usePatternCrud.setPatternTypeColor`. `PatternGraphScreen` passes `onChangeTypeColor` only when the list is not read-only, so a subscribed list's legend stays a plain key. The tester of review 2 never found the colour dot in list settings.

@@ -9,30 +9,31 @@ everywhere. Depth lives next to the code it governs, in a nested `AGENTS.md` tha
 open a file in that directory. Creating a _new_ file in a directory does not pull its `AGENTS.md`
 in, so read the one listed below before you add code there.
 
-| File                                | Read it before touching                                                                                        |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `src/common/AGENTS.md`              | App chrome: `AppHeader`, drawer and tabs, the Android edge band, modals and the system bars, dismissal touches |
-| `src/common/theme/AGENTS.md`        | Styles: Unistyles, design tokens, colour roles, fonts, the two app styles, the setup's traps                   |
-| `src/common/ui/AGENTS.md`           | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery                                      |
-| `src/pattern/data/AGENTS.md`        | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates          |
-| `src/pattern/list/AGENTS.md`        | `usePatternCrud`, modifiers, sorting, always-mounted modals                                                    |
-| `src/pattern/rhythm/AGENTS.md`      | Rhythm notation, its link to counts, composing one step by step                                                |
-| `src/pattern/sequences/AGENTS.md`   | Sequences: named runs of a list's figures, their steps and totals, drag reorder                                |
-| `src/pattern/graph/AGENTS.md`       | Graph model, filtering, layouts, pan/zoom, node drag, badges, prerequisite integrity                           |
-| `src/reels/AGENTS.md`               | The Reels tab                                                                                                  |
-| `src/anonymize/AGENTS.md`           | Video jobs (`jobStore`), review, Shorten and Anonymize, providers                                              |
-| `src/transcribe/AGENTS.md`          | Speech transcription (Whisper), the model store                                                                |
-| `src/suggest/AGENTS.md`             | Name and description suggestions (on-device LLM)                                                               |
-| `src/videoLinks/AGENTS.md`          | Putting a local video online and its link back, links and videos shared to DPM                                 |
-| `src/pattern/suggestions/AGENTS.md` | Pattern suggestions from a shared list's subscribers: daily limits, muting, review                             |
-| `src/pattern/members/AGENTS.md`     | Members-only lists: asking to join, letting in, losing access                                                  |
-| `src/pattern/handover/AGENTS.md`    | Handing a published list over to a subscriber, who keeps its share code                                        |
-| `src/legal/AGENTS.md`               | Terms of use agreement before sharing, reporting a list, links to the legal pages                              |
-| `modules/AGENTS.md`                 | The local native Expo modules and their gitignored model weights                                               |
-| `src/changelog/AGENTS.md`           | The bundled changelog, the what's-new hint after an update, releasing a version's notes                        |
-| `src/settings/AGENTS.md`            | Settings screen, i18n machinery, device locale, language/style/icon persistence                                |
-| `src/firebase/AGENTS.md`            | Firestore sharing, ownership, security rules, configuration                                                    |
-| `__tests__/AGENTS.md`               | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite                         |
+| File                                 | Read it before touching                                                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `src/common/AGENTS.md`               | App chrome: `AppHeader`, drawer and tabs, the Android edge band, modals and the system bars, dismissal touches |
+| `src/common/theme/AGENTS.md`         | Styles: Unistyles, design tokens, colour roles, fonts, the two app styles, the setup's traps                   |
+| `src/common/ui/AGENTS.md`            | The UI primitives (`Button`, `Chip`, `ListRow`, …) and the design gallery                                      |
+| `src/pattern/data/AGENTS.md`         | Storage keys, write locking, pattern ids, migrations, import validation, the export format, templates          |
+| `src/pattern/list/AGENTS.md`         | `usePatternCrud`, modifiers, sorting, always-mounted modals                                                    |
+| `src/pattern/rhythm/AGENTS.md`       | Rhythm notation, its link to counts, composing one step by step                                                |
+| `src/pattern/sequences/AGENTS.md`    | Sequences: named runs of a list's figures, their steps and totals, drag reorder                                |
+| `src/pattern/graph/AGENTS.md`        | Graph model, filtering, layouts, pan/zoom, node drag, lane reorder, prerequisite integrity                     |
+| `src/pattern/graph/render/AGENTS.md` | How graph nodes are drawn: box styles, level tints, badges                                                     |
+| `src/reels/AGENTS.md`                | The Reels tab                                                                                                  |
+| `src/anonymize/AGENTS.md`            | Video jobs (`jobStore`), review, Shorten and Anonymize, providers                                              |
+| `src/transcribe/AGENTS.md`           | Speech transcription (Whisper), the model store                                                                |
+| `src/suggest/AGENTS.md`              | Name and description suggestions (on-device LLM)                                                               |
+| `src/videoLinks/AGENTS.md`           | Putting a local video online and its link back, links and videos shared to DPM                                 |
+| `src/pattern/suggestions/AGENTS.md`  | Pattern suggestions from a shared list's subscribers: daily limits, muting, review                             |
+| `src/pattern/members/AGENTS.md`      | Members-only lists: asking to join, letting in, losing access                                                  |
+| `src/pattern/handover/AGENTS.md`     | Handing a published list over to a subscriber, who keeps its share code                                        |
+| `src/legal/AGENTS.md`                | Terms of use agreement before sharing, reporting a list, links to the legal pages                              |
+| `modules/AGENTS.md`                  | The local native Expo modules and their gitignored model weights                                               |
+| `src/changelog/AGENTS.md`            | The bundled changelog, the what's-new hint after an update, releasing a version's notes                        |
+| `src/settings/AGENTS.md`             | Settings screen, i18n machinery, device locale, language/style/icon persistence                                |
+| `src/firebase/AGENTS.md`             | Firestore sharing, ownership, security rules, configuration                                                    |
+| `__tests__/AGENTS.md`                | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite                         |
 
 **Docs outside the code** (`docs/README.md`): `docs/product/` says what the app does,
 `docs/decisions/` why, `docs/plans/` what is being built. A PR that changes behaviour updates the
