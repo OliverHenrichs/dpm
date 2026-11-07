@@ -1,7 +1,7 @@
 {
   "name": "dancepatternmapper",
   "main": "index.ts",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "scripts": {
     "start": "expo start --dev-client",
     "reset-project": "node ./scripts/reset-project.js",
