@@ -56,7 +56,10 @@ it (`EdgeTamTracker`, `PersonDetector`): models are copied out of the APK once, 
 otherwise reused. Keep the third-party licences (`LICENSE`, the scripts' headers) with the code.
 
 Performance and memory matter more than anywhere else in the app: on a Pixel 10a a 7 s couple clip
-runs at ~0.75 s per frame and the Java heap sat at its 256 MB cap near 30 s clips. Dev builds log
+runs at ~0.75 s per frame and the Java heap sat at its 256 MB cap near 30 s clips (a Play alpha
+render died with an OutOfMemoryError on 2026-11-08). So the module's manifest sets
+`android:largeHeap` (512 MB on a Pixel), and `EdgeTamTracker` reuses its graph inputs instead of
+allocating ~16 MB arrays per call: keep large per-frame buffers as reused fields. Dev builds log
 each run's per-frame stats. Measurements and the tuning history are in `docs/history/AGENT_TASKS.md` L3.
 
 ## audio-extract
