@@ -1,14 +1,22 @@
 import {
   canTrim,
+  canZoom,
+  decimalMark,
   dragWindow,
   fitWindow,
+  formatLength,
   formatSeconds,
+  formatTenths,
+  fullView,
+  grabbedTime,
   hitTest,
   initialWindow,
   moveWindow,
   resizeEnd,
   resizeStart,
+  showsWindow,
   TrimLimits,
+  zoomView,
 } from "@/src/anonymize/model/trimWindow";
 
 const limits: TrimLimits = { duration: 60, min: 1, max: 30 };
@@ -137,7 +145,7 @@ describe("trimWindow", () => {
   describe("hitTest", () => {
     // 600 px track over a 60 s clip: 10 px per second; the window spans 100–300 px.
     const window = { start: 10, end: 30 };
-    const hit = (x: number, w = window) => hitTest(x, w, 600, 60, 28);
+    const hit = (x: number, w = window) => hitTest(x, w, 600, fullView(60), 28);
 
     it("grabs the start grip near the left edge, from either side", () => {
       expect(hit(80)).toBe("start");
@@ -164,7 +172,52 @@ describe("trimWindow", () => {
     });
 
     it("grabs nothing before the track is measured", () => {
-      expect(hitTest(100, window, 0, 60, 28)).toBeNull();
+      expect(hitTest(100, window, 0, fullView(60), 28)).toBeNull();
+    });
+
+    it("measures from the start of a zoomed-in view", () => {
+      // 600 px over 8–14 s: 100 px per second; the window 10–12 s spans 200–400 px.
+      const view = { from: 8, to: 14 };
+      const short = { start: 10, end: 12 };
+      expect(hitTest(210, short, 600, view, 28)).toBe("start");
+      expect(hitTest(300, short, 600, view, 28)).toBe("move");
+      expect(hitTest(395, short, 600, view, 28)).toBe("end");
+    });
+  });
+
+  describe("zoomView", () => {
+    it("centres the selection with its own length on either side", () => {
+      expect(zoomView({ start: 100, end: 110 }, 600)).toEqual({
+        from: 90,
+        to: 120,
+      });
+    });
+
+    it("keeps at least 2 s either side of a very short selection", () => {
+      expect(zoomView({ start: 100, end: 101 }, 600)).toEqual({
+        from: 98,
+        to: 103,
+      });
+    });
+
+    it("shifts rather than cuts at the ends of the clip", () => {
+      expect(zoomView({ start: 1, end: 6 }, 600)).toEqual({ from: 0, to: 15 });
+      expect(zoomView({ start: 595, end: 600 }, 600)).toEqual({
+        from: 585,
+        to: 600,
+      });
+    });
+
+    it("is offered only where it is at most half the clip", () => {
+      expect(canZoom({ start: 100, end: 110 }, 600)).toBe(true);
+      expect(canZoom({ start: 0, end: 20 }, 60)).toBe(false);
+      expect(canZoom({ start: 0, end: 0 }, 0)).toBe(false);
+    });
+
+    it("knows when the selection has left the view", () => {
+      const view = { from: 90, to: 120 };
+      expect(showsWindow(view, { start: 90, end: 120 })).toBe(true);
+      expect(showsWindow(view, { start: 95, end: 125 })).toBe(false);
     });
   });
 
@@ -185,6 +238,33 @@ describe("trimWindow", () => {
         end: 35,
       });
     });
+  });
+
+  it("shows the end's frame for the end grip, the start's otherwise", () => {
+    const w = { start: 4, end: 9 };
+    expect(grabbedTime(w, "start")).toBe(4);
+    expect(grabbedTime(w, "move")).toBe(4);
+    expect(grabbedTime(w, "end")).toBe(9);
+  });
+
+  it("formats times to the tenth with the language's decimal mark", () => {
+    expect(formatTenths(65.34)).toBe("1:05.3");
+    expect(formatTenths(59.96)).toBe("1:00.0");
+    expect(formatTenths(3.25, ",")).toBe("0:03,3");
+    expect(formatTenths(-1)).toBe("0:00.0");
+  });
+
+  it("formats a length in tenths below 10 s and whole seconds above", () => {
+    expect(formatLength(1.44)).toBe("1.4");
+    expect(formatLength(2.0)).toBe("2");
+    expect(formatLength(2.46, ",")).toBe("2,5");
+    expect(formatLength(9.96)).toBe("10");
+    expect(formatLength(18.4)).toBe("18");
+  });
+
+  it("finds the decimal mark of a language", () => {
+    expect(decimalMark("en")).toBe(".");
+    expect(decimalMark("de")).toBe(",");
   });
 
   it("formats seconds as m:ss", () => {
