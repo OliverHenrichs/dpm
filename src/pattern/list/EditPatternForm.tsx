@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Image, Text, TextInput, View } from "react-native";
+import { Image, ScrollView, Text, TextInput, View } from "react-native";
 import { Button, Chip, ListRow, Tappable } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
@@ -1046,21 +1046,28 @@ const EditPatternForm: React.FC<EditPatternFormProps> = ({
             minHeight="20%"
             maxHeight="50%"
           >
-            {unattachedModifiers.map((mod) => (
-              <ListRow
-                key={mod.id}
-                title={mod.name}
-                meta={
-                  mod.position === "prefix"
-                    ? t("modifierPositionPrefix")
-                    : mod.position === "postfix"
-                      ? t("modifierPositionPostfix")
-                      : t("modifierPositionAmends")
-                }
-                icon="plus-circle-outline"
-                onPress={() => handleAttachModifier(mod.id)}
-              />
-            ))}
+            {/* Scrolls once there are more modifiers than the sheet's height holds. */}
+            <ScrollView
+              style={styles.pickerScroll}
+              keyboardShouldPersistTaps="handled"
+              testID="attach-modifier-list"
+            >
+              {unattachedModifiers.map((mod) => (
+                <ListRow
+                  key={mod.id}
+                  title={mod.name}
+                  meta={
+                    mod.position === "prefix"
+                      ? t("modifierPositionPrefix")
+                      : mod.position === "postfix"
+                        ? t("modifierPositionPostfix")
+                        : t("modifierPositionAmends")
+                  }
+                  icon="plus-circle-outline"
+                  onPress={() => handleAttachModifier(mod.id)}
+                />
+              ))}
+            </ScrollView>
           </BottomSheet>
         </View>
       </RevealScrollView>
@@ -1093,6 +1100,8 @@ const styles = StyleSheet.create((theme) => {
   const commonBorder = getCommonBorder(theme);
   return {
     form: { flexShrink: 1 },
+    // A scroller in a BottomSheet shrinks to the sheet's maxHeight instead of overflowing it.
+    pickerScroll: { flexShrink: 1 },
     addPatternContainer: {
       ...commonBorder,
       padding: theme.space.sm,
