@@ -14,10 +14,16 @@ works offline and stays on the phone unless the user shares it.
   example is a West Coast Swing list of eight figures from two beginner courses and a festival,
   with prerequisites, modifiers and tags. It opens on the Map. It has no videos.
 - **Creating a list** starts from a template or from _Blank_. Templates: West Coast Swing, Salsa,
-  Bachata, Brazilian Zouk, Argentine Tango and Lindy Hop. A template brings its figure types, a
-  few starter figures (the user can untick any) and the dance. The West Coast Swing template also
-  brings six modifiers: with Inside Turn, with Outside Turn, with Free Spin, with Duck, Hesitation
-  and with Hand Change.
+  Bachata, Brazilian Zouk, Argentine Tango, Lindy Hop, Standard and Latin. A template brings its
+  figure types, a few starter figures (the user can untick any) and the dance. The West Coast
+  Swing template also brings six modifiers: with Inside Turn, with Outside Turn, with Free Spin,
+  with Duck, Hesitation and with Hand Change.
+- **Standard and Latin** are one template each, as dance schools teach them, with one type per
+  dance (Waltz, Tango, Viennese Waltz, Slow Foxtrot, Quickstep; Samba, Cha Cha Cha, Rumba, Paso
+  Doble, Jive). Their starter figures are ISTD Bronze figures with the syllabus's own timing:
+  slows and quicks for Tango, Slow Foxtrot and Quickstep. Cha Cha Cha and Rumba figures have no
+  rhythm, since they start on 2. The same figure name can appear under two dances (a Natural Turn
+  in Waltz and Viennese Waltz); the type tells them apart.
 - The name field is not focused on its own, so the keyboard doesn't hide the setup.
 - A list's **dance** picks the basic rhythms the form suggests and the dance terms transcription
   listens for. It can be _None_.

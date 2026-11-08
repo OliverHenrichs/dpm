@@ -1,7 +1,9 @@
 import { Dance } from "@/src/pattern/types/Dance";
 import bachata from "@/src/transcribe/glossary/bachata.json";
+import latin from "@/src/transcribe/glossary/latin.json";
 import lindy from "@/src/transcribe/glossary/lindy.json";
 import salsa from "@/src/transcribe/glossary/salsa.json";
+import standard from "@/src/transcribe/glossary/standard.json";
 import tango from "@/src/transcribe/glossary/tango.json";
 import wcs from "@/src/transcribe/glossary/wcs.json";
 import zouk from "@/src/transcribe/glossary/zouk.json";
@@ -27,6 +29,8 @@ export const DANCE_GLOSSARIES: Record<Dance, Glossary> = {
   bachata,
   tango,
   zouk,
+  standard,
+  latin,
 };
 
 /** A dance's terms, spelt for [language] where the glossary knows a spelling for it. */

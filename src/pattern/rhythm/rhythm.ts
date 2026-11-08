@@ -234,6 +234,8 @@ export function withTimingRhythm<T extends Timing>(timing: T, text: string): T {
  *   step falls on 1 and holds through 2, the quicks on 3 and 4; a basic, forward then back, takes
  *   two of those (Bath Zouk's move library, "Music & Rhythm").
  * - Argentine tango has no fixed count pattern, so it has none.
+ * - Standard and Latin are five dances each, with a rhythm per dance and often per figure, so the
+ *   group has none: the templates give each figure its own (`TemplatePattern.rhythm`).
  */
 const SWING: Record<number, string[]> = {
   6: ["1 2 3&4 5&6", "1 2 3a4 5a6"],
@@ -255,6 +257,8 @@ const DANCE_RHYTHMS: Record<Dance, Record<number, string[]>> = {
   bachata: LATIN,
   tango: {},
   zouk: ZOUK,
+  standard: {},
+  latin: {},
 };
 
 /**
