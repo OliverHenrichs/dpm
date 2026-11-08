@@ -1,2 +1,9 @@
-<manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    Merged into the app's manifest. Anonymizing holds the EdgeTAM graphs' 16 MB inputs, the
+    drawer's full-frame buffers and a few frames in flight on the Java heap, which ran out at the
+    default 256 MB on a Pixel (OutOfMemoryError in VideoAnonymize.anonymize). largeHeap raises
+    the cap (512 MB on a Pixel); it is a ceiling, not a reservation.
+  -->
+  <application android:largeHeap="true" />
 </manifest>

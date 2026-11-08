@@ -80,6 +80,12 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   private val notAPoint: FloatArray
 
   private val inputFloats = FloatArray(3 * SIZE * SIZE)
+  // Graph inputs, reused frame to frame: allocated per call they were ~110 MB of garbage per
+  // tracked couple frame, 16 MB at a time, and the Java heap (256 MB on a Pixel) ran out
+  // mid-render. Lazy, since an outline (DancerOutline) only decodes.
+  private val decIn by lazy { FloatArray(IE + H0 + H1 + 512) }
+  private val mcIn by lazy { FloatArray(IE + 2 * MC + MEM) }
+  private val memIn by lazy { FloatArray(2 * IE) }
   private val toMemory = Bilinear(256, 256, SIZE, SIZE)
   private val pixels = IntArray(SIZE * SIZE)
   private val canvasBmp = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
@@ -155,15 +161,14 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   /** A frame's image features: the costly part of a prompt, reusable for any taps on it. */
   class Encoded internal constructor(
     internal val pixFeat: FloatArray,
-    internal val pixRaw: FloatArray,
-    internal val hi0: FloatArray,
-    internal val hi1: FloatArray,
+    /** The encoder's output as it came: [pix_raw | hi0 | hi1], see [encodeFrame]. */
+    internal val features: FloatArray,
   )
 
   /** Encodes a frame for [firstMasks]. */
   fun encodeImage(frame: Bitmap): Encoded {
-    val (pixRaw, hi0, hi1) = encodeFrame(frame)
-    return Encoded(withoutMemory(pixRaw), pixRaw, hi0, hi1)
+    val features = encodeFrame(frame)
+    return Encoded(withoutMemory(features), features)
   }
 
   /**
@@ -173,6 +178,7 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   fun firstMasks(encoded: Encoded, points: List<PointF>): List<FloatArray> =
     decodePrompts(ObjectState(), encoded, points).map { it.mask }
 
+  /** pix_raw (the first [IE] floats of [pixRaw]) plus the no-memory embedding. */
   private fun withoutMemory(pixRaw: FloatArray): FloatArray {
     val t0 = System.nanoTime()
     val pixFeat = FloatArray(IE)
@@ -193,7 +199,7 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   ): List<Decoded> = points.mapIndexed { i, p ->
     val state = stateFor ?: ObjectState().also { objects += it }
     val others = points.filterIndexed { j, _ -> j != i }
-    decodeOne(state, encoded.pixFeat, encoded.hi0, encoded.hi1, pointSparse(p.x * SIZE, p.y * SIZE)) { out ->
+    decodeOne(state, encoded.pixFeat, encoded.features, pointSparse(p.x * SIZE, p.y * SIZE)) { out ->
       exclusiveCandidate(out, p, others)
     }
   }
@@ -206,7 +212,7 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     objects.clear()
     val encoded = encodeImage(frame)
     val decoded = decodePrompts(null, encoded, points)
-    memorizeAll(0, encoded.pixRaw, decoded)
+    memorizeAll(0, encoded.features, decoded)
     timing.frames++
     return decoded.map { it.mask }
   }
@@ -221,30 +227,31 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     frame: Bitmap,
     correct: ((List<FloatArray>) -> Map<Int, FloatArray>)? = null,
   ): List<FloatArray> {
-    val (pixRaw, hi0, hi1) = encodeFrame(frame)
+    val features = encodeFrame(frame)
     val masks = objects.map { state ->
       val t0 = System.nanoTime()
-      val (memory, mpos, keyMask) = assemble(state, fi)
-      val mcIn = FloatArray(IE + 2 * MC + MEM)
-      System.arraycopy(pixRaw, 0, mcIn, 0, IE)
-      System.arraycopy(memory, 0, mcIn, IE, MC)
-      System.arraycopy(mpos, 0, mcIn, IE + MC, MC)
-      System.arraycopy(keyMask, 0, mcIn, IE + 2 * MC, MEM)
+      val mcIn = this.mcIn
+      System.arraycopy(features, 0, mcIn, 0, IE)
+      assemble(state, fi, mcIn)
       timing.kotlinNs += System.nanoTime() - t0
       val t1 = System.nanoTime()
       val pixFeat = run1(memcond, mcIn)
       timing.memcondNs += System.nanoTime() - t1
-      decodeOne(state, pixFeat, hi0, hi1, trackSparse)
+      decodeOne(state, pixFeat, features, trackSparse)
     }.toMutableList()
     correct?.invoke(masks.map { it.mask })?.forEach { (i, corrected) ->
-      masks[i] = applyCorrection(masks[i].state, corrected, pixRaw, hi0, hi1)
+      masks[i] = applyCorrection(masks[i].state, corrected, features)
     }
-    memorizeAll(fi, pixRaw, masks)
+    memorizeAll(fi, features, masks)
     timing.frames++
     return masks.map { it.mask }
   }
 
-  private fun encodeFrame(src: Bitmap): Triple<FloatArray, FloatArray, FloatArray> {
+  /**
+   * The encoder's output as one array, [pix_raw (IE) | hi0 (H0) | hi1 (H1)]: read in place by
+   * offset rather than split into copies (another 16 MB per frame).
+   */
+  private fun encodeFrame(src: Bitmap): FloatArray {
     val t0 = System.nanoTime()
     Canvas(canvasBmp).drawBitmap(src, null, RectF(0f, 0f, SIZE.toFloat(), SIZE.toFloat()), paint)
     canvasBmp.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
@@ -263,14 +270,10 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     val t1 = System.nanoTime()
     val eo = run1(encode, inputFloats)
     val t2 = System.nanoTime()
-    val out = Triple(
-      eo.copyOfRange(0, IE),
-      eo.copyOfRange(IE, IE + H0),
-      eo.copyOfRange(IE + H0, IE + H0 + H1),
-    )
-    timing.kotlinNs += (t1 - t0) + (System.nanoTime() - t2)
+    check(eo.size >= IE + H0 + H1) { "Unexpected encoder output size ${eo.size}" }
+    timing.kotlinNs += t1 - t0
     timing.encodeNs += t2 - t1
-    return out
+    return eo
   }
 
   private fun run1(m: CompiledModel, input: FloatArray): FloatArray {
@@ -315,11 +318,17 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     return out
   }
 
-  /** Fixed memory [7x512 spatial | 16x4 ptr] + key mask for one object's bank. */
-  private fun assemble(state: ObjectState, fi: Int): Triple<FloatArray, FloatArray, FloatArray> {
-    val memory = FloatArray(MC)
-    val mpos = FloatArray(MC)
-    val mask = FloatArray(MEM) { -1e9f }
+  /**
+   * Fixed memory [7x512 spatial | 16x4 ptr], its positions and the key mask for one object's
+   * bank, written into [mcIn] after pix_raw: memory at [IE], positions at IE + MC, mask at
+   * IE + 2 * MC.
+   */
+  private fun assemble(state: ObjectState, fi: Int, mcIn: FloatArray) {
+    val memory = IE
+    val mpos = IE + MC
+    val mask = IE + 2 * MC
+    java.util.Arrays.fill(mcIn, memory, mask, 0f)
+    java.util.Arrays.fill(mcIn, mask, mask + MEM, -1e9f)
     val bank = state.spatial
     val condFrame = bank[0].frame
     val real = ArrayList<Pair<Spatial, Int>>()
@@ -341,12 +350,12 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     for ((slot, sp) in real.withIndex()) {
       val (s, mtpeIdx) = sp
       val base = slot * SPT * MEMCH
-      System.arraycopy(s.mem, 0, memory, base, SPT * MEMCH)
+      System.arraycopy(s.mem, 0, mcIn, memory + base, SPT * MEMCH)
       for (t in 0 until SPT) for (c in 0 until MEMCH) {
-        mpos[base + t * MEMCH + c] = s.pos[t * MEMCH + c] + mtpe[mtpeIdx * 64 + c]
+        mcIn[mpos + base + t * MEMCH + c] = s.pos[t * MEMCH + c] + mtpe[mtpeIdx * 64 + c]
       }
     }
-    for (i in 0 until real.size * SPT) mask[i] = 0f
+    java.util.Arrays.fill(mcIn, mask, mask + real.size * SPT, 0f)
     val recent = state.pointers.sortedByDescending { it.frame }.take(MAXP)
     var pi = 0
     val ptrBase = NMM * SPT * MEMCH
@@ -354,13 +363,12 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
       val pp = sinePe(fi - p.frame)
       for (t in 0 until 4) {
         val dst = ptrBase + pi * MEMCH
-        System.arraycopy(p.ptr, t * MEMCH, memory, dst, MEMCH)
-        System.arraycopy(pp, 0, mpos, dst, MEMCH)
-        mask[NMM * SPT + pi] = 0f
+        System.arraycopy(p.ptr, t * MEMCH, mcIn, memory + dst, MEMCH)
+        System.arraycopy(pp, 0, mcIn, mpos + dst, MEMCH)
+        mcIn[mask + NMM * SPT + pi] = 0f
         pi++
       }
     }
-    return Triple(memory, mpos, mask)
   }
 
   private class Decoded(
@@ -380,9 +388,7 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
   private fun applyCorrection(
     state: ObjectState,
     corrected: FloatArray,
-    pixRaw: FloatArray,
-    hi0: FloatArray,
-    hi1: FloatArray,
+    features: FloatArray,
   ): Decoded {
     var sx = 0.0
     var sy = 0.0
@@ -397,10 +403,10 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
       val d = (p % 256 - cx) * (p % 256 - cx) + (p / 256 - cy) * (p / 256 - cy)
       if (d < bestD) { bestD = d; inside = p }
     }
-    val pixFeat = withoutMemory(pixRaw)
+    val pixFeat = withoutMemory(features)
     val px = (inside % 256 + 0.5f) / 256f * SIZE
     val py = (inside / 256 + 0.5f) / 256f * SIZE
-    val probe = decodeOne(state, pixFeat, hi0, hi1, pointSparse(px, py)) { out ->
+    val probe = decodeOne(state, pixFeat, features, pointSparse(px, py)) { out ->
       (0 until 3).maxBy { k ->
         var inter = 0
         var union = 0
@@ -416,20 +422,21 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     return Decoded(state, corrected, probe.ptr, appearing = true, correction = true)
   }
 
-  /** Decode, pick the best candidate, gate on the object score; returns 256x256 logits. */
+  /**
+   * Decode, pick the best candidate, gate on the object score; returns 256x256 logits.
+   * [features] is the encoder's output, whose hi0 and hi1 follow pix_raw as the decoder wants.
+   */
   private fun decodeOne(
     state: ObjectState,
     pixFeat: FloatArray,
-    hi0: FloatArray,
-    hi1: FloatArray,
+    features: FloatArray,
     sparse: FloatArray,
     choose: ((FloatArray) -> Int)? = null,
   ): Decoded {
     var t = System.nanoTime()
-    val decIn = FloatArray(IE + H0 + H1 + 512)
+    val decIn = this.decIn
     System.arraycopy(pixFeat, 0, decIn, 0, IE)
-    System.arraycopy(hi0, 0, decIn, IE, H0)
-    System.arraycopy(hi1, 0, decIn, IE + H0, H1)
+    System.arraycopy(features, IE, decIn, IE, H0 + H1)
     System.arraycopy(sparse, 0, decIn, IE + H0 + H1, 512)
     timing.kotlinNs += System.nanoTime() - t
     t = System.nanoTime()
@@ -460,7 +467,7 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
    * encoded soft, so memory keeps the uncertainty of a half-hidden dancer. The port binarised every
    * frame, and after a full occlusion the hidden dancer was never found again.
    */
-  private fun memorizeAll(fi: Int, pixRaw: FloatArray, decoded: List<Decoded>) {
+  private fun memorizeAll(fi: Int, features: FloatArray, decoded: List<Decoded>) {
     var t = System.nanoTime()
     val forMemory = decoded.map { it.mask.copyOf() }
     if (forMemory.size > 1) {
@@ -474,8 +481,8 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
 
     decoded.forEachIndexed { i, d ->
       t = System.nanoTime()
-      val memIn = FloatArray(2 * IE)
-      System.arraycopy(pixRaw, 0, memIn, 0, IE)
+      val memIn = this.memIn
+      System.arraycopy(features, 0, memIn, 0, IE)
       // A correction is a given mask, not a prediction: binarised, like the first frame's.
       maskForMem(forMemory[i], memIn, IE, soft = fi > 0 && !d.correction)
       timing.kotlinNs += System.nanoTime() - t
@@ -514,10 +521,16 @@ class EdgeTamTracker(context: Context) : AutoCloseable {
     return ok.maxBy { k -> (0 until 65536).count { out[k * 65536 + it] > 0f } }
   }
 
-  /** Keep the conditioning frame plus the last NMM-1 spatial frames, and the last MAXP pointers. */
+  /**
+   * Keep the conditioning frame plus the last NMM-1 spatial frames, the corrections [assemble]
+   * can still read, and the last MAXP pointers.
+   */
   private fun prune(state: ObjectState, fi: Int) {
     val cond = state.spatial.first()
     state.spatial.removeAll { it !== cond && it.frame < fi - (NMM - 1) }
+    // Corrections expire after CORRECTION_TTL frames; kept, they grew by 256 KB each for the
+    // whole clip.
+    state.conds.removeAll { fi - it.frame > CORRECTION_TTL }
     if (state.pointers.size > MAXP) {
       state.pointers.sortByDescending { it.frame }
       while (state.pointers.size > MAXP) state.pointers.removeAt(state.pointers.lastIndex)
