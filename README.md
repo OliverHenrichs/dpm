@@ -160,7 +160,7 @@ hand in Play Console; `eas submit` works after that.
 **Uploading to Play from EAS.** `npm run release:android` (`eas build --platform android --profile
 production --auto-submit`) builds the AAB and hands it straight to Play's production track
 (`production`, set under `submit` in `eas.json`; it was `alpha` until 1.6.0). `npm run submit:android` sends the latest existing
-build.
+build, and `npm run submit:alpha` sends it to the closed testing track (`alpha`) instead.
 Submitting needs a Google service account key, held by EAS and never committed:
 
 1. In Google Cloud (any project), create a service account and download a JSON key for it.
