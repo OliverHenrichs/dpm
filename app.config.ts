@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { ExpoConfig } from "expo/config";
 
 /**
@@ -208,6 +211,24 @@ export default (): ExpoConfig => ({
           backgroundColor: "#18181b",
         },
       })),
+    ],
+    // R8 on release builds: shrinks and renames the Java/Kotlin code. Play warns below 25%
+    // obfuscation and limits the app's visibility and publishing from February 2027. The AAB
+    // carries R8's mapping file, so Play deobfuscates crash stack traces without an upload.
+    // Libraries reached from C++ or by reflection are kept in proguard-rules.pro; a release-only
+    // crash usually means a rule is missing there. Resource shrinking stays off: Play doesn't ask
+    // for it, and Transcribe looks resources up by name.
+    [
+      "expo-build-properties",
+      {
+        android: {
+          enableMinifyInReleaseBuilds: true,
+          extraProguardRules: readFileSync(
+            join(__dirname, "proguard-rules.pro"),
+            "utf8",
+          ),
+        },
+      },
     ],
     // The two styles' typefaces, embedded natively (SIL Open Font License, assets/fonts/*-OFL.txt):
     // Manrope and DM Serif Display for After Hours, IBM Plex Sans Condensed and Plex Mono for
