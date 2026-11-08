@@ -27,7 +27,7 @@ function renderPanel(
   extra: Partial<React.ComponentProps<typeof VideoEditPanel>> = {},
 ) {
   const listeners: Record<string, (e: unknown) => void> = {};
-  (useVideoPlayer as jest.Mock).mockReturnValue({
+  const player = {
     currentTime: 0,
     play: jest.fn(),
     pause: jest.fn(),
@@ -36,7 +36,8 @@ function renderPanel(
       listeners[name] = fn;
       return { remove: jest.fn() };
     }),
-  });
+  };
+  (useVideoPlayer as jest.Mock).mockReturnValue(player);
   const onShorten = jest.fn();
   renderWithProviders(
     <VideoEditPanel
@@ -53,7 +54,7 @@ function renderPanel(
       availableVideoTracks: [{ size: { width: 1920, height: 1080 } }],
     }),
   );
-  return { onShorten };
+  return { onShorten, player };
 }
 
 const button = (name: string) => screen.getByRole("button", { name });
@@ -502,5 +503,61 @@ describe("Edit video — how to hide the dancers", () => {
         prompts: [expect.anything(), expect.anything()],
       }),
     );
+  });
+});
+
+describe("Edit video — cutting precisely", () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  /** Where the preview was last sent, given the mock's currentTime stays at 0. */
+  const lastSeek = (player: { seekBy: jest.Mock }) =>
+    player.seekBy.mock.calls.at(-1)?.[0];
+
+  it("moves each end by a tenth of a second and says so to the tenth", () => {
+    renderPanel(5);
+
+    fireEvent.press(button("Start 0.1 s later"));
+    fireEvent.press(button("End 0.1 s earlier"));
+    fireEvent.press(button("End 0.1 s earlier"));
+
+    expect(screen.getByTestId("trim-start")).toHaveTextContent("0:00.1");
+    expect(screen.getByTestId("trim-end")).toHaveTextContent("0:04.8");
+    expect(button("Shorten to 4.7 s")).toBeEnabled();
+  });
+
+  it("holds the frame at the moved start, then plays the selection from it", () => {
+    const { player } = renderPanel(5);
+    player.play.mockClear();
+
+    fireEvent.press(button("Start 0.1 s later"));
+
+    expect(player.pause).toHaveBeenCalled();
+    expect(lastSeek(player)).toBeCloseTo(0.1);
+    expect(player.play).not.toHaveBeenCalled();
+    act(() => jest.advanceTimersByTime(1200));
+    expect(lastSeek(player)).toBeCloseTo(0.1);
+    expect(player.play).toHaveBeenCalled();
+  });
+
+  it("holds the last frame kept at the moved end, then plays up to the cut", () => {
+    const { player } = renderPanel(5);
+
+    fireEvent.press(button("End 0.1 s earlier"));
+
+    expect(lastSeek(player)).toBeCloseTo(4.9 - 1 / 30);
+    act(() => jest.advanceTimersByTime(1200));
+    expect(lastSeek(player)).toBeCloseTo(4.9 - 1.5);
+  });
+
+  it("does not play on after the cut was handed over", () => {
+    const { player } = renderPanel(5);
+    player.play.mockClear();
+
+    fireEvent.press(button("End 0.1 s earlier"));
+    fireEvent.press(button("Shorten to 4.9 s"));
+    act(() => jest.advanceTimersByTime(1200));
+
+    expect(player.play).not.toHaveBeenCalled();
   });
 });

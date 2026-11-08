@@ -15,6 +15,9 @@ Unqualified paths are relative to `src/anonymize/`.
   ends in one button naming the result ("Shorten to 18 s"); options that change the job are
   `SwitchRow`s above that button, never chips. A disabled button says why under it. Before a cut
   a switch offers to transcribe the whole video first, queued ahead of the cut.
+- **Trim bar frames**: dragging a handle pauses, enables `scrubbingModeOptions` and seeks per
+  step (end handle: last kept frame); after a drag or 0.1 s step the frame holds
+  `HOLD_FRAME_MS`, then playback resumes. The zoom (`zoomView`) stays put while dragging.
 - **Two ways to anonymize**, picked on the tap step under _How to hide them_ (a
   `SegmentedControl`, each provider's `descriptionKey` under it): _Silhouettes_ (the default,
   first in `ALL_PROVIDERS`) and _Faces only_ (the dancers as filmed, heads covered by an opaque

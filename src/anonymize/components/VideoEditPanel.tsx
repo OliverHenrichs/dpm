@@ -21,7 +21,14 @@ import {
   tapToVideoPoint,
   videoPointToView,
 } from "@/src/anonymize/model/promptPoints";
-import { TrimLimits, TrimWindow } from "@/src/anonymize/model/trimWindow";
+import {
+  decimalMark,
+  formatLength,
+  grabbedTime,
+  TrimGrab,
+  TrimLimits,
+  TrimWindow,
+} from "@/src/anonymize/model/trimWindow";
 import {
   AnonymizeProvider,
   AnonymizeRequest,
@@ -88,8 +95,17 @@ const DANCER_COLOURS = ["#F59E0B", "#14B8A6"];
 const MARKER = 28;
 /** Shortest selection worth cutting, in seconds. */
 const MIN_SECONDS = 1;
-/** A window this close to both ends of the clip is the whole clip — nothing to shorten. */
-const WHOLE_CLIP_SLACK = 0.1;
+/**
+ * A window this close to both ends of the clip is the whole clip — nothing to shorten. Under
+ * the trim bar's 0.1 s step, so one step off either end is a cut.
+ */
+const WHOLE_CLIP_SLACK = 0.05;
+/** How long the preview holds a handle's frame after a drag or step, before playing again. */
+const HOLD_FRAME_MS = 1200;
+/** After the end handle moves, the preview plays this much up to the cut, in seconds. */
+const END_LEAD_SECONDS = 1.5;
+/** Seeks closer together than about a frame show the same picture; skip them. */
+const FRAME_SECONDS = 1 / 30;
 
 /**
  * Edit a pattern's video, one job per tab: *Shorten*, *Anonymize* (the user-facing word for
@@ -122,7 +138,7 @@ const VideoEditPanel: React.FC<Props> = ({
   previewer,
   outliner,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [provider, setProvider] = useState<AnonymizeProvider | undefined>(
     providers[0],
   );
@@ -136,6 +152,10 @@ const VideoEditPanel: React.FC<Props> = ({
   // How many dancers to tap, for a provider that can follow fewer than a couple.
   const [dancers, setDancers] = useState(providers[0]?.promptCount ?? 0);
   const [playhead, setPlayhead] = useState(0);
+  // A trim handle is held: the preview shows its frame instead of looping.
+  const [scrubbing, setScrubbing] = useState(false);
+  // Where to play on from once a handle's frame has been held, and after how long.
+  const [resume, setResume] = useState<{ from: number; afterMs: number }>();
   const {
     preview,
     render: renderPreviewOf,
@@ -176,7 +196,10 @@ const VideoEditPanel: React.FC<Props> = ({
   // frame still instead, for the taps.
   useEventListener(player, "timeUpdate", ({ currentTime }) => {
     setPlayhead(currentTime);
-    if (prompting || !loopSelection || trim.end <= trim.start) return;
+    // Not while a handle's frame is shown: that frame may be the cut itself.
+    const holding = scrubbing || !!resume;
+    if (prompting || holding || !loopSelection || trim.end <= trim.start)
+      return;
     if (currentTime >= trim.end || currentTime < trim.start - 0.5) {
       player.seekBy(trim.start - currentTime);
     }
@@ -196,8 +219,63 @@ const VideoEditPanel: React.FC<Props> = ({
     playerRef.current.muted = loopSelection;
   }, [player, loopSelection]);
 
+  // Showing a handle's frame while it is dragged, then holding it a moment before playing on.
+  const shownFrame = useRef(-1);
+  useEffect(() => {
+    if (!resume) return;
+    const timer = setTimeout(() => {
+      player.seekBy(resume.from - player.currentTime);
+      player.play();
+      setResume(undefined);
+    }, resume.afterMs);
+    return () => clearTimeout(timer);
+  }, [resume, player]);
+  /** The frame a handle stands for: the end's is the last one kept, just before the cut. */
+  const frameAt = (w: TrimWindow, grab: TrimGrab) =>
+    grab === "end"
+      ? Math.max(w.start, w.end - FRAME_SECONDS)
+      : grabbedTime(w, grab);
+  const showFrame = (seconds: number) => {
+    if (Math.abs(seconds - shownFrame.current) < FRAME_SECONDS) return;
+    shownFrame.current = seconds;
+    seekTo(seconds);
+    setPlayhead(seconds);
+  };
+  /**
+   * A handle was picked up: pause and follow it frame by frame. ExoPlayer's scrubbing mode
+   * keeps the decoder warm between the many seeks a drag makes.
+   */
+  const startScrub = (grab: TrimGrab) => {
+    setResume(undefined);
+    setScrubbing(true);
+    player.pause();
+    playerRef.current.scrubbingModeOptions = { scrubbingModeEnabled: true };
+    shownFrame.current = -1;
+    showFrame(frameAt(trim, grab));
+  };
+  const scrub = (next: TrimWindow, grab: TrimGrab) => {
+    setTrim(next);
+    showFrame(frameAt(next, grab));
+  };
+  /**
+   * A drag or step ended: hold the frame the handle is on, so the cut can be judged, then play
+   * the selection again — from the start, or for the end handle the last moments up to the cut.
+   */
+  const settleTrim = (next: TrimWindow, grab: TrimGrab) => {
+    playerRef.current.scrubbingModeOptions = { scrubbingModeEnabled: false };
+    setScrubbing(false);
+    player.pause();
+    shownFrame.current = -1;
+    showFrame(frameAt(next, grab));
+    const from =
+      grab === "end"
+        ? Math.max(next.start, next.end - END_LEAD_SECONDS)
+        : next.start;
+    setResume({ from, afterMs: grab === "move" ? 0 : HOLD_FRAME_MS });
+  };
+
   const length = trim.end - trim.start;
-  const seconds = Math.round(length);
+  const seconds = formatLength(length, decimalMark(i18n.language));
   const loaded = duration > 0;
   const isWholeClip =
     trim.start <= WHOLE_CLIP_SLACK && trim.end >= duration - WHOLE_CLIP_SLACK;
@@ -262,6 +340,7 @@ const VideoEditPanel: React.FC<Props> = ({
 
   const anonymize = () => {
     if (!provider) return;
+    setResume(undefined);
     player.pause();
     if (!needsTaps) {
       onAnonymize(provider, request());
@@ -324,8 +403,9 @@ const VideoEditPanel: React.FC<Props> = ({
       <TrimWindowBar
         limits={limits}
         window={trim}
-        onChange={setTrim}
-        onChangeEnd={(w) => seekTo(w.start)}
+        onDragStart={startScrub}
+        onChange={scrub}
+        onChangeEnd={settleTrim}
         playhead={playhead}
       />
     </>
@@ -357,6 +437,7 @@ const VideoEditPanel: React.FC<Props> = ({
           {action(
             isWholeClip ? t("videoShorten") : t("videoShortenTo", { seconds }),
             () => {
+              setResume(undefined);
               player.pause();
               onShorten({
                 sourceUri,
@@ -534,7 +615,10 @@ const VideoEditPanel: React.FC<Props> = ({
             <SegmentedControl
               segments={tabs}
               value={tab}
-              onChange={setTab}
+              onChange={(next) => {
+                setResume(undefined);
+                setTab(next);
+              }}
               accessibilityLabel={t("videoEditTitle")}
             />
           )}

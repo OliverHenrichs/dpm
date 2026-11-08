@@ -13,6 +13,10 @@ these tools.
 - Edit Figure → Videos → **Edit video** on a phone video opens a sheet with three tabs:
   _Shorten_, _Anonymize_ and _Speech_. Online videos can't be edited.
 - **Shorten** keeps the part chosen on a trim bar, sound included.
+- **The trim bar** (Shorten and Anonymize) shows the frame under a handle while it is dragged,
+  then holds it a moment before playing on. Under the bar each end has its time to the tenth of
+  a second with buttons that move it by 0.1 s, and a zoom button spans the bar over just the
+  selection and its surroundings, for cutting a long video down to a few seconds.
 - **Anonymize** turns up to 30 seconds into a video that hides who the dancers are. It is marked
   _Experimental_: slow on older phones, and tracking can lose a dancer.
   - _Who to hide_: one dancer or a couple. The user taps each dancer on the first frame, and the
