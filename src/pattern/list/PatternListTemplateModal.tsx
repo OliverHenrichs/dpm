@@ -10,6 +10,8 @@ import {
   createBachataList,
   createBlankList,
   createLindyHopList,
+  createLatinList,
+  createStandardList,
   createPatternList,
   createPatternType,
   createSalsaList,
@@ -171,6 +173,20 @@ const TEMPLATES: Template[] = [
     nameKey: "templateLindyName",
     descriptionKey: "templateLindyDescription",
     create: createLindyHopList,
+  },
+  {
+    id: "standard",
+    dance: "standard",
+    nameKey: "templateStandardName",
+    descriptionKey: "templateStandardDescription",
+    create: createStandardList,
+  },
+  {
+    id: "latin",
+    dance: "latin",
+    nameKey: "templateLatinName",
+    descriptionKey: "templateLatinDescription",
+    create: createLatinList,
   },
 ];
 

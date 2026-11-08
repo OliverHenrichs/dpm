@@ -54,4 +54,20 @@ using it, and never invent a figure.
 Other dances follow the same rule: only a verified standard term or rhythm goes into a template.
 Argentine tango has no basic rhythm on purpose.
 
+## Dance terms (Standard and Latin)
+
+Figure names follow the ISTD Bronze syllabus, in English as everywhere else: _Natural Turn_,
+_Closed Change_, _Feather Step_, _Chassé from Promenade Position_, _Fan_, _Hockey Stick_,
+_Change of Places Right to Left_. The dances' own names are translated (De _Langsamer Walzer_,
+_Wiener Walzer_, _Slowfox_), the group names too (De _Standard_ and _Latein_).
+
+- Timing is the syllabus's. Tango, Slow Foxtrot and Quickstep are written in slows and quicks,
+  counted in quicks (`S Q Q` is four counts). Waltz, Viennese Waltz and Paso Doble are counted in
+  beats (Waltz `1 2 3`, its Chassé from Promenade Position `1 2&3`); Samba and Jive use `a`
+  (`1a2`, `3a4`).
+- Cha Cha Cha and Rumba are counted from 2 (`2 3 4&1`, `2 3 4-1`), which a rhythm cannot write,
+  so their figures carry counts and no rhythm.
+- A prerequisite only where the syllabus makes one: the Natural Spin Turn starts with the Natural
+  Turn's first three steps; the Hockey Stick and the Alemana start from the Fan.
+
 Why variations are modifiers: [0009](../decisions/0009-variations-are-modifiers.md).

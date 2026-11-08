@@ -1,7 +1,10 @@
 import { createExampleList } from "@/src/pattern/data/ExampleList";
+import { rhythmMatchesCounts } from "@/src/pattern/rhythm/rhythm";
 import {
   createPatternType,
   createTemplateModifiers,
+  createLatinList,
+  createStandardList,
   createZoukList,
   resolveTemplatePatterns,
   TEMPLATE_FOUNDATIONAL_PATTERNS,
@@ -96,6 +99,81 @@ describe("resolving template patterns", () => {
     expect(byName("Viradinha").prerequisites).toEqual([byName("Basic").id]);
     expect(byName("Lateral").prerequisites).toEqual([byName("Viradinha").id]);
     expect(byName("Basic").rhythm).toBe("1 (2) 3 4 5 (6) 7 8");
+  });
+
+  it("gives every template figure a type of its list and a rhythm that fits its counts", () => {
+    const lists = { standard: createStandardList(), latin: createLatinList() };
+    for (const [id, list] of Object.entries(lists)) {
+      const template = TEMPLATE_FOUNDATIONAL_PATTERNS[id];
+      const patterns = resolveTemplatePatterns(
+        template,
+        list.patternTypes,
+        id as "standard",
+      );
+      expect(patterns).toHaveLength(template.length);
+      for (const pattern of patterns) {
+        if (pattern.rhythm !== undefined) {
+          expect(rhythmMatchesCounts(pattern.rhythm, pattern.counts)).toBe(
+            true,
+          );
+        }
+      }
+    }
+    for (const [id, template] of Object.entries(
+      TEMPLATE_FOUNDATIONAL_PATTERNS,
+    )) {
+      for (const tp of template) {
+        if (tp.rhythm !== undefined) {
+          expect([
+            id,
+            tp.name,
+            rhythmMatchesCounts(tp.rhythm, tp.counts),
+          ]).toEqual([id, tp.name, true]);
+        }
+      }
+    }
+  });
+
+  it("builds on a figure of the same dance in Standard and Latin", () => {
+    const list = createStandardList();
+    const patterns = resolveTemplatePatterns(
+      TEMPLATE_FOUNDATIONAL_PATTERNS.standard,
+      list.patternTypes,
+      "standard",
+    );
+    const typeId = (slug: string) =>
+      list.patternTypes.find((type) => type.slug === slug)!.id;
+    const find = (name: string, slug: string) =>
+      patterns.find((p) => p.name === name && p.typeId === typeId(slug))!;
+    expect(find("Natural Spin Turn", "waltz").prerequisites).toEqual([
+      find("Natural Turn", "waltz").id,
+    ]);
+    expect(
+      find("RF Forward Change Step Natural to Reverse", "viennese-waltz")
+        .prerequisites,
+    ).toEqual([
+      find("Natural Turn", "viennese-waltz").id,
+      find("Reverse Turn", "viennese-waltz").id,
+    ]);
+    expect(find("Feather Step", "slow-foxtrot").rhythm).toBe("S Q Q");
+
+    const latin = createLatinList();
+    const latinPatterns = resolveTemplatePatterns(
+      TEMPLATE_FOUNDATIONAL_PATTERNS.latin,
+      latin.patternTypes,
+      "latin",
+    );
+    const latinType = (slug: string) =>
+      latin.patternTypes.find((type) => type.slug === slug)!.id;
+    const rumbaFan = latinPatterns.find(
+      (p) => p.name === "Fan" && p.typeId === latinType("rumba"),
+    )!;
+    const rumbaHockeyStick = latinPatterns.find(
+      (p) => p.name === "Hockey Stick" && p.typeId === latinType("rumba"),
+    )!;
+    expect(rumbaHockeyStick.prerequisites).toEqual([rumbaFan.id]);
+    // Cha Cha Cha and Rumba start on 2, which a rhythm cannot write.
+    expect(rumbaFan.rhythm).toBeUndefined();
   });
 
   it("drops a prerequisite that was left out", () => {

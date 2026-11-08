@@ -57,7 +57,9 @@ and quicks; beat bubbles and _Pause_ never follow them. While the field is empty
 basic rhythms for the counts (`basicRhythms`), one tap each, and nothing else: no step on every beat.
 They were taken out on 2026-10-11 as confusing and brought back on 2026-10-18 after a tester asked
 for them, now that the rhythm section is folded by default. Templates give their starter patterns the dance's basic rhythm (`defaultRhythm`, from
-`DANCE_RHYTHMS`; the dance is `IPatternList.dance`, `src/pattern/types/Dance.ts`).
+`DANCE_RHYTHMS`; the dance is `IPatternList.dance`, `src/pattern/types/Dance.ts`). A template
+figure's own `rhythm` wins (Standard and Latin, which group five dances and so have no basic
+rhythm).
 
 **Only add a dance's rhythm when it is the standard one**, verified, not guessed. Argentine tango
 deliberately has none. A new dance goes in `DANCES`, `DANCE_NAME_KEYS` (and its locale keys), and
