@@ -1,18 +1,12 @@
 <en-US>
-1.6.0
-• Sequences: keep a routine, Rallye or workshop combination as figures in dancing order.
-• Add figures, variants and free steps; counts add up, in eights for salsa and bachata.
-• A video per sequence: mark each step, play from a step, loop it.
-• Often next suggests the following figure from your other sequences.
-• Show a sequence on the Map; a figure's details name its sequences.
-• Timeline lanes slide aside while you drag one.
+1.7.0
+• New templates: Standard and Latin, one figure type per dance, with ISTD Bronze starter figures.
+• Shorten and Anonymize: see the frame while you drag, 0.1 s steps, and zoom into the selection.
+• Anonymize no longer stops partway through a Full HD video of a couple.
 </en-US>
 <de-DE>
-1.6.0
-• Folgen: Choreografie, Rallye oder Workshop-Kombination als Figuren in Tanzreihenfolge.
-• Figuren, Varianten und freie Schritte; die Counts werden addiert, bei Salsa und Bachata in Achtern.
-• Ein Video pro Folge: Schritte markieren, ab einem Schritt abspielen, wiederholen.
-• Oft als Nächstes schlägt die nächste Figur aus deinen anderen Folgen vor.
-• Folge auf der Karte zeigen; die Details einer Figur nennen ihre Folgen.
-• Im Zeitstrahl weichen beim Ziehen die anderen Bahnen aus.
+1.7.0
+• Neue Vorlagen: Standard und Latein, ein Figurentyp je Tanz, mit Startfiguren aus ISTD Bronze.
+• Kürzen und Anonymisieren: Bild beim Ziehen, Schritte von 0,1 s und Zoom auf die Auswahl.
+• Anonymisieren bricht bei Full-HD-Videos eines Paars nicht mehr mittendrin ab.
 </de-DE>

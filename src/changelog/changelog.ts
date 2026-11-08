@@ -20,6 +20,57 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.7.0",
+    date: "2026-11-08",
+    notes: {
+      en: [
+        "Two new templates for ballroom dancers: *Standard* (Waltz, Tango, Viennese Waltz, Slow Foxtrot, Quickstep) and *Latin* (Samba, Cha Cha Cha, Rumba, Paso Doble, Jive). Each dance is a figure type. The starter figures come from the ISTD Bronze syllabus, with their counts and, where the syllabus gives one, their timing. Transcription knows the dances' terms.",
+        "On Android, shortening a video is more precise. In *Edit video*, under *Shorten* and *Anonymize*, dragging an end of the bar shows the frame under it. Each end shows its time to a tenth of a second, with buttons that move it by 0.1 s. The zoom button spreads the bar over your selection, so you can cut a long video down to a few seconds.",
+        "*Anonymize* no longer stops partway through a Full HD video of a couple.",
+      ],
+      zh: [
+        "为国标舞舞者新增两个模板：“摩登舞”（华尔兹、探戈、维也纳华尔兹、狐步、快步）和“拉丁舞”（桑巴、恰恰、伦巴、斗牛舞、牛仔舞）。每支舞是一种舞步类型。初始舞步来自 ISTD 铜牌教学大纲，带有拍数，大纲给出节奏时也带有节奏。转写能识别这些舞的术语。",
+        "在 Android 上，剪短视频更精确了。在“编辑视频”的“剪短”和“匿名化”中，拖动进度条的一端时会显示该处的画面。每一端都显示精确到十分之一秒的时间，并有按钮可以按 0.1 秒移动。缩放按钮会把进度条铺开在所选片段上，这样长视频也能剪到只剩几秒。",
+        "“匿名化”处理双人全高清视频时不会再中途停止。",
+      ],
+      hi: [
+        "बॉलरूम डांसरों के लिए दो नए टेम्पलेट: “स्टैंडर्ड” (वॉल्ट्ज़, टैंगो, विनीज़ वॉल्ट्ज़, स्लो फ़ॉक्सट्रॉट, क्विकस्टेप) और “लैटिन” (सांबा, चा-चा-चा, रुम्बा, पासो डोबले, जाइव)। हर नृत्य एक पैटर्न प्रकार है। शुरुआती पैटर्न ISTD ब्रॉन्ज़ सिलेबस से हैं, अपने काउंट के साथ, और जहाँ सिलेबस टाइमिंग देता है, वहाँ टाइमिंग के साथ भी। ट्रांसक्रिप्शन इन नृत्यों के शब्द पहचानता है।",
+        "Android पर वीडियो छोटा करना अब ज़्यादा सटीक है। “वीडियो संपादित करें” में “छोटा करें” और “गुमनाम करें” के नीचे, बार का कोई सिरा खींचने पर उसके नीचे का फ़्रेम दिखता है। हर सिरा अपना समय सेकंड के दसवें हिस्से तक दिखाता है, और बटन उसे 0.1 सेकंड खिसकाते हैं। ज़ूम बटन बार को आपके चुने हिस्से पर फैला देता है, ताकि लंबे वीडियो को भी कुछ सेकंड तक काटा जा सके।",
+        "“गुमनाम करें” अब जोड़ी के Full HD वीडियो पर बीच में नहीं रुकता।",
+      ],
+      es: [
+        "Dos plantillas nuevas para bailes de salón: *Bailes estándar* (Vals inglés, Tango, Vals vienés, Foxtrot lento, Quickstep) y *Bailes latinos* (Samba, Chachachá, Rumba, Pasodoble, Jive). Cada baile es un tipo de figura. Las figuras iniciales son del programa Bronze de la ISTD, con sus tiempos y, cuando el programa lo indica, su ritmo. La transcripción conoce los términos de estos bailes.",
+        "En Android, recortar un vídeo es más preciso. En *Editar vídeo*, en *Recortar* y *Anonimizar*, al arrastrar un extremo de la barra se ve el fotograma que hay debajo. Cada extremo muestra su tiempo con décimas de segundo, con botones que lo mueven 0,1 s. El botón de zoom extiende la barra sobre tu selección, para que puedas dejar un vídeo largo en unos pocos segundos.",
+        "*Anonimizar* ya no se detiene a mitad de un vídeo Full HD de una pareja.",
+      ],
+      fr: [
+        "Deux nouveaux modèles pour les danses de salon : *Danses standard* (Valse lente, Tango, Valse viennoise, Slow fox, Quickstep) et *Danses latines* (Samba, Cha-cha-cha, Rumba, Paso doble, Jive). Chaque danse est un type de figure. Les figures de départ viennent du programme Bronze de l'ISTD, avec leurs temps et, quand le programme en donne un, leur rythme. La transcription connaît les termes de ces danses.",
+        "Sur Android, raccourcir une vidéo est plus précis. Dans *Modifier la vidéo*, sous *Raccourcir* et *Anonymiser*, faire glisser une extrémité de la barre affiche l'image qui se trouve dessous. Chaque extrémité indique son temps au dixième de seconde, avec des boutons qui la déplacent de 0,1 s. Le bouton de zoom étale la barre sur votre sélection, pour réduire une longue vidéo à quelques secondes.",
+        "*Anonymiser* ne s'arrête plus en cours de route sur une vidéo Full HD d'un couple.",
+      ],
+      ar: [
+        "قالبان جديدان لراقصي الصالات: «الرقصات القياسية (ستاندرد)» (الفالس، التانغو، الفالس الفييني، الفوكستروت البطيء، الكويك ستب) و«الرقصات اللاتينية» (السامبا، التشا تشا تشا، الرومبا، الباسو دوبلي، الجايف). كل رقصة نوع حركات. الحركات الأولية من منهج ISTD البرونزي، مع عدّاتها، ومع توقيتها حيث يحدده المنهج. ويعرف التفريغ النصي مصطلحات هذه الرقصات.",
+        "على Android، صار تقصير الفيديو أدق. في «تعديل الفيديو»، تحت «تقصير» و«إخفاء الهوية»، يعرض سحب طرف الشريط الإطار الذي تحته. يعرض كل طرف وقته لأقرب عُشر ثانية، مع أزرار تحركه 0.1 ث. ويمد زر التكبير الشريط على الجزء المحدد، فتستطيع تقصير فيديو طويل إلى بضع ثوانٍ.",
+        "لم يعد «إخفاء الهوية» يتوقف في منتصف فيديو Full HD لثنائي.",
+      ],
+      bn: [
+        "বলরুম নাচিয়েদের জন্য দুটি নতুন টেমপ্লেট: “স্ট্যান্ডার্ড” (ওয়াল্টজ, ট্যাঙ্গো, ভিয়েনিজ ওয়াল্টজ, স্লো ফক্সট্রট, কুইকস্টেপ) ও “ল্যাটিন” (সাম্বা, চা-চা-চা, রুম্বা, পাসো দোবলে, জাইভ)। প্রতিটি নাচ একটি প্যাটার্নের ধরন। শুরুর প্যাটার্নগুলো ISTD ব্রোঞ্জ সিলেবাস থেকে, তাদের কাউন্টসহ, আর সিলেবাস যেখানে টাইমিং দেয় সেখানে টাইমিংসহ। ট্রান্সক্রিপশন এই নাচগুলোর পরিভাষা চেনে।",
+        "Android-এ ভিডিও ছোট করা এখন আরও নিখুঁত। “ভিডিও সম্পাদনা”-য় “ছোট করুন” ও “পরিচয় গোপন করুন”-এর নিচে, বারের একটি প্রান্ত টানলে তার নিচের ফ্রেমটি দেখা যায়। প্রতিটি প্রান্ত তার সময় সেকেন্ডের দশমাংশ পর্যন্ত দেখায়, আর বোতাম দিয়ে সেটি 0.1 সেকেন্ড করে সরানো যায়। জুম বোতাম বারটিকে আপনার বাছাই করা অংশের উপর ছড়িয়ে দেয়, যাতে লম্বা ভিডিওকেও কয়েক সেকেন্ডে কাটা যায়।",
+        "“পরিচয় গোপন করুন” এখন জুটির Full HD ভিডিওর মাঝপথে আর থেমে যায় না।",
+      ],
+      pt: [
+        "Dois modelos novos para danças de salão: *Danças standard* (Valsa inglesa, Tango, Valsa vienense, Slow foxtrot, Quickstep) e *Danças latinas* (Samba, Cha-cha-cha, Rumba, Paso doble, Jive). Cada dança é um tipo de figura. As figuras iniciais vêm do programa Bronze da ISTD, com os tempos e, quando o programa indica, o ritmo. A transcrição conhece os termos dessas danças.",
+        "No Android, encurtar um vídeo ficou mais preciso. Em *Editar vídeo*, em *Encurtar* e *Anonimizar*, ao arrastar uma ponta da barra aparece o quadro que está embaixo dela. Cada ponta mostra o tempo com décimos de segundo, com botões que a movem 0,1 s. O botão de zoom estende a barra sobre a seleção, para você cortar um vídeo longo até poucos segundos.",
+        "*Anonimizar* não para mais no meio de um vídeo Full HD de um casal.",
+      ],
+      de: [
+        "Zwei neue Vorlagen für Gesellschaftstanz: *Standard* (Langsamer Walzer, Tango, Wiener Walzer, Slowfox, Quickstep) und *Latein* (Samba, Cha-Cha-Cha, Rumba, Paso Doble, Jive). Jeder Tanz ist ein Figurentyp. Die Startfiguren stammen aus dem ISTD-Bronze-Syllabus. Sie haben ihre Counts und, wo der Syllabus es vorgibt, ihr Timing. Die Transkription kennt die Begriffe dieser Tänze.",
+        "Unter Android lässt sich ein Video jetzt genauer kürzen. Ziehst du in *Video bearbeiten* unter *Kürzen* oder *Anonymisieren* ein Ende der Leiste, siehst du das Bild an dieser Stelle. Jedes Ende zeigt seine Zeit auf die Zehntelsekunde genau. Mit den Knöpfen darunter verschiebst du es um 0,1 s. Der Zoom-Knopf zieht die Leiste über deine Auswahl auf. So kürzt du auch ein langes Video auf wenige Sekunden.",
+        "*Anonymisieren* bricht bei Full-HD-Videos eines Paars nicht mehr mittendrin ab.",
+      ],
+    },
+  },
+  {
     version: "1.6.0",
     date: "2026-11-05",
     notes: {
