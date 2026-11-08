@@ -647,7 +647,7 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
         description: "A continuous turn to the left, six steps over two bars.",
       },
       {
-        name: "Forward Change Step (Natural to Reverse)",
+        name: "RF Forward Change Step Natural to Reverse",
         typeSlug: "viennese-waltz",
         counts: 3,
         rhythm: "1 2 3",
@@ -657,7 +657,7 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
         prerequisites: ["Natural Turn", "Reverse Turn"],
       },
       {
-        name: "Forward Change Step (Reverse to Natural)",
+        name: "LF Forward Change Step Reverse to Natural",
         typeSlug: "viennese-waltz",
         counts: 3,
         rhythm: "1 2 3",
@@ -693,7 +693,7 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
           "A turn to the right: slow, quick, quick, slow, slow, slow.",
       },
       {
-        name: "Reverse Turn",
+        name: "Reverse Turn (incorporating Feather Finish)",
         typeSlug: "slow-foxtrot",
         counts: 8,
         rhythm: "S Q Q S Q Q",
@@ -716,7 +716,7 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
         counts: 6,
         rhythm: "S Q Q S",
         level: "beginner",
-        description: "A chassé to the side: slow, quick, quick, slow.",
+        description: "A chassé: slow, quick, quick, slow.",
       },
       {
         name: "Forward Lock",
@@ -753,7 +753,8 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
         counts: 4,
         rhythm: "1a2 3a4",
         level: "beginner",
-        description: "The basic turning to the left, counted 1 a 2, 1 a 2.",
+        description:
+          "The basic starting with the left foot forward; it may turn to the left. Counted 1 a 2, 1 a 2.",
       },
       {
         name: "Whisks",
@@ -857,12 +858,13 @@ export const TEMPLATE_FOUNDATIONAL_PATTERNS: Record<string, TemplatePattern[]> =
         description: "Marching steps forward or back, one step a beat.",
       },
       {
-        name: "Chassé to Right",
+        name: "Chassés to Right or Left",
         typeSlug: "paso-doble",
         counts: 4,
         rhythm: "1 2 3 4",
         level: "beginner",
-        description: "Chassés travelling to the man's right, one step a beat.",
+        description:
+          "Chassés travelling to the man's right or left, one step a beat.",
       },
       {
         name: "Separation",

@@ -149,7 +149,7 @@ describe("resolving template patterns", () => {
       find("Natural Turn", "waltz").id,
     ]);
     expect(
-      find("Forward Change Step (Natural to Reverse)", "viennese-waltz")
+      find("RF Forward Change Step Natural to Reverse", "viennese-waltz")
         .prerequisites,
     ).toEqual([
       find("Natural Turn", "viennese-waltz").id,

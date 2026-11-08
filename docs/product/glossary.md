@@ -62,8 +62,9 @@ _Change of Places Right to Left_. The dances' own names are translated (De _Lang
 _Wiener Walzer_, _Slowfox_), the group names too (De _Standard_ and _Latein_).
 
 - Timing is the syllabus's. Tango, Slow Foxtrot and Quickstep are written in slows and quicks,
-  counted in quicks (`S Q Q` is four counts). Waltz, Viennese Waltz and Paso Doble take one step a
-  beat; Samba and Jive use `a` (`1a2`, `3a4`).
+  counted in quicks (`S Q Q` is four counts). Waltz, Viennese Waltz and Paso Doble are counted in
+  beats (Waltz `1 2 3`, its Chassé from Promenade Position `1 2&3`); Samba and Jive use `a`
+  (`1a2`, `3a4`).
 - Cha Cha Cha and Rumba are counted from 2 (`2 3 4&1`, `2 3 4-1`), which a rhythm cannot write,
   so their figures carry counts and no rhythm.
 - A prerequisite only where the syllabus makes one: the Natural Spin Turn starts with the Natural
