@@ -216,6 +216,10 @@ variables. Copy `.env.example` to `.env` (gitignored); without the Firebase vari
   `eas.json`) picks the application id, launcher name and URL scheme, so the variants install side
   by side. Nothing in the app may depend on the application id. Signing is in the README; no
   keystore is ever committed.
+- **R8 runs on Android release builds** (preview, production; `expo-build-properties`), so code
+  reached only from C++ or by reflection must be kept in `proguard-rules.pro`. A crash only a
+  release build shows usually means a missing rule; a new native library may need one. Test a
+  native change in a preview build too, not only the dev client.
 - **App icon colour** (Settings, `src/settings/appIcon.ts`) switches between icon sets that
   `expo-alternate-app-icons` registers at build time. A new colour means icon files in
   `assets/images/icon-colors/`, entries in the plugin list, `APP_ICON_COLORS` (tokens.ts) and
