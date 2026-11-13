@@ -29,10 +29,6 @@ const ACCEPTED = {
   // build tooling only, matching our own patterns, never in the app bundle.
   // The fix is minimatch 11, a major none of these parents allow.
   "GHSA-g3hv-75wg-m249": { name: "minimatch", until: "2026-12-01" },
-  // expo -> @expo/cli -> zod@3. Dev tooling only (validates our own app config),
-  // never in the app bundle. No patched 3.x exists; the fix is a major Expo upgrade.
-  // The root zod@4 (eslint-plugin-react-hooks) is overridden to a patched release.
-  "GHSA-mrhx-c7xc-m3w5": { name: "zod", until: "2026-12-01" },
 };
 
 const WARN_DAYS = 7;
