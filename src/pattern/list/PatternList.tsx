@@ -212,8 +212,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     <>
       <PatternListHeader
         sortLabel={
-          patternSortOptions(t).find((o) => o.field === sortConfig.field)
-            ?.label ?? ""
+          patternSortOptions(t).find((o) => o.field === sortConfig.field)!.label
         }
         sortOrder={sortConfig.order}
         activeFilters={activeFilters}
