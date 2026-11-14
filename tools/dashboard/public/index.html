@@ -1185,7 +1185,8 @@
         if (s < 60) return "just now";
         if (s < 3600) return `${Math.round(s / 60)} min ago`;
         if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-        return `${Math.round(s / 86400)} days ago`;
+        const d = Math.round(s / 86400);
+        return `${d} ${d === 1 ? "day" : "days"} ago`;
       }
 
       const toastEl = document.getElementById("toast");
@@ -1442,7 +1443,7 @@
         if (tab === "reports") renderReports(force);
         if (tab === "data" && force) renderData();
         if (tab === "usage") renderUsage(force);
-        if (tab === "play") renderPlay();
+        if (tab === "play") renderPlay(force);
         if (tab === "access" && force) renderAccess();
       }
 
@@ -1544,6 +1545,35 @@
               "Subspace load",
               "usage",
             ),
+          ...["crash", "anr"].map((k) => {
+            const v = play?.summary?.[k];
+            return (
+              ["warn", "over"].includes(v?.level) &&
+              card(
+                v.level === "over" ? "urgent" : "warn",
+                rate(v.perceived),
+                k === "crash"
+                  ? v.level === "over"
+                    ? "Crash rate above Play's limit"
+                    : "Crash rate near Play's limit"
+                  : v.level === "over"
+                    ? "ANR rate above Play's limit"
+                    : "ANR rate near Play's limit",
+                "Hull integrity",
+                "play",
+              )
+            );
+          }),
+          play?.summary?.unanswered > 0 &&
+            card(
+              "",
+              play.summary.unanswered,
+              play.summary.unanswered === 1
+                ? "Play review without a reply"
+                : "Play reviews without a reply",
+              "Comms",
+              "play",
+            ),
         ].filter(Boolean);
         box.replaceChildren(
           panel(
@@ -1573,24 +1603,7 @@
             "div",
             { className: "two", style: "margin-top:16px" },
             overviewQuota(),
-            panel(
-              "Hull integrity",
-              "App vitals",
-              h(
-                "p",
-                { className: "muted" },
-                "Crash and ANR rates from Google Play arrive in phase 3.",
-              ),
-              h(
-                "button",
-                {
-                  type: "button",
-                  className: "btn quiet",
-                  onclick: () => go("play"),
-                },
-                "What's planned",
-              ),
-            ),
+            overviewVitals(),
           ),
         );
       }
@@ -2179,38 +2192,704 @@
         );
       }
 
-      function renderPlay() {
-        document
-          .getElementById("tab-play")
-          .replaceChildren(
-            panel(
-              "Comms // not connected",
-              "Play",
-              h("p", {}, "Phase 3 brings this tab:"),
-              h(
-                "ul",
-                {},
-                h(
-                  "li",
-                  {},
-                  "Crash and ANR rates per version, with the top crashes",
-                ),
-                h("li", {}, "Slow starts and frozen frames"),
-                h(
-                  "li",
-                  {},
-                  "Reviews and ratings, fetched daily, with a reply box",
-                ),
-                h("li", {}, "Which build is on which track"),
-                h("li", {}, "Installs per day from Play's monthly reports"),
-              ),
-              h(
-                "p",
-                { className: "small muted" },
-                "It needs the dpm-ops account added in Play Console with View app information.",
-              ),
+      /* ---------- play ---------- */
+      let play = null; // from /api/play
+      let playKey = "";
+      const replyDrafts = new Map(); // review id → unsent reply text
+      const rate = (r) =>
+        r == null ? "–" : `${(r * 100).toFixed(r < 0.1 ? 2 : 1)}%`;
+      const versionName = (code) => {
+        const name = play?.releases?.names?.[code];
+        return name ? `${name} (${code})` : code ? `code ${code}` : "?";
+      };
+
+      function playSetup() {
+        return panel(
+          "Comms // not connected",
+          "Connect Google Play",
+          play?.setupError &&
+            h("div", { className: "banner" }, play.setupError),
+          h(
+            "p",
+            {},
+            "The Play tab uses the same read-only dpm-ops key as the Usage tab. Once:",
+          ),
+          h(
+            "ol",
+            { className: "steps" },
+            h(
+              "li",
+              {},
+              "Make the dpm-ops key if you haven't (Usage tab → Connect Google Cloud), and set ",
+              h("code", {}, "DPM_OPS_CREDENTIALS"),
+              " in .env.",
+            ),
+            h(
+              "li",
+              {},
+              "Google Cloud console, in the Firebase project: enable the Google Play Developer Reporting API and the Google Play Android Developer API.",
+            ),
+            h(
+              "li",
+              {},
+              "Play Console → Users and permissions → Invite new users: the dpm-ops account's email, with View app information (read-only), and Reply to reviews if you want to answer reviews from here.",
+            ),
+            h("li", {}, "Restart the dashboard."),
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            "Details, and the optional installs reports, are in tools/dashboard/README.md → The dpm-ops key on Google Play.",
+          ),
+        );
+      }
+
+      /** One rate against a limit: the bar fills up to the limit. */
+      function rateLine(label, value, bad, note) {
+        const share = value == null || !bad ? 0 : value / bad;
+        const cls =
+          !bad || value == null
+            ? ""
+            : share >= 1
+              ? "over"
+              : share >= 0.8
+                ? "warn"
+                : "";
+        return h(
+          "div",
+          {},
+          h(
+            "div",
+            { className: "meter-head" },
+            h("span", {}, label),
+            h(
+              "span",
+              { className: "muted" },
+              h("span", { className: "mono" }, rate(value)),
+              bad ? ` / ${rate(bad)} limit` : "",
+              cls === "over"
+                ? h(
+                    "span",
+                    { className: "badge bad", style: "margin-left:6px" },
+                    "Bad behavior",
+                  )
+                : cls === "warn"
+                  ? h(
+                      "span",
+                      { className: "badge warn", style: "margin-left:6px" },
+                      "Near the limit",
+                    )
+                  : null,
+            ),
+          ),
+          bad &&
+            h(
+              "div",
+              {
+                className: `meter ${cls}`,
+                role: "meter",
+                "aria-label": label,
+                "aria-valuemin": "0",
+                "aria-valuemax": String(bad),
+                "aria-valuenow": String(value ?? 0),
+              },
+              h("span", { style: `width:${Math.min(100, share * 100)}%` }),
+              h("i", { style: "left:80%" }),
+            ),
+          note &&
+            h(
+              "div",
+              { className: "small muted", style: "margin-top:2px" },
+              note,
+            ),
+        );
+      }
+
+      function vitalsPanel() {
+        const v = play.vitals;
+        const errs = Object.entries(play.vitalsErrors ?? {});
+        if (!v)
+          return panel(
+            "Hull integrity",
+            "Android vitals",
+            h(
+              "p",
+              { className: play.errors?.vitals ? "warn-text" : "muted" },
+              play.errors?.vitals
+                ? `Play Developer Reporting API: ${play.errors.vitals}`
+                : "Asking Google Play…",
             ),
           );
+        const o = (k) => v[k]?.overall ?? null;
+        const empty = !["crash", "anr", "slowStart", "slowRendering"].some(o);
+        const codes = [
+          ...new Set(
+            ["crash", "anr", "slowStart", "slowRendering"].flatMap(
+              (k) => v[k]?.versions?.map((x) => x.versionCode) ?? [],
+            ),
+          ),
+        ].sort((a, b) => Number(b) - Number(a));
+        const at = (k, code) =>
+          v[k]?.versions?.find((x) => x.versionCode === code) ?? null;
+        return panel(
+          "Hull integrity",
+          "Android vitals, last 28 days",
+          empty
+            ? h(
+                "p",
+                { className: "muted" },
+                "No figures yet. Play reports vitals only once enough people use a version, so a small alpha may show nothing for a while.",
+              )
+            : h(
+                "div",
+                { className: "meters" },
+                rateLine(
+                  "Crashes users noticed",
+                  o("crash")?.perceived,
+                  play.bad.crash,
+                  o("crash") &&
+                    `All crashes ${rate(o("crash").rate)} of daily users`,
+                ),
+                rateLine(
+                  "Freezes (ANRs) users noticed",
+                  o("anr")?.perceived,
+                  play.bad.anr,
+                  o("anr") && `All ANRs ${rate(o("anr").rate)} of daily users`,
+                ),
+                rateLine(
+                  "Slow cold starts",
+                  o("slowStart")?.rate,
+                  null,
+                  "Share of users whose cold starts were slow (5 s or more)",
+                ),
+                rateLine(
+                  "Slow frames",
+                  o("slowRendering")?.rate,
+                  null,
+                  "Share of users with more than a quarter of frames under 30 fps",
+                ),
+              ),
+          !empty &&
+            codes.length > 0 &&
+            h(
+              "div",
+              { className: "scroll", style: "margin-top:12px" },
+              h(
+                "table",
+                {},
+                h(
+                  "tr",
+                  {},
+                  [
+                    "Version",
+                    "User-days",
+                    "Crashes",
+                    "ANRs",
+                    "Slow starts",
+                    "Slow frames",
+                  ].map((t) => h("th", {}, t)),
+                ),
+                codes.map((c) =>
+                  h(
+                    "tr",
+                    {},
+                    h("td", {}, versionName(c)),
+                    h(
+                      "td",
+                      { className: "mono" },
+                      num(
+                        at("crash", c)?.userDays ??
+                          at("slowStart", c)?.userDays,
+                      ),
+                    ),
+                    h(
+                      "td",
+                      { className: "mono" },
+                      rate(at("crash", c)?.perceived),
+                    ),
+                    h(
+                      "td",
+                      { className: "mono" },
+                      rate(at("anr", c)?.perceived),
+                    ),
+                    h(
+                      "td",
+                      { className: "mono" },
+                      rate(at("slowStart", c)?.rate),
+                    ),
+                    h(
+                      "td",
+                      { className: "mono" },
+                      rate(at("slowRendering", c)?.rate),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          h(
+            "p",
+            { className: "small muted" },
+            "Crashes and ANRs are the ones users noticed (in the foreground), weighted by daily users, as Play measures its limits: above them, Play may show the app less and warn on its store page. Play's figures lag a day or two.",
+          ),
+          errs.length > 0 &&
+            h(
+              "p",
+              { className: "small warn-text" },
+              errs.map(([k, e]) => `${k}: ${e}`).join(" · "),
+            ),
+        );
+      }
+
+      function issuesPanel() {
+        const list = play.issues;
+        return panel(
+          "Damage report",
+          "Biggest crashes and ANRs",
+          !list
+            ? h(
+                "p",
+                { className: play.errors?.issues ? "warn-text" : "muted" },
+                play.errors?.issues
+                  ? `Play Developer Reporting API: ${play.errors.issues}`
+                  : "Asking Google Play…",
+              )
+            : list.length === 0
+              ? h(
+                  "p",
+                  { className: "muted" },
+                  "No crashes or ANRs in the last 28 days.",
+                )
+              : list.map((i) =>
+                  h(
+                    "div",
+                    { className: "entry" },
+                    h(
+                      "div",
+                      {},
+                      h(
+                        "span",
+                        {
+                          className: `badge ${i.type === "CRASH" ? "bad" : "warn"}`,
+                        },
+                        i.type,
+                      ),
+                      " ",
+                      h("b", {}, i.cause || "Unknown cause"),
+                    ),
+                    i.location &&
+                      h("div", { className: "small mono" }, i.location),
+                    h(
+                      "div",
+                      { className: "small muted" },
+                      `${num(i.reports)} ${i.reports === 1 ? "report" : "reports"}, ${num(i.users)} ${i.users === 1 ? "user" : "users"}`,
+                      i.firstVersion || i.lastVersion
+                        ? ` · ${versionName(i.firstVersion)}${i.lastVersion && i.lastVersion !== i.firstVersion ? ` to ${versionName(i.lastVersion)}` : ""}`
+                        : "",
+                      i.lastSeen ? ` · last ${ago(i.lastSeen)}` : "",
+                    ),
+                    i.trace &&
+                      h(
+                        "details",
+                        {},
+                        h("summary", {}, "Stack trace"),
+                        h("pre", { className: "diff" }, i.trace),
+                      ),
+                    i.link &&
+                      h(
+                        "a",
+                        {
+                          href: i.link,
+                          target: "_blank",
+                          rel: "noopener noreferrer",
+                          className: "small",
+                        },
+                        "Open in Play Console",
+                      ),
+                  ),
+                ),
+        );
+      }
+
+      function tracksPanel() {
+        const r = play.releases;
+        return panel(
+          "Fleet deployment",
+          "Tracks",
+          !r
+            ? h(
+                "p",
+                { className: play.errors?.releases ? "warn-text" : "muted" },
+                play.errors?.releases
+                  ? `Play Developer Reporting API: ${play.errors.releases}`
+                  : "Asking Google Play…",
+              )
+            : r.tracks.length === 0
+              ? h("p", { className: "muted" }, "No track serves a release.")
+              : h(
+                  "table",
+                  { className: "plain" },
+                  r.tracks.map((t) =>
+                    h(
+                      "tr",
+                      {},
+                      h("td", {}, t.track),
+                      h(
+                        "td",
+                        {},
+                        t.releases.length
+                          ? t.releases
+                              .map(
+                                (x) =>
+                                  `${x.name} (${x.versionCodes.join(", ")})`,
+                              )
+                              .join(" · ")
+                          : "–",
+                      ),
+                    ),
+                  ),
+                ),
+          h(
+            "p",
+            { className: "small muted" },
+            "What each track serves now. Rollout percentages and drafts are only in Play Console.",
+          ),
+        );
+      }
+
+      function installsPanel() {
+        const i = play.installs;
+        if (!play.bucket)
+          return panel(
+            "Crew roster",
+            "Installs",
+            h(
+              "p",
+              { className: "muted" },
+              "Installs per day come from Play's monthly reports in Cloud Storage. To show them, copy the reports' Cloud Storage URI from Play Console → Download reports → Statistics and set DPM_PLAY_BUCKET to it in .env (see the README).",
+            ),
+          );
+        if (!i)
+          return panel(
+            "Crew roster",
+            "Installs",
+            h(
+              "p",
+              { className: play.errors?.installs ? "warn-text" : "muted" },
+              play.errors?.installs
+                ? `Cloud Storage: ${play.errors.installs}`
+                : "Reading Play's reports…",
+            ),
+          );
+        if (!i.latest)
+          return panel(
+            "Crew roster",
+            "Installs",
+            h(
+              "p",
+              { className: "muted" },
+              "No installs report for this month or last yet.",
+            ),
+          );
+        return panel(
+          "Crew roster",
+          "Installs",
+          h(
+            "div",
+            { className: "figures" },
+            i.latest.active != null &&
+              h(
+                "div",
+                { className: "figure" },
+                h("span", { className: "num" }, num(i.latest.active)),
+                h(
+                  "span",
+                  { className: "small" },
+                  `Active devices on ${i.latest.day}`,
+                ),
+              ),
+            h(
+              "div",
+              { className: "figure" },
+              h(
+                "span",
+                { className: "num" },
+                num(
+                  i.days.slice(-30).reduce((a, d) => a + (d.installs ?? 0), 0),
+                ),
+              ),
+              h(
+                "span",
+                { className: "small" },
+                "Installs, last 30 days in the report",
+              ),
+            ),
+            h(
+              "div",
+              { className: "figure" },
+              h(
+                "span",
+                { className: "num" },
+                num(
+                  i.days
+                    .slice(-30)
+                    .reduce((a, d) => a + (d.uninstalls ?? 0), 0),
+                ),
+              ),
+              h("span", { className: "small" }, "Uninstalls, same days"),
+            ),
+          ),
+          h("div", { style: "margin-top:10px" }),
+          bars(
+            i.days.map((d) => ({ value: d.installs ?? 0, label: d.day })),
+            {
+              label: "Installs per day",
+              first: i.days[0]?.day ?? "",
+              last: i.days.at(-1)?.day ?? "",
+            },
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            "Play updates these reports once a day, a few days behind.",
+          ),
+        );
+      }
+
+      function reviewItem(r) {
+        const stars = r.rating
+          ? "★".repeat(r.rating) + "☆".repeat(5 - r.rating)
+          : "";
+        const meta = [
+          r.writtenAt && when(r.writtenAt),
+          r.version && `version ${r.version}`,
+          r.device,
+          r.language,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        const body = [
+          h(
+            "div",
+            {},
+            h(
+              "span",
+              { className: "mono", "aria-label": `${r.rating} of 5 stars` },
+              stars,
+            ),
+            " ",
+            h("b", {}, r.author),
+          ),
+          h("div", { className: "small muted" }, meta),
+          h("div", { className: "quote" }, r.text || "(no text)"),
+          r.original &&
+            h("div", { className: "small muted quote" }, r.original),
+        ];
+        if (r.reply)
+          return h(
+            "div",
+            { className: "entry" },
+            body,
+            h(
+              "div",
+              { className: "small muted" },
+              `Your reply${r.reply.at ? `, ${when(r.reply.at)}` : ""}:`,
+            ),
+            h("div", { className: "quote" }, r.reply.text),
+          );
+        const max = play.replyMax;
+        const box = h("textarea", {
+          "aria-label": `Reply to ${r.author}`,
+          maxlength: String(max),
+          style: "min-height:70px",
+          value: replyDrafts.get(r.id) ?? "",
+        });
+        const count = h("span", { className: "small muted" });
+        const sendBtn = h(
+          "button",
+          {
+            type: "button",
+            className: "btn",
+            onclick: act(async () => {
+              const text = box.value.trim();
+              if (!text) throw new Error("Write a reply first.");
+              const ok = await ask({
+                deco: "Comms // open channel",
+                title: "Publish this reply on Google Play?",
+                text: `Everyone who sees ${r.author}'s review on Google Play will see your reply, and ${r.author} gets a notification. You can change it later in Play Console.`,
+                go: "Publish reply",
+              });
+              if (!ok) return;
+              play = await destructive("POST", "/api/play/reply", {
+                id: r.id,
+                text,
+              });
+              replyDrafts.delete(r.id);
+              sound.confirm();
+              say("Reply published on Google Play.");
+              renderPlay(true);
+            }),
+          },
+          "Reply on Google Play",
+        );
+        const update = () => {
+          replyDrafts.set(r.id, box.value);
+          count.textContent = `${box.value.length} / ${max}`;
+        };
+        box.addEventListener("input", update);
+        count.textContent = `${box.value.length} / ${max}`;
+        return h(
+          "div",
+          { className: "entry" },
+          body,
+          box,
+          h(
+            "div",
+            { className: "row", style: "margin-top:6px" },
+            sendBtn,
+            count,
+          ),
+        );
+      }
+
+      function reviewsPanel() {
+        const rv = play.reviews;
+        return panel(
+          "Comms // incoming",
+          "Reviews",
+          h(
+            "p",
+            {},
+            rv.total
+              ? `${rv.total} ${rv.total === 1 ? "review" : "reviews"}, ${rv.unanswered} without a reply${rv.average ? `, average ${rv.average.toFixed(1)} stars` : ""}.`
+              : "No reviews with text yet.",
+          ),
+          play.errors?.reviews &&
+            h(
+              "p",
+              { className: "small warn-text" },
+              `Android Publisher API: ${play.errors.reviews}`,
+            ),
+          rv.list.map(reviewItem),
+          h(
+            "p",
+            { className: "small muted" },
+            "Play lists reviews with text for about a week, so the dashboard keeps a copy for a year after each one last changed (privacy policy §6). Star ratings without text aren't in the API. Replies need the Reply to reviews permission for dpm-ops in Play Console, and the passkey on a home server.",
+          ),
+        );
+      }
+
+      /** Overview's vitals panel: the two rates Play judges, or how to connect. */
+      function overviewVitals() {
+        const s = play?.summary;
+        const open = h(
+          "button",
+          { type: "button", className: "btn quiet", onclick: () => go("play") },
+          s?.connected ? "Open Play" : "How to connect",
+        );
+        if (!s?.crash && !s?.anr)
+          return panel(
+            "Hull integrity",
+            "App vitals",
+            h(
+              "p",
+              { className: s?.error ? "warn-text" : "muted" },
+              !play
+                ? "Loading…"
+                : !s.connected
+                  ? "Crash and ANR rates from Google Play need the dpm-ops key added in Play Console."
+                  : s.error
+                    ? `Google Play: ${s.error}`
+                    : s.fetchedAt
+                      ? "No vitals yet: Play reports them once enough people use a version."
+                      : "Asking Google Play…",
+            ),
+            open,
+          );
+        return panel(
+          "Hull integrity",
+          "App vitals",
+          h(
+            "div",
+            { className: "meters" },
+            rateLine(
+              "Crashes users noticed",
+              s.crash?.perceived,
+              play.bad.crash,
+            ),
+            rateLine("ANRs users noticed", s.anr?.perceived, play.bad.anr),
+          ),
+          h(
+            "p",
+            { className: "small muted" },
+            `Last 28 days. Fetched ${ago(s.fetchedAt)}.`,
+          ),
+          open,
+        );
+      }
+
+      function renderPlay(force) {
+        const key = JSON.stringify([
+          play?.fetchedAt,
+          play?.errors,
+          play?.reviews?.list?.map((r) => [r.id, !!r.reply]),
+        ]);
+        if (!force && key === playKey) return;
+        playKey = key;
+        const box = document.getElementById("tab-play");
+        if (!play) {
+          box.replaceChildren(
+            panel("Comms", "Play", h("p", { className: "muted" }, "Loading…")),
+          );
+          return;
+        }
+        if (!play.connected) {
+          box.replaceChildren(
+            h(
+              "div",
+              { className: "stack" },
+              playSetup(),
+              play.reviews.total > 0 && reviewsPanel(),
+            ),
+          );
+          return;
+        }
+        const head = h(
+          "div",
+          { className: "row", style: "margin-bottom:16px" },
+          h(
+            "button",
+            {
+              type: "button",
+              className: "btn",
+              onclick: act(async () => {
+                play = await call("POST", "/api/play/refresh");
+                sound.confirm();
+                renderPlay(true);
+              }),
+            },
+            "Fetch now",
+          ),
+          h(
+            "span",
+            { className: "small muted" },
+            `${play.demo ? "Made-up figures (demo). " : ""}${play.pkg ? `${play.pkg}. ` : ""}Fetched ${play.fetchedAt ? ago(play.fetchedAt) : "not yet"}, every day${play.account ? ` as ${play.account}` : ""}.`,
+          ),
+        );
+        box.replaceChildren(
+          head,
+          h(
+            "div",
+            { className: "stack" },
+            h(
+              "div",
+              { className: "two", style: "align-items:start" },
+              vitalsPanel(),
+              h("div", { className: "stack" }, tracksPanel(), installsPanel()),
+            ),
+            issuesPanel(),
+            reviewsPanel(),
+          ),
+        );
       }
 
       /* ---------- reports ---------- */
@@ -4152,12 +4831,14 @@
       let lastReportIds = null;
       async function poll(first = false) {
         try {
-          const [s, c, u] = await Promise.all([
+          const [s, c, u, p] = await Promise.all([
             call("GET", "/api/state"),
             call("GET", "/api/cases"),
             call("GET", "/api/usage"),
+            call("GET", "/api/play"),
           ]);
           usage = u;
+          play = p;
           const ids = new Set(s.reports.map((r) => r.id));
           if (lastReportIds && [...ids].some((id) => !lastReportIds.has(id))) {
             sound.report();

@@ -1,8 +1,10 @@
 /**
- * Read-only calls to Google's APIs (Cloud Monitoring, Firebase Rules) with
- * the `dpm-ops` service account key in DPM_OPS_CREDENTIALS. That account has
- * viewer roles only, so nothing here can change or delete anything; the Admin
- * key (DPM_ADMIN_CREDENTIALS) is never used for these calls.
+ * Calls to Google's APIs with the `dpm-ops` service account key in
+ * DPM_OPS_CREDENTIALS: Cloud Monitoring and Firebase Rules for the Usage tab
+ * (viewer roles only), Google Play for the Play tab (View app information,
+ * and Reply to reviews if granted: the only thing it can send). The Admin key
+ * (DPM_ADMIN_CREDENTIALS) is never used for these calls, so nothing here can
+ * change or delete any data.
  *
  * Signs its own OAuth token (a JWT with the key, RS256), so it needs no
  * Google client library.
@@ -12,9 +14,19 @@ const crypto = require("crypto");
 const fs = require("fs");
 const { httpError } = require("./http");
 
+/** The Usage tab's token: read-only scopes. */
 const SCOPES = [
   "https://www.googleapis.com/auth/monitoring.read",
   "https://www.googleapis.com/auth/firebase.readonly",
+];
+/**
+ * The Play tab's token. Play has no read-only scope for reviews; what the key
+ * may do there is what Play Console grants dpm-ops (see README).
+ */
+const PLAY_SCOPES = [
+  "https://www.googleapis.com/auth/playdeveloperreporting",
+  "https://www.googleapis.com/auth/androidpublisher",
+  "https://www.googleapis.com/auth/devstorage.read_only",
 ];
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
@@ -42,12 +54,12 @@ function readKey(env = process.env) {
 }
 
 /** A signed token request for the key: exported for the tests. */
-function assertion(key, now = Date.now()) {
+function assertion(key, now = Date.now(), scopes = SCOPES) {
   const iat = Math.floor(now / 1000);
   const unsigned = `${b64url({ alg: "RS256", typ: "JWT", kid: key.private_key_id })}.${b64url(
     {
       iss: key.client_email,
-      scope: SCOPES.join(" "),
+      scope: scopes.join(" "),
       aud: key.token_uri || TOKEN_URL,
       iat,
       exp: iat + 3600,
@@ -62,9 +74,9 @@ function assertion(key, now = Date.now()) {
 
 /**
  * @param {object} key a service account key
- * @param {{ fetch?: typeof fetch }} [options]
+ * @param {{ fetch?: typeof fetch, scopes?: string[] }} [options]
  */
-function googleClient(key, { fetch: fetchFn = fetch } = {}) {
+function googleClient(key, { fetch: fetchFn = fetch, scopes = SCOPES } = {}) {
   let token = null;
 
   async function accessToken() {
@@ -74,7 +86,7 @@ function googleClient(key, { fetch: fetchFn = fetch } = {}) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        assertion: assertion(key),
+        assertion: assertion(key, Date.now(), scopes),
       }),
     });
     const json = await res.json().catch(() => ({}));
@@ -91,20 +103,51 @@ function googleClient(key, { fetch: fetchFn = fetch } = {}) {
     return token.value;
   }
 
-  /** GET a Google API URL as JSON; errors carry Google's own message. */
-  async function get(url) {
+  async function send(url, init = {}) {
     const res = await fetchFn(url, {
-      headers: { Authorization: `Bearer ${await accessToken()}` },
+      ...init,
+      headers: {
+        ...init.headers,
+        Authorization: `Bearer ${await accessToken()}`,
+      },
     });
-    const json = await res.json().catch(() => ({}));
     if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
       const msg = json.error?.message || res.statusText || String(res.status);
       throw Object.assign(httpError(502, msg), { googleStatus: res.status });
     }
-    return json;
+    return res;
   }
 
-  return { get, email: key.client_email, projectId: key.project_id };
+  /** GET a Google API URL as JSON; errors carry Google's own message. */
+  async function get(url) {
+    const res = await send(url);
+    return res.json().catch(() => ({}));
+  }
+
+  /** POST JSON to a Google API URL (Play's metric queries, a review reply). */
+  async function post(url, body) {
+    const res = await send(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+    return res.json().catch(() => ({}));
+  }
+
+  /** GET a file's bytes (Play's bulk reports in Cloud Storage). */
+  async function bytes(url) {
+    const res = await send(url);
+    return Buffer.from(await res.arrayBuffer());
+  }
+
+  return {
+    get,
+    post,
+    bytes,
+    email: key.client_email,
+    projectId: key.project_id,
+  };
 }
 
-module.exports = { googleClient, readKey, assertion, SCOPES };
+module.exports = { googleClient, readKey, assertion, SCOPES, PLAY_SCOPES };

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * The DPM operations dashboard: reports about published lists, the data
- * removal tool on a page, and (later) usage and Play figures. Run from the
+ * removal tool on a page, Firestore usage, and Google Play's figures and
+ * reviews. Run from the
  * repository root with `npm run ops`; see README.md.
  *
  * Two ways to run it:
@@ -30,13 +31,19 @@ const { createReports } = require("./lib/reports");
 const { createData, NEEDS_PASSKEY } = require("./lib/data");
 const { createUsage } = require("./lib/usage");
 const { googleUsage, demoUsage, repoRules } = require("./lib/usageSources");
-const { googleClient, readKey } = require("./lib/google");
+const { createPlay } = require("./lib/play");
+const { googlePlay, demoPlay } = require("./lib/playSources");
+const { googleClient, readKey, PLAY_SCOPES } = require("./lib/google");
 const { caseStore } = require("./lib/cases");
 const { actionLog } = require("./lib/actionLog");
 const { createAccess } = require("./lib/access");
 const { readBody } = require("./lib/http");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
+/** The production app on Google Play (app.config.ts's APP_ID); DPM_PLAY_PACKAGE changes it. */
+const PLAY_PACKAGE = "com.teholi.DancePatternMapper";
+/** Routes that need the passkey on a home server: the Data tab's, and a public review reply. */
+const PASSKEY_ROUTES = new Set([...NEEDS_PASSKEY, "POST /api/play/reply"]);
 const PAGE = path.join(__dirname, "public", "index.html");
 const LOGIN_PAGE = path.join(__dirname, "public", "login.html");
 /** Rajdhani and Share Tech Mono (SIL OFL), served from here: the page loads nothing from outside. */
@@ -149,6 +156,7 @@ function createDashboard({
   cases,
   log,
   usage: usageOptions = {},
+  play: playOptions = {},
 }) {
   const reports = createReports({
     store,
@@ -165,15 +173,18 @@ function createDashboard({
     repoRules: () => repoRules(REPO_ROOT),
     ...usageOptions,
   });
+  const play = createPlay({ source: null, ...playOptions });
   return {
-    api: { ...reports.api, ...data.api, ...usage.api },
+    api: { ...reports.api, ...data.api, ...usage.api, ...play.api },
     refresh: reports.refresh,
     stop: () => {
       reports.stop();
       usage.stop();
+      play.stop();
     },
     queue: reports.queue,
     usage,
+    play,
   };
 }
 
@@ -321,7 +332,7 @@ function createServer(dashboard, { port, token, hosts, tls, access }) {
       return send(401, { error: "Open the link the dashboard printed." });
     }
     try {
-      if (access && NEEDS_PASSKEY.has(key)) access.requireArmed(session);
+      if (access && PASSKEY_ROUTES.has(key)) access.requireArmed(session);
       const body = req.method === "POST" ? await readBody(req) : {};
       const armed = access ? access.isArmed(session) : true;
       send(200, await handler(body, { device, armed, session }));
@@ -352,6 +363,33 @@ function usageSource(opts, store, env = process.env) {
     };
   } catch (e) {
     return { source: null, setupError: e.message };
+  }
+}
+
+/**
+ * The Play tab's source: made-up figures with --demo, else Google Play with
+ * the same dpm-ops key, under Play's own scopes. What it may do there is what
+ * Play Console grants that account (README → The dpm-ops key on Google Play).
+ */
+function playSource(opts, dir, env = process.env) {
+  const pkg = env.DPM_PLAY_PACKAGE || PLAY_PACKAGE;
+  if (opts.demo) return { source: demoPlay(), dir, pkg, demo: true };
+  const bucket =
+    env.DPM_PLAY_BUCKET?.replace(/^gs:\/\//, "").replace(/\/.*$/, "") || null;
+  try {
+    const key = readKey(env);
+    if (!key) return { source: null, pkg };
+    return {
+      source: googlePlay(googleClient(key, { scopes: PLAY_SCOPES }), pkg, {
+        bucket,
+      }),
+      account: key.client_email,
+      dir,
+      pkg,
+      bucket,
+    };
+  } catch (e) {
+    return { source: null, setupError: e.message, pkg };
   }
 }
 
@@ -404,11 +442,13 @@ async function main() {
     cases: caseStore(path.join(own, "cases")),
     log,
     usage: usageSource(opts, store),
+    play: playSource(opts, own),
   });
   await dashboard.refresh();
-  // Monitoring and the rules: in the background, so a slow Google answer
+  // Monitoring, the rules and Play: in the background, so a slow Google answer
   // doesn't hold up the page.
   dashboard.usage.refresh();
+  dashboard.play.refresh();
   const token = crypto.randomBytes(24).toString("hex");
 
   let server;
@@ -452,7 +492,7 @@ async function main() {
       `Project ${store.projectId}${opts.demo ? " (demo data)" : store.emulated ? " (emulator)" : ""}`,
     );
     console.log(`Report notes in ${reviewDir}`);
-    console.log(`Cases and action log in ${own}`);
+    console.log(`Cases, action log and Play reviews in ${own}`);
     if (pruned)
       console.log(`Dropped ${pruned} action log lines older than two years.`);
     console.log(`\nOpen ${link}\n`);
@@ -467,4 +507,11 @@ if (require.main === module) {
   });
 }
 
-module.exports = { createDashboard, createServer, parseArgs, dashboardDir };
+module.exports = {
+  createDashboard,
+  createServer,
+  parseArgs,
+  dashboardDir,
+  playSource,
+  PASSKEY_ROUTES,
+};

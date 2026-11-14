@@ -2,11 +2,12 @@
 
 A web page for running DPM's cloud side: the reports about published lists, everything
 `npm run data` does (search, show, take down, remove a user, block), erasure requests that come by
-email, a log of what was removed, and how busy Firestore is against Spark's free quota. Figures
-from Google Play come in a later phase; its tab says what is planned. The page has no build step and loads nothing from outside
+email, a log of what was removed, how busy Firestore is against Spark's free quota, and Google
+Play's crash figures, tracks, installs and reviews. The page has no build step and loads nothing from outside
 (its two fonts, Rajdhani and Share Tech Mono, are in `public/fonts/` under the SIL OFL).
 
-**Nothing is sent from here.** Replies go out from your own mail app. Anything that deletes or
+**Nothing is sent from here**, except a reply to a Play review you publish yourself (it asks
+first). Replies to reporters go out from your own mail app. Anything that deletes or
 blocks happens only after a red alert screen where you type back the share code or user id, as
 `npm run data` asks on the command line.
 
@@ -15,7 +16,8 @@ It runs in one of two ways:
 - **On your computer**, plain HTTP on 127.0.0.1, opened with the link it prints.
 - **On a home server** (any small always-on Linux machine), HTTPS for the home network, open only
   to someone who signs in with one of your devices' passkeys, and that passkey again before
-  anything that deletes or blocks, opens the erasure requests or changes the settings. See
+  anything that deletes or blocks, opens the erasure requests, changes the settings or replies to
+  a Play review. See
   [Running it on a home server](#running-it-on-a-home-server).
 
 ## Setup
@@ -25,8 +27,9 @@ credentials in `.env`), plus [Claude Code](https://claude.com/claude-code) signe
 reviews (`claude` on the PATH, or `DPM_CLAUDE_BIN=/path/to/claude`; on Windows it finds the `claude.exe` behind npm's `claude.cmd` itself).
 
 For the Usage tab's quota and rules check, the read-only `dpm-ops` key (see
-[The dpm-ops key](#the-dpm-ops-key)). Without it, everything else works and the tab shows the
-setup steps.
+[The dpm-ops key](#the-dpm-ops-key)); for the Play tab, the same key added in Play Console (see
+[The dpm-ops key on Google Play](#the-dpm-ops-key-on-google-play)). Without it, everything else
+works and those tabs show the setup steps.
 
 ## Running it on your computer
 
@@ -47,7 +50,8 @@ cannot drive it. The page takes the token out of the address bar once it has rea
 
 What is waiting on you: reports about a child's safety, reports waiting for a verdict, replies not
 marked sent, open erasure requests, master's Firestore rules not deployed, and today's Firestore
-quota once it passes 80%. Below them, today's reads, writes and deletes. Each card opens its tab. A sound plays when a new report
+quota once it passes 80%, a crash or ANR rate near or above Play's limit, and Play reviews without
+a reply. Below them, today's reads, writes and deletes, and the two rates Play judges the app by. Each card opens its tab. A sound plays when a new report
 arrives; the _Sound on_ button in the header mutes every sound (remembered per browser).
 
 ## Reports tab
@@ -208,6 +212,61 @@ project", enable it with the link in the message (Cloud Monitoring API, Firebase
 On Spark there is no bill, so there is no billing role; after a move to Blaze, a cost panel
 would need `roles/billing.viewer`.
 
+## Play tab
+
+How the released app is doing on Google Play, for the production app
+(`com.teholi.DancePatternMapper`; `DPM_PLAY_PACKAGE` changes it).
+
+- **Android vitals, last 28 days**: the crash and ANR (freeze) rates users noticed, against Play's
+  bad behavior limits (1.09% and 0.47% of daily users; above them Play may show the app less and
+  warn on its store page), with all crashes and ANRs below them; slow cold starts and slow frames
+  (under 30 fps); and each version's figures in a table. Play reports vitals only once enough
+  people use a version, so a small alpha may show none.
+- **Tracks**: which release each track serves now (rollout percentages are only in Play Console).
+- **Installs** (optional): installs, uninstalls and active devices per day, from Play's monthly
+  reports in Cloud Storage; see below.
+- **Biggest crashes and ANRs**: the ten biggest clusters of 28 days, with how many reports and
+  users, the versions they span, and a stack trace for the top five. Only the trace is kept, in
+  memory; a report's device and time stay with Google.
+- **Reviews**: every review with text Play lists, newest first, with a reply box. _Reply on
+  Google Play_ asks first, then publishes the reply under the review (at most 350 characters), so
+  the reviewer and everyone on the store page sees it. On a home server it needs the passkey.
+
+Everything is fetched when the dashboard starts and then daily (_Fetch now_ for sooner); it costs
+no Firestore reads. Play lists reviews for only about a week, so the dashboard keeps them in
+`<project>/play-reviews.json` and drops each one a year after it last changed (privacy policy §3.7
+and §6). Delete a review from that file if its author asks.
+
+### The dpm-ops key on Google Play
+
+The Play tab uses the same `dpm-ops` key under Play's own scopes. Once:
+
+1. Google Cloud console, in the Firebase project: enable the **Google Play Developer Reporting
+   API** and the **Google Play Android Developer API** (_APIs & Services → Library_), or
+
+   ```bash
+   gcloud services enable playdeveloperreporting.googleapis.com androidpublisher.googleapis.com --project $PROJECT
+   ```
+
+2. Play Console → _Users and permissions → Invite new users_: the account's email
+   (`dpm-ops@<project>.iam.gserviceaccount.com`), app permission **View app information
+   (read-only)**, plus **Reply to reviews** if you want to answer from here. Nothing else: it
+   should not be able to release or change the store listing.
+3. Restart the dashboard.
+
+A panel that says "The caller does not have permission" usually means the invitation hasn't
+taken effect yet (it can take up to a day) or a permission is missing.
+
+**Installs** come from Play's bulk reports. They need _View app information_ set to **Global**
+(account level, not per app) for `dpm-ops`. In Play Console → _Download reports → Statistics_,
+copy the Cloud Storage URI (`gs://pubsite_prod_…/stats/installs/`) and put the bucket in `.env`:
+
+```bash
+DPM_PLAY_BUCKET=gs://pubsite_prod_<id>
+```
+
+The dashboard reads this and last month's `installs_<package>_<YYYYMM>_overview.csv`.
+
 ## The red alert screen
 
 Every action that deletes or blocks (on the Reports tab and the Data tab, and closing a request)
@@ -303,7 +362,7 @@ device again (a new phone with the same name), make it another code.
 
 A session lasts until 12 hours without use or 7 days in all, whichever comes first, or until a
 restart; then the device signs in again with its passkey. The red alert screen asks for the
-passkey again before a removal or block, and the erasure requests and the Reports tab's settings
+passkey again before a removal or block or a Play review reply, and the erasure requests and the Reports tab's settings
 open only with it, once ten minutes have passed since it was last used.
 
 A passkey synced by the phone's password manager (Google Password Manager, iCloud Keychain) also
@@ -341,6 +400,8 @@ In `~/.local/share/dpm/dashboard/` (`DPM_DASHBOARD_DIR` changes it), readable on
 
 - `<project>/cases/`: one JSON file per open erasure request, deleted when it is closed.
 - `<project>/actions.jsonl`: the action log, two years.
+- `<project>/play-reviews.json`: the Play reviews and your replies, each for a year after it last
+  changed.
 - `tls/`, `access/`: on a home server, the CA and server certificate (`--lan`), the device list and passkeys.
 
 ## Code
@@ -360,10 +421,14 @@ In `~/.local/share/dpm/dashboard/` (`DPM_DASHBOARD_DIR` changes it), readable on
 - `lib/usage.js`: the Usage tab's API and hourly fetch; `lib/usageView.js`: pure: the quota day,
   Monitoring series into figures, the rules diff, our own counts; `lib/usageSources.js`: Cloud
   Monitoring and the Rules API, or made-up demo figures; `lib/google.js`: the `dpm-ops` key's
-  token and read-only GETs.
+  tokens (read-only scopes for Usage, Play's scopes for Play) and its calls.
+- `lib/play.js`: the Play tab's API, daily fetch and kept reviews; `lib/playView.js`: pure:
+  vitals per version, tracks, crash clusters, reviews, the installs CSVs; `lib/playSources.js`:
+  the Play Developer Reporting and Android Publisher APIs and Cloud Storage, or made-up demo
+  figures.
 - `lib/agent.js`: the `claude -p` command line and the one-at-a-time queue.
 - `pki.js`: enrolment codes, the device list and revocation, and for `--lan` the CA and server certificate (`npm run ops:pki`).
 
-Unit-tested in `__tests__/unit/dashboardReports.test.js`, `dashboardData.test.js` and
-`dashboardUsage.test.js`, against
+Unit-tested in `__tests__/unit/dashboardReports.test.js`, `dashboardData.test.js`,
+`dashboardUsage.test.js` and `dashboardPlay.test.js`, against
 `demoStore`; the second also enrols a device and signs in over HTTP, and serves HTTPS with a `pki.js` certificate.
