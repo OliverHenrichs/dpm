@@ -1,4 +1,3 @@
-import React from "react";
 import ModifierList from "@/src/pattern/list/ModifierList";
 import ListSharingBand from "@/src/pattern/list/ListSharingBand";
 import { IModifier } from "@/src/pattern/types/IPatternList";
@@ -15,7 +14,7 @@ const modifier = (
 ): IModifier => ({ id: name, name, position, universal, videoRefs: [] });
 
 describe("the Modifiers toolbar", () => {
-  function renderList(onEditList?: () => void) {
+  function renderList(onEditList?: () => void, isReadonly = false) {
     renderWithProviders(
       <ModifierList
         modifiers={[
@@ -24,7 +23,7 @@ describe("the Modifiers toolbar", () => {
           modifier("with Inside Turn", "prefix"),
         ]}
         patterns={[]}
-        isReadonly={false}
+        isReadonly={isReadonly}
         onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
@@ -50,6 +49,31 @@ describe("the Modifiers toolbar", () => {
 
     expect(onEditList).toHaveBeenCalled();
     expect(screen.getByLabelText("Add Modifier")).toBeOnTheScreen();
+  });
+
+  it("shows a lock instead of settings and + on a read-only list", () => {
+    renderList(jest.fn(), true);
+
+    expect(screen.getByLabelText("Read-only list")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Add Modifier")).not.toBeOnTheScreen();
+    expect(
+      screen.queryByLabelText("Edit the list and its types"),
+    ).not.toBeOnTheScreen();
+  });
+
+  it("says when no modifier matches the filter", () => {
+    renderList();
+
+    fireEvent.press(screen.getByLabelText("Filter Modifiers"));
+    fireEvent.changeText(
+      screen.getByPlaceholderText("Search by name..."),
+      "telemark",
+    );
+    fireEvent.press(screen.getByText("Apply"));
+
+    expect(
+      screen.getByText("No modifiers match the current filters."),
+    ).toBeOnTheScreen();
   });
 
   it("sorts by position under a header for each", () => {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -6,33 +6,50 @@ import { Button } from "@/src/common/ui";
 import BottomSheet from "@/src/common/components/BottomSheet";
 import RevealScrollView from "@/src/common/components/RevealScrollView";
 
-interface FilterSheetFrameProps {
+interface FilterSheetFrameProps<F> {
   visible: boolean;
   title: string;
-  /** Closes without applying. */
+  /** The filter in force: what the sheet opens on. */
+  currentFilter: F;
+  /** What Reset applies. */
+  emptyFilter: F;
+  onApplyFilter: (filter: F) => void;
   onClose: () => void;
-  onReset: () => void;
-  onApply: () => void;
-  children: React.ReactNode;
+  /** The criteria, editing a draft that only Apply (or Reset) puts in force. */
+  children: (draft: F, setDraft: (filter: F) => void) => React.ReactNode;
 }
 
 /**
  * The sheet around the Modifiers and Sequences filters: the criteria scroll, Reset and Apply
- * stay below, as in the figures' filter (`PatternFilterBottomSheet`).
+ * stay below, as in the figures' filter (`PatternFilterBottomSheet`). It keeps the draft:
+ * closing without Apply drops it, so the next opening shows what is in force.
  */
-const FilterSheetFrame: React.FC<FilterSheetFrameProps> = ({
+function FilterSheetFrame<F>({
   visible,
   title,
+  currentFilter,
+  emptyFilter,
+  onApplyFilter,
   onClose,
-  onReset,
-  onApply,
   children,
-}) => {
+}: FilterSheetFrameProps<F>) {
   const { t } = useTranslation();
+  const [draft, setDraft] = useState(currentFilter);
+  const onReset = () => {
+    setDraft(emptyFilter);
+    onApplyFilter(emptyFilter);
+  };
+  const onApply = () => {
+    onApplyFilter(draft);
+    onClose();
+  };
   return (
     <BottomSheet
       visible={visible}
-      onClose={onClose}
+      onClose={() => {
+        setDraft(currentFilter);
+        onClose();
+      }}
       title={title}
       maxHeight="80%"
     >
@@ -40,7 +57,7 @@ const FilterSheetFrame: React.FC<FilterSheetFrameProps> = ({
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {children}
+        {children(draft, setDraft)}
       </RevealScrollView>
       <View style={styles.buttonRow}>
         <Button
@@ -57,7 +74,7 @@ const FilterSheetFrame: React.FC<FilterSheetFrameProps> = ({
       </View>
     </BottomSheet>
   );
-};
+}
 
 const styles = StyleSheet.create((theme) => ({
   scrollView: { flexGrow: 0 },

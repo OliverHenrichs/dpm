@@ -2,9 +2,8 @@ import React, { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import ListToolbar from "@/src/common/components/ListToolbar";
-import PlusButton from "@/src/common/components/PlusButton";
-import SortBottomSheet, {
+import ListToolbar from "@/src/pattern/list/ListToolbar";
+import type {
   SortConfig,
   SortOption,
 } from "@/src/pattern/list/SortBottomSheet";
@@ -56,7 +55,6 @@ const ModifierList: React.FC<ModifierListProps> = ({
     DEFAULT_MODIFIER_SORT,
   );
   const [filter, setFilter] = useState<ModifierFilter>(EMPTY_MODIFIER_FILTER);
-  const [isSortVisible, setIsSortVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const sortOptions: SortOption<ModifierSortField>[] = [
     { field: "name", label: t("name") },
@@ -76,19 +74,17 @@ const ModifierList: React.FC<ModifierListProps> = ({
   return (
     <>
       <ListToolbar
-        sortLabel={sortOptions.find((o) => o.field === sort.field)!.label}
-        sortOrder={sort.order}
-        onSort={() => setIsSortVisible(true)}
-        sortAccessibilityLabel={t("sortModifiers")}
+        sort={sort}
+        sortOptions={sortOptions}
+        onSortChange={setSort}
+        sortTitle={t("sortModifiers")}
         activeFilters={activeFilters}
         onFilter={() => setIsFilterVisible(true)}
         filterAccessibilityLabel={t("filterModifiers")}
+        isReadonly={isReadonly}
         onEditList={onEditList}
-        actions={
-          isReadonly ? undefined : (
-            <PlusButton onPress={onAdd} accessibilityLabel={t("addModifier")} />
-          )
-        }
+        onAdd={onAdd}
+        addAccessibilityLabel={t("addModifier")}
       />
       <ScrollView style={styles.scrollView}>
         {entries.map((entry) =>
@@ -133,14 +129,6 @@ const ModifierList: React.FC<ModifierListProps> = ({
           </View>
         )}
       </ScrollView>
-      <SortBottomSheet
-        visible={isSortVisible}
-        onClose={() => setIsSortVisible(false)}
-        onApplySort={setSort}
-        currentSort={sort}
-        options={sortOptions}
-        title={t("sortModifiers")}
-      />
       <ModifierFilterBottomSheet
         visible={isFilterVisible}
         onClose={() => setIsFilterVisible(false)}

@@ -32,9 +32,9 @@ most `MAX_VIDEOS` videos (`src/anonymize/jobs/replaceVideo.ts`).
 
 ## The List tab's layout (`docs/product/list-tab.md`)
 
-Every segment's toolbar is `ListToolbar` (`src/common/components/`). Followers' actions live in
-`ListSharingBand` above the segments, list settings in the toolbar (`onEditList`). Modifiers and
-Sequences sort and filter through pure `modifierView.ts` and `../sequences/sequenceView.ts`.
+Each segment's toolbar is `ListToolbar` (sort sheet, list settings, '+' or lock). Followers'
+actions: `ListSharingBand` above the segments. Modifiers and Sequences sort and filter through
+pure `modifierView.ts` and `../sequences/sequenceView.ts`.
 
 ## Sorting and rows
 

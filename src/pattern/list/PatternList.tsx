@@ -19,11 +19,11 @@ import { useTranslation } from "react-i18next";
 import PatternFilterBottomSheet, {
   PatternFilter,
 } from "../filter/components/PatternFilterBottomSheet";
-import SortBottomSheet, {
+import {
   patternSortOptions,
   SortConfig,
 } from "@/src/pattern/list/SortBottomSheet";
-import PatternListHeader from "./PatternListHeader";
+import ListToolbar from "./ListToolbar";
 import PatternListItem from "./PatternListItem";
 import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
@@ -83,7 +83,6 @@ const PatternList: React.FC<PatternListProps> = (props) => {
   });
 
   const [isAddMenuVisible, setIsAddMenuVisible] = useState(false);
-  const [isSortVisible, setIsSortVisible] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: "name",
     order: "asc",
@@ -212,19 +211,20 @@ const PatternList: React.FC<PatternListProps> = (props) => {
 
   return (
     <>
-      <PatternListHeader
-        sortLabel={
-          patternSortOptions(t).find((o) => o.field === sortConfig.field)!.label
-        }
-        sortOrder={sortConfig.order}
+      <ListToolbar
+        sort={sortConfig}
+        sortOptions={patternSortOptions(t)}
+        onSortChange={setSortConfig}
+        sortTitle={t("sortPatterns")}
         activeFilters={activeFilters}
+        onFilter={() => setIsFilterVisible(true)}
+        filterAccessibilityLabel={t("filterPatterns")}
         isReadonly={isReadonly}
         onEditList={props.onEditList}
-        onSort={() => setIsSortVisible(true)}
-        onFilter={() => setIsFilterVisible(true)}
         onAdd={
           props.onAddFromVideo ? () => setIsAddMenuVisible(true) : props.onAdd
         }
+        addAccessibilityLabel={t("addPattern")}
       />
 
       <FlatList
@@ -318,13 +318,6 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           </View>
         </BottomSheet>
       )}
-
-      <SortBottomSheet
-        visible={isSortVisible}
-        onClose={() => setIsSortVisible(false)}
-        onApplySort={setSortConfig}
-        currentSort={sortConfig}
-      />
     </>
   );
 };

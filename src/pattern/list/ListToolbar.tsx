@@ -1,57 +1,74 @@
-import React from "react";
+import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { IconButton, Tappable } from "@/src/common/ui";
 import { Icon, type IconName } from "@/src/common/ui/Icon";
+import PlusButton from "@/src/common/components/PlusButton";
+import SortBottomSheet, {
+  SortConfig,
+  SortOption,
+} from "@/src/pattern/list/SortBottomSheet";
 
-interface ListToolbarProps {
-  /** The field the list is sorted by, as shown on the sort chip ("Type"). */
-  sortLabel: string;
-  sortOrder: "asc" | "desc";
-  onSort: () => void;
-  /** Read out for the sort chip: what is sorted ("Sort Figures"). */
-  sortAccessibilityLabel: string;
+interface ListToolbarProps<F extends string> {
+  sort: SortConfig<F>;
+  /** What the segment can be sorted by, in the sheet's order. */
+  sortOptions: SortOption<F>[];
+  onSortChange: (sort: SortConfig<F>) => void;
+  /** The sort sheet's title, also read out for the sort chip ("Sort Figures"). */
+  sortTitle: string;
   /** How many of the filter's criteria are set; 0 shows a plain _Filter_. */
   activeFilters: number;
   onFilter: () => void;
   /** Read out for the filter chip: what is filtered ("Filter Figures"). */
   filterAccessibilityLabel: string;
-  /** Opens the list's settings, from a button before `actions`; absent on a read-only list. */
+  /** A read-only list shows a lock in place of list settings and '+'. */
+  isReadonly?: boolean;
+  /** Opens the list's settings. */
   onEditList?: () => void;
-  /** What changes the list itself, at the right end: its '+', or the lock of a read-only list. */
-  actions?: React.ReactNode;
+  onAdd: () => void;
+  addAccessibilityLabel: string;
+  /** Greys out '+' (Sequences at their limit). */
+  addDisabled?: boolean;
 }
 
 /**
- * The bar above each of the List tab's lists (Figures, Modifiers, Sequences): how the list is
+ * The bar above each of the List tab's segments (Figures, Modifiers, Sequences): how the list is
  * shown on the left, as labelled chips (sort by what, filter with how many criteria), and what
- * changes the list on the right: its settings, then '+'. The segmented control above already names the list, so the
- * bar has no title. Followers' actions are not here but in the band above the tabs.
+ * changes the list on the right: its settings, then '+', or a lock on a read-only list. The
+ * segment control above already names the list, so the bar has no title. Followers' actions are
+ * not here but in the band above the segments (`ListSharingBand`). The bar owns the sort sheet;
+ * each segment owns its filter sheet, since the criteria differ.
  */
-const ListToolbar: React.FC<ListToolbarProps> = ({
-  sortLabel,
-  sortOrder,
-  onSort,
-  sortAccessibilityLabel,
+function ListToolbar<F extends string>({
+  sort,
+  sortOptions,
+  onSortChange,
+  sortTitle,
   activeFilters,
   onFilter,
   filterAccessibilityLabel,
+  isReadonly = false,
   onEditList,
-  actions,
-}) => {
+  onAdd,
+  addAccessibilityLabel,
+  addDisabled,
+}: ListToolbarProps<F>) {
   const { t } = useTranslation();
+  const { theme } = useUnistyles();
+  const [isSortVisible, setIsSortVisible] = useState(false);
+  const sortLabel = sortOptions.find((o) => o.field === sort.field)!.label;
   const filtering = activeFilters > 0;
   return (
     <View style={styles.bar}>
       <View style={styles.chips}>
         <ToolbarChip
-          icon={sortOrder === "asc" ? "sort-ascending" : "sort-descending"}
+          icon={sort.order === "asc" ? "sort-ascending" : "sort-descending"}
           label={sortLabel}
-          onPress={onSort}
-          accessibilityLabel={sortAccessibilityLabel}
+          onPress={() => setIsSortVisible(true)}
+          accessibilityLabel={sortTitle}
           accessibilityValue={`${sortLabel}, ${t(
-            sortOrder === "asc" ? "sortAscending" : "sortDescending",
+            sort.order === "asc" ? "sortAscending" : "sortDescending",
           )}`}
           chevron
         />
@@ -68,21 +85,42 @@ const ListToolbar: React.FC<ListToolbarProps> = ({
           active={filtering}
         />
       </View>
-      {(onEditList || actions) && (
-        <View style={styles.actions}>
-          {onEditList && (
-            <IconButton
-              icon="tune-variant"
-              onPress={onEditList}
-              accessibilityLabel={t("editTypes")}
+      <View style={styles.actions}>
+        {isReadonly ? (
+          <Icon
+            name="lock-outline"
+            size={theme.iconSize.lg}
+            color={theme.colors.textMuted}
+            accessibilityLabel={t("readonlyList")}
+          />
+        ) : (
+          <>
+            {onEditList && (
+              <IconButton
+                icon="tune-variant"
+                onPress={onEditList}
+                accessibilityLabel={t("editTypes")}
+              />
+            )}
+            <PlusButton
+              onPress={onAdd}
+              accessibilityLabel={addAccessibilityLabel}
+              disabled={addDisabled}
             />
-          )}
-          {actions}
-        </View>
-      )}
+          </>
+        )}
+      </View>
+      <SortBottomSheet
+        visible={isSortVisible}
+        onClose={() => setIsSortVisible(false)}
+        onApplySort={onSortChange}
+        currentSort={sort}
+        options={sortOptions}
+        title={sortTitle}
+      />
     </View>
   );
-};
+}
 
 interface ToolbarChipProps {
   icon: IconName;

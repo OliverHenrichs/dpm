@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { clearNewVideo, newVideoFor } from "@/src/videoLinks/newVideoHandoff";
 import { Modal, Text, View } from "react-native";
 import ModalOverlay from "@/src/common/components/ModalOverlay";
-import { IconButton, SegmentedControl } from "@/src/common/ui";
+import { SegmentedControl } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import {
   IModifier,

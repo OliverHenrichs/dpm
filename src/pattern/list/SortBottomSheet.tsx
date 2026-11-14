@@ -1,4 +1,3 @@
-import React from "react";
 import { View } from "react-native";
 import { ListRow } from "@/src/common/ui";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";

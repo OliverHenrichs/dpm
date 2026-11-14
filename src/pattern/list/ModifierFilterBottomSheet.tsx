@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Chip } from "@/src/common/ui";
@@ -36,63 +36,57 @@ const ModifierFilterBottomSheet: React.FC<ModifierFilterBottomSheetProps> = ({
   currentFilter,
 }) => {
   const { t } = useTranslation();
-  const [filter, setFilter] = useState(currentFilter);
 
   return (
     <FilterSheetFrame
       visible={visible}
       title={t("filterModifiers")}
-      // Closing without Apply drops the edits, so the next opening shows what is applied.
-      onClose={() => {
-        setFilter(currentFilter);
-        onClose();
-      }}
-      onReset={() => {
-        setFilter(EMPTY_MODIFIER_FILTER);
-        onApplyFilter(EMPTY_MODIFIER_FILTER);
-      }}
-      onApply={() => {
-        onApplyFilter(filter);
-        onClose();
-      }}
+      currentFilter={currentFilter}
+      emptyFilter={EMPTY_MODIFIER_FILTER}
+      onApplyFilter={onApplyFilter}
+      onClose={onClose}
     >
-      <NameFilter
-        value={filter.name}
-        onChange={(name) => setFilter({ ...filter, name })}
-      />
-      <View style={styles.filterSection}>
-        <Text style={styles.label}>{t("modifierPosition")}</Text>
-        <View style={styles.chipContainer}>
-          {MODIFIER_POSITIONS.map((position) => (
-            <Chip
-              key={position}
-              label={t(modifierPositionKey(position))}
-              selected={filter.positions.includes(position)}
-              onPress={() =>
-                setFilter({
-                  ...filter,
-                  positions: toggle(filter.positions, position),
-                })
-              }
-            />
-          ))}
-        </View>
-      </View>
-      <View style={styles.filterSection}>
-        <Text style={styles.label}>{t("modifierKind")}</Text>
-        <View style={styles.chipContainer}>
-          {KINDS.map(({ kind, key }) => (
-            <Chip
-              key={kind}
-              label={t(key)}
-              selected={filter.kinds.includes(kind)}
-              onPress={() =>
-                setFilter({ ...filter, kinds: toggle(filter.kinds, kind) })
-              }
-            />
-          ))}
-        </View>
-      </View>
+      {(filter, setFilter) => (
+        <>
+          <NameFilter
+            value={filter.name}
+            onChange={(name) => setFilter({ ...filter, name })}
+          />
+          <View style={styles.filterSection}>
+            <Text style={styles.label}>{t("modifierPosition")}</Text>
+            <View style={styles.chipContainer}>
+              {MODIFIER_POSITIONS.map((position) => (
+                <Chip
+                  key={position}
+                  label={t(modifierPositionKey(position))}
+                  selected={filter.positions.includes(position)}
+                  onPress={() =>
+                    setFilter({
+                      ...filter,
+                      positions: toggle(filter.positions, position),
+                    })
+                  }
+                />
+              ))}
+            </View>
+          </View>
+          <View style={styles.filterSection}>
+            <Text style={styles.label}>{t("modifierKind")}</Text>
+            <View style={styles.chipContainer}>
+              {KINDS.map(({ kind, key }) => (
+                <Chip
+                  key={kind}
+                  label={t(key)}
+                  selected={filter.kinds.includes(kind)}
+                  onPress={() =>
+                    setFilter({ ...filter, kinds: toggle(filter.kinds, kind) })
+                  }
+                />
+              ))}
+            </View>
+          </View>
+        </>
+      )}
     </FilterSheetFrame>
   );
 };

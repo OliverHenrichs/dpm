@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Text, View } from "react-native";
 import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -28,53 +28,47 @@ const SequenceFilterBottomSheet: React.FC<SequenceFilterBottomSheetProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
-  const [filter, setFilter] = useState(currentFilter);
 
   return (
     <FilterSheetFrame
       visible={visible}
       title={t("filterSequences")}
-      // Closing without Apply drops the edits, so the next opening shows what is applied.
-      onClose={() => {
-        setFilter(currentFilter);
-        onClose();
-      }}
-      onReset={() => {
-        setFilter(EMPTY_SEQUENCE_FILTER);
-        onApplyFilter(EMPTY_SEQUENCE_FILTER);
-      }}
-      onApply={() => {
-        onApplyFilter(filter);
-        onClose();
-      }}
+      currentFilter={currentFilter}
+      emptyFilter={EMPTY_SEQUENCE_FILTER}
+      onApplyFilter={onApplyFilter}
+      onClose={onClose}
     >
-      <NameFilter
-        value={filter.name}
-        onChange={(name) => setFilter({ ...filter, name })}
-      />
-      <View style={styles.filterSection}>
-        <Text style={styles.label}>{t("sequenceFilterFigure")}</Text>
-        <RevealTextInput
-          placeholder={t("sequenceFilterFigureHint")}
-          value={filter.figure}
-          onChangeText={(figure) => setFilter({ ...filter, figure })}
-          style={styles.input}
-          placeholderTextColor={theme.colors.textMuted}
-        />
-      </View>
-      <View style={styles.filterSection}>
-        <View style={styles.chipContainer}>
-          <Chip
-            label={t("sequenceHasVideo")}
-            icon="play-circle-outline"
-            toggle
-            selected={filter.withVideo}
-            onPress={() =>
-              setFilter({ ...filter, withVideo: !filter.withVideo })
-            }
+      {(filter, setFilter) => (
+        <>
+          <NameFilter
+            value={filter.name}
+            onChange={(name) => setFilter({ ...filter, name })}
           />
-        </View>
-      </View>
+          <View style={styles.filterSection}>
+            <Text style={styles.label}>{t("sequenceFilterFigure")}</Text>
+            <RevealTextInput
+              placeholder={t("sequenceFilterFigureHint")}
+              value={filter.figure}
+              onChangeText={(figure) => setFilter({ ...filter, figure })}
+              style={styles.input}
+              placeholderTextColor={theme.colors.textMuted}
+            />
+          </View>
+          <View style={styles.filterSection}>
+            <View style={styles.chipContainer}>
+              <Chip
+                label={t("sequenceHasVideo")}
+                icon="play-circle-outline"
+                toggle
+                selected={filter.withVideo}
+                onPress={() =>
+                  setFilter({ ...filter, withVideo: !filter.withVideo })
+                }
+              />
+            </View>
+          </View>
+        </>
+      )}
     </FilterSheetFrame>
   );
 };

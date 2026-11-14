@@ -2,8 +2,8 @@ import React, { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import ListToolbar from "@/src/common/components/ListToolbar";
-import SortBottomSheet, {
+import ListToolbar from "@/src/pattern/list/ListToolbar";
+import type {
   SortConfig,
   SortOption,
 } from "@/src/pattern/list/SortBottomSheet";
@@ -17,7 +17,6 @@ import {
   SequenceSortField,
   sortSequences,
 } from "@/src/pattern/sequences/sequenceView";
-import PlusButton from "@/src/common/components/PlusButton";
 import AppDialog from "@/src/common/components/AppDialog";
 import { Icon, IconButton, ListRow } from "@/src/common/ui";
 import type { Dance } from "@/src/pattern/types/Dance";
@@ -73,7 +72,6 @@ const SequenceList: React.FC<SequenceListProps> = ({
     DEFAULT_SEQUENCE_SORT,
   );
   const [filter, setFilter] = useState<SequenceFilter>(EMPTY_SEQUENCE_FILTER);
-  const [isSortVisible, setIsSortVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const sortOptions: SortOption<SequenceSortField>[] = [
     { field: "name", label: t("name") },
@@ -96,23 +94,18 @@ const SequenceList: React.FC<SequenceListProps> = ({
   return (
     <>
       <ListToolbar
-        sortLabel={sortOptions.find((o) => o.field === sort.field)!.label}
-        sortOrder={sort.order}
-        onSort={() => setIsSortVisible(true)}
-        sortAccessibilityLabel={t("sortSequences")}
+        sort={sort}
+        sortOptions={sortOptions}
+        onSortChange={setSort}
+        sortTitle={t("sortSequences")}
         activeFilters={countSequenceFilters(filter)}
         onFilter={() => setIsFilterVisible(true)}
         filterAccessibilityLabel={t("filterSequences")}
+        isReadonly={isReadonly}
         onEditList={onEditList}
-        actions={
-          isReadonly ? undefined : (
-            <PlusButton
-              onPress={onAdd}
-              accessibilityLabel={t("sequenceNew")}
-              disabled={full}
-            />
-          )
-        }
+        onAdd={onAdd}
+        addAccessibilityLabel={t("sequenceNew")}
+        addDisabled={full}
       />
       {!isReadonly && full && (
         <Text style={styles.full}>
@@ -184,14 +177,6 @@ const SequenceList: React.FC<SequenceListProps> = ({
           </View>
         )}
       </ScrollView>
-      <SortBottomSheet
-        visible={isSortVisible}
-        onClose={() => setIsSortVisible(false)}
-        onApplySort={setSort}
-        currentSort={sort}
-        options={sortOptions}
-        title={t("sortSequences")}
-      />
       <SequenceFilterBottomSheet
         visible={isFilterVisible}
         onClose={() => setIsFilterVisible(false)}
