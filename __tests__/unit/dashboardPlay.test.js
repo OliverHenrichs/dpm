@@ -535,3 +535,19 @@ describe("dashboard wiring", () => {
     expect(playSource({ demo: true }, "/x", {}).demo).toBe(true);
   });
 });
+
+describe("the pages", () => {
+  // The page has no build step, so nothing else would catch a syntax error.
+  it.each(["index.html", "login.html"])("%s's script parses", (file) => {
+    const vm = require("vm");
+    const html = fs.readFileSync(
+      path.join(__dirname, "../../tools/dashboard/public", file),
+      "utf8",
+    );
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+    expect(scripts.length).toBeGreaterThan(0);
+    for (const [, code] of scripts) {
+      expect(() => new vm.Script(code, { filename: file })).not.toThrow();
+    }
+  });
+});
