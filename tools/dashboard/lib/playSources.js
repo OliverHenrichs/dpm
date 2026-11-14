@@ -25,14 +25,13 @@ const METRIC_SETS = {
     set: "anrRateMetricSet",
     metrics: ["anrRate", "userPerceivedAnrRate", "distinctUsers"],
   },
+  // Play requires the start type here; the tab shows cold starts.
   slowStart: {
     set: "slowStartRateMetricSet",
     metrics: ["slowStartRate", "distinctUsers"],
+    dimensions: ["startType", "versionCode"],
   },
-  slowRendering: {
-    set: "slowRenderingRateMetricSet",
-    metrics: ["slowRenderingRate30Fps", "distinctUsers"],
-  },
+  // Slow frames (slowRenderingRateMetricSet) are only served for games.
 };
 
 /** A calendar day (given as UTC midnight) as a daily DateTime: Play's days are Pacific. */
@@ -71,7 +70,10 @@ function googlePlay(google, pkg, { bucket = null } = {}) {
   const pub = `${PUBLISHER}/applications/${encodeURIComponent(pkg)}`;
 
   /** 28 days of daily rows per version, up to the newest day Play has. */
-  async function metricSet({ set, metrics }, now) {
+  async function metricSet(
+    { set, metrics, dimensions = ["versionCode"] },
+    now,
+  ) {
     const info = await google.get(`${app}/${set}`);
     const end = latestDaily(info) ?? dateTime(now - DAY);
     const endMs = Date.UTC(end.year, end.month - 1, end.day);
@@ -84,7 +86,7 @@ function googlePlay(google, pkg, { bucket = null } = {}) {
           startTime: calendarDay(endMs - 27 * DAY),
           endTime: calendarDay(endMs),
         },
-        dimensions: ["versionCode"],
+        dimensions,
         metrics,
         pageSize: 1000,
         ...(pageToken && { pageToken }),
@@ -254,39 +256,38 @@ function demoPlay() {
           rows: demoRows(METRIC_SETS.anr.metrics, versions, now, rate(0.002)),
         },
         slowStart: {
-          rows: demoRows(
-            METRIC_SETS.slowStart.metrics,
-            versions,
-            now,
-            () => 0.08,
-          ),
-        },
-        slowRendering: {
-          rows: demoRows(
-            METRIC_SETS.slowRendering.metrics,
-            versions,
-            now,
-            (m, code) => (code === 43 ? 0.12 : 0.21),
+          rows: ["COLD", "WARM"].flatMap((startType) =>
+            demoRows(METRIC_SETS.slowStart.metrics, versions, now, () =>
+              startType === "COLD" ? 0.08 : 0.02,
+            ).map((r) => ({
+              ...r,
+              dimensions: [
+                { dimension: "startType", stringValue: startType },
+                ...r.dimensions,
+              ],
+            })),
           ),
         },
       };
     },
     async releases() {
+      // The shape Play really sends: track ids as names, kinds as types.
       return {
         tracks: [
           {
-            displayName: "Production",
-            type: "PRODUCTION",
+            displayName: "production",
+            type: "Production",
+            servingReleases: [{ displayName: "1.7.0", versionCodes: ["43"] }],
+          },
+          { displayName: "beta", type: "Open testing", servingReleases: [] },
+          {
+            displayName: "alpha",
+            type: "Closed testing",
             servingReleases: [{ displayName: "1.7.0", versionCodes: ["43"] }],
           },
           {
-            displayName: "Closed testing - Alpha",
-            type: "CLOSED_TESTING",
-            servingReleases: [{ displayName: "1.7.0", versionCodes: ["43"] }],
-          },
-          {
-            displayName: "Internal testing",
-            type: "INTERNAL",
+            displayName: "internal",
+            type: "Internal",
             servingReleases: [{ displayName: "1.6.0", versionCodes: ["42"] }],
           },
         ],

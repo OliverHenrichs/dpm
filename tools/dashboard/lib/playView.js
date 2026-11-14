@@ -68,9 +68,10 @@ const metric = (row, name) =>
  * per day and per version, each weighted by distinct users.
  *
  * @param {object[]} rows MetricsRow[]
- * @param {{ rate: string, perceived?: string }} names the metrics to read
+ * @param {{ rate: string, perceived?: string, only?: Record<string, string> }} names
+ *   the metrics to read, and dimension values to keep (slow starts: COLD only)
  */
-function ratesView(rows, { rate, perceived }) {
+function ratesView(rows, { rate, perceived, only = {} }) {
   const days = new Map();
   const versions = new Map();
   const add = (map, key, r, p, users) => {
@@ -85,6 +86,7 @@ function ratesView(rows, { rate, perceived }) {
     const day = dayOf(row.startTime);
     const users = metric(row, "distinctUsers") ?? 0;
     if (!day || !users) continue;
+    if (Object.entries(only).some(([d, v]) => dim(row, d) !== v)) continue;
     const r = metric(row, rate);
     const p = perceived ? metric(row, perceived) : null;
     add(days, day, r, p, users);
@@ -118,15 +120,23 @@ function ratesView(rows, { rate, perceived }) {
 /** Which release is on which track, and a version code → name lookup. */
 function tracksView(options) {
   const names = {};
-  const tracks = (options?.tracks ?? []).map((t) => ({
-    track: t.displayName || t.type || "?",
-    type: t.type ?? null,
-    releases: (t.servingReleases ?? []).map((r) => {
-      const codes = (r.versionCodes ?? []).map(String);
-      for (const c of codes) names[c] ??= r.displayName;
-      return { name: r.displayName ?? "?", versionCodes: codes };
-    }),
-  }));
+  const tracks = (options?.tracks ?? [])
+    .map((t) => ({
+      // Play sends the track id ("alpha") as displayName and its kind
+      // ("Closed testing") as type.
+      track:
+        t.type && t.displayName && t.type.toLowerCase() !== t.displayName
+          ? `${t.type} (${t.displayName})`
+          : t.type || t.displayName || "?",
+      type: t.type ?? null,
+      releases: (t.servingReleases ?? []).map((r) => {
+        const codes = (r.versionCodes ?? []).map(String);
+        for (const c of codes) names[c] ??= r.displayName;
+        return { name: r.displayName ?? "?", versionCodes: codes };
+      }),
+    }))
+    // Tracks serving nothing (instant apps, unused open testing) are noise.
+    .filter((t) => t.releases.length > 0);
   return { tracks, names };
 }
 

@@ -87,8 +87,7 @@ function createPlay({
     const names = {
       crash: { rate: "crashRate", perceived: "userPerceivedCrashRate" },
       anr: { rate: "anrRate", perceived: "userPerceivedAnrRate" },
-      slowStart: { rate: "slowStartRate" },
-      slowRendering: { rate: "slowRenderingRate30Fps" },
+      slowStart: { rate: "slowStartRate", only: { startType: "COLD" } },
     };
     const out = {};
     const errors = {};

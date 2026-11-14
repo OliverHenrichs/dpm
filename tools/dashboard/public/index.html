@@ -2321,10 +2321,10 @@
             ),
           );
         const o = (k) => v[k]?.overall ?? null;
-        const empty = !["crash", "anr", "slowStart", "slowRendering"].some(o);
+        const empty = !["crash", "anr", "slowStart"].some(o);
         const codes = [
           ...new Set(
-            ["crash", "anr", "slowStart", "slowRendering"].flatMap(
+            ["crash", "anr", "slowStart"].flatMap(
               (k) => v[k]?.versions?.map((x) => x.versionCode) ?? [],
             ),
           ),
@@ -2362,12 +2362,6 @@
                   null,
                   "Share of users whose cold starts were slow (5 s or more)",
                 ),
-                rateLine(
-                  "Slow frames",
-                  o("slowRendering")?.rate,
-                  null,
-                  "Share of users with more than a quarter of frames under 30 fps",
-                ),
               ),
           !empty &&
             codes.length > 0 &&
@@ -2385,8 +2379,7 @@
                     "User-days",
                     "Crashes",
                     "ANRs",
-                    "Slow starts",
-                    "Slow frames",
+                    "Slow cold starts",
                   ].map((t) => h("th", {}, t)),
                 ),
                 codes.map((c) =>
@@ -2417,10 +2410,6 @@
                       { className: "mono" },
                       rate(at("slowStart", c)?.rate),
                     ),
-                    h(
-                      "td",
-                      { className: "mono" },
-                      rate(at("slowRendering", c)?.rate),
                     ),
                   ),
                 ),

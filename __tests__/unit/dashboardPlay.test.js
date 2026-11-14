@@ -70,6 +70,22 @@ describe("vitals", () => {
     expect(v.versions[1].perceived).toBeCloseTo(0.01);
   });
 
+  it("keeps only cold starts when asked", () => {
+    const start = (type, value) => ({
+      ...row(1, 43, { slowStartRate: value, distinctUsers: 10 }),
+      dimensions: [
+        { dimension: "startType", stringValue: type },
+        { dimension: "versionCode", int64Value: "43" },
+      ],
+    });
+    const v = ratesView([start("COLD", 0.2), start("WARM", 0.01)], {
+      rate: "slowStartRate",
+      only: { startType: "COLD" },
+    });
+    expect(v.overall.rate).toBeCloseTo(0.2);
+    expect(v.versions[0].versionCode).toBe("43");
+  });
+
   it("has no overall figure without users", () => {
     expect(ratesView([], names)).toEqual({
       overall: null,
@@ -107,24 +123,36 @@ describe("vitals", () => {
 });
 
 describe("tracks and crash clusters", () => {
-  it("lists each track's releases and names version codes", () => {
+  it("names tracks the way Play sends them and skips empty ones", () => {
     const t = tracksView({
       tracks: [
         {
-          displayName: "Production",
-          type: "PRODUCTION",
-          servingReleases: [{ displayName: "1.7.0", versionCodes: ["43"] }],
+          displayName: "production",
+          type: "Production",
+          servingReleases: [{ displayName: "1.7.0", versionCodes: ["22"] }],
         },
-        { displayName: "Internal testing", type: "INTERNAL" },
+        {
+          displayName: "alpha",
+          type: "Closed testing",
+          servingReleases: [{ displayName: "1.5.0", versionCodes: ["20"] }],
+        },
+        { displayName: "instantProd", type: "Production" },
+        { displayName: "beta", type: "Open testing", servingReleases: [] },
       ],
     });
-    expect(t.tracks[0]).toEqual({
-      track: "Production",
-      type: "PRODUCTION",
-      releases: [{ name: "1.7.0", versionCodes: ["43"] }],
-    });
-    expect(t.tracks[1].releases).toEqual([]);
-    expect(t.names).toEqual({ 43: "1.7.0" });
+    expect(t.tracks).toEqual([
+      {
+        track: "Production",
+        type: "Production",
+        releases: [{ name: "1.7.0", versionCodes: ["22"] }],
+      },
+      {
+        track: "Closed testing (alpha)",
+        type: "Closed testing",
+        releases: [{ name: "1.5.0", versionCodes: ["20"] }],
+      },
+    ]);
+    expect(t.names).toEqual({ 20: "1.5.0", 22: "1.7.0" });
   });
 
   it("keeps only the trace of a sample report, and only Play links", () => {
@@ -329,6 +357,12 @@ describe("Google Play source", () => {
       },
     });
     expect(q[2].dimensions).toEqual(["versionCode"]);
+    // Play requires the start type for slow starts; slow frames are games-only.
+    const slow = calls.find(([, u]) =>
+      u.endsWith("slowStartRateMetricSet:query"),
+    );
+    expect(slow[2].dimensions).toEqual(["startType", "versionCode"]);
+    expect(calls.some(([, u]) => u.includes("slowRendering"))).toBe(false);
 
     const { issues, samples } = await play.issues(now);
     expect(issues).toHaveLength(1);
@@ -403,7 +437,6 @@ describe("Play API", () => {
           },
           anr: { error: "refused" },
           slowStart: { rows: [] },
-          slowRendering: { rows: [] },
         }),
       },
     });

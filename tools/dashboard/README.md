@@ -219,10 +219,10 @@ How the released app is doing on Google Play, for the production app
 
 - **Android vitals, last 28 days**: the crash and ANR (freeze) rates users noticed, against Play's
   bad behavior limits (1.09% and 0.47% of daily users; above them Play may show the app less and
-  warn on its store page), with all crashes and ANRs below them; slow cold starts and slow frames
-  (under 30 fps); and each version's figures in a table. Play reports vitals only once enough
+  warn on its store page), with all crashes and ANRs below them; slow cold starts; and each version's figures in a table. Play reports vitals only once enough
   people use a version, so a small alpha may show none.
-- **Tracks**: which release each track serves now (rollout percentages are only in Play Console).
+- **Tracks**: which release each track serves now; tracks serving nothing are left out (rollout
+  percentages are only in Play Console). Slow frames aren't shown: Play serves them only for games.
 - **Installs** (optional): installs, uninstalls and active devices per day, from Play's monthly
   reports in Cloud Storage; see below.
 - **Biggest crashes and ANRs**: the ten biggest clusters of 28 days, with how many reports and
