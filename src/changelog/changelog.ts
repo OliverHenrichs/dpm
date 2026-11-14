@@ -20,6 +20,66 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.8.0",
+    date: "2026-11-14",
+    notes: {
+      en: [
+        "The *List* tab now keeps the list, its subscribers and the view apart. On a published list, a band above *Figures*, *Modifiers* and *Sequences* shows *Members* (or *Asking to join* with the number waiting) and *Suggestions* with the number to review. Subscribers who may suggest find *Suggest a figure* there.",
+        "*Figures*, *Modifiers* and *Sequences* share one toolbar: the sort in force with its direction, a *Filter* chip that counts the filters you set, and at the end the list's settings and +.",
+        "*Modifiers* can now be sorted by name, position or creation date, and filtered by name, position and kind. Sorted by position, they follow the dance: *Entry*, *During*, *Exit*. *Sequences* can be sorted by name, creation date, total counts or number of steps, and filtered by name, by a figure they contain and by whether they have a video.",
+        "In the figure form, the list under *Attach...* now scrolls, so you can attach every modifier, however many there are.",
+      ],
+      zh: [
+        "“列表”标签页现在把列表本身、订阅者和显示方式分开。已发布的列表在“舞步”、“变化”和“组合”上方有一栏，显示“成员”（有人等待时显示“申请加入”及人数）和“建议”及待处理的数量。可以提建议的订阅者在这里找到“建议舞步”。",
+        "“舞步”、“变化”和“组合”使用同一个工具栏：当前的排序及其方向，一个统计已设筛选条件数量的“筛选”按钮，最后是列表设置和 +。",
+        "“变化”现在可以按名称、位置或创建日期排序，并按名称、位置和类别筛选。按位置排序时按跳舞的顺序排列：“进入”、“过程中”、“退出”。“组合”可以按名称、创建日期、总拍数或步骤数排序，并按名称、所含舞步以及是否有视频筛选。",
+        "在舞步表单中，“附加…”下的列表现在可以滚动，变化再多也都能附加。",
+      ],
+      hi: [
+        "“सूची” टैब अब सूची, उसके सब्सक्राइबर और दिखाने का तरीका अलग रखता है। प्रकाशित सूची में “पैटर्न”, “मॉडिफ़ायर” और “अनुक्रम” के ऊपर एक पट्टी “सदस्य” दिखाती है (कोई इंतज़ार कर रहा हो तो संख्या के साथ “शामिल होना चाहते हैं”), और “सुझाव” देखने बाकी सुझावों की संख्या के साथ। जो सब्सक्राइबर सुझाव दे सकते हैं, उन्हें वहीं “पैटर्न सुझाएँ” मिलता है।",
+        "“पैटर्न”, “मॉडिफ़ायर” और “अनुक्रम” का टूलबार एक जैसा है: लागू क्रम और उसकी दिशा, एक “फ़िल्टर” चिप जो आपके लगाए फ़िल्टर गिनती है, और आख़िर में सूची की सेटिंग्स और +।",
+        "“मॉडिफ़ायर” अब नाम, स्थान या बनाने की तारीख़ से क्रमबद्ध किए जा सकते हैं, और नाम, स्थान और प्रकार से फ़िल्टर किए जा सकते हैं। स्थान से क्रमबद्ध करने पर वे नृत्य के क्रम में आते हैं: “प्रवेश”, “दौरान”, “निकास”। “अनुक्रम” नाम, बनाने की तारीख़, कुल काउंट या चरणों की संख्या से क्रमबद्ध किए जा सकते हैं, और नाम, उनमें शामिल किसी पैटर्न और वीडियो होने से फ़िल्टर किए जा सकते हैं।",
+        "पैटर्न फ़ॉर्म में “जोड़ें...” के नीचे की सूची अब स्क्रॉल होती है, इसलिए कितने भी मॉडिफ़ायर हों, आप हर एक को जोड़ सकते हैं।",
+      ],
+      es: [
+        "La pestaña *Lista* ahora separa la lista, sus suscriptores y la vista. En una lista publicada, una banda encima de *Figuras*, *Modificadores* y *Secuencias* muestra *Miembros* (o *Piden unirse* con el número de quienes esperan) y *Propuestas* con el número por revisar. Los suscriptores que pueden proponer encuentran ahí *Proponer una figura*.",
+        "*Figuras*, *Modificadores* y *Secuencias* comparten una barra: el orden actual con su dirección, un chip *Filtro* que cuenta los filtros que has puesto y, al final, los ajustes de la lista y +.",
+        "Los *Modificadores* ahora se pueden ordenar por nombre, posición o fecha de creación, y filtrar por nombre, posición y tipo. Por posición siguen el baile: *Entrada*, *Durante*, *Salida*. Las *Secuencias* se pueden ordenar por nombre, fecha de creación, tiempos en total o número de pasos, y filtrar por nombre, por una figura que contengan y por si tienen un vídeo.",
+        "En el formulario de la figura, la lista de *Adjuntar...* ahora se desplaza, así que puedes adjuntar todos los modificadores, por muchos que haya.",
+      ],
+      fr: [
+        "L'onglet *Liste* sépare désormais la liste, ses abonnés et l'affichage. Sur une liste publiée, une bande au-dessus de *Figures*, *Modificateurs* et *Séquences* affiche *Membres* (ou *Demandent à rejoindre* avec le nombre de personnes en attente) et *Propositions* avec le nombre à examiner. Les abonnés qui peuvent proposer y trouvent *Proposer une figure*.",
+        "*Figures*, *Modificateurs* et *Séquences* partagent une même barre : le tri en cours avec son sens, une puce *Filtre* qui compte les filtres définis et, à la fin, les réglages de la liste et +.",
+        "Les *Modificateurs* se trient désormais par nom, position ou date de création, et se filtrent par nom, position et genre. Triés par position, ils suivent la danse : *Entrée*, *Pendant*, *Sortie*. Les *Séquences* se trient par nom, date de création, temps au total ou nombre d'étapes, et se filtrent par nom, par une figure qu'elles contiennent et selon qu'elles ont une vidéo.",
+        "Dans le formulaire de la figure, la liste sous *Attacher...* défile désormais, pour que vous puissiez attacher chaque modificateur, quel que soit leur nombre.",
+      ],
+      ar: [
+        "صار تبويب «القائمة» يفصل بين القائمة نفسها ومشتركيها وطريقة العرض. في القائمة المنشورة، يعرض شريط فوق «الحركات» و«المُعدِّلات» و«التسلسلات» «الأعضاء» (أو «يطلبون الانضمام» مع عدد المنتظرين) و«الاقتراحات» مع عدد ما ينتظر المراجعة. ويجد المشتركون الذين يحق لهم الاقتراح هناك «اقتراح حركة».",
+        "لـ«الحركات» و«المُعدِّلات» و«التسلسلات» شريط أدوات واحد: الترتيب الحالي واتجاهه، وزر «تصفية» يعدّ عوامل التصفية التي حددتها، وفي آخره إعدادات القائمة و+.",
+        "يمكن الآن ترتيب «المُعدِّلات» حسب الاسم أو الموضع أو تاريخ الإنشاء، وتصفيتها حسب الاسم والموضع والنوع. وعند ترتيبها حسب الموضع تتبع ترتيب الرقص: «دخول»، «أثناء»، «خروج». ويمكن ترتيب «التسلسلات» حسب الاسم أو تاريخ الإنشاء أو مجموع العدّات أو عدد الخطوات، وتصفيتها حسب الاسم وحسب حركة تحتويها وحسب وجود فيديو.",
+        "في نموذج الحركة، صارت القائمة تحت «إرفاق...» قابلة للتمرير، فتستطيع إرفاق كل المُعدِّلات مهما كثرت.",
+      ],
+      bn: [
+        "“তালিকা” ট্যাব এখন তালিকা, তার সাবস্ক্রাইবার আর দেখানোর ধরন আলাদা রাখে। প্রকাশিত তালিকায় “প্যাটার্ন”, “মডিফায়ার” ও “অনুক্রম”-এর উপরে একটি পট্টি “সদস্য” দেখায় (কেউ অপেক্ষায় থাকলে সংখ্যাসহ “যোগ দিতে চায়”), আর দেখার বাকি সংখ্যাসহ “প্রস্তাব”। যে সাবস্ক্রাইবাররা প্রস্তাব দিতে পারেন, তাঁরা সেখানেই “প্যাটার্ন প্রস্তাব করুন” পান।",
+        "“প্যাটার্ন”, “মডিফায়ার” ও “অনুক্রম”-এর টুলবার একই: চালু সাজানোর ক্রম ও তার দিক, আপনার দেওয়া ফিল্টার গোনে এমন একটি “ফিল্টার” চিপ, আর শেষে তালিকার সেটিংস ও +।",
+        "“মডিফায়ার” এখন নাম, অবস্থান বা তৈরির তারিখ অনুযায়ী সাজানো যায়, আর নাম, অবস্থান ও ধরন অনুযায়ী ফিল্টার করা যায়। অবস্থান অনুযায়ী সাজালে সেগুলো নাচের ক্রমে আসে: “প্রবেশ”, “চলাকালীন”, “প্রস্থান”। “অনুক্রম” নাম, তৈরির তারিখ, মোট কাউন্ট বা ধাপের সংখ্যা অনুযায়ী সাজানো যায়, আর নাম, তাতে থাকা কোনো প্যাটার্ন ও ভিডিও আছে কি না অনুযায়ী ফিল্টার করা যায়।",
+        "প্যাটার্ন ফর্মে “যুক্ত করুন...”-এর নিচের তালিকা এখন স্ক্রোল হয়, তাই মডিফায়ার যত বেশিই হোক, প্রতিটি যুক্ত করা যায়।",
+      ],
+      pt: [
+        "A aba *Lista* agora separa a lista, seus assinantes e a visualização. Numa lista publicada, uma faixa acima de *Figuras*, *Modificadores* e *Sequências* mostra *Membros* (ou *Pedindo para entrar* com o número de quem espera) e *Sugestões* com o número a revisar. Os assinantes que podem sugerir encontram ali *Sugerir uma figura*.",
+        "*Figuras*, *Modificadores* e *Sequências* têm a mesma barra: a ordem atual com sua direção, um chip *Filtro* que conta os filtros definidos e, no fim, as configurações da lista e +.",
+        "Os *Modificadores* agora podem ser ordenados por nome, posição ou data de criação, e filtrados por nome, posição e tipo. Por posição, seguem a dança: *Entrada*, *Durante*, *Saída*. As *Sequências* podem ser ordenadas por nome, data de criação, tempos no total ou número de passos, e filtradas por nome, por uma figura que contenham e por terem ou não um vídeo.",
+        "No formulário da figura, a lista em *Anexar...* agora rola, então você pode anexar todos os modificadores, por mais que sejam.",
+      ],
+      de: [
+        "Der Tab *Liste* trennt jetzt die Liste, ihre Abonnenten und die Ansicht. Bei einer veröffentlichten Liste steht über *Figuren*, *Modifikatoren* und *Folgen* ein Band. Es zeigt *Mitglieder* (oder *Bitten um Aufnahme* mit der Zahl der Wartenden) und *Vorschläge* mit der Zahl der offenen. Abonnenten, die vorschlagen dürfen, finden dort *Figur vorschlagen*.",
+        "*Figuren*, *Modifikatoren* und *Folgen* haben dieselbe Werkzeugleiste. Vorne stehen die aktuelle Sortierung mit ihrer Richtung und *Filter*, das die gesetzten Filter zählt. Am Ende folgen die Einstellungen der Liste und +.",
+        "*Modifikatoren* lassen sich jetzt nach Name, Position oder Erstellungsdatum sortieren und nach Name, Position und Art filtern. Nach Position folgen sie dem Tanz: *Eingang*, *Während*, *Ausgang*. *Folgen* lassen sich nach Name, Erstellungsdatum, Counts gesamt oder Zahl der Schritte sortieren. Filtern kannst du sie nach Name, nach einer enthaltenen Figur und danach, ob sie ein Video haben.",
+        "Im Figurenformular lässt sich die Liste unter *Anhängen...* jetzt scrollen. So kannst du jeden Modifikator anhängen, auch wenn es viele sind.",
+      ],
+    },
+  },
+  {
     version: "1.7.0",
     date: "2026-11-08",
     notes: {
