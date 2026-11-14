@@ -1,12 +1,12 @@
 <en-US>
-1.7.0
-• New templates: Standard and Latin, one figure type per dance, with ISTD Bronze starter figures.
-• Shorten and Anonymize: see the frame while you drag, 0.1 s steps, and zoom into the selection.
-• Anonymize no longer stops partway through a Full HD video of a couple.
+1.8.0
+• List tab: members and suggestions in a band above the segments, and one toolbar with sort, filter count, settings and +.
+• Sort and filter modifiers and sequences.
+• Attach... in the figure form now scrolls when there are many modifiers.
 </en-US>
 <de-DE>
-1.7.0
-• Neue Vorlagen: Standard und Latein, ein Figurentyp je Tanz, mit Startfiguren aus ISTD Bronze.
-• Kürzen und Anonymisieren: Bild beim Ziehen, Schritte von 0,1 s und Zoom auf die Auswahl.
-• Anonymisieren bricht bei Full-HD-Videos eines Paars nicht mehr mittendrin ab.
+1.8.0
+• Tab Liste: Mitglieder und Vorschläge in einem Band über den Bereichen, dazu eine Leiste mit Sortierung, Filterzahl, Einstellungen und +.
+• Modifikatoren und Folgen lassen sich sortieren und filtern.
+• Anhängen... im Figurenformular scrollt jetzt bei vielen Modifikatoren.
 </de-DE>
