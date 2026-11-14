@@ -1,6 +1,6 @@
 # Privacy Policy — DancePatternMapper (DPM)
 
-**Last updated: October 26, 2026**
+**Last updated: November 13, 2026**
 
 ---
 
@@ -118,6 +118,12 @@ The speech-to-text and suggestion features need models that are downloaded once,
 
 You can refuse or withdraw any of these permissions in your device settings; only the feature that needs it stops working.
 
+### 3.7 Reviews on Google Play
+
+If you review the app on Google Play, Google shows us your review: the name on your Google Play profile, your star rating and text, the app version and device model it was written on, and when you wrote or last changed it. Google keeps reviews available to us for about a week, so we keep a copy on our own computer to read and answer them. A reply we write is published on Google Play under your review. We keep the copy for at most one year after you last changed the review, and delete it earlier if you ask us. Google Play itself handles your review under Google's privacy policy.
+
+We also read crash and freeze rates and crash reports for the app from Google Play (Android vitals). These are figures and stack traces that Google collects under its own terms; they hold no name, account or user ID, and we keep only the figures, never the reports.
+
 ---
 
 ## 4. Legal basis for processing (GDPR Art. 6)
@@ -133,6 +139,7 @@ You can refuse or withdraw any of these permissions in your device settings; onl
 | Blocking an anonymous ID from publishing, suggesting and asking to join            | Legitimate interest in keeping removed or unlawful content (for example a child's personal data) from being published again (Art. 6(1)(f)) |
 | Subscription records counted for a list's publisher                                | Legitimate interest of the publisher in knowing how many people follow their list (Art. 6(1)(f))                                           |
 | Reports about a list, with your anonymous ID and the email you give if any         | Our legal obligation to act on notices of illegal content (Art. 6(1)(c), Digital Services Act Art. 16), and your explicit action           |
+| Keeping and answering your review on Google Play                                   | Legitimate interest in reading and answering feedback about the app (Art. 6(1)(f))                                                         |
 | IP address collection by Firebase                                                  | Legitimate interest in operating a secure service (Art. 6(1)(f))                                                                           |
 | Connecting to a video host or to Hugging Face at your request                      | Necessary for the performance of the service you requested (Art. 6(1)(b))                                                                  |
 
@@ -183,6 +190,7 @@ We do **not** sell your data to third parties and do not use your data for adver
 | Block record (anonymous user ID, date)                                           | Kept only if we block an installation from publishing, for example after removing content that must not be published; deleted when we lift the block or delete that anonymous ID          |
 | An email asking us to delete your data, with our notes and reply                 | On our own computer until we have dealt with it and replied, then deleted                                                                                                                 |
 | Our record of a removal or block (share code or anonymous user ID, date, reason) | Two years, so we can answer questions about it later; it holds no list content, email address or report text                                                                              |
+| Our copy of your Google Play review (name on Play, rating, text, our reply)      | One year after you last changed the review; deleted earlier if you ask us                                                                                                                 |
 | Firebase infrastructure logs (IP, timestamps)                                    | Governed by Google's own retention policy (typically 30–180 days)                                                                                                                         |
 | Logs kept by video hosts, Hugging Face and GitHub                                | Governed by each service's own policy                                                                                                                                                     |
 
