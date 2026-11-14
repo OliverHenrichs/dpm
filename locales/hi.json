@@ -893,5 +893,21 @@
   "importWarnTooManySequences": "केवल पहले {{max}} अनुक्रम रखे गए।",
   "importWarnSequenceTooLong": "केवल इसके पहले {{max}} चरण रखे गए।",
   "importWarnSequenceStepsMissingFigure": "{{count}} चरण ऐसे पैटर्न का नाम लेते थे जो फ़ाइल में नहीं है, इसलिए छोड़ दिए गए।",
-  "importWarnSequenceStepsMalformed": "{{count}} चरण पढ़े नहीं जा सके, इसलिए छोड़ दिए गए।"
+  "importWarnSequenceStepsMalformed": "{{count}} चरण पढ़े नहीं जा सके, इसलिए छोड़ दिए गए।",
+  "filterChip": "फ़िल्टर",
+  "filterChipActive": "फ़िल्टर · {{count}}",
+  "listPublished": "प्रकाशित",
+  "listFollowing": "सदस्यता ली",
+  "sortModifiers": "मॉडिफ़ायर क्रमबद्ध करें",
+  "filterModifiers": "मॉडिफ़ायर छानें",
+  "modifierKind": "प्रकार",
+  "modifierKindUniversal": "सार्वभौमिक",
+  "modifierKindAttached": "पैटर्न पर लगे",
+  "noMatchingModifiers": "मौजूदा फ़िल्टर से कोई मॉडिफ़ायर मेल नहीं खाता।",
+  "sortSequences": "अनुक्रम क्रमबद्ध करें",
+  "filterSequences": "अनुक्रम छानें",
+  "sequenceSortCounts": "कुल काउंट",
+  "sequenceFilterFigure": "पैटर्न शामिल है",
+  "sequenceFilterFigureHint": "पैटर्न के नाम का हिस्सा",
+  "noMatchingSequences": "मौजूदा फ़िल्टर से कोई अनुक्रम मेल नहीं खाता।"
 }

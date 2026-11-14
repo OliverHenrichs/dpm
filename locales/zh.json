@@ -893,5 +893,21 @@
   "importWarnTooManySequences": "只保留了前 {{max}} 个组合。",
   "importWarnSequenceTooLong": "只保留了前 {{max}} 个步骤。",
   "importWarnSequenceStepsMissingFigure": "有 {{count}} 个步骤引用了不在文件中的舞步，已略去。",
-  "importWarnSequenceStepsMalformed": "有 {{count}} 个步骤无法读取，已略去。"
+  "importWarnSequenceStepsMalformed": "有 {{count}} 个步骤无法读取，已略去。",
+  "filterChip": "筛选",
+  "filterChipActive": "筛选 · {{count}}",
+  "listPublished": "已发布",
+  "listFollowing": "已订阅",
+  "sortModifiers": "排序变化",
+  "filterModifiers": "筛选变化",
+  "modifierKind": "类别",
+  "modifierKindUniversal": "通用",
+  "modifierKindAttached": "用于舞步",
+  "noMatchingModifiers": "没有变化符合当前的筛选条件。",
+  "sortSequences": "排序组合",
+  "filterSequences": "筛选组合",
+  "sequenceSortCounts": "总拍数",
+  "sequenceFilterFigure": "包含舞步",
+  "sequenceFilterFigureHint": "舞步名称的一部分",
+  "noMatchingSequences": "没有组合符合当前的筛选条件。"
 }

@@ -9,7 +9,8 @@ it travels with export and publishing.
 
 - The List tab's segments are **Figures · Modifiers · Sequences**, each with a count.
 - The **overview** has one row per sequence: name, number of steps and total counts, and a
-  video badge when it has a video. **+** adds one. With none yet, it says what a sequence is: "Figures in the order you dance them: a
+  video badge when it has a video. Its toolbar sorts and filters them like the figures
+  ([the List tab](list-tab.md)). **+** adds one. With none yet, it says what a sequence is: "Figures in the order you dance them: a
   routine, a Rallye, a workshop combination."
 - **Opening** a sequence shows its name, totals, description and its steps as a numbered list:
   each with the figure's name and type colour, the variant and the counts, and the step's note.

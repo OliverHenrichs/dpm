@@ -893,5 +893,21 @@
   "importWarnTooManySequences": "Nur die ersten {{max}} Folgen wurden übernommen.",
   "importWarnSequenceTooLong": "Nur ihre ersten {{max}} Schritte wurden übernommen.",
   "importWarnSequenceStepsMissingFigure": "{{count}} Schritt(e) verwiesen auf eine Figur, die nicht in der Datei ist, und wurden weggelassen.",
-  "importWarnSequenceStepsMalformed": "{{count}} Schritt(e) konnten nicht gelesen werden und wurden weggelassen."
+  "importWarnSequenceStepsMalformed": "{{count}} Schritt(e) konnten nicht gelesen werden und wurden weggelassen.",
+  "filterChip": "Filter",
+  "filterChipActive": "Filter · {{count}}",
+  "listPublished": "Veröffentlicht",
+  "listFollowing": "Abonniert",
+  "sortModifiers": "Modifikatoren sortieren",
+  "filterModifiers": "Modifikatoren filtern",
+  "modifierKind": "Art",
+  "modifierKindUniversal": "Universal",
+  "modifierKindAttached": "An Figuren",
+  "noMatchingModifiers": "Keine Modifikatoren entsprechen den aktuellen Filtern.",
+  "sortSequences": "Folgen sortieren",
+  "filterSequences": "Folgen filtern",
+  "sequenceSortCounts": "Counts gesamt",
+  "sequenceFilterFigure": "Enthält Figur",
+  "sequenceFilterFigureHint": "Teil eines Figurennamens",
+  "noMatchingSequences": "Keine Folgen entsprechen den aktuellen Filtern."
 }

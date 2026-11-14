@@ -30,6 +30,12 @@ edited in `EditModifierForm`; `ModifierPillStrip` shows and toggles a pattern's 
 `EditPatternForm` and `PatternDetails`. A pattern, and each modifier combination of it, holds at
 most `MAX_VIDEOS` videos (`src/anonymize/jobs/replaceVideo.ts`).
 
+## The List tab's layout (`docs/product/list-tab.md`)
+
+Each segment's toolbar is `ListToolbar` (sort sheet, list settings, '+' or lock). Followers'
+actions: `ListSharingBand` above the segments. Modifiers and Sequences sort and filter through
+pure `modifierView.ts` and `../sequences/sequenceView.ts`.
+
 ## Sorting and rows
 
 `SortConfig` (`SortBottomSheet.tsx`): `{ field, order }`, `SortField = "name" | "typeId" | "level" |

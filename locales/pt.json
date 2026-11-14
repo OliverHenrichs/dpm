@@ -893,5 +893,21 @@
   "importWarnTooManySequences": "Só as primeiras {{max}} sequências foram mantidas.",
   "importWarnSequenceTooLong": "Só os primeiros {{max}} passos foram mantidos.",
   "importWarnSequenceStepsMissingFigure": "{{count}} passo(s) citavam uma figura que não está no arquivo e foram deixados de fora.",
-  "importWarnSequenceStepsMalformed": "{{count}} passo(s) não puderam ser lidos e foram deixados de fora."
+  "importWarnSequenceStepsMalformed": "{{count}} passo(s) não puderam ser lidos e foram deixados de fora.",
+  "filterChip": "Filtro",
+  "filterChipActive": "Filtro · {{count}}",
+  "listPublished": "Publicada",
+  "listFollowing": "Assinada",
+  "sortModifiers": "Ordenar modificadores",
+  "filterModifiers": "Filtrar modificadores",
+  "modifierKind": "Tipo",
+  "modifierKindUniversal": "Universal",
+  "modifierKindAttached": "Em figuras",
+  "noMatchingModifiers": "Nenhum modificador corresponde aos filtros atuais.",
+  "sortSequences": "Ordenar sequências",
+  "filterSequences": "Filtrar sequências",
+  "sequenceSortCounts": "Tempos no total",
+  "sequenceFilterFigure": "Contém a figura",
+  "sequenceFilterFigureHint": "Parte do nome de uma figura",
+  "noMatchingSequences": "Nenhuma sequência corresponde aos filtros atuais."
 }

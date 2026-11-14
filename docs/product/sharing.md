@@ -49,13 +49,13 @@ sharing control is hidden. Nobody needs an account.
   for the whole list. The limit resets at midnight UTC.
 - **Also changes to existing figures** is a second switch. A suggested change costs one
   suggestion from the same limit.
-- A subscriber sees _Suggest a figure_ in the List tab's header, and _Suggest a change_ in place
+- A subscriber sees _Suggest a figure_ in the band above the List tab's segments, and _Suggest a change_ in place
   of Edit on each figure (also in the Map's details). The form says how many suggestions are left
   today. A name is optional and remembered. Only video links are sent; phone videos stay behind.
   Agreeing to the terms comes first.
 - A refused suggestion says why: the owner muted the sender, the day's limit is used up, or the
   list stopped taking suggestions.
-- The owner's List tab header shows a lightbulb with the number waiting.
+- The owner's List tab shows _Suggestions_ with the number waiting in the same band.
   - A **new figure** opens in the figure form, so the owner can correct it before _Add to list_.
   - A **change** is shown as one line per change (name, type, counts and rhythm, each tag,
     prerequisite, video and modifier). Lines the figure already has are left out. A line the
@@ -75,7 +75,8 @@ sharing control is hidden. Nobody needs an account.
 - Looking up a members-only code shows _This list is for members only_ with _Ask to join_ (an
   optional name). Asking is the one step that signs the phone in. There is no live wait: once let
   in, the subscriber looks the code up again.
-- The owner's List tab header shows a people button with the number waiting. The members sheet
+- The owner's List tab shows _Asking to join_ with the number waiting (_Members_ when nobody is)
+  in the band above the segments. The members sheet
   lists those asking (_Let in_, _Decline_), members (_Remove_, confirmed) and those turned away
   (_Let in_).
 - A removed member's copy stops updating, is kept and becomes editable. They cannot ask again

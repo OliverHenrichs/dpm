@@ -1,9 +1,25 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import SectionHeader from "@/src/common/components/SectionHeader";
-import PlusButton from "@/src/common/components/PlusButton";
+import ListToolbar from "@/src/pattern/list/ListToolbar";
+import type {
+  SortConfig,
+  SortOption,
+} from "@/src/pattern/list/SortBottomSheet";
+import ModifierFilterBottomSheet from "@/src/pattern/list/ModifierFilterBottomSheet";
+import PatternSectionHeader from "@/src/pattern/list/PatternSectionHeader";
+import {
+  buildModifierEntries,
+  countModifierFilters,
+  DEFAULT_MODIFIER_SORT,
+  EMPTY_MODIFIER_FILTER,
+  filterModifiers,
+  ModifierFilter,
+  modifierPositionKey,
+  ModifierSortField,
+  sortModifiers,
+} from "@/src/pattern/list/modifierView";
 import { IModifier, IPattern } from "@/src/pattern/types/IPatternList";
 import { PatternType } from "@/src/pattern/types/PatternType";
 import ModifierListItem from "@/src/pattern/list/ModifierListItem";
@@ -16,6 +32,8 @@ type ModifierListProps = {
   onAdd: () => void;
   onEdit: (modifier: IModifier) => void;
   onDelete: (id: string) => void;
+  /** Opens the list's settings from the toolbar; absent on a read-only list. */
+  onEditList?: () => void;
 };
 
 const ModifierList: React.FC<ModifierListProps> = ({
@@ -26,39 +44,80 @@ const ModifierList: React.FC<ModifierListProps> = ({
   onAdd,
   onEdit,
   onDelete,
+  onEditList,
 }) => {
   const { t } = useTranslation();
   const [selectedModifier, setSelectedModifier] = useState<
     IModifier | undefined
   >(undefined);
 
-  const rightActions = isReadonly ? null : (
-    <PlusButton onPress={onAdd} accessibilityLabel={t("addModifier")} />
+  const [sort, setSort] = useState<SortConfig<ModifierSortField>>(
+    DEFAULT_MODIFIER_SORT,
+  );
+  const [filter, setFilter] = useState<ModifierFilter>(EMPTY_MODIFIER_FILTER);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const sortOptions: SortOption<ModifierSortField>[] = [
+    { field: "name", label: t("name") },
+    { field: "position", label: t("modifierPosition") },
+    { field: "added", label: t("dateCreated") },
+  ];
+  const activeFilters = countModifierFilters(filter);
+  const entries = useMemo(
+    () =>
+      buildModifierEntries(
+        sortModifiers(filterModifiers(modifiers, filter), sort),
+        sort.field,
+      ),
+    [modifiers, filter, sort],
   );
 
   return (
     <>
-      <SectionHeader
-        title={t("modifiers")}
-        rightActions={rightActions ?? undefined}
+      <ListToolbar
+        sort={sort}
+        sortOptions={sortOptions}
+        onSortChange={setSort}
+        sortTitle={t("sortModifiers")}
+        activeFilters={activeFilters}
+        onFilter={() => setIsFilterVisible(true)}
+        filterAccessibilityLabel={t("filterModifiers")}
+        isReadonly={isReadonly}
+        onEditList={onEditList}
+        onAdd={onAdd}
+        addAccessibilityLabel={t("addModifier")}
       />
       <ScrollView style={styles.scrollView}>
-        {modifiers.map((modifier) => (
-          <ModifierListItem
-            key={modifier.id}
-            modifier={modifier}
-            patterns={patterns}
-            patternTypes={patternTypes}
-            isSelected={selectedModifier?.id === modifier.id}
-            onSelect={(m) => setSelectedModifier(m)}
-            isReadonly={isReadonly}
-            onEdit={onEdit}
-            onDelete={(id) => {
-              if (selectedModifier?.id === id) setSelectedModifier(undefined);
-              onDelete(id);
-            }}
-          />
-        ))}
+        {entries.map((entry) =>
+          entry.kind === "section" ? (
+            <PatternSectionHeader
+              key={entry.key}
+              title={t(modifierPositionKey(entry.position))}
+              count={entry.count}
+            />
+          ) : (
+            <ModifierListItem
+              key={entry.key}
+              modifier={entry.modifier}
+              patterns={patterns}
+              patternTypes={patternTypes}
+              isSelected={selectedModifier?.id === entry.modifier.id}
+              onSelect={(m) => setSelectedModifier(m)}
+              isReadonly={isReadonly}
+              onEdit={onEdit}
+              onDelete={(id) => {
+                if (selectedModifier?.id === id) setSelectedModifier(undefined);
+                onDelete(id);
+              }}
+            />
+          ),
+        )}
+        {modifiers.length > 0 && entries.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              {t("noMatchingModifiers")}
+            </Text>
+          </View>
+        )}
         {modifiers.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>{t("noModifiers")}</Text>
@@ -70,6 +129,12 @@ const ModifierList: React.FC<ModifierListProps> = ({
           </View>
         )}
       </ScrollView>
+      <ModifierFilterBottomSheet
+        visible={isFilterVisible}
+        onClose={() => setIsFilterVisible(false)}
+        onApplyFilter={setFilter}
+        currentFilter={filter}
+      />
     </>
   );
 };

@@ -57,15 +57,19 @@ export function usePatternFilter(patterns: IPattern[], filter: PatternFilter) {
     });
   }, [patterns, filter]);
 
-  const hasActiveFilter = useMemo(() => {
-    return (
-      filter.name !== "" ||
-      filter.types.length > 0 ||
-      filter.levels.length > 0 ||
-      filter.counts !== undefined ||
-      filter.tags.length > 0
-    );
-  }, [filter]);
+  const activeFilters = useMemo(() => countActiveFilters(filter), [filter]);
+  const hasActiveFilter = activeFilters > 0;
 
-  return { filteredPatterns, hasActiveFilter };
+  return { filteredPatterns, hasActiveFilter, activeFilters };
+}
+
+/** How many of the filter's criteria are set: what the toolbar's _Filter_ chip counts. */
+export function countActiveFilters(filter: PatternFilter): number {
+  return [
+    filter.name !== "",
+    filter.types.length > 0,
+    filter.levels.length > 0,
+    filter.counts !== undefined,
+    filter.tags.length > 0,
+  ].filter(Boolean).length;
 }

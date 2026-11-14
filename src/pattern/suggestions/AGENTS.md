@@ -55,8 +55,8 @@ Under `sharedLists/{code}`:
   (any more), keeps URL videos only and a rhythm only if it matches the counts, the same spirit as
   import validation. A level is kept only if it is one of the list's (`resolveLevelIds`); the
   rules bound it at 32 characters, which a `newLevelId` fits.
-- The List tab's header shows a lightbulb (`SuggestionsButton`): _Suggest a figure_ on a
-  subscribed list (`SuggestPatternModal`), or the review with a count on the publisher's own
+- The List tab's sharing band above its segments (`src/pattern/list/ListSharingBand.tsx`) shows
+  _Suggest a figure_ on a subscribed list (`SuggestPatternModal`), or _Suggestions_ with a count, for the review, on the publisher's own
   (`SuggestionsModal`, shown while suggestions are on or any are left). `useListSuggestions`
   listens while the publisher's list is published, whether or not suggestions are on now.
 - Both modals render only while open (`src/pattern/list/AGENTS.md`, always-mounted modals), so

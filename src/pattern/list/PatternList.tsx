@@ -19,10 +19,11 @@ import { useTranslation } from "react-i18next";
 import PatternFilterBottomSheet, {
   PatternFilter,
 } from "../filter/components/PatternFilterBottomSheet";
-import SortBottomSheet, {
+import {
+  patternSortOptions,
   SortConfig,
 } from "@/src/pattern/list/SortBottomSheet";
-import PatternListHeader from "./PatternListHeader";
+import ListToolbar from "./ListToolbar";
 import PatternListItem from "./PatternListItem";
 import { usePatternFilter } from "@/src/pattern/filter/hooks/usePatternFilter";
 import { usePatternSort } from "./hooks/usePatternSort";
@@ -57,8 +58,8 @@ type PatternListProps = {
   onEdit: (pattern: IPattern) => void;
   /** Suggesting a change to a figure of a subscribed list (`PatternListItem`). */
   onSuggestEdit?: (pattern: IPattern) => void;
-  /** More actions in the header, before the lock or '+' (pattern suggestions). */
-  headerActions?: React.ReactNode;
+  /** Opens the list's settings from the toolbar; absent on a read-only list. */
+  onEditList?: () => void;
   /** The filter sheet's _Manage_ link for tags: list settings on the Tags section. */
   onManageTags?: () => void;
   /** The list's sequences, so deleting a figure can name those that use it. */
@@ -82,13 +83,12 @@ const PatternList: React.FC<PatternListProps> = (props) => {
   });
 
   const [isAddMenuVisible, setIsAddMenuVisible] = useState(false);
-  const [isSortVisible, setIsSortVisible] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: "name",
     order: "asc",
   });
 
-  const { filteredPatterns, hasActiveFilter } = usePatternFilter(
+  const { filteredPatterns, hasActiveFilter, activeFilters } = usePatternFilter(
     props.patterns,
     filter,
   );
@@ -211,15 +211,20 @@ const PatternList: React.FC<PatternListProps> = (props) => {
 
   return (
     <>
-      <PatternListHeader
-        hasActiveFilter={hasActiveFilter}
-        isReadonly={isReadonly}
-        onSort={() => setIsSortVisible(true)}
+      <ListToolbar
+        sort={sortConfig}
+        sortOptions={patternSortOptions(t)}
+        onSortChange={setSortConfig}
+        sortTitle={t("sortPatterns")}
+        activeFilters={activeFilters}
         onFilter={() => setIsFilterVisible(true)}
+        filterAccessibilityLabel={t("filterPatterns")}
+        isReadonly={isReadonly}
+        onEditList={props.onEditList}
         onAdd={
           props.onAddFromVideo ? () => setIsAddMenuVisible(true) : props.onAdd
         }
-        extraActions={props.headerActions}
+        addAccessibilityLabel={t("addPattern")}
       />
 
       <FlatList
@@ -313,13 +318,6 @@ const PatternList: React.FC<PatternListProps> = (props) => {
           </View>
         </BottomSheet>
       )}
-
-      <SortBottomSheet
-        visible={isSortVisible}
-        onClose={() => setIsSortVisible(false)}
-        onApplySort={setSortConfig}
-        currentSort={sortConfig}
-      />
     </>
   );
 };

@@ -55,6 +55,7 @@ works offline and stays on the phone unless the user shares it.
 
 ### Figures (the List tab)
 
+- The List tab's toolbars, the followers' band and sorting are in [list-tab.md](list-tab.md).
 - **+** offers _New figure_, _From a video_ (picked from the gallery) and _Record a video_ (the
   system camera). A video seeds the new figure, and after saving the app offers to edit the video
   ([video tools](video-tools.md)).
@@ -127,15 +128,6 @@ works offline and stays on the phone unless the user shares it.
   description: its own where it has them, else the figure's. A modifier's own details
   list every figure it's attached to. Deleting a modifier detaches it everywhere.
 - A variation of a figure is a modifier on it, not a new figure.
-
-### Sorting and filtering
-
-- **Sort** by name, type, level, counts or date added, ascending or descending. Every sort except
-  name splits the list into sections with pinned headers and counts. Types follow the list's
-  order, levels the list's order (easiest first), and figures without a value come last. A
-  figure whose level the list no longer has counts as no level.
-- **Filter** by name, type, level, exact counts and tags. The same filter applies to the List and
-  the Map. Filters are not remembered when the user leaves the list.
 
 ## Rules that must always hold
 

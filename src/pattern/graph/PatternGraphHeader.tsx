@@ -48,7 +48,7 @@ const PatternGraphHeader: React.FC<PatternGraphHeaderProps> = ({
           accessibilityLabel={t("resetLaneOrder")}
         />
       )}
-      {/* Same icon/colour convention as PatternListHeader, so an active
+      {/* Same icon/colour convention as the List tab's ListToolbar, so an active
           filter reads the same on both screens. */}
       <IconButton
         icon={hasActiveFilter ? "filter" : "filter-outline"}
