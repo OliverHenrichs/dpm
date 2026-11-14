@@ -20,6 +20,7 @@ import PatternFilterBottomSheet, {
   PatternFilter,
 } from "../filter/components/PatternFilterBottomSheet";
 import SortBottomSheet, {
+  patternSortOptions,
   SortConfig,
 } from "@/src/pattern/list/SortBottomSheet";
 import PatternListHeader from "./PatternListHeader";
@@ -57,8 +58,6 @@ type PatternListProps = {
   onEdit: (pattern: IPattern) => void;
   /** Suggesting a change to a figure of a subscribed list (`PatternListItem`). */
   onSuggestEdit?: (pattern: IPattern) => void;
-  /** More actions in the header, before the lock or '+' (pattern suggestions). */
-  headerActions?: React.ReactNode;
   /** The filter sheet's _Manage_ link for tags: list settings on the Tags section. */
   onManageTags?: () => void;
   /** The list's sequences, so deleting a figure can name those that use it. */
@@ -88,7 +87,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
     order: "asc",
   });
 
-  const { filteredPatterns, hasActiveFilter } = usePatternFilter(
+  const { filteredPatterns, hasActiveFilter, activeFilters } = usePatternFilter(
     props.patterns,
     filter,
   );
@@ -212,14 +211,18 @@ const PatternList: React.FC<PatternListProps> = (props) => {
   return (
     <>
       <PatternListHeader
-        hasActiveFilter={hasActiveFilter}
+        sortLabel={
+          patternSortOptions(t).find((o) => o.field === sortConfig.field)
+            ?.label ?? ""
+        }
+        sortOrder={sortConfig.order}
+        activeFilters={activeFilters}
         isReadonly={isReadonly}
         onSort={() => setIsSortVisible(true)}
         onFilter={() => setIsFilterVisible(true)}
         onAdd={
           props.onAddFromVideo ? () => setIsAddMenuVisible(true) : props.onAdd
         }
-        extraActions={props.headerActions}
       />
 
       <FlatList

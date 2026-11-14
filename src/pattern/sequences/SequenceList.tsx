@@ -1,8 +1,22 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import SectionHeader from "@/src/common/components/SectionHeader";
+import ListToolbar from "@/src/common/components/ListToolbar";
+import SortBottomSheet, {
+  SortConfig,
+  SortOption,
+} from "@/src/pattern/list/SortBottomSheet";
+import SequenceFilterBottomSheet from "@/src/pattern/sequences/SequenceFilterBottomSheet";
+import {
+  countSequenceFilters,
+  DEFAULT_SEQUENCE_SORT,
+  EMPTY_SEQUENCE_FILTER,
+  filterSequences,
+  SequenceFilter,
+  SequenceSortField,
+  sortSequences,
+} from "@/src/pattern/sequences/sequenceView";
 import PlusButton from "@/src/common/components/PlusButton";
 import AppDialog from "@/src/common/components/AppDialog";
 import { Icon, IconButton, ListRow } from "@/src/common/ui";
@@ -52,12 +66,41 @@ const SequenceList: React.FC<SequenceListProps> = ({
   const totalsText = useTotalsText();
   const [deleting, setDeleting] = useState<ISequence | null>(null);
   const full = sequences.length >= MAX_SEQUENCES;
+  const [sort, setSort] = useState<SortConfig<SequenceSortField>>(
+    DEFAULT_SEQUENCE_SORT,
+  );
+  const [filter, setFilter] = useState<SequenceFilter>(EMPTY_SEQUENCE_FILTER);
+  const [isSortVisible, setIsSortVisible] = useState(false);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const sortOptions: SortOption<SequenceSortField>[] = [
+    { field: "name", label: t("name") },
+    { field: "added", label: t("dateCreated") },
+    { field: "counts", label: t("sequenceSortCounts") },
+    { field: "steps", label: t("sequenceSteps") },
+  ];
+  const shown = useMemo(
+    () =>
+      sortSequences(
+        filterSequences(sequences, filter, patterns),
+        sort,
+        patterns,
+        modifiers,
+        dance,
+      ),
+    [sequences, filter, sort, patterns, modifiers, dance],
+  );
 
   return (
     <>
-      <SectionHeader
-        title={t("sequencesTab")}
-        rightActions={
+      <ListToolbar
+        sortLabel={sortOptions.find((o) => o.field === sort.field)!.label}
+        sortOrder={sort.order}
+        onSort={() => setIsSortVisible(true)}
+        sortAccessibilityLabel={t("sortSequences")}
+        activeFilters={countSequenceFilters(filter)}
+        onFilter={() => setIsFilterVisible(true)}
+        filterAccessibilityLabel={t("filterSequences")}
+        actions={
           isReadonly ? undefined : (
             <PlusButton
               onPress={onAdd}
@@ -73,7 +116,7 @@ const SequenceList: React.FC<SequenceListProps> = ({
         </Text>
       )}
       <ScrollView style={styles.scrollView}>
-        {sequences.map((sequence) => (
+        {shown.map((sequence) => (
           <View key={sequence.id} style={styles.item}>
             <ListRow
               title={sequence.name}
@@ -123,6 +166,13 @@ const SequenceList: React.FC<SequenceListProps> = ({
             />
           </View>
         ))}
+        {sequences.length > 0 && shown.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              {t("noMatchingSequences")}
+            </Text>
+          </View>
+        )}
         {sequences.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>{t("noSequences")}</Text>
@@ -130,6 +180,20 @@ const SequenceList: React.FC<SequenceListProps> = ({
           </View>
         )}
       </ScrollView>
+      <SortBottomSheet
+        visible={isSortVisible}
+        onClose={() => setIsSortVisible(false)}
+        onApplySort={setSort}
+        currentSort={sort}
+        options={sortOptions}
+        title={t("sortSequences")}
+      />
+      <SequenceFilterBottomSheet
+        visible={isFilterVisible}
+        onClose={() => setIsFilterVisible(false)}
+        onApplyFilter={setFilter}
+        currentFilter={filter}
+      />
       <AppDialog
         visible={deleting !== null}
         title={t("sequenceDelete")}

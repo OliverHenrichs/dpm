@@ -50,8 +50,9 @@ retries once on a refusal before reporting `NoAccessError`.
 - `SubscribeListModal`: a members-only code shows _This list is for members only_ with _Ask to
   join_ (and a name), _Look up again_ while waiting, or that the publisher turned the phone away.
   There is no live wait: the subscriber looks the code up again once let in.
-- The publisher's List tab header shows a people button with the number waiting
-  (`SuggestionsButton` with other icons) on their own members-only list (`managesMembers`); it opens
+- The publisher's List tab shows _Asking to join_ with the number waiting (_Members_ when nobody
+  is) in the sharing band above the segments (`ListSharingBand`) on their own members-only list
+  (`managesMembers`); it opens
   `MembersModal`: waiting (_Let in_, _Decline_), members (_Remove_, confirmed), turned away (_Let
   in_). `useMembers` listens while that list is published.
 - **Losing access** (`useSharedList`): a subscriber's copy that is refused (the list became

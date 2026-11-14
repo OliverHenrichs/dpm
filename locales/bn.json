@@ -893,5 +893,21 @@
   "importWarnTooManySequences": "শুধু প্রথম {{max}}টি অনুক্রম রাখা হয়েছে।",
   "importWarnSequenceTooLong": "শুধু এর প্রথম {{max}}টি ধাপ রাখা হয়েছে।",
   "importWarnSequenceStepsMissingFigure": "{{count}}টি ধাপ এমন প্যাটার্নের উল্লেখ করেছিল যা ফাইলে নেই, তাই বাদ দেওয়া হয়েছে।",
-  "importWarnSequenceStepsMalformed": "{{count}}টি ধাপ পড়া যায়নি, তাই বাদ দেওয়া হয়েছে।"
+  "importWarnSequenceStepsMalformed": "{{count}}টি ধাপ পড়া যায়নি, তাই বাদ দেওয়া হয়েছে।",
+  "filterChip": "ফিল্টার",
+  "filterChipActive": "ফিল্টার · {{count}}",
+  "listPublished": "প্রকাশিত",
+  "listFollowing": "যুক্ত",
+  "sortModifiers": "মডিফায়ার সাজান",
+  "filterModifiers": "মডিফায়ার ছাঁকুন",
+  "modifierKind": "ধরন",
+  "modifierKindUniversal": "সর্বজনীন",
+  "modifierKindAttached": "প্যাটার্নে যুক্ত",
+  "noMatchingModifiers": "বর্তমান ফিল্টারের সঙ্গে কোনো মডিফায়ার মেলে না।",
+  "sortSequences": "অনুক্রম সাজান",
+  "filterSequences": "অনুক্রম ছাঁকুন",
+  "sequenceSortCounts": "মোট কাউন্ট",
+  "sequenceFilterFigure": "প্যাটার্ন আছে",
+  "sequenceFilterFigureHint": "প্যাটার্নের নামের অংশ",
+  "noMatchingSequences": "বর্তমান ফিল্টারের সঙ্গে কোনো অনুক্রম মেলে না।"
 }

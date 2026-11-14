@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { modifierPositionKey } from "@/src/pattern/list/modifierView";
 import { Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { IconButton, ListRow } from "@/src/common/ui";
@@ -35,12 +36,7 @@ const ModifierListItem: React.FC<ModifierListItemProps> = ({
   const { theme } = useUnistyles();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
-  const positionLabel =
-    modifier.position === "prefix"
-      ? t("modifierPositionPrefix")
-      : modifier.position === "postfix"
-        ? t("modifierPositionPostfix")
-        : t("modifierPositionAmends");
+  const positionLabel = t(modifierPositionKey(modifier.position));
 
   const handleToggleSelect = () => {
     onSelect(isSelected ? undefined : modifier);

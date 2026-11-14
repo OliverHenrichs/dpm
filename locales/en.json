@@ -893,5 +893,21 @@
   "importWarnTooManySequences": "Only the first {{max}} sequences were kept.",
   "importWarnSequenceTooLong": "Only its first {{max}} steps were kept.",
   "importWarnSequenceStepsMissingFigure": "{{count}} step(s) named a figure not in the file and were left out.",
-  "importWarnSequenceStepsMalformed": "{{count}} step(s) could not be read and were left out."
+  "importWarnSequenceStepsMalformed": "{{count}} step(s) could not be read and were left out.",
+  "filterChip": "Filter",
+  "filterChipActive": "Filter · {{count}}",
+  "listPublished": "Published",
+  "listFollowing": "Following",
+  "sortModifiers": "Sort Modifiers",
+  "filterModifiers": "Filter Modifiers",
+  "modifierKind": "Kind",
+  "modifierKindUniversal": "Universal",
+  "modifierKindAttached": "Attached to figures",
+  "noMatchingModifiers": "No modifiers match the current filters.",
+  "sortSequences": "Sort Sequences",
+  "filterSequences": "Filter Sequences",
+  "sequenceSortCounts": "Total counts",
+  "sequenceFilterFigure": "Contains figure",
+  "sequenceFilterFigureHint": "Part of a figure's name",
+  "noMatchingSequences": "No sequences match the current filters."
 }

@@ -9,6 +9,7 @@ Start with [`overview.md`](overview.md).
 | ---------------------------------------------- | --------------------------------------------------------------------------- |
 | [`overview.md`](overview.md)                   | Every feature area in a line, and the principles across them                |
 | [`lists-and-figures.md`](lists-and-figures.md) | Lists, figures, types, levels, tags, modifiers, rhythm, templates           |
+| [`list-tab.md`](list-tab.md)                   | The List tab's toolbars, the followers' band, sorting and filtering         |
 | [`sequences.md`](sequences.md)                 | Sequences: named runs of a list's figures in dancing order, on the List tab |
 | [`map.md`](map.md)                             | Timeline and network views, filtering, dragging, editing from the Map       |
 | [`reels.md`](reels.md)                         | The Reels tab                                                               |

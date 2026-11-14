@@ -24,9 +24,17 @@ type DrawerNavigation = { openDrawer: () => void };
 interface AppHeaderProps {
   /** For a screen outside the drawer, which has no title of its own there. */
   title?: string;
+  /**
+   * A button right after the title, centred with it: the List tab's list settings, which edit
+   * the whole list rather than one of its segments.
+   */
+  titleAction?: React.ReactNode;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ title: titleOverride }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({
+  title: titleOverride,
+  titleAction,
+}) => {
   const { t } = useTranslation();
   const navigation = useNavigation<DrawerNavigation>();
   const pathname = usePathname();
@@ -52,9 +60,22 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title: titleOverride }) => {
           style={styles.headerIcon}
         />
       </Tappable>
-      <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
-        {title}
-      </Text>
+      {titleAction ? (
+        <View style={styles.titleRow}>
+          <Text
+            style={[styles.headerTitle, styles.titleWithAction]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {title}
+          </Text>
+          {titleAction}
+        </View>
+      ) : (
+        <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+          {title}
+        </Text>
+      )}
       <Tappable
         onPress={() => navigation.openDrawer()}
         style={styles.headerSlot}
@@ -97,5 +118,14 @@ const styles = StyleSheet.create((theme) => ({
     textAlign: "center",
     color: theme.colors.text,
   },
+  // With an action the title and the button centre together, still in flow between the slots.
+  titleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.space.xs,
+  },
+  titleWithAction: { flexGrow: 0, flexShrink: 1, flexBasis: "auto" },
 }));
 export default AppHeader;

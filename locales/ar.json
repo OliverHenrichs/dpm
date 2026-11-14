@@ -893,5 +893,21 @@
   "importWarnTooManySequences": "تم الاحتفاظ بأول {{max}} تسلسلًا فقط.",
   "importWarnSequenceTooLong": "تم الاحتفاظ بأول {{max}} خطوة فقط.",
   "importWarnSequenceStepsMissingFigure": "تم حذف {{count}} خطوة تشير إلى حركة غير موجودة في الملف.",
-  "importWarnSequenceStepsMalformed": "تعذّرت قراءة {{count}} خطوة فتم حذفها."
+  "importWarnSequenceStepsMalformed": "تعذّرت قراءة {{count}} خطوة فتم حذفها.",
+  "filterChip": "تصفية",
+  "filterChipActive": "تصفية · {{count}}",
+  "listPublished": "منشورة",
+  "listFollowing": "مشترَك فيها",
+  "sortModifiers": "ترتيب المُعدِّلات",
+  "filterModifiers": "تصفية المُعدِّلات",
+  "modifierKind": "النوع",
+  "modifierKindUniversal": "عام",
+  "modifierKindAttached": "على حركات",
+  "noMatchingModifiers": "لا توجد مُعدِّلات مطابقة للمرشّحات الحالية.",
+  "sortSequences": "ترتيب التسلسلات",
+  "filterSequences": "تصفية التسلسلات",
+  "sequenceSortCounts": "مجموع العدّات",
+  "sequenceFilterFigure": "تحتوي على حركة",
+  "sequenceFilterFigureHint": "جزء من اسم حركة",
+  "noMatchingSequences": "لا توجد تسلسلات مطابقة للمرشّحات الحالية."
 }

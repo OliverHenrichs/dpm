@@ -13,36 +13,57 @@ export type SortField = keyof Pick<
 >;
 export type SortOrder = "asc" | "desc";
 
-export interface SortConfig {
-  field: SortField;
+/** A sort of one of the List tab's lists: figures by default, or modifiers and sequences. */
+export interface SortConfig<F extends string = SortField> {
+  field: F;
   order: SortOrder;
 }
 
-interface SortBottomSheetProps {
-  visible: boolean;
-  onClose: () => void;
-  onApplySort: (config: SortConfig) => void;
-  currentSort: SortConfig;
+export interface SortOption<F extends string = SortField> {
+  field: F;
+  label: string;
 }
 
-const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
-  visible,
-  onClose,
-  onApplySort,
-  currentSort,
-}) => {
-  const { t } = useTranslation();
-  const { theme } = useUnistyles();
-
-  const sortOptions: { field: SortField; label: string }[] = [
+/** The figures' sort fields, in the sheet's order. */
+export function patternSortOptions(
+  t: (key: string) => string,
+): SortOption<SortField>[] {
+  return [
     { field: "name", label: t("name") },
     { field: "typeId", label: t("type") },
     { field: "level", label: t("level") },
     { field: "counts", label: t("counts") },
     { field: "id", label: t("dateCreated") },
   ];
+}
 
-  const handleSort = (field: SortField) => {
+interface SortBottomSheetProps<F extends string> {
+  visible: boolean;
+  onClose: () => void;
+  onApplySort: (config: SortConfig<F>) => void;
+  currentSort: SortConfig<F>;
+  /** What can be sorted by; the figures' fields unless given. */
+  options?: SortOption<F>[];
+  /** The sheet's title; "Sort Figures" unless given. */
+  title?: string;
+}
+
+/** Picks a field; picking the active one again flips its direction. */
+function SortBottomSheet<F extends string = SortField>({
+  visible,
+  onClose,
+  onApplySort,
+  currentSort,
+  options,
+  title,
+}: SortBottomSheetProps<F>) {
+  const { t } = useTranslation();
+  const { theme } = useUnistyles();
+
+  const sortOptions =
+    options ?? (patternSortOptions(t) as unknown as SortOption<F>[]);
+
+  const handleSort = (field: F) => {
     const order: SortOrder =
       currentSort.field === field && currentSort.order === "asc"
         ? "desc"
@@ -55,7 +76,7 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      title={t("sortPatterns")}
+      title={title ?? t("sortPatterns")}
       maxHeight="50%"
     >
       <View style={styles.optionsContainer}>
@@ -89,7 +110,7 @@ const SortBottomSheet: React.FC<SortBottomSheetProps> = ({
       </View>
     </BottomSheet>
   );
-};
+}
 
 const styles = StyleSheet.create((theme) => ({
   optionsContainer: {

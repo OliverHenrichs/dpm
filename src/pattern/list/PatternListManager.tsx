@@ -54,7 +54,7 @@ import {
   receivesSuggestions,
 } from "@/src/pattern/suggestions/suggestions";
 import { useListSuggestions } from "@/src/pattern/suggestions/useListSuggestions";
-import SuggestionsButton from "@/src/pattern/suggestions/SuggestionsButton";
+import ListSharingBand from "@/src/pattern/list/ListSharingBand";
 import SuggestPatternModal from "@/src/pattern/suggestions/SuggestPatternModal";
 import SuggestionsModal from "@/src/pattern/suggestions/SuggestionsModal";
 import { managesMembers } from "@/src/pattern/members/members";
@@ -305,7 +305,18 @@ const PatternListManager = () => {
   return (
     <View style={{ flex: 1 }}>
       <PageContainer style={{ backgroundColor: theme.colors.background }}>
-        <AppHeader />
+        <AppHeader
+          titleAction={
+            isReadonly ? undefined : (
+              <IconButton
+                icon="shape-outline"
+                size={theme.iconSize.md}
+                onPress={() => openListSettings(false)}
+                accessibilityLabel={t("editTypes")}
+              />
+            )
+          }
+        />
 
         {/* Add / Edit Pattern modals */}
         <PatternFormModal visible={isAddingNew} onRequestClose={closeAddForm}>
@@ -439,6 +450,28 @@ const PatternListManager = () => {
 
         <AnonymizeJobsBanner openAction={openJobPattern} />
 
+        {/* Followers and the owner: the same on every segment, so above them */}
+        <ListSharingBand
+          role={isReadonly ? "follower" : "owner"}
+          members={
+            showsMembers
+              ? {
+                  waiting: waitingToJoin,
+                  onPress: () => setIsManagingMembers(true),
+                }
+              : undefined
+          }
+          suggestions={
+            !mayBeSuggestedTo && reviewsSuggestions
+              ? {
+                  count: suggestions.length,
+                  onPress: () => setIsReviewingSuggestions(true),
+                }
+              : undefined
+          }
+          onSuggest={mayBeSuggestedTo ? () => setIsSuggesting(true) : undefined}
+        />
+
         {/* Tab strip */}
         <SegmentedControl
           segments={[
@@ -485,42 +518,6 @@ const PatternListManager = () => {
               selectedPattern={selectedPattern}
               sequences={sequences}
               onOpenSequence={openSequenceById}
-              headerActions={
-                <>
-                  {!isReadonly && (
-                    <IconButton
-                      icon="shape-outline"
-                      onPress={() => openListSettings(false)}
-                      accessibilityLabel={t("editTypes")}
-                    />
-                  )}
-                  {showsMembers && (
-                    <SuggestionsButton
-                      icon="account-group-outline"
-                      activeIcon="account-group"
-                      onPress={() => setIsManagingMembers(true)}
-                      accessibilityLabel={t("membersButtonLabel", {
-                        count: waitingToJoin,
-                      })}
-                      count={waitingToJoin}
-                    />
-                  )}
-                  {mayBeSuggestedTo ? (
-                    <SuggestionsButton
-                      onPress={() => setIsSuggesting(true)}
-                      accessibilityLabel={t("suggestPattern")}
-                    />
-                  ) : reviewsSuggestions ? (
-                    <SuggestionsButton
-                      onPress={() => setIsReviewingSuggestions(true)}
-                      accessibilityLabel={t("suggestionsReviewLabel", {
-                        count: suggestions.length,
-                      })}
-                      count={suggestions.length}
-                    />
-                  ) : null}
-                </>
-              }
             />
           ) : activeTab === "sequences" ? (
             <SequenceList
