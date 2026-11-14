@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import { router } from "expo-router";
 import AppHeader from "@/src/common/components/AppHeader";
+import { IconButton } from "@/src/common/ui";
 import { createTestPatternList } from "@/utils/testFactories";
 import {
   fireEvent,
@@ -102,6 +103,31 @@ describe("AppHeader", () => {
       );
       expect(style.position).not.toBe("absolute");
       expect(style.flex).toBe(1);
+    });
+
+    it("keeps the title centred, with the same width on both sides, beside an extra action", async () => {
+      const onPress = jest.fn();
+      renderWithProviders(
+        <AppHeader
+          action={
+            <IconButton
+              icon="playlist-edit"
+              onPress={onPress}
+              accessibilityLabel="Edit the list"
+            />
+          }
+        />,
+        { lists: [createTestPatternList({ name: "West Coast Swing" })] },
+      );
+
+      expect(await screen.findByText("West Coast Swing")).toBeOnTheScreen();
+      fireEvent.press(screen.getByLabelText("Edit the list"));
+      expect(onPress).toHaveBeenCalled();
+
+      const widthOf = (id: string) =>
+        flatten(screen.getByTestId(id).props.style).width;
+      expect(widthOf("app-header-start")).toBeGreaterThan(56);
+      expect(widthOf("app-header-start")).toBe(widthOf("app-header-end"));
     });
   });
 });

@@ -17,7 +17,8 @@ and Sequences had only a title and **+**, with no sort or filter.
 Each kind of action gets its own place, the same on every segment:
 
 - Followers' actions move into a band above the segments that says what is waiting in words.
-- List settings move beside the list's name in the header.
+- List settings move into the header, beside the menu (an edit-list icon in place of the old
+  shapes), so the list's name stays centred.
 - The title row under the segments, which only repeated the segment's name, becomes the
   toolbar: labelled sort and filter chips on the left, **+** on the right.
 - Modifiers and Sequences get sort and filter like Figures.

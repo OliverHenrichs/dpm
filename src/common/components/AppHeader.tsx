@@ -18,6 +18,9 @@ const HEADER_BUTTON_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
  */
 const HEADER_SLOT_SIZE = 56;
 
+/** The extra button's slot beside the menu: a 44dp touch target. */
+const ACTION_SLOT_SIZE = 44;
+
 /** Only the drawer-specific part of the navigation object is needed here. */
 type DrawerNavigation = { openDrawer: () => void };
 
@@ -25,15 +28,16 @@ interface AppHeaderProps {
   /** For a screen outside the drawer, which has no title of its own there. */
   title?: string;
   /**
-   * A button right after the title, centred with it: the List tab's list settings, which edit
-   * the whole list rather than one of its segments.
+   * One more button at the right, before the menu: the List tab's list settings, which edit
+   * the whole list rather than one of its segments. The left side widens by the same amount,
+   * so the title stays centred on screen.
    */
-  titleAction?: React.ReactNode;
+  action?: React.ReactNode;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
   title: titleOverride,
-  titleAction,
+  action,
 }) => {
   const { t } = useTranslation();
   const navigation = useNavigation<DrawerNavigation>();
@@ -48,43 +52,45 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     : (titleOverride ?? screenTitle ?? pathname);
   return (
     <View style={styles.header}>
-      <Tappable
-        onPress={() => router.navigate(HOME_ROUTE.href)}
-        style={styles.headerSlot}
-        hitSlop={HEADER_BUTTON_HIT_SLOP}
-        borderless
-        accessibilityLabel={t("goHome")}
+      <View
+        testID="app-header-start"
+        style={[styles.side, action ? styles.sideWide : undefined]}
       >
-        <Image
-          source={require("@/assets/images/app-icon-in-app.png")}
-          style={styles.headerIcon}
-        />
-      </Tappable>
-      {titleAction ? (
-        <View style={styles.titleRow}>
-          <Text
-            style={[styles.headerTitle, styles.titleWithAction]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {title}
-          </Text>
-          {titleAction}
-        </View>
-      ) : (
-        <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
-          {title}
-        </Text>
-      )}
-      <Tappable
-        onPress={() => navigation.openDrawer()}
-        style={styles.headerSlot}
-        hitSlop={HEADER_BUTTON_HIT_SLOP}
-        borderless
-        accessibilityLabel={t("openMenu")}
+        <Tappable
+          onPress={() => router.navigate(HOME_ROUTE.href)}
+          style={styles.headerSlot}
+          hitSlop={HEADER_BUTTON_HIT_SLOP}
+          borderless
+          accessibilityLabel={t("goHome")}
+        >
+          <Image
+            source={require("@/assets/images/app-icon-in-app.png")}
+            style={styles.headerIcon}
+          />
+        </Tappable>
+      </View>
+      <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+        {title}
+      </Text>
+      <View
+        testID="app-header-end"
+        style={[
+          styles.side,
+          styles.sideEnd,
+          action ? styles.sideWide : undefined,
+        ]}
       >
-        <Icon name="menu" size={28} color={theme.colors.primary} />
-      </Tappable>
+        {action && <View style={styles.actionSlot}>{action}</View>}
+        <Tappable
+          onPress={() => navigation.openDrawer()}
+          style={styles.headerSlot}
+          hitSlop={HEADER_BUTTON_HIT_SLOP}
+          borderless
+          accessibilityLabel={t("openMenu")}
+        >
+          <Icon name="menu" size={28} color={theme.colors.primary} />
+        </Tappable>
+      </View>
     </View>
   );
 };
@@ -118,14 +124,15 @@ const styles = StyleSheet.create((theme) => ({
     textAlign: "center",
     color: theme.colors.text,
   },
-  // With an action the title and the button centre together, still in flow between the slots.
-  titleRow: {
-    flex: 1,
-    flexDirection: "row",
+  // Both sides are always the same width, so the title between them centres on screen.
+  side: { width: HEADER_SLOT_SIZE, flexDirection: "row", alignItems: "center" },
+  sideEnd: { justifyContent: "flex-end" },
+  sideWide: { width: HEADER_SLOT_SIZE + ACTION_SLOT_SIZE },
+  actionSlot: {
+    width: ACTION_SLOT_SIZE,
+    height: HEADER_SLOT_SIZE,
     alignItems: "center",
     justifyContent: "center",
-    gap: theme.space.xs,
   },
-  titleWithAction: { flexGrow: 0, flexShrink: 1, flexBasis: "auto" },
 }));
 export default AppHeader;

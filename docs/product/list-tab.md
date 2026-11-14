@@ -6,7 +6,7 @@ the same on all three segments: Figures, Modifiers and Sequences. What the segme
 
 ## What the user can do
 
-- **The list itself**: its settings open from the shapes button beside the list's name in the
+- **The list itself**: its settings open from the edit-list button beside the menu in the
   header (not on a read-only list). Each segment's toolbar ends on **+** at the right, or a lock
   on a read-only list.
 - **Followers**: a published list shows a band above the segments. The owner sees _Members_ on a

@@ -306,11 +306,10 @@ const PatternListManager = () => {
     <View style={{ flex: 1 }}>
       <PageContainer style={{ backgroundColor: theme.colors.background }}>
         <AppHeader
-          titleAction={
+          action={
             isReadonly ? undefined : (
               <IconButton
-                icon="shape-outline"
-                size={theme.iconSize.md}
+                icon="playlist-edit"
                 onPress={() => openListSettings(false)}
                 accessibilityLabel={t("editTypes")}
               />
