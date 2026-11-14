@@ -60,6 +60,17 @@ Lists the speech and suggestion models with their size, and downloads or deletes
 - _What's new_ lists every version's notes, bundled with the app, in all nine languages.
 - _Show what's new after an update_ turns the note off.
 
+### Updates
+
+- On Android, when Google Play has a newer version, the app shows Play's own update dialog at
+  launch. If the user agrees, the update downloads in the background while they keep working.
+- If they say no, the dialog comes back after a week for that version, or at once for a newer one.
+- Once it has downloaded, a sheet offers to restart into the new version (_Restart_) or wait
+  (_Later_, asked again at the next launch). It waits while a video job is queued, running or
+  waiting for review, because the restart would lose it.
+- Works only for an install from Google Play; Play's own auto-update still applies on top. Not on
+  iOS yet.
+
 ### Legal
 
 Links to the terms of use and the privacy policy on the website.
@@ -76,6 +87,8 @@ Links to the terms of use and the privacy policy on the website.
 | A copy import gets a new id and no share code                                        | `__tests__/unit/importCopy.test.ts`               |
 | Each release's notes exist in all nine languages and the newest is the app's version | `__tests__/unit/changelog.test.ts`                |
 | Stored data is migrated once, forwards only, before anything reads it                | `__tests__/unit/migrations.test.ts`               |
+| Play's update dialog shows at most once a week per version, never during a download  | `__tests__/unit/appUpdate.test.ts`                |
+| The restart into an update never shows while a video job could be lost               | `__tests__/components/UpdatePrompt.test.tsx`      |
 
 ## Not built yet
 
@@ -89,3 +102,4 @@ Links to the terms of use and the privacy policy on the website.
 ## Decisions
 
 - [0008](../decisions/0008-export-files-are-for-backups.md) Export files are for backups and moving phones
+- [0013](../decisions/0013-flexible-in-app-updates.md) Updates through Play's flexible in-app flow

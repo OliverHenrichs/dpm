@@ -1,6 +1,6 @@
 # Local native modules — `modules/`
 
-Two local Expo modules, autolinked, **Android only** (Kotlin). Each exports its module through
+Three local Expo modules, autolinked, **Android only** (Kotlin). Each exports its module through
 `requireOptionalNativeModule`, so on iOS, web, Jest or a dev client built without it the export is
 `null` and the matching flag is false; the app gates every action on that flag, never on
 `Platform.OS`. Any change here, or adding a module, needs a rebuilt dev client.
@@ -8,6 +8,7 @@ Two local Expo modules, autolinked, **Android only** (Kotlin). Each exports its 
 | Module | JS surface | Used by |
 |---|---|---|
 | `video-anonymize` | `VideoAnonymizeModule.anonymize(uri, options)` with an `onProgress` event (`stage`, `progress`); `prepareOutline` / `outline(uri, { atSeconds, prompts })` / `releaseOutline` (the tap frame with the tapped dancers highlighted, kept warm between taps, `DancerOutline.kt`); `isAnonymizeAvailable` | `src/anonymize/` (*Shorten* and *Anonymize*) |
+| `app-update` | `AppUpdateModule.check()` / `startFlexibleUpdate()` / `completeUpdate()` with an `onInstallStatus` event; `isAppUpdateAvailable` | `src/changelog/` (the update prompt) |
 | `audio-extract` | `AudioExtractModule.extractSpeechWav(uri, maxSeconds)` (16 kHz mono PCM for Whisper), `sha256File(uri)`; `isAudioExtractAvailable` | `src/transcribe/` (audio, model hashes), `src/suggest/` (model hash) |
 
 ## video-anonymize
@@ -71,8 +72,17 @@ check (`src/transcribe/AGENTS.md`). The resampler (`Pcm.kt`) is a windowed-sinc 
 It costs well under a second per minute of audio; keep it a table lookup and one dot product per
 output sample.
 
+## app-update
+
+A thin wrapper over Google Play's In-App Updates library (`com.google.android.play:app-update`),
+flexible flow only. `check` keeps Play's `AppUpdateInfo` for `startFlexibleUpdate`, which needs
+that same object and can start one flow from it, so call `check` again before another flow.
+`startFlexibleUpdate` uses Play's `startUpdateFlow` (a `Task` with the dialog's result), so the
+module needs no activity-result plumbing. The install-state listener is registered for the
+module's lifetime and reports every state as `onInstallStatus`.
+
 ## iOS
 
-Neither module has an iOS side. The routes considered (Vision person segmentation or a Core ML
+None of the modules has an iOS side (an update check there would ask the App Store instead). The routes considered (Vision person segmentation or a Core ML
 EdgeTAM port; `AVAssetReader` extraction) need a Mac or an EAS build. Until then the actions are
 simply absent on iOS.
