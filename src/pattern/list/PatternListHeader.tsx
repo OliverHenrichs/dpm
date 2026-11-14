@@ -15,9 +15,11 @@ interface PatternListHeaderProps {
   onSort: () => void;
   onFilter: () => void;
   onAdd: () => void;
+  /** Opens the list's settings; absent on a read-only list. */
+  onEditList?: () => void;
 }
 
-/** The Figures toolbar: sort and filter chips, then '+' (or the lock of a read-only list). */
+/** The Figures toolbar: sort and filter chips, then list settings and '+' (or the lock of a read-only list). */
 const PatternListHeader: React.FC<PatternListHeaderProps> = ({
   sortLabel,
   sortOrder,
@@ -26,6 +28,7 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
   onSort,
   onFilter,
   onAdd,
+  onEditList,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -39,6 +42,7 @@ const PatternListHeader: React.FC<PatternListHeaderProps> = ({
       activeFilters={activeFilters}
       onFilter={onFilter}
       filterAccessibilityLabel={t("filterPatterns")}
+      onEditList={onEditList}
       actions={
         isReadonly ? (
           <Icon

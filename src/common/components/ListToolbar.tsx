@@ -2,7 +2,7 @@ import React from "react";
 import { Text, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import { Tappable } from "@/src/common/ui";
+import { IconButton, Tappable } from "@/src/common/ui";
 import { Icon, type IconName } from "@/src/common/ui/Icon";
 
 interface ListToolbarProps {
@@ -17,6 +17,8 @@ interface ListToolbarProps {
   onFilter: () => void;
   /** Read out for the filter chip: what is filtered ("Filter Figures"). */
   filterAccessibilityLabel: string;
+  /** Opens the list's settings, from a button before `actions`; absent on a read-only list. */
+  onEditList?: () => void;
   /** What changes the list itself, at the right end: its '+', or the lock of a read-only list. */
   actions?: React.ReactNode;
 }
@@ -24,7 +26,7 @@ interface ListToolbarProps {
 /**
  * The bar above each of the List tab's lists (Figures, Modifiers, Sequences): how the list is
  * shown on the left, as labelled chips (sort by what, filter with how many criteria), and what
- * changes the list on the right. The segmented control above already names the list, so the
+ * changes the list on the right: its settings, then '+'. The segmented control above already names the list, so the
  * bar has no title. Followers' actions are not here but in the band above the tabs.
  */
 const ListToolbar: React.FC<ListToolbarProps> = ({
@@ -35,6 +37,7 @@ const ListToolbar: React.FC<ListToolbarProps> = ({
   activeFilters,
   onFilter,
   filterAccessibilityLabel,
+  onEditList,
   actions,
 }) => {
   const { t } = useTranslation();
@@ -65,7 +68,18 @@ const ListToolbar: React.FC<ListToolbarProps> = ({
           active={filtering}
         />
       </View>
-      {actions && <View style={styles.actions}>{actions}</View>}
+      {(onEditList || actions) && (
+        <View style={styles.actions}>
+          {onEditList && (
+            <IconButton
+              icon="tune-variant"
+              onPress={onEditList}
+              accessibilityLabel={t("editTypes")}
+            />
+          )}
+          {actions}
+        </View>
+      )}
     </View>
   );
 };

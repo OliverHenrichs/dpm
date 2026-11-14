@@ -6,9 +6,8 @@ the same on all three segments: Figures, Modifiers and Sequences. What the segme
 
 ## What the user can do
 
-- **The list itself**: its settings open from the edit-list button beside the menu in the
-  header (not on a read-only list). Each segment's toolbar ends on **+** at the right, or a lock
-  on a read-only list.
+- **The list itself**: each segment's toolbar ends on its settings (a sliders button) and **+**,
+  both on every segment. A read-only list shows a lock instead of both.
 - **Followers**: a published list shows a band above the segments. The owner sees _Members_ on a
   members-only list (_Asking to join_ with the number when someone is waiting) and _Suggestions_
   with the number to review while suggestions are on or any are left. A follower who may

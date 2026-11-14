@@ -96,6 +96,9 @@ const PatternListManager = () => {
     setIsEditingList(true);
   };
 
+  // Every segment's toolbar opens them, beside its '+'; a read-only list has neither.
+  const editList = isReadonly ? undefined : () => openListSettings(false);
+
   const [selectedPattern, setSelectedPattern] = useState<IPattern | undefined>(
     undefined,
   );
@@ -305,17 +308,7 @@ const PatternListManager = () => {
   return (
     <View style={{ flex: 1 }}>
       <PageContainer style={{ backgroundColor: theme.colors.background }}>
-        <AppHeader
-          action={
-            isReadonly ? undefined : (
-              <IconButton
-                icon="playlist-edit"
-                onPress={() => openListSettings(false)}
-                accessibilityLabel={t("editTypes")}
-              />
-            )
-          }
-        />
+        <AppHeader />
 
         {/* Add / Edit Pattern modals */}
         <PatternFormModal visible={isAddingNew} onRequestClose={closeAddForm}>
@@ -505,6 +498,7 @@ const PatternListManager = () => {
               onManageTags={
                 isReadonly ? undefined : () => openListSettings(true)
               }
+              onEditList={editList}
               onSelect={(p) => setSelectedPattern(p as IPattern | undefined)}
               onDelete={handleDeletePattern}
               onAdd={() => setIsAddingNew(!isAddingNew)}
@@ -540,6 +534,7 @@ const PatternListManager = () => {
                 });
               }}
               onDelete={deleteSequence}
+              onEditList={editList}
             />
           ) : (
             <ModifierList
@@ -550,6 +545,7 @@ const PatternListManager = () => {
               onAdd={() => setIsAddingModifier(true)}
               onEdit={handleEditModifier}
               onDelete={deleteModifier}
+              onEditList={editList}
             />
           )}
         </View>

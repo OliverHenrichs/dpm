@@ -42,6 +42,8 @@ interface SequenceListProps {
   onAdd: () => void;
   onEdit: (sequence: ISequence) => void;
   onDelete: (id: string) => void;
+  /** Opens the list's settings from the toolbar; absent on a read-only list. */
+  onEditList?: () => void;
 }
 
 /**
@@ -60,6 +62,7 @@ const SequenceList: React.FC<SequenceListProps> = ({
   onAdd,
   onEdit,
   onDelete,
+  onEditList,
 }) => {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -100,6 +103,7 @@ const SequenceList: React.FC<SequenceListProps> = ({
         activeFilters={countSequenceFilters(filter)}
         onFilter={() => setIsFilterVisible(true)}
         filterAccessibilityLabel={t("filterSequences")}
+        onEditList={onEditList}
         actions={
           isReadonly ? undefined : (
             <PlusButton

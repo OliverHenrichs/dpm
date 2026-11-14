@@ -15,7 +15,7 @@ const modifier = (
 ): IModifier => ({ id: name, name, position, universal, videoRefs: [] });
 
 describe("the Modifiers toolbar", () => {
-  function renderList() {
+  function renderList(onEditList?: () => void) {
     renderWithProviders(
       <ModifierList
         modifiers={[
@@ -28,6 +28,7 @@ describe("the Modifiers toolbar", () => {
         onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
+        onEditList={onEditList}
       />,
       { activeListId: null },
     );
@@ -39,6 +40,16 @@ describe("the Modifiers toolbar", () => {
     expect(screen.getByLabelText("Sort Modifiers")).toHaveTextContent(
       /Date Created/,
     );
+  });
+
+  it("opens the list's settings beside its +", () => {
+    const onEditList = jest.fn();
+    renderList(onEditList);
+
+    fireEvent.press(screen.getByLabelText("Edit the list and its types"));
+
+    expect(onEditList).toHaveBeenCalled();
+    expect(screen.getByLabelText("Add Modifier")).toBeOnTheScreen();
   });
 
   it("sorts by position under a header for each", () => {

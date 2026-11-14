@@ -17,8 +17,9 @@ and Sequences had only a title and **+**, with no sort or filter.
 Each kind of action gets its own place, the same on every segment:
 
 - Followers' actions move into a band above the segments that says what is waiting in words.
-- List settings move into the header, beside the menu (an edit-list icon in place of the old
-  shapes), so the list's name stays centred.
+- List settings get a sliders icon and sit beside **+** on every segment's toolbar. (Beside the
+  menu in the header they took room from the list's name, broke the header's symmetry and
+  looked like the menu.)
 - The title row under the segments, which only repeated the segment's name, becomes the
   toolbar: labelled sort and filter chips on the left, **+** on the right.
 - Modifiers and Sequences get sort and filter like Figures.
@@ -32,6 +33,6 @@ Each kind of action gets its own place, the same on every segment:
 
 ## Consequences
 
-The followers' band costs a row on published lists, and owners find list settings in a new
-place. In exchange every segment has the same toolbar, sort and filter say what is in force,
+The followers' band costs a row on published lists, and owners find list settings under a
+new icon. In exchange every segment has the same toolbar, sort and filter say what is in force,
 and what followers are waiting for is visible from any segment.

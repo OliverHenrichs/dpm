@@ -33,6 +33,8 @@ type ModifierListProps = {
   onAdd: () => void;
   onEdit: (modifier: IModifier) => void;
   onDelete: (id: string) => void;
+  /** Opens the list's settings from the toolbar; absent on a read-only list. */
+  onEditList?: () => void;
 };
 
 const ModifierList: React.FC<ModifierListProps> = ({
@@ -43,6 +45,7 @@ const ModifierList: React.FC<ModifierListProps> = ({
   onAdd,
   onEdit,
   onDelete,
+  onEditList,
 }) => {
   const { t } = useTranslation();
   const [selectedModifier, setSelectedModifier] = useState<
@@ -80,6 +83,7 @@ const ModifierList: React.FC<ModifierListProps> = ({
         activeFilters={activeFilters}
         onFilter={() => setIsFilterVisible(true)}
         filterAccessibilityLabel={t("filterModifiers")}
+        onEditList={onEditList}
         actions={
           isReadonly ? undefined : (
             <PlusButton onPress={onAdd} accessibilityLabel={t("addModifier")} />

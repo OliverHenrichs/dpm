@@ -58,6 +58,8 @@ type PatternListProps = {
   onEdit: (pattern: IPattern) => void;
   /** Suggesting a change to a figure of a subscribed list (`PatternListItem`). */
   onSuggestEdit?: (pattern: IPattern) => void;
+  /** Opens the list's settings from the toolbar; absent on a read-only list. */
+  onEditList?: () => void;
   /** The filter sheet's _Manage_ link for tags: list settings on the Tags section. */
   onManageTags?: () => void;
   /** The list's sequences, so deleting a figure can name those that use it. */
@@ -217,6 +219,7 @@ const PatternList: React.FC<PatternListProps> = (props) => {
         sortOrder={sortConfig.order}
         activeFilters={activeFilters}
         isReadonly={isReadonly}
+        onEditList={props.onEditList}
         onSort={() => setIsSortVisible(true)}
         onFilter={() => setIsFilterVisible(true)}
         onAdd={
