@@ -20,6 +20,39 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.9.0",
+    date: "2026-11-17",
+    notes: {
+      en: [
+        "When a new version of DPM is on Google Play, the app now offers it when you open it. It downloads while you keep working, and *Restart* then switches to it. If you say no, it asks again a week later.",
+      ],
+      zh: [
+        "Google Play 上有 DPM 的新版本时，应用会在打开时提示你更新。更新会在你继续使用时下载，下载完成后点“重启”即可切换到新版本。如果你拒绝，一周后会再次询问。",
+      ],
+      hi: [
+        "जब Google Play पर DPM का नया वर्शन होता है, तो ऐप खोलते ही अब उसे देने की पेशकश करता है। आप काम करते रहें, यह डाउनलोड होता रहता है, और फिर “फिर से शुरू करें” से नया वर्शन चालू हो जाता है। मना करने पर यह एक हफ़्ते बाद फिर पूछता है।",
+      ],
+      es: [
+        "Cuando hay una nueva versión de DPM en Google Play, la app ahora te la ofrece al abrirla. Se descarga mientras sigues trabajando y luego *Reiniciar* te pasa a ella. Si dices que no, vuelve a preguntar una semana después.",
+      ],
+      fr: [
+        "Quand une nouvelle version de DPM est sur Google Play, l'app vous la propose désormais à l'ouverture. Elle se télécharge pendant que vous continuez, puis *Redémarrer* passe à la nouvelle version. Si vous refusez, elle redemande une semaine plus tard.",
+      ],
+      ar: [
+        "عندما يتوفر إصدار جديد من DPM على Google Play، يعرضه التطبيق الآن عليك عند فتحه. يُنزَّل بينما تواصل العمل، ثم ينقلك «إعادة التشغيل» إليه. وإذا رفضت، يسألك مرة أخرى بعد أسبوع.",
+      ],
+      bn: [
+        "Google Play-তে DPM-এর নতুন সংস্করণ এলে অ্যাপ খোলার সময় এখন সেটি দেওয়ার প্রস্তাব করে। আপনি কাজ চালিয়ে যাওয়ার সময় এটি ডাউনলোড হয়, তারপর “আবার চালু করুন” চাপলে নতুন সংস্করণে চলে যায়। না বললে এক সপ্তাহ পরে আবার জিজ্ঞেস করে।",
+      ],
+      pt: [
+        "Quando há uma nova versão do DPM no Google Play, o app agora a oferece ao ser aberto. Ela é baixada enquanto você continua usando, e depois *Reiniciar* passa para ela. Se você recusar, ele pergunta de novo uma semana depois.",
+      ],
+      de: [
+        "Gibt es bei Google Play eine neue Version von DPM, bietet die App sie jetzt beim Öffnen an. Sie lädt im Hintergrund, während du weiterarbeitest. Mit *Neu starten* wechselst du dann zur neuen Version. Lehnst du ab, fragt die App nach einer Woche wieder.",
+      ],
+    },
+  },
+  {
     version: "1.8.0",
     date: "2026-11-14",
     notes: {

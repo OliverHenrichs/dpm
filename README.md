@@ -177,6 +177,11 @@ hand with `eas workflow:run .eas/workflows/release-android.yml` or from the proj
 page on expo.dev. It needs the Expo project linked to the GitHub repository (expo.dev → project
 settings → GitHub). The build fetches the model weights itself.
 
+To send a version to the alpha (closed testing) track first, tag it `alpha-v1.9.0` instead:
+`.eas/workflows/release-android-alpha.yml` builds the same way and submits to alpha. When it is
+ready for everyone, promote that release to production in Play Console; don't also push `v1.9.0`,
+which would build the version a second time.
+
 A local build uses the weights in the checkout (see `modules/AGENTS.md`), as for any production
 build. To publish to another track later, change `track` (`internal`, `alpha`, `beta`,
 `production`, or a custom closed track's name).

@@ -1,0 +1,26 @@
+# Like release-android.yml, but submits to Play's closed testing track (alpha) instead of
+# production. Starts when a tag `alpha-v1.9.0` (…) is pushed, e.g. by publishing a GitHub Release
+# with that tag on master after the release PR is merged; `v*` tags still go to production, and an
+# `alpha-v*` tag does not match them. To ship the same build to everyone afterwards, promote the
+# release to production in Play Console: never also tag `v1.9.0`, which would build it again.
+name: Release Android (alpha)
+
+on:
+  push:
+    tags: ["alpha-v*"]
+
+jobs:
+  build_android:
+    name: Build Android
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  submit_android:
+    name: Submit to Play (alpha)
+    type: submit
+    needs: [build_android]
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+      profile: alpha

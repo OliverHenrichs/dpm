@@ -1,12 +1,8 @@
 <en-US>
-1.8.0
-• List tab: members and suggestions in a band above the segments, and one toolbar with sort, filter count, settings and +.
-• Sort and filter modifiers and sequences.
-• Attach... in the figure form now scrolls when there are many modifiers.
+1.9.0
+• When a new version is on Google Play, DPM now offers it when you open the app. It downloads while you keep working; then Restart switches to it.
 </en-US>
 <de-DE>
-1.8.0
-• Tab Liste: Mitglieder und Vorschläge in einem Band über den Bereichen, dazu eine Leiste mit Sortierung, Filterzahl, Einstellungen und +.
-• Modifikatoren und Folgen lassen sich sortieren und filtern.
-• Anhängen... im Figurenformular scrollt jetzt bei vielen Modifikatoren.
+1.9.0
+• Gibt es bei Google Play eine neue Version, bietet DPM sie jetzt beim Öffnen an. Sie lädt im Hintergrund; mit Neu starten wechselst du dann zu ihr.
 </de-DE>
