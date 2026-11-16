@@ -30,7 +30,7 @@ in, so read the one listed below before you add code there.
 | `src/pattern/handover/AGENTS.md`     | Handing a published list over to a subscriber, who keeps its share code                                        |
 | `src/legal/AGENTS.md`                | Terms of use agreement before sharing, reporting a list, links to the legal pages                              |
 | `modules/AGENTS.md`                  | The local native Expo modules and their gitignored model weights                                               |
-| `src/changelog/AGENTS.md`            | The bundled changelog, the what's-new hint after an update, releasing a version's notes                        |
+| `src/changelog/AGENTS.md`            | The bundled changelog, the what's-new hint, the Play update prompt, releasing a version's notes                |
 | `src/settings/AGENTS.md`             | Settings screen, i18n machinery, device locale, language/style/icon persistence                                |
 | `src/firebase/AGENTS.md`             | Firestore sharing, ownership, security rules, configuration                                                    |
 | `__tests__/AGENTS.md`                | Jest projects, the global mocks (also `__mocks__/`, `utils/`), the traps in this suite                         |
@@ -157,7 +157,8 @@ inherit a stranger's position.
   wrapped in `try`, as `src/settings/data/DeviceLocale.ts`, `src/settings/appIcon.ts` and
   `src/anonymize/jobs/jobNotifications.ts` do; keep those requires where they are.
 - **Gate on availability, not `Platform.OS`**, for anything native and optional
-  (`isAnonymizeAvailable`, `isAudioExtractAvailable`, `canSuggest()`, `supportsAlternateIcons`).
+  (`isAnonymizeAvailable`, `isAudioExtractAvailable`, `isAppUpdateAvailable`, `canSuggest()`,
+  `supportsAlternateIcons`).
   Those are false on web and under Jest, and the UI hides the action.
 - **Native changes need a rebuilt dev client.** Metro will happily serve JS the installed client
   has no native side for.

@@ -21,3 +21,4 @@ memory. Each names its source.
 | [0010](0010-gesture-handler-for-the-map.md)                  | The Map's gestures all live in Gesture Handler                           |
 | [0011](0011-rhythm-subdivisions-and-single-step-composer.md) | Rhythms take & and a after any beat; the composer adds one element a tap |
 | [0012](0012-list-tab-actions-apart.md)                       | The List tab keeps the list, its followers and its view apart            |
+| [0013](0013-flexible-in-app-updates.md)                      | Updates are offered through Play's flexible in-app flow                  |
