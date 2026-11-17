@@ -16,10 +16,11 @@ const ACCEPTED = {
   // worst a hang of the app on the phone that opens such a link.
   "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2026-12-01" },
   "GHSA-qr28-fpjm-wq7f": { name: "decode-uri-component", until: "2026-12-01" },
-  // @expo/config, jest-config -> deepmerge. Dev tooling only, merging our own
-  // config objects, never in the app bundle. No patched release exists
-  // (4.3.1 is the latest and is affected).
-  "GHSA-gcqx-w48m-w2h4": { name: "deepmerge", until: "2026-12-01" },
+  // @expo/cli, @expo/metro-config, metro, jest, tinyglobby, anymatch,
+  // micromatch -> picomatch@2/4. Dev and build tooling only, matching our own
+  // glob patterns, never in the app bundle; the ReDoS needs an attacker-written
+  // pattern. No patched release exists (4.0.7, the latest, is affected).
+  "GHSA-fc5q-39xc-vjpf": { name: "picomatch", until: "2026-12-01" },
   // @expo/config, @expo/config-plugins, @expo/fingerprint, @expo/metro-config,
   // @jest/reporters, test-exclude -> glob@10/13. Dev and build tooling only,
   // never in the app bundle; none of them pass an AbortSignal, which is what
