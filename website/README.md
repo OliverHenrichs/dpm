@@ -13,7 +13,7 @@ system. Without JavaScript the switcher stays hidden and the page is After Hours
 | File | What it is |
 |---|---|
 | `index.html` | The landing page: what DPM does for dancers, a card for each of the four pages below, how figures connect, and the video tools |
-| `yourself.html` | **On your own**: keeping track of your own progress. The video tools, Reels, List and Map, filtering, variations |
+| `yourself.html` | **On your own**: keeping track of your own progress. The video tools, Reels, List and Map, filtering, variations, sequences |
 | `sharing.html` | **With classmates**: classmates or friends following one list that one of them keeps. Sharing, suggestions, _Put online_, handing the list over |
 | `teaching.html` | **As a teacher**: a course list under the teacher's control. Members only, suggestion limits, video hosts with limited public access |
 | `students.html` | **As a student**: what a subscriber gets, and how to subscribe |
