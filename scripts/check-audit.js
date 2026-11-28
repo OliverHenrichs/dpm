@@ -10,21 +10,24 @@
 const fs = require("fs");
 
 const ACCEPTED = {
+  // All four are extended to 2027-01-15 to cover the Expo SDK 58 upgrade, which
+  // should clear decode-uri-component (expo-router 58 drops query-string) and
+  // most of glob/minimatch. Remove each entry the upgrade clears.
   // expo-router -> query-string@7 -> decode-uri-component@0.2. The fixes
   // (0.4.3, 0.5.1) are ESM-only and cannot be forced under a CJS parent; waits
   // for expo-router upstream. Both are slow-decoding DoS on crafted URLs, at
   // worst a hang of the app on the phone that opens such a link.
-  "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2026-12-01" },
-  "GHSA-qr28-fpjm-wq7f": { name: "decode-uri-component", until: "2026-12-01" },
+  "GHSA-vcc3-ghjq-m6fr": { name: "decode-uri-component", until: "2027-01-15" },
+  "GHSA-qr28-fpjm-wq7f": { name: "decode-uri-component", until: "2027-01-15" },
   // @expo/config, @expo/config-plugins, @expo/fingerprint, @expo/metro-config,
   // @jest/reporters, test-exclude -> glob@10/13. Dev and build tooling only,
   // never in the app bundle; none of them pass an AbortSignal, which is what
   // the bypass needs. The fix is glob 14, a major the Expo packages don't allow.
-  "GHSA-3g3m-2fjr-6pw4": { name: "glob", until: "2026-12-01" },
+  "GHSA-3g3m-2fjr-6pw4": { name: "glob", until: "2027-01-15" },
   // eslint, glob, @expo/fingerprint, test-exclude -> minimatch@3/9/10. Dev and
   // build tooling only, matching our own patterns, never in the app bundle.
   // The fix is minimatch 11, a major none of these parents allow.
-  "GHSA-g3hv-75wg-m249": { name: "minimatch", until: "2026-12-01" },
+  "GHSA-g3hv-75wg-m249": { name: "minimatch", until: "2027-01-15" },
 };
 
 const WARN_DAYS = 7;
